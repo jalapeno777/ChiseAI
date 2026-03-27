@@ -8,6 +8,14 @@ from enum import Enum
 from typing import Any
 
 
+class BeliefType(Enum):
+    """Classification of belief types for epistemic tracking."""
+
+    FACT = "fact"  # Empirical, directly observable
+    INFERENCE = "inference"  # Derived from other beliefs/evidence
+    HYPOTHESIS = "hypothesis"  # Proposed explanation, not yet confirmed
+
+
 class RelationshipType(Enum):
     """Types of relationships between beliefs."""
 
@@ -15,42 +23,6 @@ class RelationshipType(Enum):
     CONTRADICTS = "contradicts"
     SUPERSEDES = "supersedes"
     RELATED = "related"
-
-
-@dataclass
-class BeliefRelationship:
-    """Relationship edge between beliefs in the graph."""
-
-    relationship_id: str
-    source_belief_id: str
-    target_belief_id: str
-    relationship_type: str
-    strength: float = 1.0
-    evidence_refs: list[str] = field(default_factory=list)
-    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "relationship_id": self.relationship_id,
-            "source_belief_id": self.source_belief_id,
-            "target_belief_id": self.target_belief_id,
-            "relationship_type": self.relationship_type,
-            "strength": self.strength,
-            "evidence_refs": self.evidence_refs,
-            "created_at": self.created_at,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> BeliefRelationship:
-        return cls(
-            relationship_id=data["relationship_id"],
-            source_belief_id=data["source_belief_id"],
-            target_belief_id=data["target_belief_id"],
-            relationship_type=data["relationship_type"],
-            strength=float(data.get("strength", 1.0)),
-            evidence_refs=list(data.get("evidence_refs", [])),
-            created_at=data.get("created_at", datetime.now(UTC).isoformat()),
-        )
 
 
 @dataclass
@@ -115,6 +87,8 @@ class Belief:
     updated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     status: str = "active"
     supersedes_belief_id: str | None = None
+    belief_type: BeliefType = BeliefType.INFERENCE
+    provenance: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -128,10 +102,22 @@ class Belief:
             "updated_at": self.updated_at,
             "status": self.status,
             "supersedes_belief_id": self.supersedes_belief_id,
+            "belief_type": (
+                self.belief_type.value
+                if isinstance(self.belief_type, BeliefType)
+                else self.belief_type
+            ),
+            "provenance": self.provenance,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Belief:
+        belief_type = data.get("belief_type", "inference")
+        if isinstance(belief_type, str):
+            try:
+                belief_type = BeliefType(belief_type)
+            except ValueError:
+                belief_type = BeliefType.INFERENCE
         return cls(
             belief_id=data["belief_id"],
             statement=data["statement"],
@@ -143,6 +129,89 @@ class Belief:
             updated_at=data.get("updated_at", datetime.now(UTC).isoformat()),
             status=data.get("status", "active"),
             supersedes_belief_id=data.get("supersedes_belief_id"),
+            belief_type=belief_type,
+            provenance=list(data.get("provenance", [])),
+        )
+
+    def validate(self) -> list[str]:
+        """Validate belief and return list of validation errors.
+
+        Returns empty list if belief is valid.
+        """
+        errors = []
+
+        if not self.belief_id or not self.belief_id.strip():
+            errors.append("belief_id cannot be empty")
+
+        if not self.statement or not self.statement.strip():
+            errors.append("statement cannot be empty")
+
+        if not self.domain or not self.domain.strip():
+            errors.append("domain cannot be empty")
+
+        if not 0.0 <= self.confidence <= 1.0:
+            errors.append(
+                f"confidence must be between 0.0 and 1.0, got {self.confidence}"
+            )
+
+        if not 0.0 <= self.sources_quality_score <= 1.0:
+            errors.append(
+                f"sources_quality_score must be between 0.0 and 1.0, got {self.sources_quality_score}"
+            )
+
+        valid_statuses = {"active", "superseded", "deprecated", "pending"}
+        if self.status not in valid_statuses:
+            errors.append(
+                f"status must be one of {valid_statuses}, got '{self.status}'"
+            )
+
+        if isinstance(self.belief_type, BeliefType):
+            valid_types = {t.value for t in BeliefType}
+            if self.belief_type.value not in valid_types:
+                errors.append(f"belief_type must be one of {valid_types}")
+        elif self.belief_type not in {t.value for t in BeliefType}:
+            errors.append(f"belief_type must be one of {[t.value for t in BeliefType]}")
+
+        return errors
+
+    def is_valid(self) -> bool:
+        """Return True if belief passes validation."""
+        return len(self.validate()) == 0
+
+
+@dataclass
+class BeliefRelationship:
+    """Relationship edge between beliefs in the graph."""
+
+    relationship_id: str
+    source_belief_id: str
+    target_belief_id: str
+    relationship_type: str
+    strength: float = 1.0
+    evidence_refs: list[str] = field(default_factory=list)
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "relationship_id": self.relationship_id,
+            "source_belief_id": self.source_belief_id,
+            "target_belief_id": self.target_belief_id,
+            "relationship_type": self.relationship_type,
+            "strength": self.strength,
+            "evidence_refs": self.evidence_refs,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BeliefRelationship:
+        return cls(
+            relationship_id=data["relationship_id"],
+            source_belief_id=data["source_belief_id"],
+            target_belief_id=data["target_belief_id"],
+            relationship_type=data["relationship_type"],
+            strength=float(data.get("strength", 1.0)),
+            evidence_refs=list(data.get("evidence_refs", [])),
+            created_at=data.get("created_at", datetime.now(UTC).isoformat()),
         )
 
 

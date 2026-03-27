@@ -6,6 +6,7 @@ from .models import (
     BeliefConflict,
     BeliefRelationship,
     BeliefRevision,
+    BeliefType,
     RelationshipType,
 )
 from .revision_engine import BeliefRevisionEngine
@@ -19,5 +20,6 @@ __all__ = [
     "BeliefStore",
     "BeliefConsistencyChecker",
     "BeliefRevisionEngine",
+    "BeliefType",
     "RelationshipType",
 ]
