@@ -202,7 +202,6 @@ steps:
     - brain-eval
     - performance-gate
     - truth-gate
-    - compass-gate
     - flaky-detection
     - post-run
     - tempmemory-operations-group
