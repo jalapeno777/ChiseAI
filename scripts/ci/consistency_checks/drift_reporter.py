@@ -6,7 +6,7 @@ Generates comprehensive drift reports combining version and configuration drift.
 import json
 import sys
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -28,7 +28,9 @@ class DriftEntry:
 class DriftReport:
     """Comprehensive drift report."""
 
-    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    )
     version_drifts: list[DriftEntry] = field(default_factory=list)
     config_drifts: list[DriftEntry] = field(default_factory=list)
     summary: dict[str, int] = field(default_factory=dict)
@@ -86,7 +88,9 @@ class DriftReport:
                         symbol = (
                             "✗"
                             if severity == "high"
-                            else "⚠" if severity == "medium" else "○"
+                            else "⚠"
+                            if severity == "medium"
+                            else "○"
                         )
                         lines.append(f"  {symbol} {severity.upper()}: {count}")
                 lines.append("")
