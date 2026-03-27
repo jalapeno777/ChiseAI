@@ -35,16 +35,24 @@ owner: operations
 
 ## Current Metrics
 
-_Last updated: 2026-03-26 19:00:00 UTC_
+_Last updated: 2026-03-27_
 
 | Metric                  | Value |
 | ----------------------- | ----- |
-| Days elapsed            | 1     |
+| Days elapsed            | 2     |
 | Signals collected       | 0     |
 | Control win rate        | N/A   |
 | Treatment win rate      | N/A   |
 | Effect size (Cohen's h) | N/A   |
 | Current p-value         | N/A   |
+
+### Status Notes
+
+- **ICT feature flag flipped to `true`** as of 2026-03-27
+- **Cron jobs restarted** and running
+- **Signal pipeline now active** — treatment signal collection began 2026-03-27 (2 days after observation window opened on 2026-03-25)
+- **Treatment signals (CVD, FVG, Order Block)** now flowing
+- **BOS/CHoCH remains excluded** per BL-BOS-CHOCH-001
 
 ## Next Checkpoint
 
