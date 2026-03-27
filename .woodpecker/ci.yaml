@@ -44,7 +44,6 @@
 when:
   event:
     - pull_request
-    - push
     - manual
     - cron
 
@@ -432,31 +431,6 @@ steps:
         code=$?
         cat "$${CI_STATUS_DIR}/docker-governance.log"
         echo "$code" > "$${CI_STATUS_DIR}/docker-governance.status"
-        exit 0
-
-  docker-live-check:
-    pull: false
-    image: chiseai-ci-tools:py311-20260323
-    when:
-      branch:
-        - main
-      event:
-        - push
-    environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
-    commands:
-      - |
-        set -euo pipefail
-        mkdir -p "$${CI_STATUS_DIR}"
-        set +e
-        (
-          set -euo pipefail
-          python3 scripts/ci/docker_live_check.py
-        ) > "$${CI_STATUS_DIR}/docker-live-check.log" 2>&1
-        code=$?
-        cat "$${CI_STATUS_DIR}/docker-live-check.log"
-        echo "$code" > "$${CI_STATUS_DIR}/docker-live-check.status"
-        # Non-blocking advisory check; does not feed into ci-gate.
         exit 0
 
   local-ci:
