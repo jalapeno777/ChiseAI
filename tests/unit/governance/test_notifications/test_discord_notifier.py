@@ -82,12 +82,13 @@ class TestDiscordNotifier:
     @pytest.mark.asyncio
     async def test_send_with_retry_success(self, mock_client):
         """Test successful send with retry."""
-        mock_client.send_message.return_value = Mock(success=True)
+        mock_client.send_message.return_value = Mock(success=True, message_id="msg123")
         notifier = DiscordNotifier(client=mock_client, channel_id="123")
 
-        result = await notifier._send_with_retry("Test message")
+        success, message_id = await notifier._send_with_retry("Test message")
 
-        assert result is True
+        assert success is True
+        assert message_id == "msg123"
         mock_client.send_message.assert_called_once()
 
     @pytest.mark.asyncio
@@ -99,9 +100,12 @@ class TestDiscordNotifier:
         notifier = DiscordNotifier(client=mock_client, channel_id="123")
 
         with patch("asyncio.sleep", new_callable=AsyncMock):  # Speed up test
-            result = await notifier._send_with_retry("Test message", max_retries=3)
+            success, message_id = await notifier._send_with_retry(
+                "Test message", max_retries=3
+            )
 
-        assert result is False
+        assert success is False
+        assert message_id is None
         assert mock_client.send_message.call_count == 3
 
     @pytest.mark.asyncio
@@ -229,3 +233,66 @@ class TestDiscordNotifier:
             notifier._validate_channel_id("invalid", fallback="fallback") == "fallback"
         )
         assert notifier._validate_channel_id(None, fallback="fallback") == "fallback"
+
+    @pytest.mark.asyncio
+    async def test_validate_channel_with_no_channel_id(self, mock_client):
+        """Test channel validation passes when no channel_id is configured."""
+        notifier = DiscordNotifier(client=mock_client, channel_id=None)
+
+        is_valid, error_msg = await notifier._validate_channel()
+
+        assert is_valid is True
+        assert error_msg is None
+
+    @pytest.mark.asyncio
+    async def test_validate_channel_with_client_validation(self, mock_client):
+        """Test channel validation uses client.validate_channel_id when available."""
+        mock_client.validate_channel_id = AsyncMock(return_value=(True, None))
+        notifier = DiscordNotifier(client=mock_client, channel_id="123456789")
+
+        is_valid, error_msg = await notifier._validate_channel()
+
+        assert is_valid is True
+        assert error_msg is None
+        mock_client.validate_channel_id.assert_called_once_with("123456789")
+
+    @pytest.mark.asyncio
+    async def test_validate_channel_fails_gracefully(self, mock_client):
+        """Test channel validation failure is logged but doesn't block sending."""
+        mock_client.validate_channel_id = AsyncMock(
+            return_value=(False, "Channel not found")
+        )
+        notifier = DiscordNotifier(client=mock_client, channel_id="123456789")
+
+        is_valid, error_msg = await notifier._validate_channel()
+
+        assert is_valid is False
+        assert error_msg == "Channel not found"
+
+    @pytest.mark.asyncio
+    async def test_validate_channel_exception_handling(self, mock_client):
+        """Test channel validation exception triggers graceful degradation."""
+        mock_client.validate_channel_id = AsyncMock(
+            side_effect=Exception("Network error")
+        )
+        notifier = DiscordNotifier(client=mock_client, channel_id="123456789")
+
+        # Graceful degradation: validation exception should not block sending
+        is_valid, error_msg = await notifier._validate_channel()
+
+        assert is_valid is True  # Should pass to allow send attempt
+        assert error_msg is None
+
+    @pytest.mark.asyncio
+    async def test_send_with_retry_channel_validation_first(self, mock_client):
+        """Test that channel validation is performed before sending."""
+        mock_client.validate_channel_id = AsyncMock(return_value=(True, None))
+        mock_client.send_message.return_value = Mock(success=True, message_id="msg123")
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+
+        success, message_id = await notifier._send_with_retry("Test message")
+
+        assert success is True
+        assert message_id == "msg123"
+        # Validate should be called before send
+        mock_client.validate_channel_id.assert_called_once_with("123")

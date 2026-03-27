@@ -287,11 +287,72 @@ class DiscordNotifier:
         except Exception as e:
             logger.warning(f"Failed to mark event as sent: {e}")
 
-    async def _send_with_retry(self, content: str, max_retries: int = 3) -> bool:
-        """Send message with exponential backoff retry.
+    async def _validate_channel(self) -> tuple[bool, str | None]:
+        """Validate that the configured channel is accessible.
+
+        Uses Discord API to verify the channel exists and the bot has access.
+        Gracefully returns (True, None) if validation cannot be performed
+        (e.g., no bot token, no channel configured).
+
+        Returns:
+            Tuple of (is_valid, error_message).
+            - is_valid: True if channel is accessible or validation skipped
+            - error_message: None if valid, descriptive error if invalid
+        """
+        if not self.channel_id:
+            logger.debug("No channel_id configured, skipping validation")
+            return True, None
+
+        if self.client is None:
+            logger.debug("No Discord client available, skipping channel validation")
+            return True, None
+
+        # Check if client has validate_channel_id method
+        if not hasattr(self.client, "validate_channel_id"):
+            logger.debug("Discord client does not support channel validation, skipping")
+            return True, None
+
+        try:
+            is_valid, error_msg = await self.client.validate_channel_id(self.channel_id)
+            if not is_valid:
+                logger.error(
+                    "Channel validation failed for %s: %s",
+                    self.channel_id,
+                    error_msg,
+                )
+            return is_valid, error_msg
+        except Exception as e:
+            # Graceful degradation: log warning but don't block sending
+            logger.warning(
+                "Channel validation raised exception for %s: %s. "
+                "Proceeding with send attempt.",
+                self.channel_id,
+                e,
+            )
+            return True, None
+
+    async def _send_with_retry(
+        self, content: str, max_retries: int = 3
+    ) -> tuple[bool, str | None]:
+        """Send message with exponential backoff retry and delivery confirmation.
 
         Falls back to webhook if Discord client is unavailable.
+        Returns tuple of (success, message_id) for delivery confirmation tracking.
+
+        Returns:
+            Tuple of (success, message_id).
+            - success: True if message was sent successfully
+            - message_id: Discord message ID if delivered via bot, None otherwise
         """
+        # Validate channel accessibility before attempting send
+        channel_valid, channel_error = await self._validate_channel()
+        if not channel_valid:
+            logger.error(
+                "Cannot send notification - channel validation failed: %s",
+                channel_error,
+            )
+            return False, None
+
         # Try Discord client first if available
         if self.client is not None:
             for attempt in range(max_retries):
@@ -300,7 +361,14 @@ class DiscordNotifier:
                         content=content, channel_id=self.channel_id
                     )
                     if result.success:
-                        return True
+                        logger.info(
+                            "Discord notification sent successfully to channel %s "
+                            "(method=%s, message_id=%s)",
+                            self.channel_id,
+                            result.method,
+                            result.message_id,
+                        )
+                        return True, result.message_id
                     logger.warning(
                         "Discord send failed (attempt %d): %s",
                         attempt + 1,
@@ -317,10 +385,11 @@ class DiscordNotifier:
 
         # Fallback to webhook if configured
         if self._webhook_url:
-            return await self._send_via_webhook(content, max_retries)
+            webhook_success = await self._send_via_webhook(content, max_retries)
+            return webhook_success, None
 
         logger.error("No Discord client or webhook available for notification")
-        return False
+        return False, None
 
     async def _send_via_webhook(self, content: str, max_retries: int = 3) -> bool:
         """Send message via Discord webhook.
@@ -412,10 +481,14 @@ class DiscordNotifier:
             else:
                 content = formatter.format_weekly(artifact, artifact_path)
 
-            success = await self._send_with_retry(content)
+            success, message_id = await self._send_with_retry(content)
             if success:
                 self._mark_sent(event_id)
-                logger.info(f"Sent {artifact_type} reflection notification to Discord")
+                logger.info(
+                    f"Sent {artifact_type} reflection notification to Discord "
+                    f"(message_id=%s)",
+                    message_id,
+                )
             return success
 
         except Exception as e:
@@ -450,10 +523,13 @@ class DiscordNotifier:
             formatter = DecisionNotificationFormatter()
             content = formatter.format_decision(decision_data)
 
-            success = await self._send_with_retry(content)
+            success, message_id = await self._send_with_retry(content)
             if success:
                 self._mark_sent(event_id)
-                logger.info("Sent decision notification to Discord")
+                logger.info(
+                    "Sent decision notification to Discord (message_id=%s)",
+                    message_id,
+                )
             return success
 
         except Exception as e:
@@ -488,10 +564,13 @@ class DiscordNotifier:
                 artifact=artifact,
                 artifact_path=artifact_path,
             )
-            success = await self._send_with_retry(content)
+            success, message_id = await self._send_with_retry(content)
             if success:
                 self._mark_sent(event_id)
-                logger.info("Sent self-assessment completion to Discord")
+                logger.info(
+                    "Sent self-assessment completion to Discord (message_id=%s)",
+                    message_id,
+                )
             return success
         except Exception as e:
             logger.error(f"Failed to send self-assessment notification: {e}")
@@ -544,10 +623,14 @@ class DiscordNotifier:
                 evidence_reasoning=evidence_reasoning or [],
                 decision_packet=decision_packet or {},
             )
-            success = await self._send_with_retry(content)
+            success, message_id = await self._send_with_retry(content)
             if success:
                 self._mark_sent(event_id)
-                logger.info("Sent autonomous cognition event: %s", event_type)
+                logger.info(
+                    "Sent autonomous cognition event: %s (message_id=%s)",
+                    event_type,
+                    message_id,
+                )
             return success
         except Exception as e:
             logger.error(
