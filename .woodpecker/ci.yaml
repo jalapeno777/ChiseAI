@@ -656,9 +656,9 @@ steps:
           set -euo pipefail
           echo "post-run: Collecting and reporting CI/CD test results..."
           python scripts/ci_integration/post_run_reporter.py \
-            --input-dir "$${CI_STATUS_DIR}" \
-            --output "$${CI_STATUS_DIR}/post-run-report.json" \
-            --markdown "$${CI_STATUS_DIR}/post-run-report.md"
+            --output-md "$${CI_STATUS_DIR}/post-run-report.md" \
+            --repo-path . \
+            > "$${CI_STATUS_DIR}/post-run-report.json"
         ) > "$${CI_STATUS_DIR}/post-run.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/post-run.log"
