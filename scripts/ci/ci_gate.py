@@ -38,10 +38,32 @@ FAST_REQUIRED = [
     "docs-pairing.status",
     "docker-governance.status",
     "changed-lines-coverage.status",
+    "cross-branch-verify.status",
     "deprecation-gate.status",  # TECH-001-B: Deprecation warning validation
     "status-write-gate.status",
     "performance-gate.status",  # PHASE 3: Performance threshold validation
     "evidence-gate.status",  # TECH-002-B: Per-story evidence validation
+    "flaky-detection.status",
+    # PR #714: New pipeline steps
+    "pre-flight.status",
+    "local-ci-consistency.status",
+    "post-run.status",
+    "gate-eval.status",
+    # From tempmemory-operations-group:
+    "tempmemory-scheduler.status",
+    "tempmemory-reconcile.status",
+    "tempmemory-drill.status",
+    "truth-gate.status",
+    # From evaluation-pre-eval-group:
+    "mini-brain-eval.status",
+    # From quality-advisory-group:
+    "pipeline-watchdog.status",
+    "compass-apply.status",
+    # From governance-gates-group:
+    "status-evidence-gate.status",
+    "completion-evidence-gate.status",
+    "workflow-transition-gate.status",
+    "governance-drift-check.status",
 ]
 FULL_REQUIRED = [
     "local-ci.status",

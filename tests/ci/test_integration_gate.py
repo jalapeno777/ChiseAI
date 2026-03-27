@@ -281,6 +281,19 @@ class TestEvaluateGates:
         coverage_gates = [g for g in report.gates if "coverage" in g.name]
         assert len(coverage_gates) == 0
 
+    def test_evaluate_gates_without_test_metrics_skips_test_gate(self):
+        """Test evaluation does not fail solely due to absent test metrics."""
+        report = evaluate_gates(
+            ruff_issues=0,
+            environment_vars={},
+            branch="main",
+            commit_sha="abc123",
+        )
+
+        test_gates = [g for g in report.gates if g.name == "test_pass_rate"]
+        assert test_gates == []
+        assert report.overall_passed is True
+
 
 class TestGateMain:
     """Tests for gate_evaluator main function."""
@@ -341,6 +354,24 @@ class TestGateMain:
         result = output.getvalue()
         parsed = json.loads(result)
         assert "overall_passed" in parsed
+
+    @patch("gate_evaluator.evaluate_gates")
+    def test_main_writes_output_file(self, mock_evaluate, tmp_path):
+        """Test main writes the JSON report to --output when requested."""
+        output_path = tmp_path / "gate-eval-report.json"
+        mock_evaluate.return_value = GateEvaluationReport(
+            timestamp="2024-01-01T00:00:00Z",
+            branch="main",
+            commit_sha="abc123",
+            gates=[],
+            overall_passed=True,
+        )
+
+        with patch("sys.argv", ["gate_evaluator", "--output", str(output_path)]):
+            gate_main()
+
+        parsed = json.loads(output_path.read_text(encoding="utf-8"))
+        assert parsed["overall_passed"] is True
 
 
 if __name__ == "__main__":
