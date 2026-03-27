@@ -6,8 +6,6 @@ integration tests. Run: python -m pytest tests/unit/autonomous_cognition/test_im
 
 from __future__ import annotations
 
-import pytest
-
 
 class TestBeliefSystemImports:
     """Verify all core belief system symbols are importable."""
