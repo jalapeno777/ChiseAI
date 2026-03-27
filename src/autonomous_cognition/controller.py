@@ -36,7 +36,8 @@ try:
         _get_redis_client as redis_state_get_client,  # type: ignore[attr-defined]
     )
     from tools.redis_state import redis_state_lpush, redis_state_set
-except Exception:
+except ImportError:
+    logger.warning("Failed to import tools.redis_state - Redis persistence disabled")
     redis_state_get_client = None
     redis_state_lpush = None
     redis_state_set = None
