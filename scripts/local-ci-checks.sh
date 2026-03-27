@@ -10,11 +10,15 @@ export PYTHONPATH="$(pwd)/src:$(python3 -m site --user-site)"
 export PYTHONNOUSERSITE=1
 
 # PHASE 3: Parse command line arguments
-SCOPE_MODE="full"
+SCOPE_MODE="merged-only"
 PARALLEL_MODE=""
 PARALLEL_WORKERS=""
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --full)
+      SCOPE_MODE="full"
+      shift
+      ;;
     --merged-only)
       SCOPE_MODE="merged-only"
       shift
