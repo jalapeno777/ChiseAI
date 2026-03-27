@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import deque
 from datetime import UTC, datetime
 from typing import Any
 
@@ -28,9 +29,9 @@ class BeliefGraph:
         self._redis_client = redis_client
         self._nodes: dict[str, Belief] = {}
         self._edges: dict[str, BeliefRelationship] = {}
-        self._adjacency: dict[str, dict[str, str]] = (
-            {}
-        )  # belief_id -> {neighbor_id -> relationship_id}
+        self._adjacency: dict[
+            str, dict[str, str]
+        ] = {}  # belief_id -> {neighbor_id -> relationship_id}
 
     def add_belief(self, belief: Belief) -> None:
         """Add a belief as a node in the graph."""
@@ -74,12 +75,12 @@ class BeliefGraph:
             )
 
         # Update adjacency lists (bidirectional for graph traversal)
-        self._adjacency.setdefault(rel.source_belief_id, {})[
-            rel.target_belief_id
-        ] = rel.relationship_id
-        self._adjacency.setdefault(rel.target_belief_id, {})[
-            rel.source_belief_id
-        ] = rel.relationship_id
+        self._adjacency.setdefault(rel.source_belief_id, {})[rel.target_belief_id] = (
+            rel.relationship_id
+        )
+        self._adjacency.setdefault(rel.target_belief_id, {})[rel.source_belief_id] = (
+            rel.relationship_id
+        )
 
     def get_belief(self, belief_id: str) -> Belief | None:
         """Get a belief by ID."""
@@ -97,12 +98,15 @@ class BeliefGraph:
         return [self._nodes[nid] for nid in neighbor_ids if nid in self._nodes]
 
     def get_transitive_closure(self, belief_id: str, max_depth: int = 10) -> set[str]:
-        """Get all beliefs reachable from the given belief."""
+        """Get all beliefs reachable from the given belief using BFS.
+
+        Uses deque for O(1) popleft operations instead of O(n) list.pop(0).
+        """
         visited: set[str] = set()
-        queue: list[tuple[str, int]] = [(belief_id, 0)]
+        queue: deque[tuple[str, int]] = deque([(belief_id, 0)])
 
         while queue:
-            current, depth = queue.pop(0)
+            current, depth = queue.popleft()
             if depth > max_depth:
                 continue
             if current in visited:
@@ -117,16 +121,26 @@ class BeliefGraph:
         visited.discard(belief_id)  # Exclude the starting node
         return visited
 
-    def find_paths(self, start: str, end: str, max_length: int = 5) -> list[list[str]]:
-        """Find all paths between two beliefs up to max_length."""
+    def find_all_paths(
+        self, start: str, end: str, max_length: int = 5
+    ) -> list[list[str]]:
+        """Find all paths between two beliefs up to max_length using BFS.
+
+        Uses deque for O(1) popleft operations instead of O(n) list.pop(0).
+        Returns all simple paths (no repeated nodes) from start to end.
+
+        Note: For large graphs, this can be expensive as the number of
+        paths grows exponentially with path length. Consider using
+        get_transitive_closure() for reachability queries instead.
+        """
         if start not in self._adjacency or end not in self._adjacency:
             return []
 
         paths: list[list[str]] = []
-        queue: list[tuple[str, list[str]]] = [(start, [start])]
+        queue: deque[tuple[str, list[str]]] = deque([(start, [start])])
 
         while queue:
-            current, path = queue.pop(0)
+            current, path = queue.popleft()
             if len(path) > max_length:
                 continue
             if current == end and len(path) > 1:
@@ -139,6 +153,10 @@ class BeliefGraph:
                         queue.append((neighbor_id, path + [neighbor_id]))
 
         return paths
+
+    def find_paths(self, start: str, end: str, max_length: int = 5) -> list[list[str]]:
+        """Alias for find_all_paths() for backwards compatibility."""
+        return self.find_all_paths(start, end, max_length)
 
     def get_subgraph(self, domain: str) -> BeliefGraph:
         """Get beliefs and relationships within a specific domain."""

@@ -182,6 +182,82 @@ class TestBeliefGraphTraversal:
         paths = self.graph.find_paths("isolated", "b1")
         assert len(paths) == 0
 
+    def test_find_paths_with_cycle(self) -> None:
+        """Should handle cycles without infinite loops."""
+        # Create a graph with a cycle: b1 -> b2 -> b3 -> b1
+        graph = BeliefGraph()
+        graph.add_belief(
+            Belief(belief_id="b1", statement="S1", domain="test", confidence=0.8)
+        )
+        graph.add_belief(
+            Belief(belief_id="b2", statement="S2", domain="test", confidence=0.8)
+        )
+        graph.add_belief(
+            Belief(belief_id="b3", statement="S3", domain="test", confidence=0.8)
+        )
+
+        graph.add_relationship(
+            BeliefRelationship(
+                relationship_id="r1",
+                source_belief_id="b1",
+                target_belief_id="b2",
+                relationship_type=RelationshipType.SUPPORTS.value,
+            )
+        )
+        graph.add_relationship(
+            BeliefRelationship(
+                relationship_id="r2",
+                source_belief_id="b2",
+                target_belief_id="b3",
+                relationship_type=RelationshipType.SUPPORTS.value,
+            )
+        )
+        graph.add_relationship(
+            BeliefRelationship(
+                relationship_id="r3",
+                source_belief_id="b3",
+                target_belief_id="b1",
+                relationship_type=RelationshipType.SUPPORTS.value,
+            )
+        )
+
+        # find_paths should not infinite loop on cycles
+        paths = graph.find_paths("b1", "b1", max_length=5)
+        # Should find paths that don't revisit nodes
+        assert isinstance(paths, list)
+
+    def test_transitive_closure_with_cycle(self) -> None:
+        """Should handle cycles in transitive closure without infinite loops."""
+        graph = BeliefGraph()
+        graph.add_belief(
+            Belief(belief_id="b1", statement="S1", domain="test", confidence=0.8)
+        )
+        graph.add_belief(
+            Belief(belief_id="b2", statement="S2", domain="test", confidence=0.8)
+        )
+
+        # Create two-way edge (cycle of depth 1)
+        graph.add_relationship(
+            BeliefRelationship(
+                relationship_id="r1",
+                source_belief_id="b1",
+                target_belief_id="b2",
+                relationship_type=RelationshipType.SUPPORTS.value,
+            )
+        )
+        graph.add_relationship(
+            BeliefRelationship(
+                relationship_id="r2",
+                source_belief_id="b2",
+                target_belief_id="b1",
+                relationship_type=RelationshipType.SUPPORTS.value,
+            )
+        )
+
+        # Should complete without infinite loop
+        closure = graph.get_transitive_closure("b1")
+        assert "b2" in closure
+
     def test_get_subgraph(self) -> None:
         """Should return beliefs and relationships within a domain."""
         subgraph = self.graph.get_subgraph("test")
