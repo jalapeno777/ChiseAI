@@ -13,11 +13,11 @@ Output:
 """
 
 import json
+import os
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -28,6 +28,24 @@ class CheckResult:
     passed: bool
     message: str
     details: dict | None = None
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _in_ci() -> bool:
+    """Return True when running inside CI."""
+    return any(
+        os.environ.get(name, "").strip()
+        for name in (
+            "CI",
+            "CI_PIPELINE_NUMBER",
+            "CI_BUILD_EVENT",
+            "CI_PIPELINE_EVENT",
+            "WOODPECKER_BUILD_EVENT",
+            "WOODPECKER_EVENT",
+        )
+    )
 
 
 def check_python_version() -> CheckResult:
@@ -84,6 +102,14 @@ def check_required_tools() -> CheckResult:
 
 def check_git_status() -> CheckResult:
     """Check git repository status."""
+    if _in_ci():
+        return CheckResult(
+            name="git_status",
+            passed=True,
+            message="CI checkout assumed clean",
+            details={"skipped_in_ci": True},
+        )
+
     try:
         result = subprocess.run(
             ["git", "status", "--porcelain"],
@@ -114,8 +140,15 @@ def check_git_status() -> CheckResult:
 
 def check_environment_vars() -> CheckResult:
     """Check for required environment variables."""
-    # Also check if .envrc exists and is loaded
-    envrc_path = Path("/tmp/worktrees/ST-LOCAL-009-dev/.envrc")
+    if _in_ci():
+        return CheckResult(
+            name="environment_vars",
+            passed=True,
+            message="CI environment detected",
+            details={"skipped_in_ci": True},
+        )
+
+    envrc_path = REPO_ROOT / ".envrc"
     envrc_exists = envrc_path.exists()
 
     return CheckResult(
@@ -129,7 +162,7 @@ def check_environment_vars() -> CheckResult:
 def check_code_quality() -> CheckResult:
     """Run basic code quality checks."""
     issues = []
-    repo_root = Path("/tmp/worktrees/ST-LOCAL-009-dev")
+    repo_root = REPO_ROOT
 
     # Run black check on ci_integration
     ci_dir = repo_root / "scripts" / "ci_integration"

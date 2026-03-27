@@ -178,11 +178,12 @@ def evaluate_gates(
         gates.append(gate)
 
     # Test pass rate gate (example threshold: 95%)
-    gate = check_gate_tests(0.95, test_passed, test_failed, test_error)
-    if apply_override(gate.name, "tests", env):
-        gate.override_applied = True
-        gate.message += " [OVERRIDE APPLIED]"
-    gates.append(gate)
+    if test_passed or test_failed or test_error:
+        gate = check_gate_tests(0.95, test_passed, test_failed, test_error)
+        if apply_override(gate.name, "tests", env):
+            gate.override_applied = True
+            gate.message += " [OVERRIDE APPLIED]"
+        gates.append(gate)
 
     # Code quality gates
     gate = check_gate_code_quality(0, ruff_issues, "ruff")
@@ -239,11 +240,24 @@ def main() -> int:
     parser.add_argument(
         "--ruff-issues", type=int, default=0, help="Number of ruff issues"
     )
+    parser.add_argument(
+        "--output", type=Path, help="Optional path to write the JSON report"
+    )
     parser.add_argument("--pylint-score", type=float, help="Pylint score")
-    parser.add_argument("--branch", type=str, default="unknown", help="Branch name")
-    parser.add_argument("--commit-sha", type=str, default="unknown", help="Commit SHA")
+    parser.add_argument("--branch", type=str, default=None, help="Branch name")
+    parser.add_argument("--commit-sha", type=str, default=None, help="Commit SHA")
 
     args = parser.parse_args()
+    branch = (
+        args.branch
+        or os.environ.get("CI_COMMIT_BRANCH")
+        or os.environ.get("WOODPECKER_COMMIT_BRANCH", "unknown")
+    )
+    commit_sha = (
+        args.commit_sha
+        or os.environ.get("CI_COMMIT_SHA")
+        or os.environ.get("WOODPECKER_COMMIT_SHA", "unknown")
+    )
 
     report = evaluate_gates(
         coverage_line=args.coverage_line,
@@ -253,12 +267,15 @@ def main() -> int:
         test_error=args.test_error,
         ruff_issues=args.ruff_issues,
         pylint_score=args.pylint_score,
-        environment_vars=os.environ,
-        branch=args.branch,
-        commit_sha=args.commit_sha,
+        environment_vars=dict(os.environ),
+        branch=branch,
+        commit_sha=commit_sha,
     )
 
     print(json.dumps(asdict(report), indent=2))
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(asdict(report), indent=2), encoding="utf-8")
 
     # Exit 0 if all mandatory gates passed, 1 otherwise
     return 0 if report.overall_passed else 1

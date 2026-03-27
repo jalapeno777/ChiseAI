@@ -126,6 +126,13 @@ class TestCheckGitStatus:
         assert result.passed is False
         assert "Failed" in result.message
 
+    @patch.dict("os.environ", {"CI_PIPELINE_NUMBER": "2848"}, clear=False)
+    def test_ci_skips_git_cleanliness_requirement(self):
+        """Test CI mode treats checkout cleanliness as non-applicable."""
+        result = check_git_status()
+        assert result.passed is True
+        assert result.details == {"skipped_in_ci": True}
+
 
 class TestCheckEnvironmentVars:
     """Tests for environment variables check."""
@@ -135,6 +142,13 @@ class TestCheckEnvironmentVars:
         result = check_environment_vars()
         assert isinstance(result, CheckResult)
         assert result.name == "environment_vars"
+
+    @patch.dict("os.environ", {"CI_PIPELINE_NUMBER": "2848"}, clear=False)
+    def test_ci_skips_envrc_requirement(self):
+        """Test CI mode does not require a local .envrc file."""
+        result = check_environment_vars()
+        assert result.passed is True
+        assert result.details == {"skipped_in_ci": True}
 
 
 class TestCheckCodeQuality:
