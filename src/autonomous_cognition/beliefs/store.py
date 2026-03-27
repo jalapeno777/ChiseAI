@@ -74,7 +74,11 @@ class BeliefStore:
         logger.info("[BELIEF_STORE] EXITING put() for belief_id=%s", belief.belief_id)
 
     def get(self, belief_id: str) -> Belief | None:
-        """Get belief by id."""
+        """Get belief by id.
+
+        Uses memory cache first, then falls back to Redis.
+        Redis backend already deserializes JSON, so no additional json.loads needed.
+        """
         logger.info("[BELIEF_STORE] ENTERING get(%s)", belief_id)
         if belief_id in self._beliefs:
             logger.info("[BELIEF_STORE] Found %s in memory cache", belief_id)
@@ -82,6 +86,7 @@ class BeliefStore:
         logger.info("[BELIEF_STORE] %s NOT in memory cache, trying Redis", belief_id)
         try:
             if self._redis_client is not None:
+                # External client returns raw strings - need to deserialize
                 logger.info("[BELIEF_STORE] Using external redis_client")
                 data = self._redis_client.get(f"{self.BELIEF_KEY_PREFIX}:{belief_id}")
                 logger.info(
@@ -97,6 +102,7 @@ class BeliefStore:
                     )
                     return belief
             else:
+                # Module-level redis_state_get already deserializes via _deserialize()
                 from tools.redis_state import redis_state_get
 
                 belief_key = f"{self.BELIEF_KEY_PREFIX}:{belief_id}"
@@ -110,43 +116,52 @@ class BeliefStore:
                     type(data).__name__,
                 )
                 if data:
-                    logger.info(
-                        "[BELIEF_STORE] Data is truthy, attempting json.loads..."
-                    )
-                    try:
-                        parsed = json.loads(data)
-                        logger.info(
-                            "[BELIEF_STORE] json.loads succeeded, parsed type: %s",
-                            type(parsed).__name__,
-                        )
-                    except Exception as json_err:
-                        logger.error("[BELIEF_STORE] json.loads FAILED: %s", json_err)
-                        raise
-                    belief = Belief.from_dict(parsed)
+                    # redis_state_get already returns parsed JSON via _deserialize(),
+                    # so data is already a dict - do NOT call json.loads again
+                    belief = Belief.from_dict(data)
                     self._beliefs[belief_id] = belief
-                    logger.info("[BELIEF_STORE] Successfully deserialized from Redis")
+                    logger.info(
+                        "[BELIEF_STORE] Successfully loaded from Redis (already deserialized)"
+                    )
                     return belief
         except Exception as e:
             logger.error("[BELIEF_STORE] EXCEPTION during get: %s", e, exc_info=True)
-            logger.debug("[BELIEF_STORE] Belief get failed: %s", e)
-        logger.info("[BELIEF_STORE] get(%s) returning None", belief_id)
+            logger.debug(
+                "[BELIEF_STORE] Belief get failed, falling back to None: %s", e
+            )
+        logger.info(
+            "[BELIEF_STORE] get(%s) returning None (cache miss or Redis unavailable)",
+            belief_id,
+        )
         return None
 
     def list_active(self) -> list[Belief]:
-        """List active beliefs."""
+        """List active beliefs.
+
+        Uses memory cache first, then falls back to Redis.
+        redis_state_hgetall already deserializes via _deserialize().
+        External client hgetall returns raw strings - need json.loads.
+        """
         beliefs = list(self._beliefs.values())
         if beliefs:
             return [b for b in beliefs if b.status == "active"]
         try:
             if self._redis_client is not None:
+                # External client returns raw strings - need to deserialize
                 values = self._redis_client.hgetall(self.INDEX_KEY) or {}
+                for _, payload in values.items():
+                    belief = Belief.from_dict(json.loads(payload))
+                    self._beliefs[belief.belief_id] = belief
             else:
+                # Module-level redis_state_hgetall already deserializes via _deserialize()
                 from tools.redis_state import redis_state_hgetall
 
                 values = redis_state_hgetall(self.INDEX_KEY) or {}
-            for _, payload in values.items():
-                belief = Belief.from_dict(json.loads(payload))
-                self._beliefs[belief.belief_id] = belief
+                for _, payload in values.items():
+                    # redis_state_hgetall already returns parsed JSON via _deserialize(),
+                    # so payload is already a dict - do NOT call json.loads again
+                    belief = Belief.from_dict(payload)
+                    self._beliefs[belief.belief_id] = belief
         except Exception as e:
             logger.debug("Belief listing fallback to memory only: %s", e)
         return [b for b in self._beliefs.values() if b.status == "active"]
