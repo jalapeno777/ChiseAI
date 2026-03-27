@@ -23,7 +23,38 @@ steps:
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
-    - "set -euo pipefail\nmkdir -p \"$${CI_STATUS_DIR}\"\nset +e\n(\n  set -euo pipefail\n  BRANCH=\"$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}\"\n  EVENT=\"$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}\"\n  if [ \"$${EVENT}\" != \"push\" ] || [ \"$${BRANCH}\" != \"main\" ]; then\n    echo \"cross-branch-verify: skipping (event=$${EVENT:-unknown}, branch=$${BRANCH:-unknown})\"\n    exit 0\n  fi\n  echo \"cross-branch-verify: branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}\"\n  echo \"cross-branch-verify: merge-to-main event detected; verifying commit is on main\"\n  git fetch --quiet --unshallow origin || git fetch --quiet --depth=50000 origin main || true\n  if git branch --contains \"$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}\" | grep -qE \"^\\s*main$\"; then\n    echo \"cross-branch-verify: commit is on main\"\n    exit 0\n  else\n    echo \"cross-branch-verify: FAIL - commit is not on main\"\n    git branch --contains \"$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}\"\n    exit 1\n  fi\n) > \"$${CI_STATUS_DIR}/cross-branch-verify.log\" 2>&1\ncode=$?\ncat \"$${CI_STATUS_DIR}/cross-branch-verify.log\"\n# Advisory-only: always write 0 regardless of check result\necho \"0\" > \"$${CI_STATUS_DIR}/cross-branch-verify.status\"\n# Advisory-only: log result but never block pipeline.\n# The original purpose (catching false merge claims) is now enforced by\n# validate_completion_evidence.py and truth-gate infrastructure.\nexit 0\n"
+    - |
+      set -euo pipefail
+      mkdir -p "$${CI_STATUS_DIR}"
+      set +e
+      (
+        set -euo pipefail
+        BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+        EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+        if [ "$${EVENT}" != "push" ] || [ "$${BRANCH}" != "main" ]; then
+          echo "cross-branch-verify: skipping (event=$${EVENT:-unknown}, branch=$${BRANCH:-unknown})"
+          exit 0
+        fi
+        echo "cross-branch-verify: branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}"
+        echo "cross-branch-verify: merge-to-main event detected; verifying commit is on main"
+        git fetch --quiet --unshallow origin || git fetch --quiet --depth=50000 origin main || true
+        if git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}" | grep -qE "^\s*main$"; then
+          echo "cross-branch-verify: commit is on main"
+          exit 0
+        else
+          echo "cross-branch-verify: FAIL - commit is not on main"
+          git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}"
+          exit 1
+        fi
+      ) > "$${CI_STATUS_DIR}/cross-branch-verify.log" 2>&1
+      code=$?
+      cat "$${CI_STATUS_DIR}/cross-branch-verify.log"
+      # Advisory-only: always write 0 regardless of check result
+      echo "0" > "$${CI_STATUS_DIR}/cross-branch-verify.status"
+      # Advisory-only: log result but never block pipeline.
+      # The original purpose (catching false merge claims) is now enforced by
+      # validate_completion_evidence.py and truth-gate infrastructure.
+      exit 0
   lint:
     pull: false
     image: chiseai-ci-lint:py311-20260323
