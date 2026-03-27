@@ -537,7 +537,7 @@ steps:
             # PHASE 3: Export parallel test settings
             export PYTEST_WORKERS=$WORKERS
             if [ "$${FULL_MODE}" = "1" ]; then
-              ./scripts/local-ci-checks.sh --parallel
+              ./scripts/local-ci-checks.sh --full --parallel
             else
               ./scripts/local-ci-checks.sh --merged-only --parallel
             fi
