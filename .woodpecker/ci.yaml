@@ -334,16 +334,21 @@ steps:
 
           # Increase file descriptor and process limits for testing
           ulimit -n 16384 || echo "Warning: could not increase file descriptor limit"
-          ulimit -u 2048 || echo "Warning: could not increase process limit"
+          if ulimit -u 2048 2>/dev/null; then
+            PROCESS_LIMIT="$(ulimit -u)"
+          else
+            echo "Warning: could not increase process limit"
+            PROCESS_LIMIT="unsupported"
+          fi
           echo "File descriptor limit: $(ulimit -n)"
-          echo "Process limit: $(ulimit -u)"
+          echo "Process limit: ${PROCESS_LIMIT}"
 
           # PHASE 3: Log system resources
           echo "local-ci: CPU count: $(nproc)"
           if command -v free >/dev/null 2>&1; then
             MEMORY_TOTAL="$(free -h | grep Mem | awk '{print $2}')"
           elif [ -r /proc/meminfo ]; then
-            MEMORY_TOTAL="$(awk '/MemTotal/ {printf \"%.1fGi\\n\", $2/1024/1024}' /proc/meminfo)"
+            MEMORY_TOTAL="$(python3 -c "from pathlib import Path; line=next((ln for ln in Path('/proc/meminfo').read_text(encoding='utf-8').splitlines() if ln.startswith('MemTotal:')), ''); print(f'{int(line.split()[1]) / 1024 / 1024:.1f}Gi' if line else 'unknown')")"
           else
             MEMORY_TOTAL="unknown"
           fi
@@ -810,7 +815,7 @@ steps:
         echo "[quality-advisory-group] [1/6] Running pre-flight..."
         (
           set -euo pipefail
-          python scripts/ci_integration/pre_flight_checks.py > "$${CI_STATUS_DIR}/pre-flight-report.json"
+          python scripts/ci_integration/pre_flight_checks.py --output "$${CI_STATUS_DIR}/pre-flight-report.json"
         ) >> "$${CI_STATUS_DIR}/pre-flight.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/pre-flight.log"

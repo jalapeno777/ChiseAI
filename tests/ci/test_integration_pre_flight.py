@@ -68,6 +68,13 @@ class TestCheckPythonVersion:
 class TestCheckRequiredTools:
     """Tests for required tools check."""
 
+    @patch.dict("os.environ", {"CI_PIPELINE_NUMBER": "2856"}, clear=False)
+    def test_ci_skips_required_tool_validation(self):
+        """Test CI mode treats tool presence as already validated by image selection."""
+        result = check_required_tools()
+        assert result.passed is True
+        assert result.details == {"skipped_in_ci": True}
+
     @patch("subprocess.run")
     def test_all_tools_found(self, mock_run):
         """Test when all required tools are found."""
@@ -153,6 +160,13 @@ class TestCheckEnvironmentVars:
 
 class TestCheckCodeQuality:
     """Tests for code quality checks."""
+
+    @patch.dict("os.environ", {"CI_PIPELINE_NUMBER": "2856"}, clear=False)
+    def test_ci_skips_code_quality_validation(self):
+        """Test CI mode defers code quality to the dedicated lint step."""
+        result = check_code_quality()
+        assert result.passed is True
+        assert result.details == {"skipped_in_ci": True}
 
     @patch("subprocess.run")
     def test_black_passes(self, mock_run):
@@ -280,6 +294,18 @@ class TestPreFlightMain:
         parsed = json.loads(result)
         assert "success" in parsed
         assert "checks" in parsed
+
+    @patch("pre_flight_checks.run_pre_flight_checks")
+    def test_main_writes_output_file(self, mock_run, tmp_path):
+        """Test main writes JSON to --output and still prints it."""
+        mock_run.return_value = [CheckResult("test1", True, "OK")]
+        output_path = tmp_path / "pre-flight-report.json"
+
+        with patch("sys.argv", ["pre_flight_checks", "--output", str(output_path)]):
+            preflight_main()
+
+        parsed = json.loads(output_path.read_text(encoding="utf-8"))
+        assert parsed["success"] is True
 
 
 if __name__ == "__main__":
