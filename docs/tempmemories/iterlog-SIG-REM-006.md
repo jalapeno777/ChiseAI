@@ -1,6 +1,6 @@
 ---
 type: summary
-story_id: SIG-006
+story_id: ST-502
 created: 2026-03-22T12:00:00Z
 author: jarvis
 priority: medium
