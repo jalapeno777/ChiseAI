@@ -486,9 +486,9 @@ class TestExplanationFunctions:
         )
         explanation = explain_belief(belief)
         assert "Belief [test-001]" in explanation
-        assert "FACT" in explanation
+        assert "Fact" in explanation  # Type is capitalized
         assert "test" in explanation
-        assert "0.75" in explanation
+        assert "75.0%" in explanation  # Formatted as percentage
         assert "2 references" in explanation
 
     def test_explain_conflict(self) -> None:
@@ -536,7 +536,7 @@ class TestExplanationFunctions:
         assert "Conflict Analysis" in explanation
         assert "Statement A" in explanation
         assert "Statement B" in explanation
-        assert "0.70" in explanation
+        assert "70.0%" in explanation  # Confidence formatted as percentage
 
     def test_explain_revision(self) -> None:
         """explain_revision should return concise string."""

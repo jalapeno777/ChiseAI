@@ -16,7 +16,7 @@ from autonomous_cognition.beliefs.models import (
 
 
 class BeliefRevisionEngine:
-    """Applies safe revisions to conflicting beliefs."""
+    """Applies safe revisions to conflicting beliefs with full traceability."""
 
     def __init__(
         self,
@@ -41,6 +41,127 @@ class BeliefRevisionEngine:
         self._high_impact_confidence_delta = high_impact_confidence_delta
         self.last_blocked_revisions: list[dict[str, Any]] = []
         self.last_support_scores: dict[str, dict[str, Any]] = {}
+        self._revision_history: list[BeliefRevision] = []
+        self._provenance_chain: dict[str, list[str]] = {}
+
+    def create_revision(
+        self,
+        old_belief: Belief,
+        new_belief: Belief,
+        conflict_id: str,
+        reason: str,
+        evidence_refs: list[str],
+        provenance: list[str] | None = None,
+    ) -> BeliefRevision:
+        """Create a belief revision with full provenance tracking.
+
+        Args:
+            old_belief: The belief being superseded
+            new_belief: The belief superseding it
+            conflict_id: ID of the conflict being resolved
+            reason: Human-readable reason for the revision
+            evidence_refs: Evidence supporting the new belief
+            provenance: Optional list of prior revision IDs in the chain
+
+        Returns:
+            BeliefRevision with full traceability information
+        """
+        revision_id = hashlib.sha256(
+            f"{new_belief.belief_id}:{old_belief.belief_id}:{conflict_id}:{datetime.now(UTC).isoformat()}".encode()
+        ).hexdigest()[:16]
+
+        revision = BeliefRevision(
+            revision_id=revision_id,
+            old_belief_id=old_belief.belief_id,
+            new_belief_id=new_belief.belief_id,
+            reason=reason,
+            evidence_refs=evidence_refs,
+            confidence_before=old_belief.confidence,
+            confidence_after=new_belief.confidence,
+        )
+
+        # Track in revision history
+        self._revision_history.append(revision)
+
+        # Build provenance chain
+        if old_belief.belief_id not in self._provenance_chain:
+            self._provenance_chain[old_belief.belief_id] = []
+        self._provenance_chain[old_belief.belief_id].append(revision_id)
+
+        if new_belief.belief_id not in self._provenance_chain:
+            self._provenance_chain[new_belief.belief_id] = []
+        if provenance:
+            self._provenance_chain[new_belief.belief_id].extend(provenance)
+        self._provenance_chain[new_belief.belief_id].append(revision_id)
+
+        return revision
+
+    def get_revision_history(
+        self,
+        belief_id: str | None = None,
+        since: datetime | None = None,
+    ) -> list[BeliefRevision]:
+        """Get revision history, optionally filtered.
+
+        Args:
+            belief_id: If provided, only return revisions affecting this belief
+            since: If provided, only return revisions after this timestamp
+
+        Returns:
+            List of matching revisions in chronological order
+        """
+        results = list(self._revision_history)
+
+        # Filter by belief_id
+        if belief_id:
+            results = [
+                r
+                for r in results
+                if r.old_belief_id == belief_id or r.new_belief_id == belief_id
+            ]
+
+        # Filter by timestamp
+        if since:
+            results = [
+                r
+                for r in results
+                if datetime.fromisoformat(r.applied_at.replace("Z", "+00:00")) >= since
+            ]
+
+        # Sort by applied_at ascending (oldest first for traceability)
+        results.sort(key=lambda r: r.applied_at)
+
+        return results
+
+    def get_provenance_chain(self, belief_id: str) -> list[str]:
+        """Get the full provenance chain for a belief.
+
+        Returns list of revision IDs that led to the current belief,
+        ordered from oldest to newest.
+        """
+        return self._provenance_chain.get(belief_id, [])
+
+    def get_traceability_report(self, belief_id: str) -> dict[str, Any]:
+        """Generate a full traceability report for a belief.
+
+        Returns detailed information about the belief's lineage,
+        revisions, and evidence chain.
+        """
+        chain = self.get_provenance_chain(belief_id)
+        revisions = [
+            r
+            for r in self._revision_history
+            if r.old_belief_id == belief_id or r.new_belief_id == belief_id
+        ]
+
+        return {
+            "belief_id": belief_id,
+            "revision_count": len(revisions),
+            "provenance_chain": chain,
+            "revisions": [r.to_dict() for r in revisions],
+            "first_revision": revisions[0].applied_at if revisions else None,
+            "latest_revision": revisions[-1].applied_at if revisions else None,
+        }
 
     def apply_revisions(
         self,
