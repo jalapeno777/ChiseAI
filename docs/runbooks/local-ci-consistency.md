@@ -149,15 +149,10 @@ python_version = "3.11"
 
 ### Pre-push Hook
 
-Add to `.git/hooks/pre-push`:
+Use the repo-managed hook path instead of a hand-written `.git/hooks/pre-push`:
 
 ```bash
-#!/bin/bash
-python scripts/validate_local_ci_consistency.py
-if [ $? -ne 0 ]; then
-    echo "Drift detected! Fix before pushing."
-    exit 1
-fi
+git config --local core.hooksPath .githooks
 ```
 
 ### Makefile Integration

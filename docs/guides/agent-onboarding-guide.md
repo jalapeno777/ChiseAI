@@ -96,6 +96,14 @@ python3 scripts/pr_lifecycle/agent_onboarding.py --reading-list
    - `chise-iterloop-start` - Start iteration
    - `chise-precommit-gates` - Validate before PR
    - `chise-iterloop-close` - Close iteration
+   - `chise-swarm-session` - Start/verify sessions; auto-installs repo-managed git hooks
+
+### Push Guard
+
+- Repo-managed `pre-push` enforcement is installed by `scripts/swarm/session.py start|verify` through `git config --local core.hooksPath .githooks`.
+- Standard flow: run `chise-precommit-gates`, then push normally.
+- Merlin-only authorized bypass:
+  - `git -c chise.prePushBypass=true -c chise.prePushAuthorizedBy="<approver>" -c chise.prePushJustification="<reason>" push origin <branch>`
 
 ### Setup Verification
 

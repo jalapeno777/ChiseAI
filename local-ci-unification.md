@@ -1,6 +1,6 @@
 # Local CI Unification Guide
 
-This document describes the unified local CI workflow using `scripts/pre_push_gate.py` and `scripts/local-ci-checks.sh`.
+This document describes the unified local CI workflow using `scripts/ci/pre_push_gate.py` and `scripts/local-ci-checks.sh`.
 
 ## Overview
 
@@ -8,7 +8,7 @@ The local CI system has two components:
 
 | Component            | Purpose           | Speed  | When to Use                                  |
 | -------------------- | ----------------- | ------ | -------------------------------------------- |
-| `pre_push_gate.py`   | Fast quality gate | <30s   | Before every `git push`                      |
+| `scripts/ci/pre_push_gate.py` | Fast quality gate | <30s   | Automatically via repo-managed `pre-push` hook and manually when needed |
 | `local-ci-checks.sh` | Full CI suite     | 2-5min | Before opening PR, after significant changes |
 
 ## pre_push_gate.py
@@ -17,34 +17,25 @@ Fast pre-push validation gate designed to catch issues before pushing.
 
 ### Features
 
-- **Syntax check**: Python compile validation
-- **Black**: Code formatting check
-- **Ruff**: Lint check (E, F, I, B, UP, SIM rules)
-- **Mypy**: Type checking (if configured)
-- **Pytest**: Fast test on related files
-- **Timing metrics**: Shows duration for each check phase
+- **Docs-only short-circuit**: Skips code checks for docs/opencode-only changes
+- **Black**: Changed-file formatting check
+- **Ruff**: Changed-file lint check
+- **Secret scan**: Changed-file secret scan
+- **Remote alignment**: Mirrors the lightweight blocking checks from `.woodpecker/push.yaml`
 
 ### Usage
 
 ```bash
-# Auto-detect changed files and run quality gate
-python3 scripts/pre_push_gate.py
-
-# Check specific files
-python3 scripts/pre_push_gate.py --files src/foo/bar.py
-
-# Verbose output showing all check results
-python3 scripts/pre_push_gate.py --verbose
-
-# Skip pytest (when tests are run separately)
-python3 scripts/pre_push_gate.py --skip-tests
+# Auto-detect changed files and run the canonical gate
+python3 scripts/ci/pre_push_gate.py
 ```
 
-### Exit Codes
+### Enforcement
 
-- `0`: All checks passed
-- `1`: One or more checks failed
-- `2`: Setup/error
+- `scripts/swarm/session.py start|verify` auto-configures `git config --local core.hooksPath .githooks`
+- `.githooks/pre-push` runs `python3 scripts/ci/pre_push_gate.py` on every normal `git push`
+- Merlin-only authorized bypass:
+  - `git -c chise.prePushBypass=true -c chise.prePushAuthorizedBy="<approver>" -c chise.prePushJustification="<reason>" push origin <branch>`
 
 ### Example Output
 
@@ -52,26 +43,20 @@ python3 scripts/pre_push_gate.py --skip-tests
 ChiseAI Pre-Push Gate
 ============================================================
 
-Changed source files: 3
+Changed Python files: 3
   - src/signal_generation/emitter.py
   - src/data/cache.py
   - src/api/routes.py
 
-Related test files: 2
-  - tests/test_signal_emitter.py
-  - tests/test_cache.py
-
-  [✓ PASS] syntax: 45ms
-  [✓ PASS] black: 234ms
-  [✓ PASS] ruff: 189ms
-  [✓ PASS] mypy: 1234ms
-  [✓ PASS] pytest: 4521ms
+  [PASS] black: 234ms
+  [PASS] ruff: 189ms
+  [PASS] secret-scan: 121ms
 
 ------------------------------------------------------------
-Total duration: 6233ms
-Checks: 5 passed, 0 failed
+Total duration: 544ms
+Checks failed: 0
 
-✓ All checks passed! Ready to push.
+All checks passed.
 ============================================================
 ```
 
@@ -100,11 +85,8 @@ Full local CI suite with test discovery and parallel execution.
 # With parallel test execution
 ./scripts/local-ci-checks.sh --parallel
 
-# With pre-push gate (run fast quality check first)
-./scripts/local-ci-checks.sh --gate
-
 # Combine options
-./scripts/local-ci-checks.sh --merged-only --parallel --gate
+./scripts/local-ci-checks.sh --merged-only --parallel
 ```
 
 ### Command Line Options
@@ -113,8 +95,6 @@ Full local CI suite with test discovery and parallel execution.
 | --------------- | -------------------------------------- |
 | `--merged-only` | Only test files changed vs origin/main |
 | `--parallel`    | Enable parallel test execution         |
-| `--gate`        | Run pre-push gate before CI checks     |
-| `--no-gate`     | Skip pre-push gate (even if default)   |
 
 ## Timing Benchmarks
 
@@ -190,43 +170,40 @@ Full local CI suite with test discovery and parallel execution.
 rm -rf _bmad-output/
 
 # Re-run
-python3 scripts/pre_push_gate.py
+python3 scripts/ci/pre_push_gate.py
 ```
 
-**Verbose debugging**:
+**Debugging**:
 
 ```bash
-# Run with verbose output
-python3 scripts/pre_push_gate.py --verbose
+# Re-run the canonical gate directly
+python3 scripts/ci/pre_push_gate.py
 
 # Run specific tool directly
-python3 -m black --check src/
-python3 -m ruff check src/
-python3 -m mypy src/
+python3 -m black --check <changed-python-files>
+python3 -m ruff check <changed-python-files>
+python3 scripts/ci/secret_scan_changed.py
 ```
 
 ## Integration with Git Workflow
 
-### Pre-push Hook (Optional)
+### Pre-push Hook
 
-Add to `.git/hooks/pre-push`:
+Use the repo-managed hook path:
 
 ```bash
-#!/bin/bash
-python3 scripts/pre_push_gate.py
+git config --local core.hooksPath .githooks
 ```
-
-Make executable: `chmod +x .git/hooks/pre-push`
 
 ### CI Integration
 
-In Woodpecker CI, use `--gate` to run pre-push gate:
+In Woodpecker CI, keep the fast gate separate from `local-ci-checks.sh`:
 
 ```yaml
 steps:
   - name: pre-push-gate
     commands:
-      - ./scripts/local-ci-checks.sh --merged-only --gate
+      - python3 scripts/ci/pre_push_gate.py
 ```
 
 ## Relationship Between Tools
@@ -269,7 +246,7 @@ steps:
 
 ## Performance Tips
 
-1. **Use pre_push_gate.py before every push** - Catches 90% of issues in <30s
+1. **Use the repo-managed pre-push hook before every push** - It runs `scripts/ci/pre_push_gate.py` automatically
 2. **Use --merged-only for PRs** - Only tests changed files
 3. **Use --parallel for full CI** - Faster test execution
 4. **Keep tests fast** - Unit tests should be <5s each

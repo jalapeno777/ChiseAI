@@ -35,6 +35,7 @@ except ModuleNotFoundError:
     from src.config.bootstrap import bootstrap, check_environment
 
 SESSION_FILE = ".swarm-session.json"
+REPO_HOOKS_PATH = ".githooks"
 
 
 def check_critical_environment() -> None:
@@ -125,6 +126,43 @@ def _run_rc(*cmd: str, cwd: Path | None = None) -> tuple[int, str, str]:
 def _git_root() -> Path:
     root = _run("git", "rev-parse", "--show-toplevel")
     return Path(root)
+
+
+def _ensure_repo_hooks_config(repo_root: Path) -> str:
+    hooks_dir = repo_root / REPO_HOOKS_PATH
+    if not hooks_dir.exists():
+        raise SessionError(
+            f"Required hooks directory is missing: {hooks_dir}. "
+            "Restore repo-managed hooks before continuing."
+        )
+
+    rc, current, err = _run_rc(
+        "git",
+        "-C",
+        str(repo_root),
+        "config",
+        "--local",
+        "--get",
+        "core.hooksPath",
+    )
+    if rc == 0 and current.strip() == REPO_HOOKS_PATH:
+        return "already-configured"
+
+    set_rc, _out, set_err = _run_rc(
+        "git",
+        "-C",
+        str(repo_root),
+        "config",
+        "--local",
+        "core.hooksPath",
+        REPO_HOOKS_PATH,
+    )
+    if set_rc != 0:
+        raise SessionError(
+            "Failed to configure repo-managed git hooks "
+            f"({REPO_HOOKS_PATH}): {set_err or err}"
+        )
+    return "configured"
 
 
 def _git_branch(cwd: Path) -> str:
@@ -475,6 +513,7 @@ def _pr_exists_for_branch(branch: str, base_ref: str = "main") -> tuple[bool, st
 
 def cmd_start(args: argparse.Namespace) -> int:
     repo_root = _git_root()
+    hooks_status = _ensure_repo_hooks_config(repo_root)
     branch = args.branch.strip()
     if not branch:
         raise SessionError("--branch is required")
@@ -571,6 +610,7 @@ def cmd_start(args: argparse.Namespace) -> int:
     print(f"- worktree: {worktree_path}")
     print(f"- branch: {branch}")
     print(f"- session: {session_path}")
+    print(f"- hooks_path: {REPO_HOOKS_PATH} ({hooks_status})")
     print(f"- {redis_msg}")
     return 0
 
@@ -686,6 +726,8 @@ def _validate_evidence_requirements(
 
 def cmd_verify(args: argparse.Namespace) -> int:
     requested_worktree_path = _resolve_worktree_path(args.worktree_path)
+    repo_root = _git_root()
+    hooks_status = _ensure_repo_hooks_config(repo_root)
     worktree_path = requested_worktree_path
     try:
         session = _read_session(worktree_path)
@@ -771,6 +813,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
     print(f"- worktree: {worktree_path}")
     print(f"- branch: {branch}")
     print(f"- story: {session.get('story_id')}")
+    print(f"- hooks_path: {REPO_HOOKS_PATH} ({hooks_status})")
     return 0
 
 

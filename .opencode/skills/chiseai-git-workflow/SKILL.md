@@ -49,14 +49,18 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 ### Worker Completion Protocol
 
 1. Run local CI (via `chise-precommit-gates.md`)
-2. Run status sync validation (via command)
-3. Publish completion candidate branch to `origin` (completion publication gate)
+2. Push with repo-managed hook enforcement (`git push origin <branch>`)
+   - `scripts/swarm/session.py start|verify` ensures `core.hooksPath=.githooks`
+   - `.githooks/pre-push` runs `python3 scripts/ci/pre_push_gate.py`
+   - do not bypass this hook as a normal worker
+3. Run status sync validation (via command)
+4. Publish completion candidate branch to `origin` (completion publication gate)
    - push branch tip to `origin`
    - verify remote head equals local `HEAD`
-4. Ensure handoff includes canonical `story_id` token for PR title gating:
+5. Ensure handoff includes canonical `story_id` token for PR title gating:
    - Accepted: `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
-5. Report handoff to Jarvis (DO NOT open PR)
-6. Jarvis delegates merlin for PR sweep
+6. Report handoff to Jarvis (DO NOT open PR)
+7. Jarvis delegates merlin for PR sweep
 
 ### Required Handoff Information
 

@@ -49,6 +49,9 @@ permission:
   - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path> --check-canonical`
 - PR/merge authority: `merlin` is required after >2 failed merge attempts by senior-dev; `senior-dev` may merge straightforward PRs with green CI.
 - Normal PR creation is push-triggered (`.woodpecker/pr-auto-flow.yaml`). Non-`merlin` agents may push, but must not open/update PRs.
+- Repo-managed push guard is mandatory by default. Authorized bypass is Merlin-only and must use:
+  - `git -c chise.prePushBypass=true -c chise.prePushAuthorizedBy="<approver>" -c chise.prePushJustification="<reason>" push origin <branch>`
+  - Never use bypass without both approver attribution and justification.
 - Treat global-lock files as high risk:
   - `.woodpecker.yml`, `scripts/`, `.opencode/agent/`, `AGENTS.md`
   - make smallest safe change and verify full gate behavior

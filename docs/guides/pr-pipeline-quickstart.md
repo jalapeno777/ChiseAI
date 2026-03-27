@@ -40,10 +40,11 @@ redis-cli -h host.docker.internal -p 6380 \
 # Pre-commit gates
 python3 .opencode/command/chise-precommit-gates.md
 
-# Or run individually
-black --check src/ scripts/
-ruff check src/ scripts/
-pytest tests/ -x --tb=short
+# Fast push gate only
+python3 scripts/ci/pre_push_gate.py
+
+# Broader local CI when needed
+./scripts/local-ci-checks.sh --merged-only
 ```
 
 ### Submission
@@ -139,11 +140,11 @@ git rebase origin/main
 git add -p  # Review changes interactively
 git commit -m "type(scope): description (ST-XXX)"
 
-# 5. Push
-git push
-
-# 6. Validate
+# 5. Validate
 python3 .opencode/command/chise-precommit-gates.md
+
+# 6. Push (repo-managed pre-push hook runs automatically)
+git push origin feature/ST-XXX-description
 
 # 7. Submit
 python3 scripts/pr_lifecycle/agent_cli.py submit --story-id=ST-XXX

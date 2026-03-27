@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""Pre-push local CI gate.
+"""Fast pre-push gate aligned with feature-branch remote CI.
 
-Runs fast checks mirroring FAST_REQUIRED from ci_gate.py before every git push.
-This is a best-effort local gate, not a full CI replacement.
+This gate intentionally mirrors the lightweight blocking checks from
+`.woodpecker/push.yaml`:
+- docs-only short circuit
+- changed-file black --check
+- changed-file ruff check
+- changed-file secret scan
 
-Usage:
-    python scripts/ci/pre_push_gate.py
-    python scripts/ci/pre_push_gate.py --help
-
-Exit codes:
-    0 - All checks passed
-    1 - One or more checks failed
+It is designed to be enforced via the repo-managed `.githooks/pre-push` hook.
 """
 
 from __future__ import annotations
@@ -18,195 +16,166 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import time
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
-def _run(title: str, cmd: list[str], timeout: int = 120) -> bool:
-    """Run a check command and report pass/fail. Returns True on success."""
-    print(f"  [{title}] ... ", end="", flush=True)
+
+def _scope_script() -> Path:
+    return Path(__file__).resolve().with_name("ci_change_scope.py")
+
+
+def _secret_scan_script() -> Path:
+    return Path(__file__).resolve().with_name("secret_scan_changed.py")
+
+
+def _run(
+    title: str,
+    cmd: list[str],
+    *,
+    cwd: Path = REPO_ROOT,
+    timeout: int = 120,
+) -> tuple[bool, str, int]:
+    start = time.monotonic()
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-        if result.returncode == 0:
-            print("PASS")
-            return True
-        print("FAIL")
-        if result.stderr.strip():
-            for line in result.stderr.strip().splitlines()[-5:]:
-                print(f"    {line}")
-        if result.stdout.strip():
-            for line in result.stdout.strip().splitlines()[-5:]:
-                print(f"    {line}")
-        return False
-    except FileNotFoundError:
-        print("SKIP (tool not found)")
-        return True  # Best-effort: missing tool is not a hard failure
+        result = subprocess.run(
+            cmd,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        return False, f"{cmd[0]} not found: {exc}", int((time.monotonic() - start) * 1000)
     except subprocess.TimeoutExpired:
-        print("FAIL (timeout)")
-        return False
+        return False, f"{title} timed out after {timeout}s", int((time.monotonic() - start) * 1000)
+
+    output = "\n".join(
+        part.strip() for part in (result.stdout, result.stderr) if part.strip()
+    )
+    return (
+        result.returncode == 0,
+        output,
+        int((time.monotonic() - start) * 1000),
+    )
+
+
+def _changed_python_files() -> list[str]:
+    scope = _scope_script()
+    result = subprocess.run(
+        [sys.executable, str(scope), "--mode", "changed-python"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    if result.returncode != 0:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
 def _is_docs_only() -> bool:
-    """Check if staged changes are docs-only using ci_change_scope.py."""
-    scope_script = Path(__file__).parent / "ci_change_scope.py"
-    if not scope_script.exists():
-        return False
-    try:
-        result = subprocess.run(
-            [sys.executable, str(scope_script), "--mode", "docs-only"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        return result.returncode == 0
-    except (subprocess.TimeoutExpired, OSError):
-        return False
+    scope = _scope_script()
+    result = subprocess.run(
+        [sys.executable, str(scope), "--mode", "docs-only"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    return result.returncode == 0
 
 
-def _get_changed_python_files() -> list[str]:
-    """Get list of changed Python files using ci_change_scope.py.
-
-    Returns list of .py file paths, or empty list on error/no changes.
-    """
-    scope_script = Path(__file__).parent / "ci_change_scope.py"
-    if not scope_script.exists():
-        return []
-    try:
-        result = subprocess.run(
-            [sys.executable, str(scope_script), "--mode", "changed-python"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if result.returncode != 0:
-            return []
-        files = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-        return files
-    except (subprocess.TimeoutExpired, OSError):
-        return []
+def _print_result(title: str, ok: bool, duration_ms: int, output: str) -> None:
+    status = "PASS" if ok else "FAIL"
+    print(f"  [{status}] {title}: {duration_ms}ms")
+    if not ok and output:
+        for line in output.splitlines()[:20]:
+            print(f"    {line}")
+        extra = len(output.splitlines()) - 20
+        if extra > 0:
+            print(f"    ... ({extra} more lines)")
 
 
-def run_checks() -> int:
-    """Run all pre-push checks. Returns exit code (0=pass, 1=fail)."""
-    print("Pre-push CI gate")
-    print("=" * 40)
+def run_gate(*, skip_secret_scan: bool) -> int:
+    print("ChiseAI pre-push gate")
+    print("=" * 48)
 
-    # Docs-only check — skip all checks if only docs changed
     if _is_docs_only():
-        print("  [docs-only] SKIP (only documentation changed)")
-        print("\nAll checks passed (docs-only change).")
+        print("  [PASS] docs-only: changed files are documentation/opencode only")
+        print("\nAll checks passed.")
         return 0
 
-    # Determine changed Python files for scope-aware linting
-    py_files = _get_changed_python_files()
-    py_count = len(py_files)
-    scope_suffix = ""
-    if py_count == 0:
-        scope_suffix = " (no Python changed — skipping lint/security)"
-    elif py_count <= 20:
-        scope_suffix = f" (scope: {py_count} Python file{'s' if py_count != 1 else ''})"
+    py_files = _changed_python_files()
+    if py_files:
+        print(f"Changed Python files: {len(py_files)}")
+        for path in py_files[:10]:
+            print(f"  - {path}")
+        if len(py_files) > 10:
+            print(f"  ... and {len(py_files) - 10} more")
+    else:
+        print("Changed Python files: 0")
 
     checks: list[tuple[str, list[str], int]] = []
-
-    # Black: scope-aware (skip if no Python changed, targeted if ≤20, full otherwise)
-    if py_count == 0:
-        print(f"  [lint: black]{scope_suffix} — SKIP")
-    elif py_count <= 20:
+    if py_files:
         checks.append(
-            (
-                f"lint: black{scope_suffix}",
-                [sys.executable, "-m", "black", "--check", *py_files],
-                120,
-            )
+            ("black", [sys.executable, "-m", "black", "--check", *py_files], 120)
         )
+        checks.append(
+            ("ruff", [sys.executable, "-m", "ruff", "check", *py_files], 120)
+        )
+    else:
+        print("  [PASS] black: skipped (no changed Python files)")
+        print("  [PASS] ruff: skipped (no changed Python files)")
+
+    if skip_secret_scan:
+        print("  [PASS] secret-scan: skipped (--skip-secret-scan)")
     else:
         checks.append(
             (
-                "lint: black (>20 files, full scan)",
-                [sys.executable, "-m", "black", "--check", "."],
+                "secret-scan",
+                [sys.executable, str(_secret_scan_script())],
                 120,
             )
         )
 
-    # Ruff: scope-aware (same logic as black)
-    if py_count == 0:
-        print(f"  [lint: ruff]{scope_suffix} — SKIP")
-    elif py_count <= 20:
-        checks.append(
-            (
-                f"lint: ruff{scope_suffix}",
-                [sys.executable, "-m", "ruff", "check", *py_files],
-                120,
-            )
-        )
-    else:
-        checks.append(
-            (
-                "lint: ruff (>20 files, full scan)",
-                [sys.executable, "-m", "ruff", "check", "."],
-                120,
-            )
-        )
-
-    # Bandit: scope-aware by parent directory (skip if no Python changed)
-    if py_count == 0:
-        print(f"  [security-scan: bandit]{scope_suffix} — SKIP")
-    else:
-        parent_dirs = sorted({str(Path(f).parent) for f in py_files})
-        if py_count <= 20:
-            checks.append(
-                (
-                    f"security-scan: bandit{scope_suffix}",
-                    [sys.executable, "-m", "bandit", "-r", "-q", *parent_dirs],
-                    120,
-                )
-            )
-        else:
-            checks.append(
-                (
-                    "security-scan: bandit (>20 files, full scan)",
-                    [sys.executable, "-m", "bandit", "-r", "-q", "."],
-                    120,
-                )
-            )
-
-    # detect-secrets: always full-repo scan (fast, needs full scan for secrets)
-    checks.append(("secret-scan: detect-secrets", ["detect-secrets", "scan", "."], 120))
-
-    # dependency-audit: always runs (not scope-dependent)
-    checks.append(
-        (
-            "dependency-audit",
-            [sys.executable, "scripts/ci/dependency_audit.py"],
-            360,
-        ),
-    )
-
-    passed = 0
-    failed = 0
+    failures = 0
+    total_duration = 0
     for title, cmd, timeout in checks:
-        if _run(title, cmd, timeout=timeout):
-            passed += 1
-        else:
-            failed += 1
+        ok, output, duration_ms = _run(title, cmd, timeout=timeout)
+        total_duration += duration_ms
+        _print_result(title, ok, duration_ms, output)
+        if not ok:
+            failures += 1
 
-    print("=" * 40)
-    print(f"Results: {passed} passed, {failed} failed")
-
-    if failed == 0:
-        print("\nAll checks passed. Safe to push.")
-        return 0
-    else:
-        print("\nSome checks failed. Fix issues before pushing.")
+    print("-" * 48)
+    print(f"Total duration: {total_duration}ms")
+    if failures:
+        print(f"Checks failed: {failures}")
+        print("\nPre-push gate failed. Fix issues before pushing.")
         return 1
 
+    print("Checks failed: 0")
+    print("\nAll checks passed.")
+    return 0
 
-def main() -> None:
+
+def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Pre-push local CI gate — fast checks before every git push."
+        description="Fast pre-push checks aligned with remote feature-branch CI."
     )
-    parser.parse_args()
-    sys.exit(run_checks())
+    parser.add_argument(
+        "--skip-secret-scan",
+        action="store_true",
+        help="Skip changed-file secret scan.",
+    )
+    args = parser.parse_args()
+    return run_gate(skip_secret_scan=args.skip_secret_scan)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

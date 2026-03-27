@@ -285,7 +285,7 @@ python scripts/local_ci_accuracy_improvements.py --run-ci
 3. **Run pre-push gate**:
 
    ```bash
-   python scripts/ci/pre_push_gate.py  # Before every push
+   python scripts/ci/pre_push_gate.py  # Same gate the repo-managed pre-push hook runs
    ```
 
 4. **Run diagnostics periodically**:

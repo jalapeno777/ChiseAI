@@ -7,6 +7,6 @@ import runpy
 from pathlib import Path
 
 runpy.run_path(
-    str(Path(__file__).resolve().parent / "scripts" / "ci" / "pre_push_gate.py"),
+    str(Path(__file__).resolve().parent / "ci" / "pre_push_gate.py"),
     run_name="__main__",
 )

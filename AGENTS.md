@@ -21,8 +21,8 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 → chise-metacog-start                       # Capture prediction card + confidence
 → chise-claim-ownership                     # Claim scope (if parallel)
 → [Do work following skill guidance]
-→ chise-precommit-gates                     # Validate before PR
-→ python scripts/ci/pre_push_gate.py        # Fast local checks before push
+→ chise-precommit-gates                     # Validate before PR / install push guard
+→ git push origin <branch>                  # Repo-managed pre-push hook runs canonical gate
 → chise-metacog-close                       # Capture outcome + calibration
 → chise-swarm-session (close)               # Close session and release leases
 → chise-post-branch-reconcile               # Post-branch reconcile loop (5-step check)
@@ -55,6 +55,11 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 **Load:** `chiseai-validation`
 **Then run:** `chise-precommit-gates` command
 **Why:** Ensures all validation layers pass before handoff
+
+### "I'm about to push a branch..."
+**Load:** `chiseai-git-workflow`
+**Then run:** `chise-swarm-session` (`verify`) and push normally
+**Why:** Session verification installs repo-managed hooks; `git push` runs the canonical pre-push gate automatically
 
 ### "CI failed on my PR..."
 **Load:** `chiseai-validation`

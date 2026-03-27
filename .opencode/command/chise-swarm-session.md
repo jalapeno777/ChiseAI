@@ -15,16 +15,25 @@ Prereqs:
 
 1. Start session (once per task)
    - `python3 scripts/swarm/session.py start --story-id "$STORY_ID" --agent "$AGENT_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --scopes ${SCOPES:-}`
+   - `start` auto-configures `git config --local core.hooksPath .githooks` so repo-managed push guards are active.
 
 2. Verify session (before any git action)
    - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --check-canonical`
    - For any merge-to-main operation, require authority + lock:
      - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --check-canonical --require-main-merge-authority --acquire-main-merge-lock`
+   - `verify` also repairs missing/wrong `core.hooksPath` values back to `.githooks`.
 
-3. Run work + tests in the assigned worktree only
+3. Push behavior
+   - Standard push: `git push origin "$BRANCH"`
+   - The repo-managed `.githooks/pre-push` hook runs `python3 scripts/ci/pre_push_gate.py` automatically.
+   - Merlin-only authorized bypass:
+     - `git -c chise.prePushBypass=true -c chise.prePushAuthorizedBy="<approver>" -c chise.prePushJustification="<reason>" push origin "$BRANCH"`
+   - Bypass is accepted only when the active swarm session agent is `merlin`, and the hook appends an audit line to `_bmad-output/ci/pre-push-bypass.log`.
+
+4. Run work + tests in the assigned worktree only
    - Use explicit branch in push/PR commands (never use `HEAD` inference).
 
-4. Close session (after merge or handoff)
+5. Close session (after merge or handoff)
    - `close` now blocks if the worktree is dirty unless you explicitly handle it.
    - Default behavior (removes worktree after successful close):
      - `python3 scripts/swarm/session.py close --worktree-path "$WORKTREE_PATH" --enforce-merged --remove-worktree`

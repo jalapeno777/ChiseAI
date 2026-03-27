@@ -25,6 +25,7 @@ Ensure all changes meet ChiseAI quality and compliance standards before merge.
 
 ### 1. Pre-Commit (Local)
 Run via `.opencode/command/chise-precommit-gates.md`:
+- Canonical pre-push gate (`python3 scripts/ci/pre_push_gate.py`)
 - Git sanity checks
 - Local CI (if available)
 - Status sync validation
@@ -39,6 +40,11 @@ Server-side validation:
 - Security scans
 - Status sync (required)
 - Required contexts must pass
+
+Local fast gate policy:
+- Keep the pre-push gate narrow and aligned with remote blocking push checks.
+- Default scope: docs-only short-circuit, changed-file `black --check`, changed-file `ruff check`, changed-file secret scan.
+- Do not grow the pre-push gate into a full CI replacement.
 
 ### 3. Pre-Merge (Merlin)
 Final authority checks:

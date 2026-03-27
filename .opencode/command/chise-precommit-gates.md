@@ -16,7 +16,9 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
      - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<worktree_path> --check-canonical --require-main-merge-authority --acquire-main-merge-lock`
 
 2. Local CI checks (best available)
-   - If `scripts/local-ci-checks.sh` exists, run it.
+   - Required before any push: `python3 scripts/ci/pre_push_gate.py`
+   - If `scripts/local-ci-checks.sh` exists, run `./scripts/local-ci-checks.sh --merged-only` for normal feature work.
+   - Use `./scripts/local-ci-checks.sh --full` only when the scope/risk requires broader coverage.
    - Otherwise, run the repo's test/lint entry points that exist (for example `pytest`, `ruff`, `black`) and report what you ran.
 
 3. Status sync (if present)
@@ -119,4 +121,3 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 | Iterloop compliance | BLOCKING     | BLOCKING     |
 | Skills autonomy KPI | Warning only | Warning only |
 | Local CI checks     | BLOCKING     | BLOCKING     |
-

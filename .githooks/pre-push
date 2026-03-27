@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+bypass="$(git config --bool --get chise.prePushBypass || true)"
+if [ "$bypass" = "true" ]; then
+  authorized_by="$(git config --get chise.prePushAuthorizedBy || true)"
+  justification="$(git config --get chise.prePushJustification || true)"
+  session_agent="$(python3 - <<'PY'
+import json
+from pathlib import Path
+
+session = Path(".swarm-session.json")
+if not session.exists():
+    print("")
+    raise SystemExit(0)
+
+try:
+    data = json.loads(session.read_text(encoding="utf-8"))
+except Exception:
+    print("")
+    raise SystemExit(0)
+
+print(str(data.get("agent", "")).strip())
+PY
+)"
+
+  if [ "$session_agent" != "merlin" ]; then
+    echo "pre-push: bypass denied; current session agent is '$session_agent', not 'merlin'" >&2
+    exit 1
+  fi
+
+  if [ -z "$authorized_by" ] || [ -z "$justification" ]; then
+    echo "pre-push: bypass denied; provide both chise.prePushAuthorizedBy and chise.prePushJustification" >&2
+    exit 1
+  fi
+
+  mkdir -p _bmad-output/ci
+  printf '%s | authorized_by=%s | justification=%s\n' \
+    "$(date -Iseconds)" "$authorized_by" "$justification" \
+    >> _bmad-output/ci/pre-push-bypass.log
+
+  echo "pre-push: Merlin bypass accepted (authorized_by=$authorized_by)"
+  exit 0
+fi
+
+exec python3 scripts/ci/pre_push_gate.py
