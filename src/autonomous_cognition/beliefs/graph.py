@@ -29,9 +29,9 @@ class BeliefGraph:
         self._redis_client = redis_client
         self._nodes: dict[str, Belief] = {}
         self._edges: dict[str, BeliefRelationship] = {}
-        self._adjacency: dict[
-            str, dict[str, str]
-        ] = {}  # belief_id -> {neighbor_id -> relationship_id}
+        self._adjacency: dict[str, dict[str, str]] = (
+            {}
+        )  # belief_id -> {neighbor_id -> relationship_id}
 
     def add_belief(self, belief: Belief) -> None:
         """Add a belief as a node in the graph."""
@@ -75,12 +75,12 @@ class BeliefGraph:
             )
 
         # Update adjacency lists (bidirectional for graph traversal)
-        self._adjacency.setdefault(rel.source_belief_id, {})[rel.target_belief_id] = (
-            rel.relationship_id
-        )
-        self._adjacency.setdefault(rel.target_belief_id, {})[rel.source_belief_id] = (
-            rel.relationship_id
-        )
+        self._adjacency.setdefault(rel.source_belief_id, {})[
+            rel.target_belief_id
+        ] = rel.relationship_id
+        self._adjacency.setdefault(rel.target_belief_id, {})[
+            rel.source_belief_id
+        ] = rel.relationship_id
 
     def get_belief(self, belief_id: str) -> Belief | None:
         """Get a belief by ID."""
