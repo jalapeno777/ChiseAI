@@ -148,6 +148,24 @@ class DecisionNotificationFormatter:
 class SelfAssessmentNotificationFormatter:
     """Formats autonomous self-assessment events for Discord notifications."""
 
+    # Discord embed color constants (integer values)
+    COLOR_OK: int = 0x00FF00  # Green
+    COLOR_DEGRADED: int = 0xFFAA00  # Yellow/Orange
+    COLOR_FAILED: int = 0xFF0000  # Red
+    COLOR_DEFAULT: int = 0x3498DB  # Blue (unknown status)
+
+    def _get_status_color(self, status: str) -> int:
+        """Get Discord embed color based on assessment status."""
+        return {
+            "ok": self.COLOR_OK,
+            "degraded": self.COLOR_DEGRADED,
+            "failed": self.COLOR_FAILED,
+        }.get(status.lower(), self.COLOR_DEFAULT)
+
+    def _get_status_icon(self, status: str) -> str:
+        """Get emoji icon for assessment status."""
+        return {"ok": "✅", "degraded": "⚠️", "failed": "🚨"}.get(status.lower(), "📌")
+
     def format_self_assessment(
         self,
         artifact: Any,
@@ -187,6 +205,135 @@ class SelfAssessmentNotificationFormatter:
 
         lines.extend(["", f"**Artifact Path:** `{artifact_path or 'N/A'}`"])
         return "\n".join(lines)
+
+    def format_self_assessment_completed(
+        self,
+        artifact: Any,
+        artifact_path: str | None = None,
+        decision_packet: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Format a self-assessment completion event as a Discord embed.
+
+        Returns a Discord embed dictionary with:
+        - title: Formatted status with icon
+        - color: Based on status (green/yellow/red)
+        - fields: score, status, findings count, recommendations count, dimensions
+        - footer: artifact path
+
+        Args:
+            artifact: SelfAssessmentArtifact or similar object
+            artifact_path: Optional path to the artifact file
+            decision_packet: Optional decision context to include in embed
+
+        Returns:
+            Dictionary suitable for Discord webhook embed format
+        """
+        decision_packet = decision_packet or {}
+        status = getattr(artifact, "status", "unknown")
+        assessment_id = getattr(artifact, "assessment_id", "unknown")
+        assessment_date = getattr(artifact, "assessment_date", "unknown")
+        created_at = getattr(artifact, "created_at", datetime.now(UTC).isoformat())
+        score = getattr(artifact, "overall_score", 0.0)
+        dimensions = getattr(artifact, "dimensions", {})
+        findings = list(getattr(artifact, "findings", []))
+        recommendations = list(getattr(artifact, "recommendations", []))
+
+        status_icon = self._get_status_icon(status)
+        status_color = self._get_status_color(status)
+
+        # Build dimensions summary string
+        dimensions_summary = (
+            ", ".join(f"{k}: {v:.2f}" for k, v in list(dimensions.items())[:5])
+            if dimensions
+            else "No dimensions"
+        )
+
+        # Build embed fields
+        fields = [
+            {
+                "name": "Assessment ID",
+                "value": f"`{assessment_id}`",
+                "inline": True,
+            },
+            {
+                "name": "Date",
+                "value": assessment_date,
+                "inline": True,
+            },
+            {
+                "name": "Overall Score",
+                "value": f"{score:.3f}" if isinstance(score, float) else str(score),
+                "inline": True,
+            },
+            {
+                "name": "Status",
+                "value": f"{status_icon} {status.capitalize()}",
+                "inline": True,
+            },
+            {
+                "name": "Findings",
+                "value": str(len(findings)),
+                "inline": True,
+            },
+            {
+                "name": "Recommendations",
+                "value": str(len(recommendations)),
+                "inline": True,
+            },
+        ]
+
+        # Add dimensions as a field if available
+        if dimensions:
+            fields.append(
+                {
+                    "name": "Dimensions",
+                    "value": dimensions_summary[:1024],  # Discord field value limit
+                    "inline": False,
+                }
+            )
+
+        # Add decision packet info if provided
+        if decision_packet:
+            decision_lines = []
+            contradiction = decision_packet.get("contradiction")
+            if contradiction:
+                decision_lines.append(f"• Contradiction: {contradiction}")
+            previous = decision_packet.get("previous_belief")
+            if isinstance(previous, dict):
+                decision_lines.append(
+                    f"• Previous: {previous.get('belief_id', 'unknown')}"
+                )
+            replacement = decision_packet.get("replacement_belief")
+            if isinstance(replacement, dict):
+                decision_lines.append(
+                    f"• Replacement: {replacement.get('belief_id', 'unknown')}"
+                )
+            rationale = decision_packet.get("selection_rationale")
+            if rationale:
+                decision_lines.append(f"• Rationale: {rationale[:100]}")
+            expected = decision_packet.get("expected_improvements")
+            if isinstance(expected, list) and expected:
+                decision_lines.append(f"• Expected: {expected[0][:100]}")
+            if decision_lines:
+                fields.append(
+                    {
+                        "name": "Decision Context",
+                        "value": "\n".join(decision_lines)[:1024],
+                        "inline": False,
+                    }
+                )
+
+        embed = {
+            "title": f"{status_icon} Self-Assessment Completed",
+            "color": status_color,
+            "fields": fields,
+            "footer": {
+                "text": f"Artifact: {artifact_path or 'N/A'}",
+            },
+            "timestamp": created_at,
+        }
+
+        return embed
 
 
 class AutocogEventFormatter:

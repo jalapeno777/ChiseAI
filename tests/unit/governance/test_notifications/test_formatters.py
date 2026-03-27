@@ -1,6 +1,9 @@
 """Tests for governance notification formatters."""
 
-from governance.notifications.formatters import AutocogEventFormatter
+from governance.notifications.formatters import (
+    AutocogEventFormatter,
+    SelfAssessmentNotificationFormatter,
+)
 
 
 class TestAutocogEventFormatter:
@@ -119,3 +122,196 @@ class TestAutocogEventFormatter:
             "Rollback Hint: Restore belief-memory-outdated if regressions occur."
             in content
         )
+
+
+class TestSelfAssessmentNotificationFormatter:
+    """Test self-assessment notification formatter."""
+
+    def test_format_self_assessment_completed_ok_status(self) -> None:
+        """Test Discord embed format for OK status with green color."""
+        formatter = SelfAssessmentNotificationFormatter()
+
+        class Artifact:
+            assessment_id = "sa-20260327-001"
+            assessment_date = "2026-03-27"
+            created_at = "2026-03-27T10:00:00+00:00"
+            status = "ok"
+            overall_score = 0.95
+            findings = ["System operating normally", "All metrics within thresholds"]
+            recommendations = ["Continue current operations"]
+            dimensions = {"accuracy": 0.95, "latency": 0.88, "reliability": 0.92}
+
+        embed = formatter.format_self_assessment_completed(
+            artifact=Artifact(),
+            artifact_path="docs/governance/self_assessments/sa-20260327-001.json",
+        )
+
+        # Check embed structure
+        assert "title" in embed
+        assert "✅ Self-Assessment Completed" in embed["title"]
+        assert embed["color"] == formatter.COLOR_OK
+        assert "fields" in embed
+        # Check fields exist
+        field_names = [f["name"] for f in embed["fields"]]
+        assert "Assessment ID" in field_names
+        assert "Date" in field_names
+        assert "Overall Score" in field_names
+        assert "Status" in field_names
+        assert "Findings" in field_names
+        assert "Recommendations" in field_names
+        assert "Dimensions" in field_names
+        # Check footer
+        assert "footer" in embed
+        assert "sa-20260327-001.json" in embed["footer"]["text"]
+
+    def test_format_self_assessment_completed_degraded_status(self) -> None:
+        """Test Discord embed format for degraded status with yellow/orange color."""
+        formatter = SelfAssessmentNotificationFormatter()
+
+        class Artifact:
+            assessment_id = "sa-20260327-002"
+            assessment_date = "2026-03-27"
+            created_at = "2026-03-27T10:00:00+00:00"
+            status = "degraded"
+            overall_score = 0.65
+            findings = ["Elevated latency detected", "Some metrics below threshold"]
+            recommendations = ["Investigate latency issue"]
+            dimensions = {"accuracy": 0.70, "latency": 0.55, "reliability": 0.80}
+
+        embed = formatter.format_self_assessment_completed(
+            artifact=Artifact(),
+            artifact_path="docs/governance/self_assessments/sa-20260327-002.json",
+        )
+
+        assert "⚠️ Self-Assessment Completed" in embed["title"]
+        assert embed["color"] == formatter.COLOR_DEGRADED
+
+    def test_format_self_assessment_completed_failed_status(self) -> None:
+        """Test Discord embed format for failed status with red color."""
+        formatter = SelfAssessmentNotificationFormatter()
+
+        class Artifact:
+            assessment_id = "sa-20260327-003"
+            assessment_date = "2026-03-27"
+            created_at = "2026-03-27T10:00:00+00:00"
+            status = "failed"
+            overall_score = 0.25
+            findings = ["Critical failure detected", "Multiple systems affected"]
+            recommendations = ["Immediate intervention required"]
+            dimensions = {"accuracy": 0.30, "latency": 0.40, "reliability": 0.20}
+
+        embed = formatter.format_self_assessment_completed(
+            artifact=Artifact(),
+            artifact_path=None,
+        )
+
+        assert "🚨 Self-Assessment Completed" in embed["title"]
+        assert embed["color"] == formatter.COLOR_FAILED
+        # When no artifact path, footer should show N/A
+        assert "footer" in embed
+        assert "N/A" in embed["footer"]["text"]
+
+    def test_format_self_assessment_completed_unknown_status(self) -> None:
+        """Test Discord embed format for unknown status uses default color."""
+        formatter = SelfAssessmentNotificationFormatter()
+
+        class Artifact:
+            assessment_id = "sa-20260327-004"
+            assessment_date = "2026-03-27"
+            created_at = "2026-03-27T10:00:00+00:00"
+            status = "unknown"
+            overall_score = 0.0
+            findings = []
+            recommendations = []
+            dimensions = {}
+
+        embed = formatter.format_self_assessment_completed(artifact=Artifact())
+
+        assert "📌 Self-Assessment Completed" in embed["title"]
+        assert embed["color"] == formatter.COLOR_DEFAULT
+
+    def test_format_self_assessment_completed_includes_findings_count(self) -> None:
+        """Test that findings count is properly included in embed."""
+        formatter = SelfAssessmentNotificationFormatter()
+
+        class Artifact:
+            assessment_id = "sa-20260327-005"
+            assessment_date = "2026-03-27"
+            created_at = "2026-03-27T10:00:00+00:00"
+            status = "ok"
+            overall_score = 0.85
+            findings = ["Finding 1", "Finding 2", "Finding 3", "Finding 4"]
+            recommendations = ["Rec 1", "Rec 2"]
+            dimensions = {}
+
+        embed = formatter.format_self_assessment_completed(artifact=Artifact())
+
+        # Find findings field
+        findings_field = next(f for f in embed["fields"] if f["name"] == "Findings")
+        assert findings_field["value"] == "4"
+        assert findings_field["inline"] is True
+
+        # Find recommendations field
+        rec_field = next(f for f in embed["fields"] if f["name"] == "Recommendations")
+        assert rec_field["value"] == "2"
+
+    def test_format_self_assessment_completed_includes_dimensions(self) -> None:
+        """Test that dimensions summary is included when dimensions are present."""
+        formatter = SelfAssessmentNotificationFormatter()
+
+        class Artifact:
+            assessment_id = "sa-20260327-006"
+            assessment_date = "2026-03-27"
+            created_at = "2026-03-27T10:00:00+00:00"
+            status = "ok"
+            overall_score = 0.90
+            findings = []
+            recommendations = []
+            dimensions = {"accuracy": 0.95, "latency": 0.88, "reliability": 0.92}
+
+        embed = formatter.format_self_assessment_completed(artifact=Artifact())
+
+        # Find dimensions field
+        dims_field = next(f for f in embed["fields"] if f["name"] == "Dimensions")
+        assert "accuracy: 0.95" in dims_field["value"]
+        assert "latency: 0.88" in dims_field["value"]
+        assert "reliability: 0.92" in dims_field["value"]
+
+    def test_format_self_assessment_completed_timestamp(self) -> None:
+        """Test that timestamp is set to created_at of artifact."""
+        formatter = SelfAssessmentNotificationFormatter()
+
+        class Artifact:
+            assessment_id = "sa-20260327-007"
+            assessment_date = "2026-03-27"
+            created_at = "2026-03-27T15:30:00+00:00"
+            status = "ok"
+            overall_score = 0.88
+            findings = []
+            recommendations = []
+            dimensions = {}
+
+        embed = formatter.format_self_assessment_completed(artifact=Artifact())
+
+        assert embed["timestamp"] == "2026-03-27T15:30:00+00:00"
+
+    def test_format_self_assessment_completed_preserves_existing_format(self) -> None:
+        """Test that existing format_self_assessment method still works."""
+        formatter = SelfAssessmentNotificationFormatter()
+
+        class Artifact:
+            assessment_id = "sa-20260327-008"
+            assessment_date = "2026-03-27"
+            created_at = "2026-03-27T10:00:00+00:00"
+            status = "ok"
+            overall_score = 0.85
+            findings = ["Finding 1"]
+            recommendations = ["Rec 1"]
+
+        content = formatter.format_self_assessment(artifact=Artifact())
+
+        # Should return string format, not embed dict
+        assert isinstance(content, str)
+        assert "**Event Type:** `self_assessment_completed`" in content
+        assert "**Assessment ID:** `sa-20260327-008`" in content
+        assert "**Overall Score:** 0.85" in content
