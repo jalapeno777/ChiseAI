@@ -8,11 +8,28 @@ import os
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from autonomous_cognition.artifacts import SelfAssessmentArtifact
 
 logger = logging.getLogger(__name__)
+
+
+class RedisGetClient(Protocol):
+    def __call__(self) -> Any: ...
+
+
+class RedisPushFunc(Protocol):
+    def __call__(self, name: str, value: Any, expire: int | None = None) -> bool: ...
+
+
+class RedisSetFunc(Protocol):
+    def __call__(self, key: str, value: Any, expiration: int | None = None) -> bool: ...
+
+
+redis_state_get_client: RedisGetClient | None = None
+redis_state_lpush: RedisPushFunc | None = None
+redis_state_set: RedisSetFunc | None = None
 
 try:
     from tools.redis_state import (

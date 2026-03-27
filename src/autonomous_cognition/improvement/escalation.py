@@ -179,12 +179,13 @@ class EscalationManager:
         }
 
         result = self._approval_gates.request_approval(decision)
+        request_id = getattr(result, "request_id", None)
         logger.info(
             "Boundary approval requested: escalation=%s request=%s",
             event.event_id,
-            result.request_id,
+            request_id,
         )
-        return result.request_id
+        return request_id if isinstance(request_id, str) else None
 
     def handle_emergency_stop(
         self,
