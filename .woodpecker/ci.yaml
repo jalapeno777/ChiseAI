@@ -340,7 +340,14 @@ steps:
 
           # PHASE 3: Log system resources
           echo "local-ci: CPU count: $(nproc)"
-          echo "local-ci: Memory: $(free -h | grep Mem | awk '{print $2}')"
+          if command -v free >/dev/null 2>&1; then
+            MEMORY_TOTAL="$(free -h | grep Mem | awk '{print $2}')"
+          elif [ -r /proc/meminfo ]; then
+            MEMORY_TOTAL="$(awk '/MemTotal/ {printf \"%.1fGi\\n\", $2/1024/1024}' /proc/meminfo)"
+          else
+            MEMORY_TOTAL="unknown"
+          fi
+          echo "local-ci: Memory: ${MEMORY_TOTAL}"
 
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
           REF="$${CI_COMMIT_REF:-}"
@@ -353,12 +360,12 @@ steps:
             # PR mode: run changed-files + critical path tests instead of full suite
             CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null | tr '\n' ' ')"
             if python scripts/ci/critical_paths.py --check $CHANGED_FILES; then
+              echo "local-ci: no critical paths affected; running lightweight sanity check"
+              python -c "import sys; print('Python imports OK')" && exit 0 || exit 1
+            else
               echo "local-ci: critical paths matched; running critical path test subset"
               pytest tests/test_execution/ tests/test_ml/ tests/test_venue_enforcement/ tests/test_kill_switch/ tests/test_reconciliation/ tests/test_paper/ -x -q --tb=short
               exit $?
-            else
-              echo "local-ci: no critical paths affected; running lightweight sanity check"
-              python -c "import sys; print('Python imports OK')" && exit 0 || exit 1
             fi
           elif [ "$${EVENT}" = "cron" ] && [ "$${BRANCH}" = "main" ]; then
             FULL_MODE=1
@@ -677,7 +684,7 @@ steps:
         set +e
         (
           set -euo pipefail
-          python scripts/ci/changed_lines_coverage.py
+          python scripts/ci/coverage_changed_lines.py
         ) > "$${CI_STATUS_DIR}/changed-lines-coverage.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/changed-lines-coverage.log"
@@ -803,7 +810,7 @@ steps:
         echo "[quality-advisory-group] [1/6] Running pre-flight..."
         (
           set -euo pipefail
-          python scripts/ci_integration/pre_flight_checks.py --output "$${CI_STATUS_DIR}/pre-flight-report.json"
+          python scripts/ci_integration/pre_flight_checks.py > "$${CI_STATUS_DIR}/pre-flight-report.json"
         ) >> "$${CI_STATUS_DIR}/pre-flight.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/pre-flight.log"
