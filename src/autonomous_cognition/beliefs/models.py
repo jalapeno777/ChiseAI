@@ -4,7 +4,53 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from enum import Enum
 from typing import Any
+
+
+class RelationshipType(Enum):
+    """Types of relationships between beliefs."""
+
+    SUPPORTS = "supports"
+    CONTRADICTS = "contradicts"
+    SUPERSEDES = "supersedes"
+    RELATED = "related"
+
+
+@dataclass
+class BeliefRelationship:
+    """Relationship edge between beliefs in the graph."""
+
+    relationship_id: str
+    source_belief_id: str
+    target_belief_id: str
+    relationship_type: str
+    strength: float = 1.0
+    evidence_refs: list[str] = field(default_factory=list)
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "relationship_id": self.relationship_id,
+            "source_belief_id": self.source_belief_id,
+            "target_belief_id": self.target_belief_id,
+            "relationship_type": self.relationship_type,
+            "strength": self.strength,
+            "evidence_refs": self.evidence_refs,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BeliefRelationship:
+        return cls(
+            relationship_id=data["relationship_id"],
+            source_belief_id=data["source_belief_id"],
+            target_belief_id=data["target_belief_id"],
+            relationship_type=data["relationship_type"],
+            strength=float(data.get("strength", 1.0)),
+            evidence_refs=list(data.get("evidence_refs", [])),
+            created_at=data.get("created_at", datetime.now(UTC).isoformat()),
+        )
 
 
 @dataclass
@@ -111,6 +157,8 @@ class BeliefConflict:
     severity: str
     reason: str
     detected_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    resolution_type: str | None = None
+    resolution_status: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -121,7 +169,23 @@ class BeliefConflict:
             "severity": self.severity,
             "reason": self.reason,
             "detected_at": self.detected_at,
+            "resolution_type": self.resolution_type,
+            "resolution_status": self.resolution_status,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BeliefConflict:
+        return cls(
+            conflict_id=data["conflict_id"],
+            belief_id_a=data["belief_id_a"],
+            belief_id_b=data["belief_id_b"],
+            similarity=float(data["similarity"]),
+            severity=data["severity"],
+            reason=data["reason"],
+            detected_at=data.get("detected_at", datetime.now(UTC).isoformat()),
+            resolution_type=data.get("resolution_type"),
+            resolution_status=data.get("resolution_status"),
+        )
 
 
 @dataclass
