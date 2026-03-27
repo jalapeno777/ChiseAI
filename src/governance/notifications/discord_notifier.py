@@ -409,6 +409,41 @@ class DiscordNotifier:
             logger.error("Failed to send low-severity digest: %s", e)
             return False
 
+    def _is_self_assessment_duplicate(self, assessment_id: str) -> bool:
+        """Check if self-assessment was already notified using specific key format.
+
+        Uses Redis key: discord:notified:self_assessment:{assessment_id}
+        """
+        redis = get_redis_client()
+        if redis is None:
+            return False
+        try:
+            from tools.redis_state import redis_state_get
+
+            key = f"discord:notified:self_assessment:{assessment_id}"
+            return redis_state_get(key) is not None
+        except Exception as e:
+            logger.warning(f"Self-assessment deduplication check failed: {e}")
+            return False
+
+    def _mark_self_assessment_sent(self, assessment_id: str) -> None:
+        """Mark self-assessment as sent using specific key format with 24h TTL.
+
+        Uses Redis key: discord:notified:self_assessment:{assessment_id}
+        """
+        redis = get_redis_client()
+        if redis is None:
+            return
+        try:
+            from tools.redis_state import redis_state_expire, redis_state_set
+
+            key = f"discord:notified:self_assessment:{assessment_id}"
+            redis_state_set(key, "1")
+            redis_state_expire(key, 86400)  # 24h TTL
+            logger.debug(f"Marked self-assessment {assessment_id} as sent with 24h TTL")
+        except Exception as e:
+            logger.warning(f"Failed to mark self-assessment as sent: {e}")
+
     async def _validate_channel(self) -> tuple[bool, str | None]:
         """Validate that the configured channel is accessible.
 
@@ -513,6 +548,71 @@ class DiscordNotifier:
         logger.error("No Discord client or webhook available for notification")
         return False, None
 
+    async def _send_embed_with_retry(
+        self, embed: dict[str, Any], max_retries: int = 3
+    ) -> tuple[bool, str | None]:
+        """Send Discord embed with exponential backoff retry.
+
+        Falls back to webhook if Discord client is unavailable.
+        Returns tuple of (success, message_id) for delivery confirmation tracking.
+
+        Args:
+            embed: Discord embed dictionary to send
+
+        Returns:
+            Tuple of (success, message_id).
+            - success: True if embed was sent successfully
+            - message_id: Discord message ID if delivered via bot, None otherwise
+        """
+        # Validate channel accessibility before attempting send
+        channel_valid, channel_error = await self._validate_channel()
+        if not channel_valid:
+            logger.error(
+                "Cannot send embed - channel validation failed: %s",
+                channel_error,
+            )
+            return False, None
+
+        embeds = [embed]
+
+        # Try Discord client first if available
+        if self.client is not None:
+            for attempt in range(max_retries):
+                try:
+                    result = await self.client.send_message(
+                        content="", channel_id=self.channel_id, embeds=embeds
+                    )
+                    if result.success:
+                        logger.info(
+                            "Discord embed sent successfully to channel %s "
+                            "(method=%s, message_id=%s)",
+                            self.channel_id,
+                            result.method,
+                            result.message_id,
+                        )
+                        return True, result.message_id
+                    logger.warning(
+                        "Discord embed send failed (attempt %d): %s",
+                        attempt + 1,
+                        result.error,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Discord embed send exception (attempt %d): %s", attempt + 1, e
+                    )
+
+                if attempt < max_retries - 1:
+                    delay = min(2**attempt, 30)  # Exponential backoff, max 30s
+                    await asyncio.sleep(delay)
+
+        # Fallback to webhook if configured
+        if self._webhook_url:
+            webhook_success = await self._send_embed_via_webhook(embed, max_retries)
+            return webhook_success, None
+
+        logger.error("No Discord client or webhook available for embed notification")
+        return False, None
+
     async def _send_via_webhook(self, content: str, max_retries: int = 3) -> bool:
         """Send message via Discord webhook.
 
@@ -558,6 +658,58 @@ class DiscordNotifier:
             except Exception as e:
                 logger.warning(
                     "Webhook send exception (attempt %d): %s", attempt + 1, e
+                )
+
+            if attempt < max_retries - 1:
+                delay = min(2**attempt, 30)
+                await asyncio.sleep(delay)
+
+        return False
+
+    async def _send_embed_via_webhook(
+        self, embed: dict[str, Any], max_retries: int = 3
+    ) -> bool:
+        """Send Discord embed via Discord webhook.
+
+        Args:
+            embed: Discord embed dictionary to send
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            True if sent successfully, False otherwise
+        """
+        try:
+            import aiohttp
+        except ImportError:
+            logger.error("aiohttp required for webhook embed fallback")
+            return False
+
+        payload: dict[str, Any] = {"embeds": [embed]}
+
+        if not self._webhook_url:
+            return False
+
+        webhook_url = self._webhook_url  # type: ignore[assignment]
+        for attempt in range(max_retries):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        webhook_url,
+                        json=payload,
+                        headers={"Content-Type": "application/json"},
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as response:
+                        if response.status in (200, 204):
+                            logger.debug("Webhook embed send successful")
+                            return True
+                        logger.warning(
+                            "Webhook embed send failed (attempt %d): HTTP %d",
+                            attempt + 1,
+                            response.status,
+                        )
+            except Exception as e:
+                logger.warning(
+                    "Webhook embed send exception (attempt %d): %s", attempt + 1, e
                 )
 
             if attempt < max_retries - 1:
@@ -673,6 +825,9 @@ class DiscordNotifier:
         ``_notification_score_threshold``, the notification is suppressed
         (unless this is the first assessment).
 
+        Uses Discord embed format with color coding based on status.
+        Deduplication uses assessment_id for precise tracking.
+
         Args:
             artifact: The self-assessment artifact.
             artifact_path: Optional path to the persisted artifact.
@@ -686,6 +841,20 @@ class DiscordNotifier:
             logger.info("Discord notifications disabled by feature flag")
             return False
 
+        assessment_id = getattr(artifact, "assessment_id", "")
+        if not assessment_id:
+            logger.warning(
+                "Self-assessment artifact missing assessment_id, cannot notify"
+            )
+            return False
+
+        # Use the specific deduplication key format per requirements
+        if self._is_self_assessment_duplicate(assessment_id):
+            logger.info(
+                f"Skipping duplicate self-assessment notification for {assessment_id}"
+            )
+            return False
+
         current_score = getattr(artifact, "overall_score", 0.0)
 
         if not self.should_notify_for_assessment(
@@ -697,27 +866,28 @@ class DiscordNotifier:
             )
             return False
 
-        event_date = getattr(artifact, "assessment_date", "")
-        event_id = f"self_assessment_completed:{event_date}"
-
-        if self._is_duplicate(event_id):
-            logger.info(f"Skipping duplicate self-assessment notification: {event_id}")
+        # Use the specific deduplication key format per requirements
+        if self._is_self_assessment_duplicate(assessment_id):
+            logger.info(
+                f"Skipping duplicate self-assessment notification for {assessment_id}"
+            )
             return False
 
         try:
             from .formatters import SelfAssessmentNotificationFormatter
 
             formatter = SelfAssessmentNotificationFormatter()
-            content = formatter.format_self_assessment(
+            embed = formatter.format_self_assessment_completed(
                 artifact=artifact,
                 artifact_path=artifact_path,
             )
-            success, message_id = await self._send_with_retry(content)
+            success, message_id = await self._send_embed_with_retry(embed)
             if success:
-                self._mark_sent(event_id)
+                self._mark_self_assessment_sent(assessment_id)
                 logger.info(
-                    "Sent self-assessment completion to Discord (message_id=%s)",
+                    "Sent self-assessment completion to Discord (message_id=%s, assessment_id=%s)",
                     message_id,
+                    assessment_id,
                 )
             return success
         except Exception as e:

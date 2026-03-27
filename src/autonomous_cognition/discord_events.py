@@ -39,3 +39,27 @@ async def emit_autocog_event(
         outcome_status=outcome_status,
         evidence_reasoning=evidence_reasoning,
     )
+
+
+async def emit_self_assessment_completed(
+    notifier: DiscordNotifier,
+    artifact: Any,
+    artifact_path: str | None = None,
+) -> bool:
+    """Emit a self-assessment completed event to Discord.
+
+    This is a convenience wrapper around the notifier's notify_self_assessment
+    method with the proper event type for self-assessment completion.
+
+    Args:
+        notifier: DiscordNotifier instance
+        artifact: SelfAssessmentArtifact or similar object with assessment data
+        artifact_path: Optional path to the artifact file
+
+    Returns:
+        True if notification was sent successfully, False otherwise
+    """
+    return await notifier.notify_self_assessment(
+        artifact=artifact,
+        artifact_path=artifact_path,
+    )

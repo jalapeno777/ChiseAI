@@ -110,7 +110,7 @@ class TestDiscordNotifier:
 
     @pytest.mark.asyncio
     async def test_notify_self_assessment_success(self, mock_client):
-        """Test self-assessment completion notification path."""
+        """Test self-assessment completion notification path with embed format."""
         mock_client.send_message.return_value = Mock(success=True)
         notifier = DiscordNotifier(client=mock_client, channel_id="123")
 
@@ -122,16 +122,58 @@ class TestDiscordNotifier:
             overall_score = 0.9
             findings = ["No critical issues"]
             recommendations = ["Continue monitoring"]
+            dimensions = {"accuracy": 0.95, "latency": 0.85}
 
         with patch.object(notifier, "_is_enabled", return_value=True):
-            with patch.object(notifier, "_is_duplicate", return_value=False):
-                with patch.object(notifier, "_mark_sent") as mark_sent:
-                    result = await notifier.notify_self_assessment(
-                        artifact=Artifact(),
-                        artifact_path="docs/governance/self_assessments/a.json",
-                    )
+            with patch.object(
+                notifier, "_is_self_assessment_duplicate", return_value=False
+            ):
+                with patch.object(notifier, "_mark_self_assessment_sent") as mark_sent:
+                    with patch.object(
+                        notifier,
+                        "_send_embed_with_retry",
+                        return_value=(True, "msg123"),
+                    ):
+                        result = await notifier.notify_self_assessment(
+                            artifact=Artifact(),
+                            artifact_path="docs/governance/self_assessments/a.json",
+                        )
         assert result is True
-        mark_sent.assert_called_once()
+        mark_sent.assert_called_once_with("sa-20260313-test")
+
+    @pytest.mark.asyncio
+    async def test_notify_self_assessment_duplicate(self, mock_client):
+        """Test self-assessment deduplication prevents duplicate notifications."""
+        mock_client.send_message.return_value = Mock(success=True)
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+
+        class Artifact:
+            assessment_id = "sa-20260313-duplicate"
+            status = "ok"
+
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(
+                notifier, "_is_self_assessment_duplicate", return_value=True
+            ):
+                result = await notifier.notify_self_assessment(
+                    artifact=Artifact(),
+                )
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_notify_self_assessment_missing_id(self, mock_client):
+        """Test self-assessment notification fails gracefully when assessment_id is missing."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+
+        class Artifact:
+            assessment_id = ""  # Missing ID
+            status = "ok"
+
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            result = await notifier.notify_self_assessment(
+                artifact=Artifact(),
+            )
+        assert result is False
 
     @pytest.mark.asyncio
     async def test_notify_autocog_event_success(self, mock_client):
