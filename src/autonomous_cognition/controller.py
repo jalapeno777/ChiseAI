@@ -61,7 +61,7 @@ class AutonomousCognitionController:
         self._qdrant_client = qdrant_client
         self._config = self._load_config()
 
-    def run_daily_self_assessment(self) -> tuple[SelfAssessmentArtifact, Path]:
+    def run_daily_self_assessment(self) -> tuple[SelfAssessmentArtifact, Path | None]:
         """Execute full self-assessment cycle and persist output."""
         artifact = self._build_artifact()
         artifact_path = self._persist_artifact(artifact)
@@ -108,9 +108,9 @@ class AutonomousCognitionController:
             recommendations.append("Continue autonomous monitoring and trend tracking.")
 
         status = "ok"
-        if overall_score < 0.6:
+        if overall_score < 0.7:
             status = "degraded"
-        if overall_score < 0.35:
+        if overall_score < 0.5:
             status = "failed"
 
         artifact.status = status
@@ -173,15 +173,18 @@ class AutonomousCognitionController:
             "adaptive_learning_readiness": round(adaptation_score, 2),
         }
 
-    def _persist_artifact(self, artifact: SelfAssessmentArtifact) -> Path:
-        """Persist artifact to file system for auditability."""
-        self._artifacts_dir.mkdir(parents=True, exist_ok=True)
-        filename = (
-            f"self_assessment_{artifact.assessment_date}_{artifact.assessment_id}.json"
-        )
-        path = self._artifacts_dir / filename
-        path.write_text(artifact.to_json(indent=2), encoding="utf-8")
-        return path
+    def _persist_artifact(self, artifact: SelfAssessmentArtifact) -> Path | None:
+        """Persist artifact to file system for auditability with error boundary."""
+        try:
+            self._artifacts_dir.mkdir(parents=True, exist_ok=True)
+            filename = f"self_assessment_{artifact.assessment_date}_{artifact.assessment_id}.json"
+            path = self._artifacts_dir / filename
+            path.write_text(artifact.to_json(indent=2), encoding="utf-8")
+            logger.info("Persisted self-assessment artifact to %s", path)
+            return path
+        except Exception as e:
+            logger.error("Failed to persist artifact: %s", e)
+            return None
 
     def _persist_redis(self, artifact: SelfAssessmentArtifact) -> None:
         """Persist latest and history to Redis with graceful fallback."""
