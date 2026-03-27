@@ -22,8 +22,8 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, TypeVar
 
-from autonomous_cognition.rollback import ActionSnapshot, RollbackManager
-from autonomous_cognition.validation import ActionValidator, ValidationResult
+from .rollback import ActionSnapshot, RollbackManager
+from .validation import ActionValidator, ValidationResult
 
 logger = logging.getLogger(__name__)
 

@@ -11,18 +11,15 @@ import logging
 import re
 import time
 import uuid
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from .belief_expansion import (
-    DEFAULT_MIN_CONFIDENCE,
-    DEFAULT_MIN_RELEVANCE_SCORE,
-    DEFAULT_TIME_LIMIT_SECONDS,
-    BELIEF_EXPANSION_COLLECTION,
+    ExpandedBelief,
     ExpansionConfig,
     ExpansionProgress,
     ExpansionResult,
     ExpansionType,
-    ExpandedBelief,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +52,6 @@ class BeliefExpander:
             import os
 
             from qdrant_client import QdrantClient
-            from qdrant_client.http.models import Distance, VectorParams
 
             host = os.environ.get("QDRANT_HOST", "host.docker.internal")
             port = int(os.environ.get("QDRANT_PORT", "6334"))
@@ -73,6 +69,8 @@ class BeliefExpander:
             return self._qdrant_initialized
 
         try:
+            from qdrant_client.http.models import Distance, VectorParams
+
             collections = self._qdrant_client.get_collections().collections
             collection_names = [c.name for c in collections]
 
@@ -365,7 +363,6 @@ def expand_beliefs(
 
     progress = ExpansionProgress(total_beliefs=len(beliefs))
     expanded_beliefs: list[ExpandedBelief] = []
-    start_time = time.time()
 
     try:
         for belief in beliefs:

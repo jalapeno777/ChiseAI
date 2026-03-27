@@ -16,7 +16,7 @@ from typing import Any
 
 import yaml
 
-from src.autonomous_cognition.learning_store import (
+from autonomous_cognition.learning_store import (
     LearningRecord,
     LearningStore,
     get_learning_store,
