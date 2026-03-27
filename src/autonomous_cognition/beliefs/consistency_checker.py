@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import logging
+from datetime import UTC, datetime
 from typing import Any
 
 from autonomous_cognition.beliefs.models import Belief, BeliefConflict
@@ -10,10 +12,250 @@ from governance.memory.contradiction import ContradictionDetector
 
 
 class BeliefConsistencyChecker:
-    """Find contradictions between active beliefs."""
+    """Find contradictions between active beliefs with additional consistency checks."""
 
-    def __init__(self, contradiction_detector: ContradictionDetector | None = None):
+    DEFAULT_CONFIDENCE_THRESHOLD = 0.15
+    DEFAULT_FRESHNESS_DAYS = 30
+
+    def __init__(
+        self,
+        contradiction_detector: ContradictionDetector | None = None,
+        confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
+        freshness_days: int = DEFAULT_FRESHNESS_DAYS,
+    ):
         self._detector = contradiction_detector or ContradictionDetector()
+        self._confidence_threshold = confidence_threshold
+        self._freshness_days = freshness_days
+
+    def check_consistency(self, beliefs: list[Belief]) -> list[BeliefConflict]:
+        """Full consistency check returning all detected conflicts.
+
+        Combines contradiction detection, confidence threshold checks,
+        domain boundary validation, and evidence freshness validation.
+        """
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "[CONSISTENCY_CHECKER] Starting consistency check for %d beliefs",
+            len(beliefs),
+        )
+
+        conflicts: list[BeliefConflict] = []
+
+        # 1. Contradiction detection
+        contradiction_conflicts = self.detect_conflicts(beliefs)
+        conflicts.extend(contradiction_conflicts)
+        logger.info(
+            "[CONSISTENCY_CHECKER] Found %d contradiction conflicts",
+            len(contradiction_conflicts),
+        )
+
+        # 2. Confidence threshold conflicts
+        confidence_conflicts = self._check_confidence_thresholds(beliefs)
+        conflicts.extend(confidence_conflicts)
+        logger.info(
+            "[CONSISTENCY_CHECKER] Found %d confidence threshold conflicts",
+            len(confidence_conflicts),
+        )
+
+        # 3. Domain boundary validation
+        domain_conflicts = self._check_domain_boundaries(beliefs)
+        conflicts.extend(domain_conflicts)
+        logger.info(
+            "[CONSISTENCY_CHECKER] Found %d domain boundary conflicts",
+            len(domain_conflicts),
+        )
+
+        # 4. Evidence freshness validation
+        freshness_conflicts = self._check_evidence_freshness(beliefs)
+        conflicts.extend(freshness_conflicts)
+        logger.info(
+            "[CONSISTENCY_CHECKER] Found %d evidence freshness conflicts",
+            len(freshness_conflicts),
+        )
+
+        logger.info(
+            "[CONSISTENCY_CHECKER] Consistency check complete: %d total conflicts",
+            len(conflicts),
+        )
+        return conflicts
+
+    def _check_confidence_thresholds(
+        self, beliefs: list[Belief]
+    ) -> list[BeliefConflict]:
+        """Find beliefs with similar statements but widely different confidence.
+
+        When two beliefs have high similarity but very different confidence scores,
+        this may indicate an inconsistency in how certain we are.
+        """
+        conflicts: list[BeliefConflict] = []
+        for i in range(len(beliefs)):
+            for j in range(i + 1, len(beliefs)):
+                a = beliefs[i]
+                b = beliefs[j]
+
+                # Only check within same domain
+                if a.domain != b.domain:
+                    continue
+
+                # Skip if same belief
+                if a.belief_id == b.belief_id:
+                    continue
+
+                # Calculate textual similarity (simple word overlap)
+                similarity = self._calculate_textual_similarity(
+                    a.statement, b.statement
+                )
+
+                # If statements are similar but confidence differs significantly
+                if similarity > 0.7:
+                    confidence_delta = abs(a.confidence - b.confidence)
+                    if confidence_delta > self._confidence_threshold * 3:
+                        conflict_id = hashlib.sha256(
+                            f"{a.belief_id}:{b.belief_id}:confidence_threshold".encode()
+                        ).hexdigest()[:16]
+                        conflicts.append(
+                            BeliefConflict(
+                                conflict_id=conflict_id,
+                                belief_id_a=a.belief_id,
+                                belief_id_b=b.belief_id,
+                                similarity=float(similarity),
+                                severity="low",
+                                reason=(
+                                    f"Confidence inconsistency: both beliefs address similar "
+                                    f"topic but confidence delta is {confidence_delta:.3f} "
+                                    f"(threshold: {self._confidence_threshold * 3:.3f})"
+                                ),
+                            )
+                        )
+        return conflicts
+
+    def _check_domain_boundaries(self, beliefs: list[Belief]) -> list[BeliefConflict]:
+        """Detect beliefs that may have incorrect domain assignments.
+
+        When beliefs in the same domain have very different vocabularies or topics,
+        it may indicate domain boundary issues.
+        """
+        conflicts: list[BeliefConflict] = []
+        domains: dict[str, list[Belief]] = {}
+
+        # Group beliefs by domain
+        for belief in beliefs:
+            if belief.status != "active":
+                continue
+            if belief.domain not in domains:
+                domains[belief.domain] = []
+            domains[belief.domain].append(belief)
+
+        # Check each domain for internal consistency
+        for domain, domain_beliefs in domains.items():
+            if len(domain_beliefs) < 2:
+                continue
+
+            # Check for outlier beliefs within domain
+            for i, belief in enumerate(domain_beliefs):
+                other_beliefs = domain_beliefs[:i] + domain_beliefs[i + 1 :]
+                avg_similarity = sum(
+                    self._calculate_textual_similarity(
+                        belief.statement, other.statement
+                    )
+                    for other in other_beliefs
+                ) / len(other_beliefs)
+
+                if avg_similarity < 0.2 and len(domain_beliefs) >= 3:
+                    # This belief seems out of place in its domain
+                    conflict_id = hashlib.sha256(
+                        f"{belief.belief_id}:domain_boundary".encode()
+                    ).hexdigest()[:16]
+                    conflicts.append(
+                        BeliefConflict(
+                            conflict_id=conflict_id,
+                            belief_id_a=belief.belief_id,
+                            belief_id_b=f"domain:{domain}",
+                            similarity=float(avg_similarity),
+                            severity="low",
+                            reason=(
+                                f"Belief may belong to different domain: "
+                                f"average similarity {avg_similarity:.3f} with domain '{domain}'"
+                            ),
+                        )
+                    )
+        return conflicts
+
+    def _check_evidence_freshness(self, beliefs: list[Belief]) -> list[BeliefConflict]:
+        """Detect beliefs with stale evidence that may need updating.
+
+        A belief with high confidence but very old evidence may be outdated.
+        """
+        conflicts: list[BeliefConflict] = []
+        now = datetime.now(UTC)
+
+        for belief in beliefs:
+            if belief.status != "active":
+                continue
+
+            if not belief.evidence_refs:
+                # Belief without evidence - may be okay, but check confidence
+                if belief.confidence > 0.8:
+                    conflict_id = hashlib.sha256(
+                        f"{belief.belief_id}:no_evidence_high_confidence".encode()
+                    ).hexdigest()[:16]
+                    conflicts.append(
+                        BeliefConflict(
+                            conflict_id=conflict_id,
+                            belief_id_a=belief.belief_id,
+                            belief_id_b="evidence_system",
+                            similarity=1.0,
+                            severity="low",
+                            reason=(
+                                f"High confidence ({belief.confidence:.3f}) belief "
+                                f"has no evidence references"
+                            ),
+                        )
+                    )
+                continue
+
+            # Check for stale evidence based on belief's updated_at
+            try:
+                updated = datetime.fromisoformat(
+                    belief.updated_at.replace("Z", "+00:00")
+                )
+                if updated.tzinfo is None:
+                    updated = updated.replace(tzinfo=UTC)
+                age_days = (now - updated.astimezone(UTC)).total_seconds() / 86400
+
+                if age_days > self._freshness_days and belief.confidence > 0.7:
+                    conflict_id = hashlib.sha256(
+                        f"{belief.belief_id}:stale_belief".encode()
+                    ).hexdigest()[:16]
+                    conflicts.append(
+                        BeliefConflict(
+                            conflict_id=conflict_id,
+                            belief_id_a=belief.belief_id,
+                            belief_id_b="freshness_check",
+                            similarity=1.0,
+                            severity="low",
+                            reason=(
+                                f"Belief may be stale: {age_days:.1f} days old "
+                                f"with confidence {belief.confidence:.3f}"
+                            ),
+                        )
+                    )
+            except Exception:
+                continue
+
+        return conflicts
+
+    def _calculate_textual_similarity(self, a: str, b: str) -> float:
+        """Calculate simple word-overlap similarity between two statements."""
+        if not a or not b:
+            return 0.0
+        tokens_a = set(a.lower().split())
+        tokens_b = set(b.lower().split())
+        if not tokens_a or not tokens_b:
+            return 0.0
+        intersection = len(tokens_a.intersection(tokens_b))
+        union = len(tokens_a.union(tokens_b))
+        return intersection / union if union > 0 else 0.0
 
     def detect_conflicts(self, beliefs: list[Belief]) -> list[BeliefConflict]:
         """Detect conflicts among beliefs."""
