@@ -21,8 +21,48 @@ Story: ST-MEMORY-INGEST-001
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
+
+# Patterns that indicate Docker-related changes (any path component match)
+DOCKER_RELEVANT_PATTERNS = [
+    "infrastructure/docker/",
+    "Dockerfile",
+    "docker-compose",
+    ".dockerignore",
+    "scripts/validation/validate_scheduler_docker_config.py",
+]
+
+
+def has_relevant_changes(file_list: list[str]) -> bool:
+    """Check if any changed file matches Docker-relevant patterns.
+
+    Args:
+        file_list: List of file paths to check.
+
+    Returns:
+        True if at least one file is Docker-related.
+    """
+    for fpath in file_list:
+        for pattern in DOCKER_RELEVANT_PATTERNS:
+            if pattern in fpath:
+                return True
+    return False
+
+
+def parse_check_relevant(value: str) -> list[str]:
+    """Parse the --check-relevant argument value.
+
+    Args:
+        value: Comma-separated file list, or '-' for stdin.
+
+    Returns:
+        List of file paths.
+    """
+    if value == "-":
+        return [line.strip() for line in sys.stdin if line.strip()]
+    return [f.strip() for f in value.split(",") if f.strip()]
 
 
 def check_file_exists(path: Path) -> bool:
@@ -209,12 +249,23 @@ def check_memory_access(scripts_dir: Path) -> tuple[bool, list[str]]:
     return True, messages  # Warnings don't fail the check
 
 
-def main() -> int:
+def main(changed_files: list[str] | None = None) -> int:
     """Run all validations.
+
+    Args:
+        changed_files: Optional list of changed files for relevance gating.
+            When provided and no Docker-related files are found, the
+            script prints a SKIP message and exits 0.
 
     Returns:
         Exit code (0=success, 1=failure)
     """
+    # Early exit: if changed_files provided but none are Docker-relevant, skip
+    if changed_files is not None:
+        if not has_relevant_changes(changed_files):
+            print("SKIP: No Docker-related files changed")
+            return 0
+
     print("=" * 60)
     print("BrainEval Scheduler Docker Configuration Validation")
     print("Story: ST-MEMORY-INGEST-001")
@@ -291,4 +342,21 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = argparse.ArgumentParser(
+        description="Validate BrainEval Scheduler Docker Configuration"
+    )
+    parser.add_argument(
+        "--check-relevant",
+        metavar="FILES",
+        help=(
+            "Comma-separated list of changed files, or '-' to read from stdin. "
+            "If no Docker-related files are found, prints SKIP and exits 0."
+        ),
+    )
+    args = parser.parse_args()
+
+    changed: list[str] | None = None
+    if args.check_relevant is not None:
+        changed = parse_check_relevant(args.check_relevant)
+
+    sys.exit(main(changed))

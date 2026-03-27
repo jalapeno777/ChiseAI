@@ -62,6 +62,29 @@ def _is_docs_only() -> bool:
         return False
 
 
+def _get_changed_python_files() -> list[str]:
+    """Get list of changed Python files using ci_change_scope.py.
+
+    Returns list of .py file paths, or empty list on error/no changes.
+    """
+    scope_script = Path(__file__).parent / "ci_change_scope.py"
+    if not scope_script.exists():
+        return []
+    try:
+        result = subprocess.run(
+            [sys.executable, str(scope_script), "--mode", "changed-python"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            return []
+        files = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+        return files
+    except (subprocess.TimeoutExpired, OSError):
+        return []
+
+
 def run_checks() -> int:
     """Run all pre-push checks. Returns exit code (0=pass, 1=fail)."""
     print("Pre-push CI gate")
@@ -73,17 +96,90 @@ def run_checks() -> int:
         print("\nAll checks passed (docs-only change).")
         return 0
 
-    checks: list[tuple[str, list[str], int]] = [
-        ("lint: black", [sys.executable, "-m", "black", "--check", "."], 120),
-        ("lint: ruff", [sys.executable, "-m", "ruff", "check", "."], 120),
-        ("security-scan", [sys.executable, "-m", "bandit", "r", "-q", "."], 120),
-        ("secret-scan", ["detect-secrets", "scan", "."], 120),
+    # Determine changed Python files for scope-aware linting
+    py_files = _get_changed_python_files()
+    py_count = len(py_files)
+    scope_suffix = ""
+    if py_count == 0:
+        scope_suffix = " (no Python changed — skipping lint/security)"
+    elif py_count <= 20:
+        scope_suffix = f" (scope: {py_count} Python file{'s' if py_count != 1 else ''})"
+
+    checks: list[tuple[str, list[str], int]] = []
+
+    # Black: scope-aware (skip if no Python changed, targeted if ≤20, full otherwise)
+    if py_count == 0:
+        print(f"  [lint: black]{scope_suffix} — SKIP")
+    elif py_count <= 20:
+        checks.append(
+            (
+                f"lint: black{scope_suffix}",
+                [sys.executable, "-m", "black", "--check", *py_files],
+                120,
+            )
+        )
+    else:
+        checks.append(
+            (
+                "lint: black (>20 files, full scan)",
+                [sys.executable, "-m", "black", "--check", "."],
+                120,
+            )
+        )
+
+    # Ruff: scope-aware (same logic as black)
+    if py_count == 0:
+        print(f"  [lint: ruff]{scope_suffix} — SKIP")
+    elif py_count <= 20:
+        checks.append(
+            (
+                f"lint: ruff{scope_suffix}",
+                [sys.executable, "-m", "ruff", "check", *py_files],
+                120,
+            )
+        )
+    else:
+        checks.append(
+            (
+                "lint: ruff (>20 files, full scan)",
+                [sys.executable, "-m", "ruff", "check", "."],
+                120,
+            )
+        )
+
+    # Bandit: scope-aware by parent directory (skip if no Python changed)
+    if py_count == 0:
+        print(f"  [security-scan: bandit]{scope_suffix} — SKIP")
+    else:
+        parent_dirs = sorted({str(Path(f).parent) for f in py_files})
+        if py_count <= 20:
+            checks.append(
+                (
+                    f"security-scan: bandit{scope_suffix}",
+                    [sys.executable, "-m", "bandit", "-r", "-q", *parent_dirs],
+                    120,
+                )
+            )
+        else:
+            checks.append(
+                (
+                    "security-scan: bandit (>20 files, full scan)",
+                    [sys.executable, "-m", "bandit", "-r", "-q", "."],
+                    120,
+                )
+            )
+
+    # detect-secrets: always full-repo scan (fast, needs full scan for secrets)
+    checks.append(("secret-scan: detect-secrets", ["detect-secrets", "scan", "."], 120))
+
+    # dependency-audit: always runs (not scope-dependent)
+    checks.append(
         (
             "dependency-audit",
             [sys.executable, "scripts/ci/dependency_audit.py"],
             360,
         ),
-    ]
+    )
 
     passed = 0
     failed = 0
