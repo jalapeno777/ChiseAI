@@ -555,8 +555,9 @@ steps:
       - |
         set -euo pipefail
         mkdir -p "$${CI_STATUS_DIR}"
+        status_file="$${CI_STATUS_DIR}/truth-gate.status"
         set +e
-        (
+        {
           set -euo pipefail
           echo "truth-gate: Starting truth gate validation for strong-system stories"
 
@@ -597,7 +598,7 @@ steps:
             echo "truth-gate: Pipeline will fail at ci-gate step"
             exit 1
           fi
-        ) > "$${CI_STATUS_DIR}/truth-gate.log" 2>&1
+        } > "$${CI_STATUS_DIR}/truth-gate.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/truth-gate.log"
         echo "$code" > "$${CI_STATUS_DIR}/truth-gate.status"
