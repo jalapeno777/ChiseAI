@@ -134,8 +134,13 @@ def _write_evidence_with_pipeline(
     job_config = CRON_JOBS[job_name]
     now = datetime.fromisoformat(timestamp)
 
-    # Calculate missed count
-    missed_count = _calculate_missed_count(r, job_name, now, timestamp)
+    # Calculate or reset missed count
+    # On success: reset to 0 (job ran successfully, no missed runs)
+    # On error: calculate based on elapsed time since last run
+    if status == "success":
+        missed_count = 0
+    else:
+        missed_count = _calculate_missed_count(r, job_name, now, timestamp)
 
     # Use pipeline for atomic write
     pipe = r.pipeline()
