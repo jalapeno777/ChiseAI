@@ -236,15 +236,32 @@ def check_kill_switch(r: Any) -> dict[str, Any]:
     then returns the current status.
     """
     try:
-        # Import bootstrap function
-        import sys
+        # Import bootstrap functions via importlib to avoid triggering
+        # src/execution/__init__.py which uses bare 'execution.' imports
+        # that fail when project root is on sys.path.
+        import importlib.util
 
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-        from src.execution.kill_switch.bootstrap import (
-            bootstrap_kill_switch,
-            get_kill_switch_status,
-            is_kill_switch_initialized,
+        _bootstrap_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "src",
+            "execution",
+            "kill_switch",
+            "bootstrap.py",
         )
+        _spec = importlib.util.spec_from_file_location(
+            "kill_switch_bootstrap", _bootstrap_path
+        )
+        if _spec is None or _spec.loader is None:
+            raise ImportError(
+                f"Cannot load kill_switch_bootstrap from {_bootstrap_path}"
+            )
+        _mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        bootstrap_kill_switch = _mod.bootstrap_kill_switch
+        get_kill_switch_status = _mod.get_kill_switch_status
+        is_kill_switch_initialized = _mod.is_kill_switch_initialized
 
         # Check if initialized, bootstrap if needed
         if not is_kill_switch_initialized(r):
