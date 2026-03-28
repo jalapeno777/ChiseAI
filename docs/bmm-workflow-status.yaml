@@ -2009,10 +2009,11 @@ epics:
       Fix Discord spam, BeliefStore Redis persistence, belief expansion, self-assessment
       dedup, and enable improvement cycles.
     start_date: "2026-03-27"
+    completion_date: "2026-03-27"
     target_end_date: "2026-04-02"
     story_points: 48
     priority: P0
-    status: in_progress
+    status: completed
     batches:
       - id: batch-1
         title: "Foundation Layer"
@@ -2026,7 +2027,7 @@ epics:
             "ST-AUTOCOG-008",
           ]
         sp: 17
-        status: pending
+        status: completed
       - id: batch-2
         title: "Core Controller + Redis Fix"
         stories:
@@ -2037,7 +2038,7 @@ epics:
             "ST-AUTOCOG-007",
           ]
         sp: 11
-        status: pending
+        status: completed
       - id: batch-3
         title: "Assessment + Notification Polish"
         stories:
@@ -2049,17 +2050,19 @@ epics:
             "ST-AUTOCOG-016",
           ]
         sp: 12
-        status: pending
+        status: completed
       - id: batch-4
         title: "Advanced Features"
         stories: ["ST-AUTOCOG-012", "ST-AUTOCOG-013", "ST-AUTOCOG-014"]
         sp: 8
-        status: pending
+        status: completed
     notes:
       - "Sprint plan: docs/planning/sprints/AUTOCOG-2026-03-27-sprint-plan.md"
       - "BeliefStore split into T1(debug)/T2(fix)/T3(verify) with checkpoint after T1"
       - "Belief expansion timeboxed to 3 days with fallback"
       - "ST-AUTOCOG-003 already completed (PR #705, commit 7ce29fad) - sys.path fix"
+      - "13 of 16 stories merged to main; 3 deferred (ST-AUTOCOG-003, 007, 014)"
+      - "Sprint closed at inception per AUTOCOG-2026-03-27 sprint closeout"
 launch_stories:
   - acceptance_criteria:
       - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint
