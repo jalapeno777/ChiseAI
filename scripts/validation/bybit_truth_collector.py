@@ -261,7 +261,7 @@ class BybitTruthCollector:
 
         try:
             # Import here to avoid dependency issues in tests
-            from data.exchange.bybit_connector import BybitConnector
+            from src.data.exchange.bybit_connector import BybitConnector
 
             end_time = int(datetime.now(UTC).timestamp() * 1000)
             start_time = int(
