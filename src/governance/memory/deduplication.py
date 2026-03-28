@@ -523,29 +523,101 @@ class MemoryDeduplicationEngine:
         Compute cosine similarity between two vectors.
 
         Args:
-            vec1: First vector.
-            vec2: Second vector.
+            vec1: First vector (list, tuple, dict with 'vector' key, or named vector dict).
+            vec2: Second vector (list, tuple, dict with 'vector' key, or named vector dict).
 
         Returns:
             Cosine similarity score between 0.0 and 1.0.
         """
-        norm_vec1 = self._normalize_vector(vec1)
-        norm_vec2 = self._normalize_vector(vec2)
-
-        if not norm_vec1 or not norm_vec2 or len(norm_vec1) != len(norm_vec2):
+        # Guard against non-numeric or invalid inputs
+        if vec1 is None or vec2 is None:
             return 0.0
 
-        # Compute dot product
-        dot_product = sum(a * b for a, b in zip(norm_vec1, norm_vec2, strict=False))
+        # Guard against dimension mismatch before normalization
+        # Extract raw vectors from dict format if needed
+        raw_vec1 = self._extract_raw_vector(vec1)
+        raw_vec2 = self._extract_raw_vector(vec2)
+
+        if raw_vec1 is None or raw_vec2 is None:
+            return 0.0
+
+        norm_vec1 = self._normalize_vector(raw_vec1)
+        norm_vec2 = self._normalize_vector(raw_vec2)
+
+        if not norm_vec1 or not norm_vec2:
+            return 0.0
+
+        # Guard against dimension mismatch
+        if len(norm_vec1) != len(norm_vec2):
+            return 0.0
+
+        # Compute dot product with explicit type guards
+        dot_product = 0.0
+        for a, b in zip(norm_vec1, norm_vec2, strict=False):
+            try:
+                dot_product += float(a) * float(b)
+            except (TypeError, ValueError):
+                return 0.0
 
         # Compute magnitudes
-        mag1 = sum(a * a for a in norm_vec1) ** 0.5
-        mag2 = sum(b * b for b in norm_vec2) ** 0.5
+        mag1 = sum(float(a) * float(a) for a in norm_vec1) ** 0.5
+        mag2 = sum(float(b) * float(b) for b in norm_vec2) ** 0.5
 
         if mag1 == 0 or mag2 == 0:
             return 0.0
 
         return dot_product / (mag1 * mag2)
+
+    def _extract_raw_vector(self, vector: Any) -> Any:
+        """
+        Extract the raw vector data from various formats.
+
+        Handles:
+        - dict with 'vector' key (Qdrant named vector format)
+        - dict with 'dense' key (Qdrant dense vector format)
+        - plain list/tuple
+        - numpy arrays
+
+        Returns:
+            The raw vector as a list, or None if extraction fails.
+        """
+        if vector is None:
+            return None
+
+        if isinstance(vector, dict):
+            if not vector:
+                return None
+            # Prefer 'vector' key (Qdrant common format)
+            if "vector" in vector:
+                val = vector["vector"]
+                if isinstance(val, (list, tuple)):
+                    return val
+                if hasattr(val, "tolist"):  # numpy array
+                    return val.tolist()
+                return None
+            # Fallback to 'dense' key
+            if "dense" in vector:
+                val = vector["dense"]
+                if isinstance(val, (list, tuple)):
+                    return val
+                if hasattr(val, "tolist"):  # numpy array
+                    return val.tolist()
+                return None
+            # Use first available numeric list value
+            for v in vector.values():
+                if isinstance(v, (list, tuple)):
+                    return v
+                if hasattr(v, "tolist"):  # numpy array
+                    return v.tolist()
+            return None
+
+        if isinstance(vector, (list, tuple)):
+            return vector
+
+        if hasattr(vector, "tolist"):  # numpy array
+            return vector.tolist()
+
+        return None
 
     def _normalize_vector(self, vector: Any) -> list[float]:
         """
