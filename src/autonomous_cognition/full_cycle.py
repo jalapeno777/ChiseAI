@@ -966,7 +966,10 @@ class AutonomousCognitionFullCycle:
             ),
         ]
         for belief in seed:
-            self._belief_store.put(belief)
+            if not self._belief_store.put(belief):
+                logger.warning(
+                    "[FULL_CYCLE] Failed to persist seed belief %s", belief.belief_id
+                )
         return seed
 
     def _build_belief_evidence_index(
@@ -1636,8 +1639,16 @@ class AutonomousCognitionFullCycle:
                     old_belief.updated_at = datetime.now(UTC).isoformat()
                     new_belief.status = "superseded"
                     new_belief.updated_at = datetime.now(UTC).isoformat()
-                    self._belief_store.put(old_belief)
-                    self._belief_store.put(new_belief)
+                    if not self._belief_store.put(old_belief):
+                        logger.warning(
+                            "[FULL_CYCLE] Failed to persist rollback belief %s",
+                            old_belief.belief_id,
+                        )
+                    if not self._belief_store.put(new_belief):
+                        logger.warning(
+                            "[FULL_CYCLE] Failed to persist superseded belief %s",
+                            new_belief.belief_id,
+                        )
                     actions.append(
                         {
                             "type": "belief_rollback",

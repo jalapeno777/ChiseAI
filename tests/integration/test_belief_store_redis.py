@@ -65,6 +65,7 @@ def mock_redis_client():
 # =============================================================================
 
 
+@pytest.mark.integration
 class TestBeliefStoreRedisRoundtrip:
     """Test Redis-backed roundtrip (put -> get returns same data)."""
 
@@ -73,7 +74,8 @@ class TestBeliefStoreRedisRoundtrip:
         store = BeliefStore(redis_client=mock_redis_client)
 
         # Put the belief
-        store.put(sample_belief)
+        result = store.put(sample_belief)
+        assert result is True
 
         # Verify Redis was called
         assert mock_redis_client.hset.called
@@ -509,3 +511,55 @@ class TestBeliefStoreListActive:
 
         active = store.list_active()
         assert len(active) == 0
+
+
+# =============================================================================
+# No Silent Failures Tests
+# =============================================================================
+
+
+@pytest.mark.integration
+def test_no_silent_failures_100_iterations(mock_redis_client):
+    """Verify put() returns bool (True=success, False=failure) with 100 sequential cycles.
+
+    This test ensures there are no silent failures - every put() must return
+    a verifiable boolean indicating success or failure.
+    """
+    store = BeliefStore(redis_client=mock_redis_client)
+    failures = []
+
+    for i in range(100):
+        belief = Belief(
+            belief_id=f"silent_fail_test_{i}",
+            statement=f"Test belief statement {i}",
+            domain="test",
+            confidence=0.85,
+            evidence_refs=[f"ref_{i}"],
+            sources_quality_score=0.75,
+            status="active",
+        )
+
+        # put() must return bool - capture and verify
+        result = store.put(belief)
+        if not isinstance(result, bool):
+            failures.append(
+                f"Iteration {i}: put() returned {type(result).__name__}, expected bool"
+            )
+            continue
+
+        if result is False:
+            failures.append(f"Iteration {i}: put() returned False (failure)")
+            continue
+
+        # Verify we can retrieve what we put
+        retrieved = store.get(belief.belief_id)
+        if retrieved is None:
+            failures.append(
+                f"Iteration {i}: get() returned None after successful put()"
+            )
+            continue
+
+        if retrieved.belief_id != belief.belief_id:
+            failures.append(f"Iteration {i}: retrieved belief_id mismatch")
+
+    assert len(failures) == 0, f"Found {len(failures)} silent failures: {failures[:5]}"
