@@ -1,8 +1,41 @@
-"""Autonomy level tuning based on calibration and incident trends."""
+"""Autonomy level tuning based on calibration and incident trends.
+
+.. deprecated::
+    This module is a stub. Use :mod:`autonomous_cognition.autonomy_tuner`
+    for the full production implementation.
+"""
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
+
+
+def __getattr__(name: str):
+    """Deprecation shim to redirect to the production module."""
+    if name == "AutonomyTuner":
+        warnings.warn(
+            "autonomous_cognition.metacog.autonomy_tuner is deprecated. "
+            "Use autonomous_cognition.autonomy_tuner instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        from autonomous_cognition.autonomy_tuner import AutonomyTuner as AT
+
+        return AT
+    if name == "AutonomyTuningDecision":
+        warnings.warn(
+            "autonomous_cognition.metacog.autonomy_tuner is deprecated. "
+            "Use autonomous_cognition.autonomy_tuner instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        from autonomous_cognition.autonomy_tuner import (
+            AutonomyTuningDecision as ATD,
+        )
+
+        return ATD
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 @dataclass

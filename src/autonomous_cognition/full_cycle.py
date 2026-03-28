@@ -12,6 +12,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from autonomous_cognition.autonomy_tuner import AutonomyTuner
 from autonomous_cognition.beliefs.consistency_checker import BeliefConsistencyChecker
 from autonomous_cognition.beliefs.explanation import explain_conflict, explain_revision
 from autonomous_cognition.beliefs.models import Belief, EvidenceRecord
@@ -25,7 +26,6 @@ from autonomous_cognition.experiments.champion_challenger import (
 )
 from autonomous_cognition.experiments.hypothesis_generator import HypothesisGenerator
 from autonomous_cognition.experiments.portfolio_policy_lab import PortfolioPolicyLab
-from autonomous_cognition.metacog.autonomy_tuner import AutonomyTuner
 from autonomous_cognition.metrics.skip_rate_monitor import SkipRateMonitor
 from autonomous_cognition.runtime_integration import NeuroSymbolicRuntimeIntegrator
 from autonomous_cognition.state_machine import AutonomousCycleStateMachine, CycleState

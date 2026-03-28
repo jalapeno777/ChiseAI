@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from autonomous_cognition.autonomy_tuner import AutonomyTuner
 from autonomous_cognition.constitution_audit import ConstitutionAuditEngine
-from autonomous_cognition.metacog.autonomy_tuner import AutonomyTuner
 from autonomous_cognition.runtime_integration import NeuroSymbolicRuntimeIntegrator
 
 
