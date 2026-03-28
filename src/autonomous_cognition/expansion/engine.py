@@ -24,6 +24,9 @@ from .belief_expansion import (
 
 logger = logging.getLogger(__name__)
 
+# Namespace UUID for deterministic expansion point IDs (DNS namespace per RFC 4122)
+_EXPANSION_NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
 
 class BeliefExpander:
     """Generates new beliefs from existing ones through expansion strategies."""
@@ -174,8 +177,16 @@ class BeliefExpander:
         # Confidence is derived from source confidence with decay
         derived_confidence = confidence * 0.85
 
+        # Deterministic ID from source + expansion type for reproducibility
+        point_id = str(
+            uuid.uuid5(
+                _EXPANSION_NAMESPACE,
+                f"{belief_id}:{expansion_type.value}:{statement}",
+            )
+        )
+
         return ExpandedBelief(
-            belief_id=f"exp_{uuid.uuid4().hex[:12]}",
+            belief_id=point_id,
             statement=derived_statement,
             domain=domain,
             confidence=derived_confidence,
@@ -292,11 +303,8 @@ class BeliefExpander:
             return False
 
         try:
-            import hashlib
-
-            point_id = hashlib.sha256(expansion.belief_id.encode("utf-8")).hexdigest()[
-                :32
-            ]
+            # Use uuid5 for deterministic point ID (same input → same UUID)
+            point_id = uuid.uuid5(_EXPANSION_NAMESPACE, expansion.belief_id)
 
             qdrant_client.upsert(
                 collection_name=self.config.qdrant_collection,
