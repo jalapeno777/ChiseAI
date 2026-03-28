@@ -29,6 +29,9 @@ logger = logging.getLogger(__name__)
 _sentence_model: Any = None
 _sentence_model_lock: Any = None
 
+# Pattern recognizer singleton for lazy initialization
+_pattern_recognizer: Any = None
+
 
 def _get_sentence_model() -> Any:
     """Get or create the SentenceTransformer model singleton.
@@ -54,6 +57,28 @@ def _get_sentence_model() -> Any:
                     logger.warning("SentenceTransformer not available: %s", e)
                     _sentence_model = False
     return _sentence_model if _sentence_model else None
+
+
+def _get_pattern_recognizer() -> Any:
+    """Get or create the PatternRecognitionEngine singleton.
+
+    Uses lazy import to avoid circular dependencies between
+    pattern_recognition and autonomous_cognition modules.
+
+    Returns:
+        PatternRecognitionEngine instance or None if unavailable
+    """
+    global _pattern_recognizer
+    if _pattern_recognizer is None:
+        try:
+            from src.neuro_symbolic.pattern_recognition import PatternRecognitionEngine
+
+            _pattern_recognizer = PatternRecognitionEngine()
+            logger.info("Loaded PatternRecognitionEngine for expansion guidance")
+        except Exception as e:
+            logger.warning("PatternRecognitionEngine not available: %s", e)
+            _pattern_recognizer = False
+    return _pattern_recognizer if _pattern_recognizer else None
 
 
 class BeliefExpander:
@@ -124,6 +149,37 @@ class BeliefExpander:
             logger.warning("Failed to ensure Qdrant collection: %s", e)
             return False
 
+    def _query_patterns(self, statement: str) -> dict[str, float]:
+        """Query pattern recognition for patterns related to the statement.
+
+        Uses the pattern recognizer to detect relevant price/action patterns
+        that may inform belief expansion direction.
+
+        Args:
+            statement: The belief statement to analyze
+
+        Returns:
+            Dictionary mapping pattern names to confidence scores.
+            Empty dict if pattern recognition unavailable.
+        """
+        recognizer = _get_pattern_recognizer()
+        if recognizer is None:
+            return {}
+
+        try:
+            # Extract numeric features from statement if present
+            # Pattern recognition works on price data, so we extract numbers
+            numbers = re.findall(r"\d+\.?\d*", statement)
+            if numbers:
+                # Use the last number as a price proxy
+                price_data = [float(n) for n in numbers[-50:]]
+                probs = recognizer.get_pattern_probabilities(price_data)
+                return probs
+        except Exception as e:
+            logger.debug("Pattern query failed: %s", e)
+
+        return {}
+
     def expand_belief(
         self,
         belief_id: str,
@@ -153,13 +209,22 @@ class BeliefExpander:
             )
             return expansions
 
+        # Query pattern recognition for relevant patterns
+        pattern_probs = self._query_patterns(statement)
+        if pattern_probs:
+            logger.debug(
+                "Pattern recognition detected %d patterns for belief %s",
+                len(pattern_probs),
+                belief_id,
+            )
+
         # Generate expansions using different strategies
         for expansion_type in ExpansionType:
             if len(expansions) >= self.config.max_expansions_per_belief:
                 break
 
             expanded = self._generate_expansion(
-                belief_id, statement, domain, confidence, expansion_type
+                belief_id, statement, domain, confidence, expansion_type, pattern_probs
             )
             if expanded:
                 # Apply relevance filtering
@@ -181,6 +246,7 @@ class BeliefExpander:
         domain: str,
         confidence: float,
         expansion_type: ExpansionType,
+        pattern_probs: dict[str, float] | None = None,
     ) -> ExpandedBelief | None:
         """Generate a single expansion of the given type.
 
@@ -190,6 +256,7 @@ class BeliefExpander:
             domain: Belief domain
             confidence: Source belief confidence
             expansion_type: Type of expansion to generate
+            pattern_probs: Optional pattern probabilities from pattern recognition
 
         Returns:
             ExpandedBelief or None if generation fails
@@ -205,6 +272,16 @@ class BeliefExpander:
         # Confidence is derived from source confidence with decay
         derived_confidence = confidence * 0.85
 
+        # Boost confidence if strong patterns detected
+        pattern_boost = 0.0
+        if pattern_probs:
+            max_pattern_confidence = (
+                max(pattern_probs.values()) if pattern_probs else 0.0
+            )
+            if max_pattern_confidence > 0.7:
+                pattern_boost = max_pattern_confidence * 0.1
+                derived_confidence = min(1.0, derived_confidence + pattern_boost)
+
         return ExpandedBelief(
             belief_id=f"exp_{uuid.uuid4().hex[:12]}",
             statement=derived_statement,
@@ -216,6 +293,10 @@ class BeliefExpander:
             metadata={
                 "original_statement": statement,
                 "generation_method": "rule_based_expansion",
+                "pattern_confidence": (
+                    max(pattern_probs.values()) if pattern_probs else 0.0
+                ),
+                "pattern_boost_applied": pattern_boost > 0,
             },
         )
 
