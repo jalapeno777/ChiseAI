@@ -168,14 +168,14 @@ class LearningLoop:
     - Predictions and outcomes stored in Qdrant (long-term)
     - Recent predictions cached in Redis (fast lookup)
     - Calibration records stored in Redis
-    - Learning statistics in Redis: bmad:chiseai:autocog:learning_stats
+    - Learning statistics in Redis: bmad:chiseai:metacog:learning_stats
     """
 
-    # Redis key prefixes
-    PREDICTION_PREFIX = "bmad:chiseai:learning:prediction"
-    OUTCOME_PREFIX = "bmad:chiseai:learning:outcome"
-    CALIBRATION_PREFIX = "bmad:chiseai:learning:calibration"
-    STATS_KEY = "bmad:chiseai:autocog:learning_stats"
+    # Redis key prefixes (canonical: bmad:chiseai:metacog:*)
+    PREDICTION_PREFIX = "bmad:chiseai:metacog:prediction"
+    OUTCOME_PREFIX = "bmad:chiseai:metacog:outcome"
+    CALIBRATION_PREFIX = "bmad:chiseai:metacog:calibration"
+    STATS_KEY = "bmad:chiseai:metacog:learning_stats"
 
     def __init__(
         self,
