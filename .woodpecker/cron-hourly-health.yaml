@@ -53,7 +53,7 @@ steps:
           python3 -c "
           import redis, json
           r = redis.Redis(host='host.docker.internal', port=6380, decode_responses=True)
-          keys = r.keys('bmad:chiseai:monitoring:hourly:*')
+          keys = r.keys('chise:cron:hourly-health:*')
           for k in sorted(keys):
               val = r.get(k)
               print(f'  {k} = {val[:200] if val else \"(none)\"}')
@@ -64,6 +64,12 @@ steps:
         code=$?
         cat "$${CI_STATUS_DIR}/hourly-health-check.log"
         echo "$code" > "$${CI_STATUS_DIR}/hourly-health-check.status"
+        # NOTE: exit 0 is intentional — the actual pass/fail gate is in the
+        # next step (health-check-gate) which reads the .status file.
+        # This step must always succeed so the gate step can inspect the result.
+        if [ "$code" != "0" ]; then
+          echo "ALERT: hourly-health-check script failed with exit code $code"
+        fi
         exit 0
 
   health-check-gate:
