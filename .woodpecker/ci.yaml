@@ -38,7 +38,7 @@ steps:
         set -euo pipefail
         mkdir -p "$${CI_STATUS_DIR}"
         set +e
-        (
+        {
           set -euo pipefail
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
           EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
@@ -52,15 +52,12 @@ steps:
           if git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}" | grep -qE "^\s*main$"; then
             echo "cross-branch-verify: commit is on main"
             exit 0
-          else
-            echo "cross-branch-verify: FAIL - commit is not on main"
-            git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}"
-            exit 1
           fi
-        ) > "$${CI_STATUS_DIR}/cross-branch-verify.log" 2>&1
-        code=$?
+          echo "cross-branch-verify: FAIL - commit is not on main"
+          git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}"
+          exit 1
+        } > "$${CI_STATUS_DIR}/cross-branch-verify.log" 2>&1
         cat "$${CI_STATUS_DIR}/cross-branch-verify.log"
-        # Advisory-only: always write 0 regardless of check result
         echo "0" > "$${CI_STATUS_DIR}/cross-branch-verify.status"
         # Advisory-only: log result but never block pipeline.
         # The original purpose (catching false merge claims) is now enforced by
@@ -239,24 +236,30 @@ steps:
       - |
         set -euo pipefail
         mkdir -p "$${CI_STATUS_DIR}"
+        code=0
+        status_file="$${CI_STATUS_DIR}/risk-invariants.status"
+        trap 'echo "$${code}" > "$${status_file}"' EXIT
         set +e
-        (
+        {
           set -euo pipefail
           CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
           if ! echo "$CHANGED_FILES" | grep -qE "^(src/execution/|src/ml/|scripts/reconciliation/|tests/test_execution/|tests/test_ml/|scripts/ci/|pyproject.toml|requirements)"; then
             echo "risk-invariants: no risk-domain changes; skipping"
+            code=0
             exit 0
           fi
-          python3 -m pytest -q \
+          if python3 -m pytest -q \
             tests/test_execution/test_venue_enforcement.py \
             tests/test_execution/test_kill_switch/ \
             tests/test_execution/test_reconciliation.py \
             tests/test_execution/test_outcome_persistence.py \
-            tests/test_execution/test_paper/test_paper_risk_enforcer.py
-        ) > "$${CI_STATUS_DIR}/risk-invariants.log" 2>&1
-        code=$?
+            tests/test_execution/test_paper/test_paper_risk_enforcer.py; then
+            code=0
+          else
+            code=$?
+          fi
+        } > "$${CI_STATUS_DIR}/risk-invariants.log" 2>&1
         cat "$${CI_STATUS_DIR}/risk-invariants.log"
-        echo "$code" > "$${CI_STATUS_DIR}/risk-invariants.status"
         exit 0
   brain-regression:
     pull: false
@@ -552,8 +555,9 @@ steps:
       - |
         set -euo pipefail
         mkdir -p "$${CI_STATUS_DIR}"
+        status_file="$${CI_STATUS_DIR}/truth-gate.status"
         set +e
-        (
+        {
           set -euo pipefail
           echo "truth-gate: Starting truth gate validation for strong-system stories"
 
@@ -594,7 +598,7 @@ steps:
             echo "truth-gate: Pipeline will fail at ci-gate step"
             exit 1
           fi
-        ) > "$${CI_STATUS_DIR}/truth-gate.log" 2>&1
+        } > "$${CI_STATUS_DIR}/truth-gate.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/truth-gate.log"
         echo "$code" > "$${CI_STATUS_DIR}/truth-gate.status"
