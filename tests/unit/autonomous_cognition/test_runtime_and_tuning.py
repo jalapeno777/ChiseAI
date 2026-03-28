@@ -25,5 +25,5 @@ def test_autonomy_tuner_downgrades_on_high_ece() -> None:
 def test_constitution_audit_detects_violations() -> None:
     """Constitution audit should detect rule-violating actions."""
     audit = ConstitutionAuditEngine()
-    result = audit.run(actions=["Direct commit to main branch without review"])
+    result = audit.run(actions=[{"type": "git_commit", "details": {"branch": "main"}}])
     assert len(result.violations) >= 1

@@ -414,7 +414,7 @@ class ConstitutionAuditEngine:
         # INV-001: No direct main branch commits
         if inv_id == "INV-001":
             for action in actions:
-                if action.get("type") == "git_commit":
+                if isinstance(action, dict) and action.get("type") == "git_commit":
                     branch = action.get("details", {}).get("branch", "")
                     if branch == "main":
                         # Check for emergency override in context
@@ -424,7 +424,7 @@ class ConstitutionAuditEngine:
         # INV-002: No unvalidated trading execution
         if inv_id == "INV-002":
             for action in actions:
-                if action.get("type") == "trading_execute":
+                if isinstance(action, dict) and action.get("type") == "trading_execute":
                     backtest_passed = action.get("details", {}).get(
                         "backtest_passed", False
                     )
@@ -441,7 +441,10 @@ class ConstitutionAuditEngine:
                 "duckduckgo-mcp-server",
             ]
             for action in actions:
-                if action.get("type") == "container_modify":
+                if (
+                    isinstance(action, dict)
+                    and action.get("type") == "container_modify"
+                ):
                     container = action.get("details", {}).get("container", "")
                     if container in protected:
                         override = context.get("override", {})
@@ -450,7 +453,7 @@ class ConstitutionAuditEngine:
         # INV-005: Rate limit respect
         if inv_id == "INV-005":
             for action in actions:
-                if action.get("type") == "api_call":
+                if isinstance(action, dict) and action.get("type") == "api_call":
                     rate_exceeded = action.get("details", {}).get(
                         "rate_limit_exceeded", False
                     )

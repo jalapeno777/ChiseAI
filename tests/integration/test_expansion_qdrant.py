@@ -95,10 +95,12 @@ class TestExpansionQdrantIntegration:
         assert len(points) == 1
         point = points[0]
 
-        # Check point_id is deterministic UUID derived from belief_id
-        from src.autonomous_cognition.expansion.engine import _EXPANSION_NAMESPACE
+        # Check point_id is deterministic SHA256 hash derived from belief_id (same as engine)
+        import hashlib
 
-        expected_id = uuid.uuid5(_EXPANSION_NAMESPACE, sample_expanded_belief.belief_id)
+        expected_id = hashlib.sha256(
+            sample_expanded_belief.belief_id.encode("utf-8")
+        ).hexdigest()[:32]
         assert str(point["id"]) == str(expected_id)
 
         # Check vector is 384 dimensions (as per config)
@@ -133,10 +135,10 @@ class TestExpansionQdrantIntegration:
             "metadata": {},
         }
 
-        # Calculate expected point_id using UUID5 (same as engine)
-        from src.autonomous_cognition.expansion.engine import _EXPANSION_NAMESPACE
+        # Calculate expected point_id using SHA256 hash (same as engine)
+        import hashlib
 
-        expected_point_id = uuid.uuid5(_EXPANSION_NAMESPACE, belief_id)
+        expected_point_id = hashlib.sha256(belief_id.encode("utf-8")).hexdigest()[:32]
 
         # Setup mock to return our stored point
         mock_point = MagicMock()

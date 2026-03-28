@@ -4,15 +4,15 @@ Provides timeboxed belief expansion for autonomous cognition.
 """
 
 from .belief_expansion import (
+    BELIEF_EXPANSION_COLLECTION,
     DEFAULT_MIN_CONFIDENCE,
     DEFAULT_MIN_RELEVANCE_SCORE,
     DEFAULT_TIME_LIMIT_SECONDS,
-    BELIEF_EXPANSION_COLLECTION,
+    ExpandedBelief,
     ExpansionConfig,
     ExpansionProgress,
     ExpansionResult,
     ExpansionType,
-    ExpandedBelief,
 )
 from .engine import BeliefExpander, expand_beliefs
 
