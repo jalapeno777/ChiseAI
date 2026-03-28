@@ -736,10 +736,10 @@ if __name__ == "__main__":
 
 # Import all collectors for integrated harness
 try:
-    from scripts.validation.discord_evidence import DiscordEvidenceCollector
-    from scripts.validation.influx_evidence import InfluxEvidenceCollector
-    from scripts.validation.recap_validator import RecapValidator
-    from scripts.validation.redis_deltas import RedisDeltaCollector
+    from .discord_evidence import DiscordEvidenceCollector
+    from .influx_evidence import InfluxEvidenceCollector
+    from .recap_validator import RecapValidator
+    from .redis_deltas import RedisDeltaCollector
 
     COLLECTORS_AVAILABLE = True
 except ImportError:

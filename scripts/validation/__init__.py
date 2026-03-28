@@ -22,13 +22,13 @@ Example:
     result = await harness.run_integrated_proof_loop()
 """
 
-from scripts.validation.discord_evidence import DiscordEvidenceCollector
-from scripts.validation.forensic_harness import (
+from .discord_evidence import DiscordEvidenceCollector
+from .forensic_harness import (
     ForensicHarness,
     IntegratedForensicHarness,
 )
-from scripts.validation.influx_evidence import InfluxEvidenceCollector
-from scripts.validation.recap_validator import (
+from .influx_evidence import InfluxEvidenceCollector
+from .recap_validator import (
     DiscordMessageEvidence,
     GateResult,
     GateStatus,
@@ -36,11 +36,11 @@ from scripts.validation.recap_validator import (
     RecapValidationEvidence,
     RecapValidator,
 )
-from scripts.validation.reconcile_bybit_journal import (
+from .reconcile_bybit_journal import (
     BybitJournalReconciler,
     ReconciliationReport,
 )
-from scripts.validation.redis_deltas import RedisDeltaCollector
+from .redis_deltas import RedisDeltaCollector
 
 __all__ = [
     "ForensicHarness",

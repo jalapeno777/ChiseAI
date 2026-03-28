@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
 
-from src.validation.statistical.hypothesis_framework import (
+from validation.statistical.hypothesis_framework import (
     two_proportion_z_test,
 )
 
@@ -477,7 +477,7 @@ def significance_test(
 
     if use_fisher_exact or small_sample:
         # Use Fisher exact test
-        from src.validation.statistical.analysis import fisher_exact_test
+        from validation.statistical.analysis import fisher_exact_test
 
         result = fisher_exact_test(
             treatment_successes,

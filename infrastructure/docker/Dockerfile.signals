@@ -21,7 +21,7 @@ RUN mkdir -p /var/log/chiseai && chmod 755 /var/log/chiseai
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src:/app/scripts
 
 # Run supervisor
 CMD ["python3", "scripts/monitoring/supervisor.py"]

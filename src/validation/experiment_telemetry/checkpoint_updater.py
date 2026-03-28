@@ -29,11 +29,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-# Import statistical functions
-from src.validation.statistical import two_proportion_z_test
-
 # Import Redis state functions
 from tools.redis_state import redis_state_hgetall, redis_state_lrange
+
+# Import statistical functions
+from validation.statistical import two_proportion_z_test
 
 # Redis key patterns
 REDIS_KEYS = {
