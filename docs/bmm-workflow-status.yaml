@@ -294,16 +294,15 @@ completed:
         status: merged
       - id: ST-AUTOCOG-016
         status: merged
-    deferred_sp: 9
+    deferred_sp: 6
     deferred_stories:
       - id: ST-AUTOCOG-003
         title: sys.path Fix
-      - id: ST-AUTOCOG-007
-        title: Belief Expansion
       - id: ST-AUTOCOG-014
         title: Autonomy Tuning
     description: Sprint AUTOCOG-2026-03-27 closed with 13 of 16 stories merged.
-      3 stories deferred to backlog for future scheduling.
+      2 stories deferred to backlog for future scheduling (ST-AUTOCOG-007
+      completed via FIX-AUTOCOG-007-A/B).
     id: AUTOCOG-2026-03-27
     notes:
       - "Sprint closed at inception - items moved to backlog for future scheduling"
@@ -311,8 +310,11 @@ completed:
       - "3 stories deferred (9 SP)"
       - "Module imports successfully - 312 tests passing"
       - "Critical fixes: Discord spam prevention, BeliefStore Redis persistence"
-      - "Deferred stories: ST-AUTOCOG-003, ST-AUTOCOG-007, ST-AUTOCOG-014"
+      - "Deferred stories: ST-AUTOCOG-003, ST-AUTOCOG-014"
       - "ST-AUTOCOG-002 and ST-AUTOCOG-005-T1 completed per Critic review (2026-03-27)"
+      - >-
+        ST-AUTOCOG-007 (Belief Expansion) completed via FIX-AUTOCOG-007-A
+        (2026-03-28, SHA 211de68) and FIX-AUTOCOG-007-B (registry update)
     rationale: Sprint closed at inception, items moved to backlog for future scheduling
     sprint_id: AUTOCOG-2026-03-27
     status: completed
