@@ -25,8 +25,13 @@ class BeliefStore:
         self._beliefs: dict[str, Belief] = {}
         self._relationships: dict[str, BeliefRelationship] = {}
 
-    def put(self, belief: Belief) -> None:
-        """Save or update belief with domain indexing."""
+    def put(self, belief: Belief) -> bool:
+        """Save or update belief with domain indexing.
+
+        Returns:
+            True if belief was successfully stored (in memory and Redis if available).
+            False if belief failed validation.
+        """
         logger.info("[BELIEF_STORE] ENTERING put() with belief_id=%s", belief.belief_id)
 
         # Validate belief before storing
@@ -37,7 +42,7 @@ class BeliefStore:
                 belief.belief_id,
                 validation_errors,
             )
-            return
+            return False
 
         self._beliefs[belief.belief_id] = belief
         logger.info("[BELIEF_STORE] Saved to memory: _beliefs[%s]", belief.belief_id)
@@ -66,7 +71,7 @@ class BeliefStore:
                     "[BELIEF_STORE] Domain index updated for domain=%s", belief.domain
                 )
                 logger.info("[BELIEF_STORE] Returning early after Redis ops")
-                return
+                return True
             logger.info("[BELIEF_STORE] redis_client is None, using module-level tools")
             from tools.redis_state import redis_state_hset, redis_state_set
 
@@ -103,6 +108,7 @@ class BeliefStore:
             )
             logger.debug("[BELIEF_STORE] Belief Redis persistence skipped: %s", e)
         logger.info("[BELIEF_STORE] EXITING put() for belief_id=%s", belief.belief_id)
+        return True
 
     def get_beliefs_by_domain(self, domain: str) -> list[Belief]:
         """Get all beliefs in a specific domain.

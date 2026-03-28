@@ -431,7 +431,11 @@ class ContradictionResolver:
 
         # Update in store if provided
         if store is not None:
-            store.put(belief)
+            if not store.put(belief):
+                logger.warning(
+                    "[CONTRADICTION_RESOLVER] Failed to persist adjusted belief %s",
+                    belief.belief_id,
+                )
 
         # Update graph
         self._graph.add_belief(belief)
@@ -496,8 +500,16 @@ class ContradictionResolver:
 
         # Update store and graph
         if store is not None:
-            store.put(keep_belief)
-            store.put(discard_belief)
+            if not store.put(keep_belief):
+                logger.warning(
+                    "[CONTRADICTION_RESOLVER] Failed to persist keep belief %s",
+                    keep_belief.belief_id,
+                )
+            if not store.put(discard_belief):
+                logger.warning(
+                    "[CONTRADICTION_RESOLVER] Failed to persist discard belief %s",
+                    discard_belief.belief_id,
+                )
 
         self._graph.add_belief(keep_belief)
         self._graph.add_belief(discard_belief)
@@ -542,7 +554,11 @@ class ContradictionResolver:
         belief.updated_at = datetime.now(UTC).isoformat()
 
         if store is not None:
-            store.put(belief)
+            if not store.put(belief):
+                logger.warning(
+                    "[CONTRADICTION_RESOLVER] Failed to persist archived belief %s",
+                    belief.belief_id,
+                )
 
         self._graph.add_belief(belief)
 
@@ -582,7 +598,11 @@ class ContradictionResolver:
 
         # Update store and graph
         if store is not None:
-            store.put(superseded_belief)
+            if not store.put(superseded_belief):
+                logger.warning(
+                    "[CONTRADICTION_RESOLVER] Failed to persist superseded belief %s",
+                    superseded_belief.belief_id,
+                )
 
         self._graph.add_belief(superseded_belief)
 
