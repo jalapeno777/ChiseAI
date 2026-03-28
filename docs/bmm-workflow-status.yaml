@@ -67,6 +67,8 @@ completed:
     description: Batch lint cleanup - fix accumulated black and ruff violations in src/ and tests/
     id: REPO-LINT-001
     title: Lint Cleanup
+    pr_number: 649
+    merge_commit: 4d2b850f
     notes:
       - "Baseline: 3 black violations, 62 ruff violations"
       - "Fixed: 3 files reformatted, 63 auto-fixes, 1 manual fix (unused variable)"
@@ -3784,6 +3786,8 @@ launch_stories:
       timestamp_end: "2026-03-02T00:30:00Z"
       timestamp_start: "2026-03-02T00:00:00Z"
     priority: P1-HIGH
+    pr_number: 318
+    merge_commit: 77ad007db
     status: completed
     story_points: 3
     title: Paper Trading 30-Minute Proof Loop Validation
