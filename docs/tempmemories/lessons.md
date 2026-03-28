@@ -621,3 +621,92 @@ LESSON
 
 9. **After CI-oriented Python edits, run targeted `black --check` on touched files before pushing to main**
    - Pipeline 2488 failed only because four touched files were not Black-formatted; targeted formatting was enough to turn follow-up pipeline 2489 green.
+
+```text
+LESSON
+- id: LESSON-20260328-base-freshness-gate
+- context: AUTOCOG sprint - multiple branches created from stale main causing cascade conflicts
+- trigger: Feature branches created from outdated origin/main
+- actionable_rule: Before creating feature branches, verify branch base is current origin/main. Stale bases cause cascade conflicts across dependent branches.
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: All feature branches start from current origin/main; minimal merge conflicts
+- evidence_ref: AUTOCOG-2026-03-27 sprint, git divergence incident
+- added_utc: 2026-03-28T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260328-ci-context-awareness
+- context: push.yaml runs lightweight gates; ci.yaml runs full validation
+- trigger: Confusion when push passes but PR fails
+- actionable_rule: CI context awareness - push.yaml runs lightweight gates; ci.yaml runs full validation. A 'push passes, PR fails' pattern is expected — diagnose the actual PR failure, don't chase push vs PR divergence.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Faster diagnosis by focusing on actual PR failure rather than push/PR discrepancy
+- evidence_ref: AUTOCOG sprint CI behavior
+- added_utc: 2026-03-28T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260328-empty-pr-detection
+- context: PHASE4-002 and PHASE4-004 were superseded by PHASE4-003
+- trigger: After rebase, PR diff became empty but PR remained open
+- actionable_rule: Empty PR detection - After rebase, check if PR diff is empty. Auto-close superseded PRs to avoid merge noise.
+- applies_to:
+  - jarvis
+  - merlin
+- expected_outcome: Empty/superseded PRs are identified and closed promptly
+- evidence_ref: PHASE4-002, PHASE4-004 superseded by PHASE4-003
+- added_utc: 2026-03-28T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260328-sprint-closeout-validation
+- context: validate_status_evidence.py failed on sprint closeout entries
+- trigger: Sprint closeout entries (with sprint_id or closeout_date) were incorrectly validated for story evidence fields
+- actionable_rule: validate_status_evidence.py: Sprint closeout entries (with sprint_id or closeout_date) must be skipped when validating story evidence fields (pr_number, merge_commit).
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Sprint closeout entries don't trigger false validation failures
+- evidence_ref: PR #770 fix for validate_status_evidence.py
+- added_utc: 2026-03-28T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260328-autocog-phase5-001
+- context: EP-AUTOCOG-005 Phase 5 - BeliefStore.put() returned None on success and failure
+- trigger: BeliefStore.put() silent failure made error detection impossible
+- actionable_rule: Always validate Redis write operations with explicit return value checks. Implement connection pooling and fallback mechanisms for critical persistence paths.
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: BeliefStore writes return explicit success/failure; callers validate return values
+- evidence_ref: EP-AUTOCOG-005-T1, ST-AUTOCOG-005-T2, ST-AUTOCOG-005-T3
+- added_utc: 2026-03-28T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260328-autocog-phase5-002
+- context: EP-AUTOCOG-005 Phase 5 closure required synchronized updates across workflow status, validation registry, and memory
+- trigger: Complex persistence bugs benefit from checkpoint-based decomposition (T1 debug, T2 fix, T3 verify)
+- actionable_rule: Plan for verification checkpoints when fixing data layer issues. Maintain pairing between workflow status and validation registry from the start.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Synchronized updates across all tracking systems; clear phase boundaries
+- evidence_ref: EP-AUTOCOG-005 Phase 5 closure
+- added_utc: 2026-03-28T00:00:00Z
+```
