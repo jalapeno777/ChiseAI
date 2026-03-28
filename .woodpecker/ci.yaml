@@ -22,7 +22,7 @@ steps:
         set +e
         (
           set -euo pipefail
-          python scripts/ci/validate_swarm_context.py
+          python3 scripts/ci/validate_swarm_context.py
         ) > "$${CI_STATUS_DIR}/swarm-context.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/swarm-context.log"
@@ -77,14 +77,14 @@ steps:
         set +e
         (
           set -euo pipefail
-          python -V
+          python3 -V
           # Validate CI_PIPELINE_FILES is a non-empty JSON array with actual files
           if [ -z "${CI_PIPELINE_FILES:-}" ] || [ "${CI_PIPELINE_FILES:-}" = "[]" ] || [ "${CI_PIPELINE_FILES:-}" = "null" ]; then
             echo "lint: no changed files detected; skipping lint checks"
             echo "0" > "$${CI_STATUS_DIR}/lint.status"
             exit 0
           fi
-          CHANGED_PY="$(python -c 'import json, os; raw=os.environ.get("CI_PIPELINE_FILES","[]"); payload=json.loads(raw) if raw else []; files=[str(item).strip() for item in payload if isinstance(payload, list) and str(item).strip().endswith(".py")]; print(" ".join(files))' 2>/dev/null || true)"
+          CHANGED_PY="$(python3 -c 'import json, os; raw=os.environ.get("CI_PIPELINE_FILES","[]"); payload=json.loads(raw) if raw else []; files=[str(item).strip() for item in payload if isinstance(payload, list) and str(item).strip().endswith(".py")]; print(" ".join(files))' 2>/dev/null || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
             printf '%s\n' "$CHANGED_PY" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs black --check
@@ -100,14 +100,14 @@ steps:
             echo "mypy: no changed src/scripts files; checking baseline src package"
             mypy src || echo "WARN: mypy violations (non-blocking)"
           fi
-          python scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
-          python scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
+          python3 scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
+          python3 scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
           # Iterloop compliance remains optional by default to avoid blocking
           # non-story infra/docs runs. Set CI_SKIP_ITERLOOP_COMPLIANCE=0 to enforce.
           if [ "${CI_SKIP_ITERLOOP_COMPLIANCE:-1}" = "1" ]; then
             echo "lint: skipping iterloop compliance (CI_SKIP_ITERLOOP_COMPLIANCE=1)"
           else
-            python scripts/validate_iterloop_compliance.py || echo "WARN: iterloop compliance issues (non-blocking)"
+            python3 scripts/validate_iterloop_compliance.py || echo "WARN: iterloop compliance issues (non-blocking)"
           fi
           CHANGED_ITERLOGS="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '^docs/tempmemories/iterlog-.*\\.md$' || true)"
           if [ -n "$(printf '%s' "$CHANGED_ITERLOGS" | tr -d '[:space:]')" ]; then
@@ -131,7 +131,7 @@ steps:
               if [ "${CI_TP_SESSION_SELF_HEAL:-1}" = "1" ]; then
                 TP_SESSION_ARGS="--tp-session-self-heal"
               fi
-              python scripts/validation/validate_insight_governance.py \
+              python3 scripts/validation/validate_insight_governance.py \
                 --story-id "${story_id}" \
                 --strict \
                 --tp-session-artifact-mode "${TP_SESSION_MODE}" \
@@ -143,18 +143,18 @@ steps:
               story_id="$(basename "$iterlog_path" .md | sed 's/^iterlog-//')"
               echo " - validating story_id=${story_id} from ${iterlog_path}"
               if [ "${CI_REQUIRE_REDIS_METACOG_ARTIFACTS:-0}" = "1" ]; then
-                python scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict --require-artifacts
+                python3 scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict --require-artifacts
               else
-                python scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict
+                python3 scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict
               fi
             done
           else
             echo "insight-governance: no changed iterlog files; skipping strict check"
             echo "metacog-governance: no changed iterlog files; skipping strict check"
           fi
-          python scripts/validate_pr_title.py || echo "WARN: PR title validation issue (non-blocking)"
-          python scripts/validate_traceability_drift.py --verbose || echo "WARN: traceability drift issues (non-blocking)"
-          python scripts/ci/validate_bootstrap_compliance.py --check --allowlist scripts/ci/bootstrap_allowlist.txt || echo "WARN: bootstrap compliance issues"
+          python3 scripts/validate_pr_title.py || echo "WARN: PR title validation issue (non-blocking)"
+          python3 scripts/validate_traceability_drift.py --verbose || echo "WARN: traceability drift issues (non-blocking)"
+          python3 scripts/ci/validate_bootstrap_compliance.py --check --allowlist scripts/ci/bootstrap_allowlist.txt || echo "WARN: bootstrap compliance issues"
         ) > "$${CI_STATUS_DIR}/lint.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/lint.log"
@@ -367,9 +367,9 @@ steps:
             echo "local-ci: pull_request ref detected ($${REF}); running changed-files + critical path tests"
             # PR mode: run changed-files + critical path tests instead of full suite
             CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null | tr '\n' ' ')"
-            if python scripts/ci/critical_paths.py --check $CHANGED_FILES; then
+            if python3 scripts/ci/critical_paths.py --check $CHANGED_FILES; then
               echo "local-ci: no critical paths affected; running lightweight sanity check"
-              python -c "import sys; print('Python imports OK')" && exit 0 || exit 1
+              python3 -c "import sys; print('Python imports OK')" && exit 0 || exit 1
             else
               echo "local-ci: critical paths matched; running critical path test subset"
               pytest tests/test_execution/ tests/test_ml/ tests/test_venue_enforcement/ tests/test_kill_switch/ tests/test_reconciliation/ tests/test_paper/ -x -q --tb=short
@@ -380,7 +380,7 @@ steps:
           fi
 
           if [ "$${FULL_MODE}" = "0" ]; then
-            if python scripts/ci/ci_change_scope.py --mode docs-only; then
+            if python3 scripts/ci/ci_change_scope.py --mode docs-only; then
               echo "local-ci: docs/opencode-only change detected; skipping heavy local-ci checks"
               exit 0
             fi
@@ -451,7 +451,7 @@ steps:
             echo "0" > "$${CI_STATUS_DIR}/brain-eval.status"
             exit 0
           fi
-          python -V
+          python3 -V
           # Determine feature flag value (same logic as pre-eval-ingestion)
           if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" = "auto" ]; then
             if [ "$${CI_COMMIT_BRANCH}" != "main" ] && [ "$${CI_COMMIT_BRANCH}" != "$${CI_REPO_DEFAULT_BRANCH:-main}" ]; then
@@ -475,8 +475,8 @@ steps:
             set -e
             pip install -e . || pip install -e . --break-system-packages
             # D-03: Verify pip install actually worked - detect silent failures
-            python -c "import chiseai" || { echo "FATAL: pip install failed silently - package not importable"; exit 1; }
-            python scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-eval.json"
+            python3 -c "import chiseai" || { echo "FATAL: pip install failed silently - package not importable"; exit 1; }
+            python3 scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-eval.json"
           else
             echo "No brain changes detected, skipping evaluation"
             echo '{"success": true, "skipped": true, "reason": "No brain changes detected"}' > "$${CI_STATUS_DIR}/brain-eval.json"
@@ -671,7 +671,7 @@ steps:
         (
           set -euo pipefail
           echo "post-run: Collecting and reporting CI/CD test results..."
-          python scripts/ci_integration/post_run_reporter.py \
+          python3 scripts/ci_integration/post_run_reporter.py \
             --output-md "$${CI_STATUS_DIR}/post-run-report.md" \
             --repo-path . \
             > "$${CI_STATUS_DIR}/post-run-report.json"
@@ -693,7 +693,7 @@ steps:
         set +e
         (
           set -euo pipefail
-          python scripts/ci/coverage_changed_lines.py
+          python3 scripts/ci/coverage_changed_lines.py
         ) > "$${CI_STATUS_DIR}/changed-lines-coverage.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/changed-lines-coverage.log"
@@ -768,7 +768,7 @@ steps:
         echo "[evaluation-pre-eval-group] [1/3] Running pre-eval-ingestion..."
         (
           set -euo pipefail
-          python scripts/ci/pre_eval_ingestion.py --output "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
+          python3 scripts/ci/pre_eval_ingestion.py --output "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
         ) >> "$${CI_STATUS_DIR}/pre-eval-ingestion.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/pre-eval-ingestion.log"
@@ -790,7 +790,7 @@ steps:
         echo "[evaluation-pre-eval-group] [3/3] Running gate-eval..."
         (
           set -euo pipefail
-          python scripts/ci_integration/gate_evaluator.py --output "$${CI_STATUS_DIR}/gate-eval-report.json"
+          python3 scripts/ci_integration/gate_evaluator.py --output "$${CI_STATUS_DIR}/gate-eval-report.json"
         ) >> "$${CI_STATUS_DIR}/gate-eval.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/gate-eval.log"
@@ -819,7 +819,7 @@ steps:
         echo "[quality-advisory-group] [1/6] Running pre-flight..."
         (
           set -euo pipefail
-          python scripts/ci_integration/pre_flight_checks.py --output "$${CI_STATUS_DIR}/pre-flight-report.json"
+          python3 scripts/ci_integration/pre_flight_checks.py --output "$${CI_STATUS_DIR}/pre-flight-report.json"
         ) >> "$${CI_STATUS_DIR}/pre-flight.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/pre-flight.log"
@@ -830,7 +830,7 @@ steps:
         echo "[quality-advisory-group] [2/6] Running local-ci-consistency..."
         (
           set -euo pipefail
-          python scripts/validate_local_ci_consistency.py --verbose || true
+          python3 scripts/validate_local_ci_consistency.py --verbose || true
         ) >> "$${CI_STATUS_DIR}/local-ci-consistency.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/local-ci-consistency.log"
@@ -841,7 +841,7 @@ steps:
         echo "[quality-advisory-group] [3/6] Running pipeline-watchdog..."
         (
           set -euo pipefail
-          python scripts/ci/check_woodpecker_stuck_pipelines.py --max-running-seconds 1800
+          python3 scripts/ci/check_woodpecker_stuck_pipelines.py --max-running-seconds 1800
         ) >> "$${CI_STATUS_DIR}/pipeline-watchdog.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/pipeline-watchdog.log"
@@ -1009,4 +1009,4 @@ steps:
         from_secret: gitea_token
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
-      - "set -euo pipefail\npython scripts/ci/ci_gate.py\n"
+      - "set -euo pipefail\npython3 scripts/ci/ci_gate.py\n"

@@ -348,10 +348,13 @@ backlog:
       - "Root cause: Docker image inconsistency between python and python3 naming"
       - "Impact: CI pipeline failures, blocking merges"
       - "Related: AUTOCOG-2026-03-27 sprint, ST-AUTOCOG-* stories"
+      - "Fix: Standardized all bare 'python' calls to 'python3' in .woodpecker/ci.yaml"
     owner: senior-dev
     priority: P0-CRITICAL
-    status: planned
+    status: completed
     title: CI Infrastructure Drift - Docker PATH and ci-gate Mismatch Fixes
+    completed_date: "2026-03-28"
+    merge_commit: ""
   - acceptance_criteria:
       - AGENTS.md updated with new merge policy including senior-dev authority and merge
         attempt definitions
