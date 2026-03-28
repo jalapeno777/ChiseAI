@@ -12,11 +12,7 @@ from typing import Any, Protocol
 
 from .artifacts import SelfAssessmentArtifact
 from .beliefs.store import BeliefStore
-from .expansion import (
-    BeliefExpander,
-    ExpansionConfig,
-    expanded_belief_to_belief,
-)
+from .expansion import ExpansionConfig
 
 logger = logging.getLogger(__name__)
 
