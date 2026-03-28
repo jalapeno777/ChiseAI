@@ -863,8 +863,10 @@ class PaperTradingOrchestrator:
         if effective_stop_loss:
             order.metadata["stop_loss"] = effective_stop_loss
             order.metadata["stop_loss_method"] = signal.stop_loss_method or "unknown"
-        if recommended_take_profit:
-            order.metadata["take_profit"] = recommended_take_profit
+        # Use recommended_take_profit (from LLM) or fall back to signal.take_profit
+        effective_take_profit = recommended_take_profit or signal.take_profit
+        if effective_take_profit:
+            order.metadata["take_profit"] = effective_take_profit
 
         logger.debug(
             f"Created {order.order_type} order: {order.symbol} "
