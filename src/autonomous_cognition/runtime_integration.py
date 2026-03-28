@@ -20,6 +20,71 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class PerformanceMetrics:
+    """Risk-adjusted performance metrics for non-regression tracking.
+
+    Attributes:
+        sharpe: Sharpe ratio (risk-adjusted returns)
+        sortino: Sortino ratio (downside risk-adjusted returns)
+        drawdown: Maximum drawdown percentage
+        ece: Expected Calibration Error
+        win_rate: Percentage of profitable trades
+        turnover: Portfolio turnover rate
+    """
+
+    sharpe: float = 1.0
+    sortino: float = 1.0
+    drawdown: float = 0.0
+    ece: float = 0.1
+    win_rate: float = 0.55
+    turnover: float = 0.15
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "sharpe": round(self.sharpe, 3),
+            "sortino": round(self.sortino, 3),
+            "drawdown": round(self.drawdown, 4),
+            "ece": round(self.ece, 4),
+            "win_rate": round(self.win_rate, 4),
+            "turnover": round(self.turnover, 4),
+        }
+
+
+@dataclass
+class BeforeAfterComparison:
+    """Tracks before/after comparison for improvement validation.
+
+    Attributes:
+        before_metrics: Metrics before improvement
+        after_metrics: Metrics after improvement
+        delta_sharpe: Change in Sharpe ratio
+        delta_sortino: Change in Sortino ratio
+        delta_drawdown: Change in drawdown (negative = improvement)
+        is_improvement: Whether improvement was achieved
+        passed_non_regression: Whether no degradation occurred
+    """
+
+    before_metrics: PerformanceMetrics
+    after_metrics: PerformanceMetrics
+    delta_sharpe: float = 0.0
+    delta_sortino: float = 0.0
+    delta_drawdown: float = 0.0
+    is_improvement: bool = False
+    passed_non_regression: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "before": self.before_metrics.to_dict(),
+            "after": self.after_metrics.to_dict(),
+            "delta_sharpe": round(self.delta_sharpe, 4),
+            "delta_sortino": round(self.delta_sortino, 4),
+            "delta_drawdown": round(self.delta_drawdown, 4),
+            "is_improvement": self.is_improvement,
+            "passed_non_regression": self.passed_non_regression,
+        }
+
+
 class IntegrationMode(Enum):
     """Operating modes for neuro-symbolic integration."""
 
@@ -71,6 +136,7 @@ class RuntimeIntegrationResult:
     passed_non_regression: bool
     processing_time_ms: float
     details: dict[str, Any]
+    performance_metrics: PerformanceMetrics | None = None
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
@@ -83,6 +149,9 @@ class RuntimeIntegrationResult:
             "passed_non_regression": self.passed_non_regression,
             "processing_time_ms": self.processing_time_ms,
             "details": self.details,
+            "performance_metrics": (
+                self.performance_metrics.to_dict() if self.performance_metrics else None
+            ),
             "timestamp": self.timestamp,
         }
 
@@ -95,6 +164,104 @@ class BaselinePrediction:
     confidence: float
     symbol: str | None = None
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+@dataclass
+class CanaryOutcome:
+    """Tracks P&L of a canary-influenced decision.
+
+    Attributes:
+        decision_id: Unique identifier for this decision
+        symbol: Trading pair symbol (e.g., "BTC/USDT")
+        prediction: The prediction made (buy/sell/hold)
+        confidence: Confidence level (0-1)
+        predicted_direction: Direction predicted (up/down/flat)
+        actual_direction: Actual market direction (up/down/flat)
+        pnl: Profit/loss realized from this decision
+        pnl_fraction: P&L as fraction of portfolio
+        entry_price: Price at which decision was made
+        exit_price: Price at which position was closed
+        is_canary: Whether this was a canary-influenced decision
+        influence_applied: Whether neuro-symbolic influence was applied
+        divergence_score: Divergence score at time of decision
+        timestamp: When the decision was made
+    """
+
+    decision_id: str
+    symbol: str | None
+    prediction: str
+    confidence: float
+    predicted_direction: str  # up, down, flat
+    actual_direction: str | None = None  # up, down, flat, unknown
+    pnl: float = 0.0
+    pnl_fraction: float = 0.0
+    entry_price: float = 0.0
+    exit_price: float = 0.0
+    is_canary: bool = True
+    influence_applied: bool = False
+    divergence_score: float = 0.0
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "decision_id": self.decision_id,
+            "symbol": self.symbol,
+            "prediction": self.prediction,
+            "confidence": round(self.confidence, 4),
+            "predicted_direction": self.predicted_direction,
+            "actual_direction": self.actual_direction,
+            "pnl": round(self.pnl, 8),
+            "pnl_fraction": round(self.pnl_fraction, 6),
+            "entry_price": round(self.entry_price, 8),
+            "exit_price": round(self.exit_price, 8),
+            "is_canary": self.is_canary,
+            "influence_applied": self.influence_applied,
+            "divergence_score": round(self.divergence_score, 4),
+            "timestamp": self.timestamp,
+        }
+
+
+@dataclass
+class OutcomeComparison:
+    """Compares canary outcomes vs baseline.
+
+    Attributes:
+        canary_total_pnl: Total P&L from canary-influenced decisions
+        baseline_total_pnl: Total P&L from baseline decisions
+        canary_win_rate: Win rate of canary decisions
+        baseline_win_rate: Win rate of baseline decisions
+        canary_trade_count: Number of canary trades
+        baseline_trade_count: Number of baseline trades
+        pnl_difference: Difference in P&L (canary - baseline)
+        win_rate_difference: Difference in win rates
+        relative_performance: Relative performance (canary vs baseline as ratio)
+        is_regression: Whether canary represents a regression vs baseline
+    """
+
+    canary_total_pnl: float = 0.0
+    baseline_total_pnl: float = 0.0
+    canary_win_rate: float = 0.0
+    baseline_win_rate: float = 0.0
+    canary_trade_count: int = 0
+    baseline_trade_count: int = 0
+    pnl_difference: float = 0.0
+    win_rate_difference: float = 0.0
+    relative_performance: float = 1.0
+    is_regression: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "canary_total_pnl": round(self.canary_total_pnl, 8),
+            "baseline_total_pnl": round(self.baseline_total_pnl, 8),
+            "canary_win_rate": round(self.canary_win_rate, 4),
+            "baseline_win_rate": round(self.baseline_win_rate, 4),
+            "canary_trade_count": self.canary_trade_count,
+            "baseline_trade_count": self.baseline_trade_count,
+            "pnl_difference": round(self.pnl_difference, 8),
+            "win_rate_difference": round(self.win_rate_difference, 4),
+            "relative_performance": round(self.relative_performance, 4),
+            "is_regression": self.is_regression,
+        }
 
 
 class NeuroSymbolicRuntimeIntegrator:
@@ -132,11 +299,32 @@ class NeuroSymbolicRuntimeIntegrator:
     # Canary mode constraints
     CANARY_MAX_POSITION_FRACTION = 0.01  # Max 1% of portfolio in canary
 
+    # Non-regression thresholds for risk-adjusted performance
+    # These ensure no degradation in key metrics when promoting improvements
+    MIN_SHARPE_NON_REGRESSION = 1.0  # Minimum Sharpe ratio - below this is regression
+    MAX_DRAWDOWN_NON_REGRESSION = 0.25  # Maximum drawdown - above this is regression
+    MIN_SORTINO_NON_REGRESSION = 1.0  # Minimum Sortino ratio - below this is regression
+    MAX_ECE_NON_REGRESSION = 0.20  # Maximum ECE - above this is regression
+
+    # Mode transition hysteresis thresholds
+    # Promote: canary -> full when score >= 0.35
+    PROMOTE_THRESHOLD = 0.35
+    # Demote: full -> canary when score >= 0.40
+    DEMOTE_THRESHOLD = 0.40
+
+    # Window-based promotion criteria
+    # Require N consecutive non-regression checks before promoting
+    REQUIRED_CONSECUTIVE_CHECKS = 5
+
+    # Drift detection threshold for auto-demotion
+    DRIFT_THRESHOLD_FOR_DEMOTION = 0.40
+
     def __init__(
         self,
         baseline_prediction: BaselinePrediction | None = None,
         enable_fallback: bool = True,
         shadow_lock: bool = True,
+        baseline_performance: PerformanceMetrics | None = None,
     ):
         """Initialize the runtime integrator.
 
@@ -144,14 +332,23 @@ class NeuroSymbolicRuntimeIntegrator:
             baseline_prediction: Optional baseline for divergence comparison
             enable_fallback: Whether to use fallback on orchestrator failure
             shadow_lock: If True, forces shadow mode regardless of settings
+            baseline_performance: Optional baseline performance metrics for comparison
         """
         self._baseline = baseline_prediction
         self._enable_fallback = enable_fallback
         self._shadow_lock = shadow_lock
+        self._baseline_performance = baseline_performance
         self._integration_history: list[RuntimeIntegrationResult] = []
         self._divergence_history: list[DivergenceMetrics] = []
+        self._canary_outcomes: list[CanaryOutcome] = []  # Track canary P&L
+        self._baseline_outcomes: list[CanaryOutcome] = []  # Track baseline P&L
         self._orchestrator = None
         self._fallback_used = False
+
+        # Mode transition state machine tracking
+        self._current_mode: IntegrationMode = IntegrationMode.SHADOW
+        self._consecutive_non_regression_count: int = 0
+        self._consecutive_non_regression_history: list[int] = []
 
     @property
     def shadow_lock(self) -> bool:
@@ -282,6 +479,124 @@ class NeuroSymbolicRuntimeIntegrator:
         }
 
         return metrics
+
+    def set_baseline_performance(self, performance: PerformanceMetrics) -> None:
+        """Set baseline performance metrics for non-regression comparison.
+
+        Args:
+            performance: Baseline performance metrics (Sharpe, Sortino, drawdown)
+        """
+        self._baseline_performance = performance
+        logger.info(
+            "[RUNTIME_INTEGRATION] Baseline performance set: Sharpe=%.3f, "
+            "Sortino=%.3f, Drawdown=%.4f",
+            performance.sharpe,
+            performance.sortino,
+            performance.drawdown,
+        )
+
+    def get_baseline_performance(self) -> PerformanceMetrics | None:
+        """Get the current baseline performance metrics.
+
+        Returns:
+            Baseline performance metrics or None if not set
+        """
+        return self._baseline_performance
+
+    def check_non_regression(
+        self, current_metrics: PerformanceMetrics
+    ) -> tuple[bool, BeforeAfterComparison]:
+        """Check if current metrics show non-regression vs baseline.
+
+        Args:
+            current_metrics: Current performance metrics to check
+
+        Returns:
+            Tuple of (passed_non_regression, comparison_details)
+        """
+        if self._baseline_performance is None:
+            # No baseline set - cannot check non-regression
+            return True, BeforeAfterComparison(
+                before_metrics=current_metrics,
+                after_metrics=current_metrics,
+                passed_non_regression=True,
+            )
+
+        # Calculate deltas
+        delta_sharpe = current_metrics.sharpe - self._baseline_performance.sharpe
+        delta_sortino = current_metrics.sortino - self._baseline_performance.sortino
+        delta_drawdown = current_metrics.drawdown - self._baseline_performance.drawdown
+
+        # Check non-regression criteria
+        # Sharpe should not decrease
+        sharpe_ok = delta_sharpe >= -0.1  # Allow 0.1 tolerance
+        # Sortino should not decrease
+        sortino_ok = delta_sortino >= -0.1  # Allow 0.1 tolerance
+        # Drawdown should not increase (negative delta means improvement)
+        drawdown_ok = delta_drawdown <= 0.05  # Allow 5% tolerance for drawdown increase
+        # ECE should not increase
+        ece_ok = current_metrics.ece <= self._baseline_performance.ece + 0.02
+
+        passed_non_regression = sharpe_ok and sortino_ok and drawdown_ok and ece_ok
+
+        # Determine if this is an improvement
+        is_improvement = (
+            current_metrics.sharpe > self._baseline_performance.sharpe
+            or current_metrics.sortino > self._baseline_performance.sortino
+            or current_metrics.drawdown < self._baseline_performance.drawdown
+        )
+
+        comparison = BeforeAfterComparison(
+            before_metrics=self._baseline_performance,
+            after_metrics=current_metrics,
+            delta_sharpe=delta_sharpe,
+            delta_sortino=delta_sortino,
+            delta_drawdown=delta_drawdown,
+            is_improvement=is_improvement,
+            passed_non_regression=passed_non_regression,
+        )
+
+        return passed_non_regression, comparison
+
+    def get_performance_report(self) -> dict[str, Any]:
+        """Generate a performance comparison report.
+
+        Returns:
+            Dictionary with baseline, current, and comparison metrics
+        """
+        if self._baseline_performance is None:
+            return {
+                "status": "no_baseline",
+                "message": "No baseline performance metrics set",
+            }
+
+        recent_with_performance = [
+            r for r in self._integration_history if r.performance_metrics is not None
+        ]
+
+        if not recent_with_performance:
+            return {
+                "status": "no_current_data",
+                "baseline": self._baseline_performance.to_dict(),
+                "message": "No current performance metrics available",
+            }
+
+        # Get latest performance
+        latest = recent_with_performance[-1].performance_metrics
+        if latest is None:
+            return {
+                "status": "error",
+                "message": "Unexpected: latest performance is None",
+            }
+        passed, comparison = self.check_non_regression(latest)
+
+        return {
+            "status": "ok",
+            "baseline": self._baseline_performance.to_dict(),
+            "current": latest.to_dict(),
+            "comparison": comparison.to_dict(),
+            "passed_non_regression": passed,
+        }
 
     def _get_orchestrator(self):
         """Lazy-load the neuro-symbolic orchestrator."""
@@ -420,12 +735,15 @@ class NeuroSymbolicRuntimeIntegrator:
         self,
         mode: str = "shadow",
         market_input: dict[str, Any] | None = None,
+        performance_metrics: PerformanceMetrics | None = None,
     ) -> RuntimeIntegrationResult:
         """Run neuro-symbolic integration in selected mode.
 
         Args:
             mode: Operating mode - "shadow", "canary", or "full"
             market_input: Market data for processing
+            performance_metrics: Optional performance metrics (Sharpe, Sortino, drawdown)
+                               for non-regression tracking
 
         Returns:
             RuntimeIntegrationResult with divergence metrics and status
@@ -466,6 +784,7 @@ class NeuroSymbolicRuntimeIntegrator:
             passed_non_regression=False,
             processing_time_ms=0.0,
             details={"fallback": "legacy_signal_pipeline"},
+            performance_metrics=None,
         )
 
         try:
@@ -513,6 +832,7 @@ class NeuroSymbolicRuntimeIntegrator:
                     "influence_reason": reason,
                     "orchestrator_used": True,
                 },
+                performance_metrics=performance_metrics,
             )
 
             self._fallback_used = False
@@ -562,13 +882,25 @@ class NeuroSymbolicRuntimeIntegrator:
         if len(self._divergence_history) > 1000:
             self._divergence_history = self._divergence_history[-1000:]
 
+        # Update mode transition state machine
+        self._update_consecutive_non_regression(passed, divergence_score)
+
+        # Check for auto-demotion from full to canary
+        if self._current_mode == IntegrationMode.FULL:
+            demoted, demote_reason = self.check_auto_demotion(divergence_score)
+            if demoted:
+                integration_result.details["auto_demoted"] = True
+                integration_result.details["demote_reason"] = demote_reason
+
         logger.info(
             "[RUNTIME_INTEGRATION] Result: mode=%s, divergence=%.3f, "
-            "influence=%s, passed=%s",
+            "influence=%s, passed=%s, consecutive_checks=%d/%d",
             mode,
             integration_result.divergence_score,
             integration_result.influence_applied,
             integration_result.passed_non_regression,
+            self._consecutive_non_regression_count,
+            self.REQUIRED_CONSECUTIVE_CHECKS,
         )
 
         return integration_result
@@ -663,6 +995,317 @@ class NeuroSymbolicRuntimeIntegrator:
         self._integration_history.clear()
         self._divergence_history.clear()
         logger.info("[RUNTIME_INTEGRATION] History cleared")
+
+    def record_canary_outcome(
+        self,
+        decision_id: str,
+        symbol: str | None,
+        prediction: str,
+        confidence: float,
+        predicted_direction: str,
+        pnl: float = 0.0,
+        pnl_fraction: float = 0.0,
+        entry_price: float = 0.0,
+        exit_price: float = 0.0,
+        actual_direction: str | None = None,
+        divergence_score: float = 0.0,
+    ) -> CanaryOutcome:
+        """Record a canary-influenced decision outcome."""
+        outcome = CanaryOutcome(
+            decision_id=decision_id,
+            symbol=symbol,
+            prediction=prediction,
+            confidence=confidence,
+            predicted_direction=predicted_direction,
+            actual_direction=actual_direction,
+            pnl=pnl,
+            pnl_fraction=pnl_fraction,
+            entry_price=entry_price,
+            exit_price=exit_price,
+            is_canary=True,
+            influence_applied=True,
+            divergence_score=divergence_score,
+        )
+        self._canary_outcomes.append(outcome)
+        logger.info(
+            "[RUNTIME_INTEGRATION] Canary outcome recorded: decision_id=%s symbol=%s pnl=%.4f",
+            decision_id,
+            symbol,
+            pnl,
+        )
+        return outcome
+
+    def record_baseline_outcome(
+        self,
+        decision_id: str,
+        symbol: str | None,
+        prediction: str,
+        confidence: float,
+        predicted_direction: str,
+        pnl: float = 0.0,
+        pnl_fraction: float = 0.0,
+        entry_price: float = 0.0,
+        exit_price: float = 0.0,
+        actual_direction: str | None = None,
+    ) -> CanaryOutcome:
+        """Record a baseline (non-canary) decision outcome."""
+        outcome = CanaryOutcome(
+            decision_id=decision_id,
+            symbol=symbol,
+            prediction=prediction,
+            confidence=confidence,
+            predicted_direction=predicted_direction,
+            actual_direction=actual_direction,
+            pnl=pnl,
+            pnl_fraction=pnl_fraction,
+            entry_price=entry_price,
+            exit_price=exit_price,
+            is_canary=False,
+            influence_applied=False,
+            divergence_score=0.0,
+        )
+        self._baseline_outcomes.append(outcome)
+        logger.info(
+            "[RUNTIME_INTEGRATION] Baseline outcome recorded: decision_id=%s symbol=%s pnl=%.4f",
+            decision_id,
+            symbol,
+            pnl,
+        )
+        return outcome
+
+    def get_outcome_comparison(self) -> OutcomeComparison:
+        """Compare canary outcomes vs baseline."""
+        canary_wins = sum(1 for o in self._canary_outcomes if o.pnl > 0)
+        baseline_wins = sum(1 for o in self._baseline_outcomes if o.pnl > 0)
+        canary_total = sum(o.pnl for o in self._canary_outcomes)
+        baseline_total = sum(o.pnl for o in self._baseline_outcomes)
+        canary_count = len(self._canary_outcomes)
+        baseline_count = len(self._baseline_outcomes)
+        canary_win_rate = (
+            (canary_wins / canary_count * 100) if canary_count > 0 else 0.0
+        )
+        baseline_win_rate = (
+            (baseline_wins / baseline_count * 100) if baseline_count > 0 else 0.0
+        )
+        pnl_diff = canary_total - baseline_total
+        win_rate_diff = canary_win_rate - baseline_win_rate
+        if baseline_total != 0:
+            relative_perf = canary_total / baseline_total
+        elif canary_total > 0:
+            relative_perf = float("inf")
+        else:
+            relative_perf = 1.0
+        is_regression = (
+            canary_total < (baseline_total * 0.9) if baseline_total != 0 else False
+        )
+        return OutcomeComparison(
+            canary_total_pnl=canary_total,
+            baseline_total_pnl=baseline_total,
+            canary_win_rate=canary_win_rate,
+            baseline_win_rate=baseline_win_rate,
+            canary_trade_count=canary_count,
+            baseline_trade_count=baseline_count,
+            pnl_difference=pnl_diff,
+            win_rate_difference=win_rate_diff,
+            relative_performance=relative_perf,
+            is_regression=is_regression,
+        )
+
+    def get_canary_pnl_report(self) -> dict[str, Any]:
+        """Generate a P&L report for canary-influenced decisions."""
+        if not self._canary_outcomes:
+            return {
+                "summary": "No canary outcomes recorded yet",
+                "canary_outcomes": [],
+                "comparison": None,
+            }
+        total_pnl = sum(o.pnl for o in self._canary_outcomes)
+        avg_pnl = (
+            total_pnl / len(self._canary_outcomes) if self._canary_outcomes else 0.0
+        )
+        wins = sum(1 for o in self._canary_outcomes if o.pnl > 0)
+        losses = sum(1 for o in self._canary_outcomes if o.pnl < 0)
+        breakeven = sum(1 for o in self._canary_outcomes if o.pnl == 0)
+        win_rate = (
+            (wins / len(self._canary_outcomes) * 100) if self._canary_outcomes else 0.0
+        )
+        sorted_outcomes = sorted(self._canary_outcomes, key=lambda o: o.pnl)
+        worst = sorted_outcomes[0] if sorted_outcomes else None
+        best = sorted_outcomes[-1] if sorted_outcomes else None
+        total_pnl_fraction = sum(o.pnl_fraction for o in self._canary_outcomes)
+        comparison = self.get_outcome_comparison()
+        return {
+            "summary": {
+                "total_canary_trades": len(self._canary_outcomes),
+                "total_pnl": round(total_pnl, 8),
+                "avg_pnl_per_trade": round(avg_pnl, 8),
+                "total_pnl_fraction": round(total_pnl_fraction, 6),
+                "wins": wins,
+                "losses": losses,
+                "breakeven": breakeven,
+                "win_rate_pct": round(win_rate, 2),
+                "best_trade": best.to_dict() if best else None,
+                "worst_trade": worst.to_dict() if worst else None,
+            },
+            "canary_outcomes": [o.to_dict() for o in self._canary_outcomes],
+            "comparison": comparison.to_dict(),
+        }
+
+    def reset_outcomes(self) -> None:
+        """Clear all outcome tracking data."""
+        self._canary_outcomes.clear()
+        self._baseline_outcomes.clear()
+        logger.info("[RUNTIME_INTEGRATION] Outcome history cleared")
+
+    def get_current_mode(self) -> IntegrationMode:
+        """Get the current operating mode.
+
+        Returns:
+            Current IntegrationMode (SHADOW, CANARY, or FULL)
+        """
+        return self._current_mode
+
+    def get_mode_transition_status(self) -> dict[str, Any]:
+        """Get the current mode transition state machine status.
+
+        Returns:
+            Dictionary with mode, consecutive non-regression count,
+            required checks, and whether promotion is available
+        """
+        promotion_ready = (
+            self._current_mode == IntegrationMode.CANARY
+            and self._consecutive_non_regression_count
+            >= self.REQUIRED_CONSECUTIVE_CHECKS
+        )
+
+        return {
+            "current_mode": self._current_mode.value,
+            "consecutive_non_regression_count": self._consecutive_non_regression_count,
+            "required_consecutive_checks": self.REQUIRED_CONSECUTIVE_CHECKS,
+            "promotion_ready": promotion_ready,
+            "promote_threshold": self.PROMOTE_THRESHOLD,
+            "demote_threshold": self.DEMOTE_THRESHOLD,
+            "consecutive_non_regression_history": self._consecutive_non_regression_history[
+                -10:
+            ],
+        }
+
+    def _update_consecutive_non_regression(
+        self, passed: bool, divergence_score: float
+    ) -> None:
+        """Update the consecutive non-regression counter.
+
+        Args:
+            passed: Whether non-regression check passed
+            divergence_score: Current divergence score
+        """
+        if passed:
+            self._consecutive_non_regression_count += 1
+        else:
+            # Reset counter on non-regression failure
+            self._consecutive_non_regression_count = 0
+
+        self._consecutive_non_regression_history.append(
+            self._consecutive_non_regression_count
+        )
+
+        # Trim history if needed
+        if len(self._consecutive_non_regression_history) > 100:
+            self._consecutive_non_regression_history = (
+                self._consecutive_non_regression_history[-100:]
+            )
+
+        logger.debug(
+            "[RUNTIME_INTEGRATION] Non-regression count: %d/%d (passed=%s, divergence=%.3f)",
+            self._consecutive_non_regression_count,
+            self.REQUIRED_CONSECUTIVE_CHECKS,
+            passed,
+            divergence_score,
+        )
+
+    def promote_mode(self) -> tuple[bool, str]:
+        """Promote from CANARY to FULL mode.
+
+        Promotion requires:
+        1. Currently in CANARY mode
+        2. N consecutive non-regression checks passed
+        3. Divergence score below promote threshold (0.35)
+
+        Returns:
+            Tuple of (promotion_succeeded, reason)
+        """
+        if self._current_mode != IntegrationMode.CANARY:
+            return False, f"not_in_canary_mode_currently_{self._current_mode.value}"
+
+        if self._consecutive_non_regression_count < self.REQUIRED_CONSECUTIVE_CHECKS:
+            return False, (
+                f"insufficient_consecutive_checks "
+                f"{self._consecutive_non_regression_count}/{self.REQUIRED_CONSECUTIVE_CHECKS}"
+            )
+
+        # Check hysteresis: promote threshold is 0.35
+        # Get most recent divergence score
+        recent_score = 0.0
+        if self._divergence_history:
+            recent_score = self._divergence_history[-1].confidence_divergence
+            if recent_score >= self.PROMOTE_THRESHOLD:
+                return False, (
+                    f"divergence_score_too_high "
+                    f"{recent_score:.3f} >= {self.PROMOTE_THRESHOLD}"
+                )
+
+        # All conditions met - promote
+        self._current_mode = IntegrationMode.FULL
+        logger.info(
+            "[RUNTIME_INTEGRATION] MODE PROMOTED: CANARY -> FULL "
+            "(consecutive_checks=%d, divergence=%.3f)",
+            self._consecutive_non_regression_count,
+            recent_score,
+        )
+        return True, "promotion_succeeded"
+
+    def check_auto_demotion(
+        self, divergence_score: float | None = None
+    ) -> tuple[bool, str]:
+        """Check if automatic demotion to canary is required due to drift.
+
+        Auto-demotion occurs when:
+        1. Currently in FULL mode
+        2. Divergence score >= demote threshold (0.40)
+
+        Args:
+            divergence_score: Optional explicit divergence score to check.
+                            If None, uses the most recent from history.
+
+        Returns:
+            Tuple of (demotion_triggered, reason)
+        """
+        if self._current_mode != IntegrationMode.FULL:
+            return False, "not_in_full_mode"
+
+        # Get the divergence score to check
+        score_to_check = divergence_score
+        if score_to_check is None and self._divergence_history:
+            score_to_check = max(
+                self._divergence_history[-1].confidence_divergence,
+                self._divergence_history[-1].prediction_drift,
+            )
+        elif score_to_check is None:
+            return False, "no_divergence_data_available"
+
+        # Check hysteresis: demote threshold is 0.40
+        if score_to_check >= self.DEMOTE_THRESHOLD:
+            self._current_mode = IntegrationMode.CANARY
+            self._consecutive_non_regression_count = 0
+            logger.warning(
+                "[RUNTIME_INTEGRATION] AUTO-DEMOTED: FULL -> CANARY "
+                "(divergence=%.3f >= %.3f, consecutive_checks_reset)",
+                score_to_check,
+                self.DEMOTE_THRESHOLD,
+            )
+            return True, f"drift_detected_{score_to_check:.3f}"
+
+        return False, "drift_within_tolerance"
 
     def shutdown(self) -> None:
         """Shutdown the integrator and cleanup resources."""
