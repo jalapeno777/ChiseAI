@@ -332,6 +332,97 @@ class LearningStore:
         )
         return self.store_learning(record)
 
+    def delete_learning(self, learning_id: str) -> bool:
+        """Delete a learning record from both Qdrant and Redis fallback.
+
+        Attempts to remove the learning from Qdrant first. If Qdrant is
+        unavailable, attempts Redis cleanup. Returns True if deletion
+        succeeded from any backend.
+
+        Args:
+            learning_id: The record_id of the learning to delete
+
+        Returns:
+            True if deletion succeeded from at least one backend
+        """
+        qdrant_deleted = self._delete_from_qdrant(learning_id)
+        redis_deleted = self._delete_from_redis(learning_id)
+
+        if qdrant_deleted or redis_deleted:
+            logger.debug(
+                "Deleted learning %s (qdrant=%s, redis=%s)",
+                learning_id,
+                qdrant_deleted,
+                redis_deleted,
+            )
+            return True
+
+        logger.warning(
+            "Failed to delete learning %s from all backends",
+            learning_id,
+        )
+        return False
+
+    def _delete_from_qdrant(self, learning_id: str) -> bool:
+        """Delete a learning point from Qdrant.
+
+        Args:
+            learning_id: The record_id used to derive the Qdrant point ID
+
+        Returns:
+            True if Qdrant deletion succeeded
+        """
+        qdrant_client = self._get_qdrant_client()
+        if qdrant_client is None:
+            return False
+
+        try:
+            point_id = hashlib.sha256(learning_id.encode("utf-8")).hexdigest()[:32]
+            qdrant_client.delete(
+                collection_name=self.qdrant_collection,
+                points_selector={"points": [point_id]},
+            )
+            logger.debug("Deleted learning from Qdrant: %s", learning_id)
+            return True
+        except Exception as e:
+            logger.warning(
+                "Qdrant delete failed for %s: %s",
+                learning_id,
+                e,
+            )
+            return False
+
+    def _delete_from_redis(self, learning_id: str) -> bool:
+        """Delete learning records from Redis fallback.
+
+        Since we don't know the record_type at delete time, this method
+        attempts to delete both prediction and outcome keys.
+
+        Args:
+            learning_id: The record_id of the learning
+
+        Returns:
+            True if any Redis key was deleted
+        """
+        if self._redis_client is None:
+            return False
+
+        try:
+            deleted_any = False
+            for record_type in ("prediction", "outcome"):
+                key = f"{REDIS_LEARNING_PREFIX}:{record_type}:{learning_id}"
+                result = self._redis_client.delete(key)
+                if result:
+                    deleted_any = True
+            return deleted_any
+        except Exception as e:
+            logger.warning(
+                "Redis delete failed for %s: %s",
+                learning_id,
+                e,
+            )
+            return False
+
 
 # Module-level convenience instance for simple usage
 _default_store: LearningStore | None = None
