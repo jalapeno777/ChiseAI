@@ -3485,7 +3485,7 @@ validations:
     title: Belief Expansion - Timeboxed
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-007
-    status: planned
+    status: validated
     description: Timeboxed belief expansion for autonomous cognition
     acceptance_criteria:
       - Belief expansion completes within time limit

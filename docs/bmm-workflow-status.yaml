@@ -19,6 +19,7 @@ completed:
       accuracy, and CI hardening. All 5 stories merged.
     id: EP-LOCAL-CI-001
     merge_commit: 26254f55762ec690a729562fc307b6f00909417e
+    pr_number: 688
     notes:
       - "Quality: pre_push_gate.py runs all checks in ~20s with timing metrics"
       - "Consistency: validate_local_ci_consistency.py detects version/config drift"
@@ -67,6 +68,8 @@ completed:
     description: Batch lint cleanup - fix accumulated black and ruff violations in src/ and tests/
     id: REPO-LINT-001
     title: Lint Cleanup
+    pr_number: 649
+    merge_commit: 4d2b850f
     notes:
       - "Baseline: 3 black violations, 62 ruff violations"
       - "Fixed: 3 files reformatted, 63 auto-fixes, 1 manual fix (unused variable)"
@@ -294,25 +297,29 @@ completed:
         status: merged
       - id: ST-AUTOCOG-016
         status: merged
-    deferred_sp: 9
+    deferred_sp: 6
     deferred_stories:
       - id: ST-AUTOCOG-003
         title: sys.path Fix
-      - id: ST-AUTOCOG-007
-        title: Belief Expansion
       - id: ST-AUTOCOG-014
         title: Autonomy Tuning
     description: Sprint AUTOCOG-2026-03-27 closed with 13 of 16 stories merged.
-      3 stories deferred to backlog for future scheduling.
+      2 stories deferred to backlog for future scheduling (ST-AUTOCOG-007
+      completed via FIX-AUTOCOG-007-A/B).
     id: AUTOCOG-2026-03-27
+    merge_commit: a0ddb8559b0c504d427b8d5a136fdbf7c5f07969
     notes:
       - "Sprint closed at inception - items moved to backlog for future scheduling"
       - "13 stories merged to main"
-      - "3 stories deferred (9 SP)"
+      - "2 stories deferred (6 SP)"
       - "Module imports successfully - 312 tests passing"
       - "Critical fixes: Discord spam prevention, BeliefStore Redis persistence"
-      - "Deferred stories: ST-AUTOCOG-003, ST-AUTOCOG-007, ST-AUTOCOG-014"
+      - "Deferred stories: ST-AUTOCOG-003, ST-AUTOCOG-014"
       - "ST-AUTOCOG-002 and ST-AUTOCOG-005-T1 completed per Critic review (2026-03-27)"
+      - >-
+        ST-AUTOCOG-007 (Belief Expansion) completed via FIX-AUTOCOG-007-A
+        (2026-03-28, SHA 211de68) and FIX-AUTOCOG-007-B (registry update)
+    pr_number: 760
     rationale: Sprint closed at inception, items moved to backlog for future scheduling
     sprint_id: AUTOCOG-2026-03-27
     status: completed
@@ -548,6 +555,7 @@ backlog:
       health, metrics, and trends. Currently metrics exist in Redis but no visual dashboard.
     estimated_points: 5
     id: ST-MEMORY-INGEST-002
+    merge_commit: 2f870a46c
     notes:
       - Completion report (line 474-477) identified this as immediate Week 1 priority
       - "Metrics available in Redis: chise:governance:consolidation:metrics:ingestion"
@@ -555,6 +563,7 @@ backlog:
       - Should integrate with existing data quality monitoring infrastructure
     owner: TBD
     priority: P1
+    pr_number: 559
     related_story: ST-MEMORY-INGEST-001
     status: completed
     title: Grafana Dashboard for Tempmemory Ingestion Monitoring
@@ -576,12 +585,14 @@ backlog:
       mv commands.
     estimated_points: 4
     id: ST-MEMORY-INGEST-003
+    merge_commit: 90f22fb01
     notes:
       - Completion report (line 486-489) identified this as Month 1 short-term priority
       - Current manual process error-prone and time-consuming
       - Should integrate with existing MemoryArchiver in consolidation system
     owner: TBD
     priority: P2
+    pr_number: 561
     related_story: ST-MEMORY-INGEST-001
     status: completed
     title: Auto-Archival Feature for Ingested Tempmemories
@@ -603,12 +614,14 @@ backlog:
       before commit. Catches errors early and prevents invalid files from reaching ingestion.
     estimated_points: 3
     id: ST-MEMORY-INGEST-004
+    merge_commit: 37a3d2aa6
     notes:
       - Completion report (line 496-498) identified this as Month 1 short-term priority
       - Reduces ingestion failures due to malformed frontmatter
       - Consistent frontmatter quality improves semantic search quality
     owner: TBD
     priority: P2
+    pr_number: 563
     related_story: ST-MEMORY-INGEST-001
     status: completed
     title: Frontmatter Validation Pre-Commit Hook
@@ -629,12 +642,14 @@ backlog:
       to ensure tempmemories are ingested before evaluation runs.
     estimated_points: 4
     id: ST-MEMORY-INGEST-005
+    merge_commit: e68da6500
     notes:
       - Completion report (line 469-472) identified this as immediate Week 1 priority
       - Ensures BrainEval evaluations use most recent memory artifacts
       - Prevents stale memories from affecting evaluation quality
     owner: senior-dev
     priority: P2
+    pr_number: 564
     related_story: ST-MEMORY-INGEST-001
     status: completed
     title: CI Pipeline Integration for Tempmemory Ingestion
@@ -827,7 +842,7 @@ backlog:
       - BOS/CHoCH excluded from EP-ICT-005 (Phase 2 integration)
       - 3/4 ICT signals operational (CVD, FVG, Order Block)
       - Feature flag prevents accidental BOS/CHoCH activation
-    status: deferred
+    status: planned
     story_points: 5
     target_phase: EP-ICT-007
     target_sprint: ICT-S9
@@ -3782,6 +3797,8 @@ launch_stories:
       timestamp_end: "2026-03-02T00:30:00Z"
       timestamp_start: "2026-03-02T00:00:00Z"
     priority: P1-HIGH
+    pr_number: 318
+    merge_commit: 77ad007db
     status: completed
     story_points: 3
     title: Paper Trading 30-Minute Proof Loop Validation
