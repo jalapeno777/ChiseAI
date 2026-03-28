@@ -831,7 +831,7 @@ backlog:
       - BOS/CHoCH excluded from EP-ICT-005 (Phase 2 integration)
       - 3/4 ICT signals operational (CVD, FVG, Order Block)
       - Feature flag prevents accidental BOS/CHoCH activation
-    status: deferred
+    status: planned
     story_points: 5
     target_phase: EP-ICT-007
     target_sprint: ICT-S9
