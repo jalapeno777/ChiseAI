@@ -6,6 +6,8 @@ metadata:
   status_notes:
     - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324 tests passing)"
     - "MiniMax: DISABLED per PAPER-LLM-DIAG-001 (initialization delays)"
+    - "Phase 4 Neuro-Symbolic Runtime Integration: CODE COMPLETE (2026-03-28)"
+    - "Git divergence incident resolved 2026-03-28 - local main reset to origin/main after duplicate commit detection"
 completed:
   - acceptance_criteria:
       - ST-LOCAL-001: Pre-push gate unification with timing metrics
@@ -1767,6 +1769,42 @@ epics:
       - ST-ICT-028-C
       - ST-ICT-029
       - ST-ICT-030
+  - description: >
+      Live signal flow tap, canary position fraction, mode transition state machine,
+      risk-adjusted performance gates, explainability audit trail, and Phase 4 integration tests.
+      Status: CODE COMPLETE - all 6 stories merged to main.
+    id: EP-NS-PHASE4-001
+    name: Phase 4 Neuro-Symbolic Runtime Integration
+    notes:
+      - "Phase 4 Neuro-Symbolic Runtime Integration code complete"
+      - "Git divergence incident resolved 2026-03-28 - local main reset to origin/main after duplicate commit detection"
+    completion_date: "2026-03-28"
+    status: completed
+    story_count: 6
+    story_points: 9
+    completed_stories:
+      - PHASE4-001
+      - PHASE4-002
+      - PHASE4-003
+      - PHASE4-004
+      - PHASE4-005
+      - PHASE4-006
+  - id: EP-AUTOCOG-005
+    name: Phase 5 - BeliefStore Hardening
+    description: >
+      Phase 5 of AUTOCOG-RESTORE-001 focuses on BeliefStore hardening and Redis backend fixes.
+      Includes debug, fix, and verification of BeliefStore.put() operations.
+    phase: Phase 5 - BeliefStore Hardening
+    phase5_status: completed
+    status: completed
+    completion_date: "2026-03-28"
+    story_count: 3
+    completed_stories: 3
+    story_ids:
+      - ST-AUTOCOG-005-T1
+      - ST-AUTOCOG-005-T2
+      - ST-AUTOCOG-005-T3
+    story_points: 5
   - id: ST-ICT-028-A
     name: ICT Feature Engineering Pipeline
     title: ICT Feature Engineering Pipeline
@@ -2078,7 +2116,62 @@ epics:
       - "ST-AUTOCOG-003 already completed (PR #705, commit 7ce29fad) - sys.path fix"
       - "13 of 16 stories merged to main; 3 deferred (ST-AUTOCOG-003, 007, 014)"
       - "Sprint closed at inception per AUTOCOG-2026-03-27 sprint closeout"
-launch_stories:
+      - "FIX-005-T1: BeliefStore.put() return value hardening (PR #767, SHA e2ace744a)"
+      - "FIX-007-A: Belief expansion BeliefStore integration (PR #768, SHA 1671b9d39)"
+      - "FIX-007-B: Validation registry update (PR #769, SHA 636fbc06b)"
+      - "All 9 stories from AUTOCOG Backlog Fix + Phase 4 merged as of 2026-03-28"
+  - acceptance_criteria:
+      - BeliefStore.put() returns proper value on successful write
+      - All callers handle the return value correctly
+      - Unit tests verify return value semantics
+    completion_date: "2026-03-28"
+    created_date: "2026-03-28"
+    description:
+      Fix BeliefStore.put() return value to indicate success/failure correctly.
+      Previously returned None on both success and failure.
+    id: FIX-005-T1
+    merge_commit: e2ace744a
+    pr_number: 767
+    priority: P1
+    sprint_id: AUTOCOG-BACKLOG-FIX
+    status: completed
+    story_points: 2
+    title: BeliefStore.put() Return Value Hardening
+  - acceptance_criteria:
+      - Belief expansion uses BeliefStore for persistence
+      - Validation registry updated for expansion artifacts
+      - Integration tests pass
+    completion_date: "2026-03-28"
+    created_date: "2026-03-28"
+    description:
+      Belief expansion should use BeliefStore for persistence instead of raw Redis.
+      Part of AUTOCOG-RESTORE-001 deferred work.
+    id: FIX-007-A
+    merge_commit: 1671b9d39
+    pr_number: 768
+    priority: P1
+    sprint_id: AUTOCOG-BACKLOG-FIX
+    status: completed
+    story_points: 2
+    title: Belief Expansion BeliefStore Integration
+  - acceptance_criteria:
+      - Validation registry updated with new Phase 4 validation entries
+      - Validation entries follow existing pattern
+      - Entries linked to EP-NS-PHASE4-001
+    completion_date: "2026-03-28"
+    created_date: "2026-03-28"
+    description:
+      Update validation registry with Phase 4 story validations.
+      Part of AUTOCOG-RESTORE-001 deferred work.
+    id: FIX-007-B
+    merge_commit: 636fbc06b
+    pr_number: 769
+    priority: P1
+    sprint_id: AUTOCOG-BACKLOG-FIX
+    status: completed
+    story_points: 1
+    title: Validation Registry Update
+    launch_stories:
   - acceptance_criteria:
       - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint
         access raises SecurityException

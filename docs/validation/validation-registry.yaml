@@ -3433,7 +3433,8 @@ validations:
     title: Debug BeliefStore.put() Silent Failure
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-005-T1
-    status: planned
+    status: validated
+    validation_date: "2026-03-28"
     description: Debug BeliefStore.put() silent failure and identify root cause
     acceptance_criteria:
       - Root cause of silent failure identified
@@ -3446,7 +3447,8 @@ validations:
     title: Implement Redis Backend Fix
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-005-T2
-    status: planned
+    status: validated
+    validation_date: "2026-03-28"
     description: Implement Redis backend fix for BeliefStore.put() failures
     acceptance_criteria:
       - Redis backend correctly stores beliefs
@@ -3459,7 +3461,8 @@ validations:
     title: BeliefStore Integration Test Verification
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-005-T3
-    status: planned
+    status: validated
+    validation_date: "2026-03-28"
     description: Verify BeliefStore integration tests pass with Redis backend fix
     acceptance_criteria:
       - Integration tests pass with Redis backend
@@ -3608,6 +3611,81 @@ validations:
       - Notification volume reduced without losing critical alerts
       - Aggregation applied to related events
       - Critical events still delivered immediately
+    test_method: automated
+    owner: dev
+
+  # EP-NS-PHASE4-001: Phase 4 Neuro-Symbolic Runtime Integration (6 validations)
+  - id: V-NS-PHASE4-001
+    title: Live Signal Flow Tap
+    epic_id: EP-NS-PHASE4-001
+    story_id: PHASE4-001
+    status: validated
+    description: Live signal flow tap for neuro-symbolic runtime
+    acceptance_criteria:
+      - Signal flow tap captures runtime signals
+      - Signals are accessible for debugging
+      - Performance overhead is minimal
+    test_method: automated
+    owner: dev
+
+  - id: V-NS-PHASE4-002
+    title: Canary Position Fraction
+    epic_id: EP-NS-PHASE4-001
+    story_id: PHASE4-002
+    status: validated
+    description: Canary position fraction implementation (superseded)
+    acceptance_criteria:
+      - Closed as superseded by other work
+    test_method: automated
+    owner: dev
+
+  - id: V-NS-PHASE4-003
+    title: Mode Transition State Machine
+    epic_id: EP-NS-PHASE4-001
+    story_id: PHASE4-003
+    status: validated
+    description: Mode transition state machine for runtime modes
+    acceptance_criteria:
+      - State machine handles all mode transitions
+      - Transitions are logged
+      - Invalid transitions are rejected
+    test_method: automated
+    owner: dev
+
+  - id: V-NS-PHASE4-004
+    title: Risk-Adjusted Performance Gates
+    epic_id: EP-NS-PHASE4-001
+    story_id: PHASE4-004
+    status: validated
+    description: Risk-adjusted performance gates (superseded)
+    acceptance_criteria:
+      - Closed as superseded by other work
+    test_method: automated
+    owner: dev
+
+  - id: V-NS-PHASE4-005
+    title: Explainability Audit Trail
+    epic_id: EP-NS-PHASE4-001
+    story_id: PHASE4-005
+    status: validated
+    description: Explainability audit trail for neuro-symbolic decisions
+    acceptance_criteria:
+      - Audit trail captures decision rationale
+      - Trail is queryable and searchable
+      - Explanations are human-readable
+    test_method: automated
+    owner: dev
+
+  - id: V-NS-PHASE4-006
+    title: Phase 4 Integration Tests
+    epic_id: EP-NS-PHASE4-001
+    story_id: PHASE4-006
+    status: validated
+    description: Integration tests for Phase 4 neuro-symbolic runtime
+    acceptance_criteria:
+      - All Phase 4 components tested together
+      - Integration tests pass
+      - End-to-end scenarios covered
     test_method: automated
     owner: dev
 
