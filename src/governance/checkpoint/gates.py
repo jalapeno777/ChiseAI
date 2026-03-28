@@ -36,7 +36,10 @@ from src.governance.checkpoint.integrity import MetricIntegrityChecker
 logger = logging.getLogger(__name__)
 
 # Add scripts/monitoring to path for cron_evidence import
-SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+# Path: src/governance/checkpoint/gates.py -> 4 levels up to project root
+SCRIPT_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+)
 MONITORING_DIR = os.path.join(SCRIPT_DIR, "scripts", "monitoring")
 if MONITORING_DIR not in sys.path:
     sys.path.insert(0, MONITORING_DIR)
