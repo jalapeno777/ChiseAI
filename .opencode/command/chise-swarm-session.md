@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 Use this command before and during any agent-run git work to prevent branch/worktree race conditions.
 
+**Important — Repo Startup Lock**: The `start` subcommand acquires an exclusive Redis startup lock (`bmad:chiseai:repo-startup-lock`) with a 300-second TTL while creating the worktree. This prevents concurrent worktree creation when multiple opencode sessions share the same physical repo. If another session is starting, `start` will fail with a clear message. The lock is released automatically after the worktree is ready. If a session crashes mid-startup, the lock auto-expires after 300s or can be force-released with the `unlock` subcommand.
+
 Prereqs:
 - `STORY_ID` (required)
 - `AGENT_ID` (required, e.g. `dev`, `quickdev`, `senior-dev`, `merlin`)
@@ -47,3 +49,11 @@ Prereqs:
    - Exception (preserving worktree requires justification):
      - `python3 scripts/swarm/session.py close --worktree-path "$WORKTREE_PATH" --enforce-merged` (without --remove-worktree)
      - Document justification: Why is the worktree being preserved? (e.g., "Pending manual verification", "Shared worktree with other agent")
+
+6. Unlock startup lock (emergency recovery only)
+    - If a session crashed during `start` and the 300s TTL has not expired yet:
+      - `python3 scripts/swarm/session.py unlock --force`
+    - This force-releases the startup lock regardless of who holds it.
+    - Normal operations should never need this — the lock auto-releases after `start` completes and auto-expires after 300s if a crash occurs.
+
+**Parallel Session Safety**: Multiple opencode sessions can safely operate on the same repo as long as each session has its own worktree (created via `start`). Once sessions are in their worktrees, all git operations are fully isolated. The startup lock ensures only one session creates a worktree at a time, preventing the race conditions that would occur if two sessions tried `git worktree add` simultaneously on the same `.git` directory.

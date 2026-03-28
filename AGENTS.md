@@ -161,6 +161,17 @@ When starting work:
 5. Close with `chise-iterloop-close` when done
 ```
 
+## 🔄 Parallel Session Safety
+
+Multiple opencode sessions can safely run concurrently when each operates in its own worktree:
+
+- **Repo startup lock**: `session.py start` acquires an exclusive Redis lock (`bmad:chiseai:repo-startup-lock`, 300s TTL) during worktree creation. Only one session can start at a time.
+- **Worktree isolation**: Once sessions are in their worktrees, all git operations are fully independent.
+- **Stagger startups**: Never run two `session.py start` commands simultaneously.
+- **Emergency unlock**: `python3 scripts/swarm/session.py unlock --force` if a session crashed mid-startup.
+
+See `chiseai-parallel-safety` skill for full details.
+
 ## 🐳 CI Docker Image Rebuilds
 
 When updating dependencies in CI Docker images:

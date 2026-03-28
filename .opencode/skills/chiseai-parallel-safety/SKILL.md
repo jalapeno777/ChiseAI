@@ -100,6 +100,31 @@ When conflict/regression occurs:
 - **Stale ownership**: Check TTL; refresh or re-claim if expired.
 - **Undetected overlap**: Add to incident log; improve scope definition.
 
+## Repo Startup Lock (Parallel Session Safety)
+
+When multiple opencode sessions share the same physical repo directory, concurrent worktree creation is dangerous (git is not process-safe for shared `.git/index` and HEAD ref operations). The **repo startup lock** prevents this:
+
+- **Redis key**: `bmad:chiseai:repo-startup-lock`
+- **TTL**: 300 seconds (auto-expires if a session crashes mid-startup)
+- **Mechanism**: Atomic `SET NX` — only one session can hold the lock at a time
+- **Acquired by**: `session.py start` (automatically)
+- **Released by**: `session.py start` completion (via `finally` block)
+- **Force-release**: `session.py unlock --force` (emergency only)
+
+### Rules for Parallel Sessions
+
+1. **Stagger session startups** — never run two `session.py start` commands simultaneously
+2. **Each session must have its own worktree** — this is the primary isolation mechanism
+3. **Once in worktrees, sessions are fully independent** — git operations, file edits, commits, and pushes are isolated
+4. **If `start` fails with "another session is starting"**: wait ~10 seconds and retry, or use `unlock --force` if the other session crashed
+
+### Emergency Recovery
+
+If a session crashed during `start` and the 300s TTL hasn't expired:
+```bash
+python3 scripts/swarm/session.py unlock --force
+```
+
 ## Related Skills
 
 - `chiseai-worker-contracts` - Delegation contract structure

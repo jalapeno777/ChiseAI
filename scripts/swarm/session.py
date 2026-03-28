@@ -70,6 +70,8 @@ OWNERSHIP_KEY = "bmad:chiseai:ownership"
 BRANCH_LEASE_PREFIX = "bmad:chiseai:branch-lease:"
 WORKTREE_LEASE_PREFIX = "bmad:chiseai:worktree-lease:"
 MAIN_MERGE_LOCK_KEY = "bmad:chiseai:merge-lock:main"
+STARTUP_LOCK_KEY = "bmad:chiseai:repo-startup-lock"
+STARTUP_LOCK_TTL_SECONDS = 300
 MERGE_AUTHORITY_AGENT = "merlin"
 
 CANONICAL_FILES = {
@@ -211,6 +213,89 @@ def _redis_ping() -> tuple[bool, tuple[str, int, int] | None]:
         if proc.returncode == 0 and proc.stdout.strip() == "PONG":
             return True, (host, port, db)
     return False, None
+
+
+# ---------------------------------------------------------------------------
+# Repo startup lock — prevents concurrent worktree creation / branch ops
+# when multiple opencode sessions share the same physical repo.
+# Uses atomic SET NX with a TTL so crashed sessions don't block forever.
+# ---------------------------------------------------------------------------
+
+
+def _acquire_startup_lock(story_id: str, agent: str) -> str:
+    """Acquire exclusive repo-level startup lock.
+
+    Uses Redis SET NX for atomicity.  The lock auto-expires after
+    STARTUP_LOCK_TTL_SECONDS (300s) to prevent permanent blocking if a
+    session crashes during startup.
+
+    Returns:
+        The lock owner string (story_id/agent/timestamp).
+
+    Raises:
+        SessionError: If Redis is unavailable or lock is held by another session.
+    """
+    ok, cfg = _redis_ping()
+    if not ok or cfg is None:
+        raise SessionError(
+            "Redis is required for repo startup lock. "
+            "Ensure CHISE_REDIS_HOST/REDIS_HOST is reachable and retry."
+        )
+    host, port, db = cfg
+    owner = f"{story_id}/{agent}/{_utc_now()}"
+    # Atomic SET NX — only succeeds if key does not exist
+    res = _redis_cli(
+        host,
+        port,
+        db,
+        "SET",
+        STARTUP_LOCK_KEY,
+        owner,
+        "NX",
+        "EX",
+        str(STARTUP_LOCK_TTL_SECONDS),
+    )
+    if res.stdout.strip() != "OK":
+        existing = _redis_cli(host, port, db, "GET", STARTUP_LOCK_KEY)
+        held_by = existing.stdout.strip() if existing.returncode == 0 else "<unknown>"
+        raise SessionError(
+            f"Cannot start: another session is currently starting up ({held_by}). "
+            f"Wait for it to finish (lock auto-expires in {STARTUP_LOCK_TTL_SECONDS}s) "
+            f"or run: python3 scripts/swarm/session.py unlock --force"
+        )
+    return owner
+
+
+def _release_startup_lock() -> None:
+    """Release the repo startup lock (only if we hold it).
+
+    This is a best-effort release; if Redis is down or the lock was already
+    claimed by another session, we silently succeed.
+    """
+    ok, cfg = _redis_ping()
+    if ok and cfg is not None:
+        host, port, db = cfg
+        _redis_cli(host, port, db, "DEL", STARTUP_LOCK_KEY)
+
+
+def _force_release_startup_lock() -> str:
+    """Force-release the repo startup lock regardless of ownership.
+
+    Returns:
+        Human-readable status message.
+
+    Use with caution — only when a session has crashed mid-startup.
+    """
+    ok, cfg = _redis_ping()
+    if not ok or cfg is None:
+        return "Redis unavailable; cannot force-release startup lock."
+    host, port, db = cfg
+    get_res = _redis_cli(host, port, db, "GET", STARTUP_LOCK_KEY)
+    previous = get_res.stdout.strip() if get_res.returncode == 0 else "<none>"
+    del_res = _redis_cli(host, port, db, "DEL", STARTUP_LOCK_KEY)
+    if del_res.returncode == 0 and del_res.stdout.strip() == "1":
+        return f"Force-released startup lock (was held by: {previous})"
+    return "Startup lock was not held or could not be released."
 
 
 def _set_lease(
@@ -512,6 +597,11 @@ def _pr_exists_for_branch(branch: str, base_ref: str = "main") -> tuple[bool, st
 
 
 def cmd_start(args: argparse.Namespace) -> int:
+    # Acquire repo-level startup lock to prevent concurrent worktree
+    # creation when multiple opencode sessions share the same repo.
+    # The lock is released in the finally block once the worktree is ready.
+    startup_lock_owner = _acquire_startup_lock(args.story_id, args.agent)
+
     repo_root = _git_root()
     hooks_status = _ensure_repo_hooks_config(repo_root)
     branch = args.branch.strip()
@@ -520,99 +610,105 @@ def cmd_start(args: argparse.Namespace) -> int:
     # Branch naming is now advisory; any branch name is allowed
     # (PR title validation provides the authoritative story-ID gate)
 
-    safe_story = re.sub(r"[^A-Za-z0-9._-]", "-", args.story_id)
-    safe_agent = re.sub(r"[^A-Za-z0-9._-]", "-", args.agent)
-    expected_leaf = f"{safe_story}-{safe_agent}"
+    try:
+        safe_story = re.sub(r"[^A-Za-z0-9._-]", "-", args.story_id)
+        safe_agent = re.sub(r"[^A-Za-z0-9._-]", "-", args.agent)
+        expected_leaf = f"{safe_story}-{safe_agent}"
 
-    if args.worktree_path:
-        worktree_path = Path(args.worktree_path).resolve()
-    else:
-        worktree_root = Path(args.worktree_root)
-        if not worktree_root.is_absolute():
-            worktree_root = (repo_root / worktree_root).resolve()
-        # Backward compatibility: if caller passed a story-specific root, treat it
-        # as the final worktree path instead of nesting the same suffix twice.
-        if worktree_root.name == expected_leaf:
-            worktree_path = worktree_root
+        if args.worktree_path:
+            worktree_path = Path(args.worktree_path).resolve()
         else:
-            worktree_path = (worktree_root / expected_leaf).resolve()
-    worktree_path.parent.mkdir(parents=True, exist_ok=True)
+            worktree_root = Path(args.worktree_root)
+            if not worktree_root.is_absolute():
+                worktree_root = (repo_root / worktree_root).resolve()
+            # Backward compatibility: if caller passed a story-specific root, treat it
+            # as the final worktree path instead of nesting the same suffix twice.
+            if worktree_root.name == expected_leaf:
+                worktree_path = worktree_root
+            else:
+                worktree_path = (worktree_root / expected_leaf).resolve()
+        worktree_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if worktree_path.exists() and any(worktree_path.iterdir()) and not args.force:
-        raise SessionError(
-            "Worktree path exists and is not empty: "
-            f"{worktree_path} (use --force to reuse)"
-        )
-
-    if not worktree_path.exists() or not any(worktree_path.iterdir()):
-        if _branch_exists(branch, repo_root):
-            _run("git", "worktree", "add", str(worktree_path), branch, cwd=repo_root)
-        else:
-            _run(
-                "git",
-                "worktree",
-                "add",
-                "-b",
-                branch,
-                str(worktree_path),
-                args.base,
-                cwd=repo_root,
+        if worktree_path.exists() and any(worktree_path.iterdir()) and not args.force:
+            raise SessionError(
+                "Worktree path exists and is not empty: "
+                f"{worktree_path} (use --force to reuse)"
             )
 
-    payload = _session_payload(
-        story_id=args.story_id,
-        agent=args.agent,
-        branch=branch,
-        worktree_path=worktree_path,
-        base_ref=args.base,
-        scopes=args.scopes,
-    )
-    session_path = _write_session(worktree_path, payload)
+        if not worktree_path.exists() or not any(worktree_path.iterdir()):
+            if _branch_exists(branch, repo_root):
+                _run(
+                    "git", "worktree", "add", str(worktree_path), branch, cwd=repo_root
+                )
+            else:
+                _run(
+                    "git",
+                    "worktree",
+                    "add",
+                    "-b",
+                    branch,
+                    str(worktree_path),
+                    args.base,
+                    cwd=repo_root,
+                )
 
-    ok, cfg = _redis_ping()
-    lease_owner = f"{args.story_id}/{args.agent}/{_utc_now()}"
-    if ok and cfg is not None:
-        host, port, db = cfg
-        _set_lease(
-            host,
-            port,
-            db,
-            f"{BRANCH_LEASE_PREFIX}{branch}",
-            lease_owner,
-            args.ttl_seconds,
-            args.force,
+        payload = _session_payload(
+            story_id=args.story_id,
+            agent=args.agent,
+            branch=branch,
+            worktree_path=worktree_path,
+            base_ref=args.base,
+            scopes=args.scopes,
         )
-        _set_lease(
-            host,
-            port,
-            db,
-            f"{WORKTREE_LEASE_PREFIX}{_path_slug(str(worktree_path))}",
-            lease_owner,
-            args.ttl_seconds,
-            args.force,
-        )
-        if args.scopes:
-            _claim_scope_ownership(
+        session_path = _write_session(worktree_path, payload)
+
+        ok, cfg = _redis_ping()
+        lease_owner = f"{args.story_id}/{args.agent}/{_utc_now()}"
+        if ok and cfg is not None:
+            host, port, db = cfg
+            _set_lease(
                 host,
                 port,
                 db,
-                args.story_id,
-                args.agent,
-                args.scopes,
+                f"{BRANCH_LEASE_PREFIX}{branch}",
+                lease_owner,
                 args.ttl_seconds,
                 args.force,
             )
-        redis_msg = f"Redis leases set on {host}:{port}/{db}"
-    else:
-        redis_msg = "Redis unavailable; skipped lease writes"
+            _set_lease(
+                host,
+                port,
+                db,
+                f"{WORKTREE_LEASE_PREFIX}{_path_slug(str(worktree_path))}",
+                lease_owner,
+                args.ttl_seconds,
+                args.force,
+            )
+            if args.scopes:
+                _claim_scope_ownership(
+                    host,
+                    port,
+                    db,
+                    args.story_id,
+                    args.agent,
+                    args.scopes,
+                    args.ttl_seconds,
+                    args.force,
+                )
+            redis_msg = f"Redis leases set on {host}:{port}/{db}"
+        else:
+            redis_msg = "Redis unavailable; skipped lease writes"
 
-    print("session.start: OK")
-    print(f"- worktree: {worktree_path}")
-    print(f"- branch: {branch}")
-    print(f"- session: {session_path}")
-    print(f"- hooks_path: {REPO_HOOKS_PATH} ({hooks_status})")
-    print(f"- {redis_msg}")
-    return 0
+        print("session.start: OK")
+        print(f"- worktree: {worktree_path}")
+        print(f"- branch: {branch}")
+        print(f"- session: {session_path}")
+        print(f"- hooks_path: {REPO_HOOKS_PATH} ({hooks_status})")
+        print(f"- startup_lock: {startup_lock_owner}")
+        print(f"- {redis_msg}")
+        return 0
+    finally:
+        _release_startup_lock()
 
 
 def _validate_canonical_lock(args: argparse.Namespace, session: dict[str, Any]) -> None:
@@ -972,6 +1068,13 @@ def cmd_close(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_unlock(args: argparse.Namespace) -> int:
+    """Force-release the repo startup lock."""
+    msg = _force_release_startup_lock()
+    print(f"session.unlock: {msg}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="ChiseAI swarm worktree session manager")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -1035,6 +1138,17 @@ def build_parser() -> argparse.ArgumentParser:
     close.add_argument("--allow-unmerged", action="store_true")
     close.add_argument("--base-ref", default="main")
     close.set_defaults(func=cmd_close)
+
+    unlock = sub.add_parser(
+        "unlock",
+        help="Force-release the repo startup lock (use if a session crashed mid-startup)",
+    )
+    unlock.add_argument(
+        "--force",
+        action="store_true",
+        help="Force release even if lock is held by another session",
+    )
+    unlock.set_defaults(func=cmd_unlock)
 
     return p
 

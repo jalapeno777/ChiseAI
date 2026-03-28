@@ -61,14 +61,20 @@ OWNERSHIP_CHECK:
 BRANCH:
   - Explicit branch name (never use HEAD/current-branch inference)
   - Example: "feature/ST-NS-001-neuro-evolution"
-  
+
 WORKTREE_PATH:
   - Isolated git worktree path for this worker
   - Example: "/tmp/worktrees/ST-NS-001-dev"
-  
+
 SESSION_VERIFY:
   - Command to run before any git actions
   - Example: "python3 scripts/swarm/session.py verify --story-id=ST-NS-001 --branch=feature/ST-NS-001-neuro-evolution --worktree-path=/tmp/worktrees/ST-NS-001-dev"
+
+STARTUP_LOCK_AWARENESS:
+  - `session.py start` acquires an exclusive repo startup lock during worktree creation
+  - Only one session can start at a time — if blocked, wait ~10s and retry
+  - Do NOT bypass the startup lock or run concurrent `start` commands
+  - If a session crashed mid-startup, the lock auto-expires in 300s or use `session.py unlock --force`
 
 ### 4. Memory Context
 MEMORY_CONTEXT:

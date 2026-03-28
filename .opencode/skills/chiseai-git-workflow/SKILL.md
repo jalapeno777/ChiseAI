@@ -142,9 +142,28 @@ One merge attempt = sync/rebase OR conflict resolution + required checks rerun +
 
 Use `scripts/swarm/session.py` for isolated worktree sessions:
 
-- `start` before any git work
+- `start` before any git work (acquires repo startup lock, creates worktree)
 - `verify` before git actions (use explicit `--worktree-path`)
 - `close` when done
+- `unlock --force` only if a session crashed mid-startup (emergency)
+
+### Parallel Session Safety
+
+Multiple opencode sessions can safely run concurrently on the same repo when each session operates in its own worktree. The key safety mechanism:
+
+- **Repo startup lock** (`bmad:chiseai:repo-startup-lock`): Prevents concurrent worktree creation. Only one `start` command can execute at a time. Lock has a 300-second TTL (auto-expires if session crashes).
+- **Worktree isolation**: Once a session is verified in its worktree, all git operations (checkout, commit, push) are fully isolated from other sessions.
+- **Redis leases**: Branch and worktree leases prevent two sessions from using the same branch or worktree path.
+
+**Startup sequence for parallel sessions:**
+1. Start Session A: `session.py start` → acquires lock → creates worktree → releases lock
+2. Start Session B: `session.py start` → acquires lock → creates worktree → releases lock
+3. Both sessions now work independently in their respective worktrees
+
+**Do NOT:**
+- Start two `session.py start` commands simultaneously
+- Run `git switch`/`git checkout` in the main repo directory while another session is starting
+- Bypass the startup lock (it exists to prevent git corruption)
 
 ## Exit Conditions
 
