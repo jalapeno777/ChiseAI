@@ -98,3 +98,78 @@ def test_redis_fallback_when_no_clients() -> None:
 
         result = store.store_learning(record)
         assert result is False
+
+
+def test_delete_learning_qdrant_cleans_up_points() -> None:
+    """delete_learning() calls Qdrant delete with correct point ID."""
+    import hashlib
+    from unittest.mock import MagicMock
+
+    from autonomous_cognition.learning_store import LearningStore
+
+    mock_qdrant_client = MagicMock()
+    store = LearningStore(qdrant_client=mock_qdrant_client, redis_client=None)
+
+    learning_id = "my-learning-123"
+    expected_point_id = hashlib.sha256(learning_id.encode("utf-8")).hexdigest()[:32]
+
+    result = store.delete_learning(learning_id)
+
+    assert result is True
+    mock_qdrant_client.delete.assert_called_once_with(
+        collection_name=store.qdrant_collection,
+        points_selector={"points": [expected_point_id]},
+    )
+
+
+def test_delete_learning_removes_from_redis() -> None:
+    """delete_learning() cleans up Redis fallback keys."""
+    from unittest.mock import MagicMock
+
+    from autonomous_cognition.learning_store import LearningStore
+
+    mock_redis = MagicMock()
+    mock_redis.delete.return_value = 1
+    store = LearningStore(qdrant_client=None, redis_client=mock_redis)
+
+    with patch.object(store, "_get_qdrant_client", return_value=None):
+        result = store.delete_learning("redis-learning-456")
+
+    assert result is True
+    # Should attempt both prediction and outcome key patterns
+    assert mock_redis.delete.call_count == 2
+
+
+def test_delete_learning_redis_no_keys() -> None:
+    """delete_learning() returns False when Redis has no matching keys."""
+    from unittest.mock import MagicMock
+
+    from autonomous_cognition.learning_store import LearningStore
+
+    mock_redis = MagicMock()
+    mock_redis.delete.return_value = 0
+    store = LearningStore(qdrant_client=None, redis_client=mock_redis)
+
+    with patch.object(store, "_get_qdrant_client", return_value=None):
+        result = store.delete_learning("nonexistent-learning")
+
+    assert result is False
+
+
+def test_delete_learning_error_handling() -> None:
+    """delete_learning() returns False when both backends raise exceptions."""
+    from unittest.mock import MagicMock
+
+    from autonomous_cognition.learning_store import LearningStore
+
+    mock_qdrant = MagicMock()
+    mock_qdrant.delete.side_effect = Exception("Qdrant connection lost")
+
+    mock_redis = MagicMock()
+    mock_redis.delete.side_effect = Exception("Redis connection lost")
+
+    store = LearningStore(qdrant_client=mock_qdrant, redis_client=mock_redis)
+
+    result = store.delete_learning("error-learning")
+
+    assert result is False
