@@ -172,6 +172,117 @@ class NeuroSymbolicRuntimeIntegrator:
             baseline.confidence,
         )
 
+    def capture_baseline_from_signal(self, signal: Any) -> None:
+        """Capture a baseline from a live signal pipeline output.
+
+        Converts a :class:`signal_generation.models.Signal` into a
+        :class:`BaselinePrediction` and stores it for divergence comparison.
+
+        This is designed to be registered as a signal flow tap on the
+        :class:`SignalGenerator` so that every live signal automatically
+        updates the baseline without any additional wiring.
+
+        Args:
+            signal: A ``Signal`` dataclass from the signal generation pipeline.
+        """
+        direction = getattr(signal, "direction", None)
+        direction_str = (
+            getattr(direction, "value", str(direction)) if direction else "neutral"
+        )
+        confidence = float(getattr(signal, "confidence", 0.0))
+        token = getattr(signal, "token", None)
+
+        baseline = BaselinePrediction(
+            prediction=direction_str,
+            confidence=confidence,
+            symbol=token,
+        )
+        self.set_baseline(baseline)
+        logger.debug(
+            "[RUNTIME_INTEGRATION] Baseline captured from live signal: "
+            "token=%s, direction=%s, confidence=%.2f",
+            token,
+            direction_str,
+            confidence,
+        )
+
+    def compare_shadow_vs_live(
+        self, shadow_result: RuntimeIntegrationResult, live_signal: Any
+    ) -> DivergenceMetrics:
+        """Calculate divergence between a shadow evaluation and a live signal.
+
+        This compares the neuro-symbolic shadow output against the actual
+        live signal from the signal generation pipeline, producing a
+        :class:`DivergenceMetrics` that captures the quality gap.
+
+        Args:
+            shadow_result: Result from a shadow-mode :meth:`run` call.
+            live_signal: A ``Signal`` dataclass from the signal generation pipeline.
+
+        Returns:
+            DivergenceMetrics capturing the comparison.
+        """
+        live_confidence = float(getattr(live_signal, "confidence", 0.0))
+        live_direction = getattr(live_signal, "direction", None)
+        live_direction_str = (
+            getattr(live_direction, "value", str(live_direction))
+            if live_direction
+            else "neutral"
+        )
+
+        shadow_confidence = float(shadow_result.details.get("confidence", 0.0))
+        shadow_prediction = shadow_result.details.get("prediction", "neutral")
+        shadow_components = shadow_result.details.get("components_used", [])
+
+        metrics = DivergenceMetrics()
+
+        # Confidence divergence
+        metrics.confidence_divergence = abs(shadow_confidence - live_confidence)
+
+        # Prediction drift
+        if shadow_prediction.lower() != live_direction_str.lower():
+            if shadow_confidence > 0.7 and live_confidence < 0.4:
+                metrics.prediction_drift = 1.0
+            elif shadow_confidence > live_confidence + 0.2:
+                metrics.prediction_drift = 0.7
+            else:
+                metrics.prediction_drift = 0.4
+        else:
+            metrics.prediction_drift = abs(shadow_confidence - live_confidence)
+
+        # Component agreement
+        if shadow_components:
+            metrics.component_agreement = min(1.0, len(shadow_components) / 3.0)
+        else:
+            metrics.component_agreement = 0.0
+
+        # Determine severity
+        max_divergence = max(metrics.confidence_divergence, metrics.prediction_drift)
+        if max_divergence >= self.DIVERGENCE_THRESHOLD_CRITICAL:
+            metrics.severity = DivergenceSeverity.CRITICAL.value
+        elif max_divergence >= self.DIVERGENCE_THRESHOLD_HIGH:
+            metrics.severity = DivergenceSeverity.HIGH.value
+        elif max_divergence >= self.DIVERGENCE_THRESHOLD_MEDIUM:
+            metrics.severity = DivergenceSeverity.MEDIUM.value
+        else:
+            metrics.severity = DivergenceSeverity.LOW.value
+
+        metrics.is_drift_detected = (
+            max_divergence > self.DIVERGENCE_THRESHOLD_LOW
+            or metrics.confidence_divergence > 0.3
+        )
+
+        metrics.details = {
+            "live_prediction": live_direction_str,
+            "live_confidence": live_confidence,
+            "shadow_prediction": shadow_prediction,
+            "shadow_confidence": shadow_confidence,
+            "shadow_components": shadow_components,
+            "shadow_divergence_score": shadow_result.divergence_score,
+        }
+
+        return metrics
+
     def _get_orchestrator(self):
         """Lazy-load the neuro-symbolic orchestrator."""
         if self._orchestrator is None:

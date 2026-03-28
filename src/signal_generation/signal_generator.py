@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -27,6 +28,10 @@ from data_ingestion.ohlcv_fetcher import OHLCVData
 from data_ingestion.timeframe_config import Timeframe
 
 logger = logging.getLogger(__name__)
+
+# Type alias for signal flow tap callbacks.
+# Receives the generated Signal; must return None (fire-and-forget).
+SignalFlowTap = Callable[["Signal"], None]
 
 
 @dataclass
@@ -55,6 +60,7 @@ class SignalGenerationConfig:
     dry_run_mode: bool = False
     enable_heartbeat: bool = True
     log_filtered_signals: bool = True
+    enable_shadow_tap: bool = False
 
 
 @dataclass
@@ -211,6 +217,11 @@ class SignalGenerator:
 
         # Rate limiting state
         self._signal_counts: dict[str, list[float]] = {}  # token -> timestamps
+
+        # Shadow-mode signal flow tap (zero-overhead when None).
+        # External consumers (e.g. NeuroSymbolicRuntimeIntegrator) register
+        # a callback to receive every generated Signal for baseline capture.
+        self._signal_flow_tap: SignalFlowTap | None = None
 
         logger.info(
             f"SignalGenerator initialized: "
@@ -510,6 +521,15 @@ class SignalGenerator:
                 f"{signal.generation_latency_ms:.1f}ms for {token}"
             )
 
+        # Fire signal flow tap (shadow-mode baseline capture).
+        # Guarded by single None check → zero overhead when unregistered.
+        if self._signal_flow_tap is not None:
+            try:
+                self._signal_flow_tap(signal)
+            except Exception:
+                # Tap failures must NEVER affect the live signal pipeline.
+                logger.exception("Signal flow tap raised an exception")
+
         return signal
 
     def generate_signals_batch(
@@ -553,6 +573,22 @@ class SignalGenerator:
     def clear_cache(self) -> None:
         """Clear the signal cache."""
         self._cache.clear()
+
+    def register_signal_flow_tap(self, tap: SignalFlowTap | None) -> None:
+        """Register or unregister a signal flow tap callback.
+
+        The tap is called (fire-and-forget) after every signal generation.
+        When *tap* is ``None`` the path is skipped entirely, guaranteeing
+        zero measurable overhead.
+
+        Args:
+            tap: Callable receiving a Signal, or ``None`` to unregister.
+        """
+        self._signal_flow_tap = tap
+        logger.info(
+            "Signal flow tap %s",
+            "registered" if tap is not None else "unregistered",
+        )
 
     def _calculate_stop_loss(
         self,

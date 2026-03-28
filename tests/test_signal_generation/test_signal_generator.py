@@ -467,3 +467,132 @@ class TestSignalGeneratorIndicatorSet:
             signals_list.append("bb_signal")
 
         assert len(signals_list) == 0
+
+
+class TestSignalFlowTap:
+    """Tests for shadow-mode signal flow tap."""
+
+    def _make_timeframe(self, value="1h"):
+        """Create a mock Timeframe with .value attribute."""
+        tf = MagicMock()
+        tf.value = value
+        return tf
+
+    def test_register_and_unregister_tap(self):
+        """Tap can be registered and unregistered."""
+        gen = SignalGenerator(config=SignalGenerationConfig(enable_shadow_tap=True))
+        tap_calls = []
+
+        def tap(sig):
+            tap_calls.append(sig)
+
+        gen.register_signal_flow_tap(tap)
+        assert gen._signal_flow_tap is tap
+        gen.register_signal_flow_tap(None)
+        assert gen._signal_flow_tap is None
+
+    def test_tap_receives_signal_on_generate(self):
+        """Registered tap receives the generated signal."""
+        gen = SignalGenerator(
+            config=SignalGenerationConfig(
+                enable_shadow_tap=True,
+                enable_freshness_checks=False,
+                enable_caching=False,
+            )
+        )
+        captured = []
+        gen.register_signal_flow_tap(lambda sig: captured.append(sig))
+
+        signal = gen.generate_signal(
+            token="BTC/USDT",
+            timeframe=self._make_timeframe("1h"),
+            ohlcv_data=[],
+        )
+        assert len(captured) == 1
+        assert captured[0].token == "BTC/USDT"
+        assert captured[0] is signal
+
+    def test_no_tap_zero_overhead(self):
+        """When no tap is registered, no callback overhead occurs."""
+        gen = SignalGenerator(
+            config=SignalGenerationConfig(
+                enable_freshness_checks=False,
+                enable_caching=False,
+            )
+        )
+        assert gen._signal_flow_tap is None
+        # generate_signal should succeed without any tap
+        signal = gen.generate_signal(
+            token="ETH/USDT",
+            timeframe=self._make_timeframe("15m"),
+            ohlcv_data=[],
+        )
+        assert signal is not None
+
+    def test_tap_exception_does_not_break_pipeline(self):
+        """Exception in tap must not affect signal generation."""
+        gen = SignalGenerator(
+            config=SignalGenerationConfig(
+                enable_shadow_tap=True,
+                enable_freshness_checks=False,
+                enable_caching=False,
+            )
+        )
+
+        def bad_tap(sig):
+            raise RuntimeError("tap exploded")
+
+        gen.register_signal_flow_tap(bad_tap)
+        # Should NOT raise despite tap failing
+        signal = gen.generate_signal(
+            token="BTC/USDT",
+            timeframe=self._make_timeframe("1h"),
+            ohlcv_data=[],
+        )
+        assert signal is not None
+
+    def test_tap_latency_benchmark(self):
+        """Timing benchmark: tap overhead must be negligible (<0.01ms)."""
+        import statistics
+
+        gen = SignalGenerator(
+            config=SignalGenerationConfig(
+                enable_shadow_tap=True,
+                enable_freshness_checks=False,
+                enable_caching=False,
+            )
+        )
+        captured = []
+        gen.register_signal_flow_tap(lambda sig: captured.append(sig))
+
+        tf = self._make_timeframe("1h")
+
+        # Warm up
+        for _ in range(10):
+            gen.generate_signal(token="BTC/USDT", timeframe=tf, ohlcv_data=[])
+
+        # Benchmark WITH tap
+        times_with_tap = []
+        for _ in range(100):
+            captured.clear()
+            start = time.perf_counter()
+            gen.generate_signal(token="BTC/USDT", timeframe=tf, ohlcv_data=[])
+            times_with_tap.append((time.perf_counter() - start) * 1_000_000)  # µs
+
+        # Benchmark WITHOUT tap
+        gen.register_signal_flow_tap(None)
+        times_without_tap = []
+        for _ in range(100):
+            start = time.perf_counter()
+            gen.generate_signal(token="BTC/USDT", timeframe=tf, ohlcv_data=[])
+            times_without_tap.append((time.perf_counter() - start) * 1_000_000)  # µs
+
+        avg_with = statistics.mean(times_with_tap)
+        avg_without = statistics.mean(times_without_tap)
+        overhead_us = avg_with - avg_without
+
+        # Overhead must be < 10µs (0.01ms) - effectively zero
+        assert overhead_us < 10, (
+            f"Tap overhead {overhead_us:.2f}µs exceeds 10µs threshold "
+            f"(with={avg_with:.2f}µs, without={avg_without:.2f}µs)"
+        )
