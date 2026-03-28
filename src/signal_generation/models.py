@@ -53,6 +53,7 @@ class Signal:
         trailing_stop: Trailing stop price level (if applicable)
         trailing_stop_enabled: Whether trailing stop is recommended
         risk_reward_ratio: Risk:reward ratio for the signal
+        take_profit: Take-profit price level (optional, calculated from key levels or R:R)
     """
 
     token: str
@@ -73,6 +74,7 @@ class Signal:
     trailing_stop: float | None = None
     trailing_stop_enabled: bool = False
     risk_reward_ratio: float = 0.0
+    take_profit: float | None = None
 
     def __post_init__(self) -> None:
         """Validate and normalize values."""
@@ -125,6 +127,7 @@ class Signal:
             ),
             "trailing_stop_enabled": self.trailing_stop_enabled,
             "risk_reward_ratio": round(self.risk_reward_ratio, 2),
+            "take_profit": round(self.take_profit, 2) if self.take_profit else None,
         }
 
     def to_discord_message(self) -> str:
@@ -154,6 +157,10 @@ class Signal:
         if self.trailing_stop_enabled and self.trailing_stop is not None:
             message += f"\n🔄 Trailing Stop: ${self.trailing_stop:,.2f}"
 
+        # Add take-profit if available
+        if self.take_profit is not None:
+            message += f"\n🎯 Take-Profit: **${self.take_profit:,.2f}**"
+
         return message
 
     def to_dashboard_payload(self) -> dict[str, Any]:
@@ -175,4 +182,5 @@ class Signal:
             "trailing_stop": self.trailing_stop,
             "trailing_stop_enabled": self.trailing_stop_enabled,
             "risk_reward_ratio": self.risk_reward_ratio,
+            "take_profit": self.take_profit,
         }

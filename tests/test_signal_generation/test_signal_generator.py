@@ -596,3 +596,289 @@ class TestSignalFlowTap:
             f"Tap overhead {overhead_us:.2f}µs exceeds 10µs threshold "
             f"(with={avg_with:.2f}µs, without={avg_without:.2f}µs)"
         )
+
+
+class TestTakeProfitCalculation:
+    """Tests for take-profit calculation in signal generation (ST-SIGNAL-TP-001)."""
+
+    def test_take_profit_with_nearest_resistance_long(self):
+        """Test TP calculation uses nearest resistance for long signals."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        gen = SignalGenerator()
+
+        # Create a signal with stop_loss already set
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            stop_loss=95000.0,  # SL below current
+            risk_reward_ratio=2.0,
+        )
+
+        # Mock key levels with nearest resistance
+        key_levels = MagicMock()
+        key_levels.nearest_resistance = MagicMock(price=105000.0)
+        key_levels.nearest_support = MagicMock(price=94000.0)
+
+        current_price = 100000.0
+
+        gen._calculate_take_profit(signal, key_levels, current_price)
+
+        # For long, TP should be nearest resistance
+        assert signal.take_profit == 105000.0
+
+    def test_take_profit_with_nearest_support_short(self):
+        """Test TP calculation uses nearest support for short signals."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        gen = SignalGenerator()
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.SHORT,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            stop_loss=105000.0,  # SL above current for short
+            risk_reward_ratio=2.0,
+        )
+
+        # Mock key levels with nearest support
+        key_levels = MagicMock()
+        key_levels.nearest_resistance = MagicMock(price=105000.0)
+        key_levels.nearest_support = MagicMock(price=95000.0)
+
+        current_price = 100000.0
+
+        gen._calculate_take_profit(signal, key_levels, current_price)
+
+        # For short, TP should be nearest support
+        assert signal.take_profit == 95000.0
+
+    def test_take_profit_fallback_to_2x_risk_long(self):
+        """Test TP defaults to 2:1 R:R when no key levels for long."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        gen = SignalGenerator()
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            stop_loss=95000.0,  # Risk = 100000 - 95000 = 5000
+            risk_reward_ratio=2.0,
+        )
+
+        current_price = 100000.0
+
+        # No key levels
+        gen._calculate_take_profit(signal, None, current_price)
+
+        # TP = 100000 + (5000 * 2) = 110000
+        assert signal.take_profit == 110000.0
+
+    def test_take_profit_fallback_to_2x_risk_short(self):
+        """Test TP defaults to 2:1 R:R when no key levels for short."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        gen = SignalGenerator()
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.SHORT,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            stop_loss=105000.0,  # Risk = 105000 - 100000 = 5000
+            risk_reward_ratio=2.0,
+        )
+
+        current_price = 100000.0
+
+        # No key levels
+        gen._calculate_take_profit(signal, None, current_price)
+
+        # TP = 100000 - (5000 * 2) = 90000
+        assert signal.take_profit == 90000.0
+
+    def test_take_profit_skipped_when_no_stop_loss(self):
+        """Test TP is not set when signal has no stop_loss."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        gen = SignalGenerator()
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            stop_loss=None,  # No stop loss
+        )
+
+        current_price = 100000.0
+
+        gen._calculate_take_profit(signal, None, current_price)
+
+        # TP should not be set
+        assert signal.take_profit is None
+
+    def test_take_profit_with_empty_key_levels_object(self):
+        """Test TP uses 2:1 R:R when key levels exist but have no resistance/support."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        gen = SignalGenerator()
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            stop_loss=95000.0,
+            risk_reward_ratio=2.0,
+        )
+
+        # Key levels object exists but resistance/support are None
+        key_levels = MagicMock()
+        key_levels.nearest_resistance = None
+        key_levels.nearest_support = MagicMock(price=94000.0)
+
+        current_price = 100000.0
+
+        gen._calculate_take_profit(signal, key_levels, current_price)
+
+        # Should fall back to 2:1 R:R
+        assert signal.take_profit == 110000.0
+
+
+class TestSignalTakeProfitField:
+    """Tests for Signal.take_profit field (ST-SIGNAL-TP-001)."""
+
+    def test_signal_has_take_profit_field(self):
+        """Test that Signal dataclass has take_profit field."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            take_profit=105000.0,
+        )
+
+        assert signal.take_profit == 105000.0
+
+    def test_signal_take_profit_defaults_to_none(self):
+        """Test that take_profit defaults to None for backward compatibility."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+        )
+
+        assert signal.take_profit is None
+
+    def test_signal_to_dict_includes_take_profit(self):
+        """Test that to_dict() includes take_profit field."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            take_profit=105000.0,
+        )
+
+        result = signal.to_dict()
+
+        assert "take_profit" in result
+        assert result["take_profit"] == 105000.0
+
+    def test_signal_to_dict_take_profit_none_when_not_set(self):
+        """Test that to_dict() returns None for take_profit when not set."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+        )
+
+        result = signal.to_dict()
+
+        assert result["take_profit"] is None
+
+    def test_signal_to_discord_message_includes_take_profit(self):
+        """Test that to_discord_message() includes take-profit."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            take_profit=105000.0,
+        )
+
+        message = signal.to_discord_message()
+
+        assert "🎯 Take-Profit:" in message
+        assert "105,000" in message
+
+    def test_signal_to_dashboard_payload_includes_take_profit(self):
+        """Test that to_dashboard_payload() includes take_profit."""
+        from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=80.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            take_profit=105000.0,
+        )
+
+        payload = signal.to_dashboard_payload()
+
+        assert "take_profit" in payload
+        assert payload["take_profit"] == 105000.0

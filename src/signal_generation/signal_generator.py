@@ -636,6 +636,9 @@ class SignalGenerator:
             signal.stop_loss_rationale = stop_result.selected_stop.rationale
             signal.risk_reward_ratio = stop_result.selected_stop.risk_reward_ratio
 
+            # Calculate take-profit using same approach as dashboard (nearest resistance/support or 2:1 R:R)
+            self._calculate_take_profit(signal, key_levels, current_price)
+
             # Log stop-loss calculation
             logger.debug(
                 f"Stop-loss calculated for {signal.token}: "
@@ -693,6 +696,83 @@ class SignalGenerator:
 
         except Exception as e:
             logger.warning(f"Trailing stop calculation failed for {signal.token}: {e}")
+
+    def _calculate_take_profit(
+        self,
+        signal: Signal,
+        key_levels: Any,
+        current_price: float,
+    ) -> None:
+        """Calculate take-profit for a signal.
+
+        Uses key levels (nearest resistance for longs, nearest support for shorts)
+        if available, otherwise defaults to 2:1 R:R based on stop-loss distance.
+
+        Args:
+            signal: The signal to calculate take-profit for
+            key_levels: Key levels result from KeyLevelsAnalyzer (may be None)
+            current_price: Current market price
+        """
+        try:
+            is_long = signal.direction.value == "long"
+
+            # Calculate risk amount from stop-loss
+            if signal.stop_loss is None:
+                logger.debug(
+                    f"Take-profit calculation skipped for {signal.token}: no stop-loss"
+                )
+                return
+
+            risk_amount = abs(current_price - signal.stop_loss)
+
+            if risk_amount == 0:
+                logger.debug(
+                    f"Take-profit calculation skipped for {signal.token}: zero risk amount"
+                )
+                return
+
+            # Determine take-profit target
+            if key_levels is not None:
+                # Check for key level attributes (nearest_resistance, nearest_support)
+                if hasattr(key_levels, "nearest_resistance") and hasattr(
+                    key_levels, "nearest_support"
+                ):
+                    if is_long and key_levels.nearest_resistance is not None:
+                        take_profit = key_levels.nearest_resistance.price
+                    elif not is_long and key_levels.nearest_support is not None:
+                        take_profit = key_levels.nearest_support.price
+                    else:
+                        # Default to 2:1 R:R
+                        take_profit = (
+                            current_price + (risk_amount * 2)
+                            if is_long
+                            else current_price - (risk_amount * 2)
+                        )
+                else:
+                    # Default to 2:1 R:R
+                    take_profit = (
+                        current_price + (risk_amount * 2)
+                        if is_long
+                        else current_price - (risk_amount * 2)
+                    )
+            else:
+                # Default to 2:1 R:R
+                take_profit = (
+                    current_price + (risk_amount * 2)
+                    if is_long
+                    else current_price - (risk_amount * 2)
+                )
+
+            signal.take_profit = take_profit
+
+            logger.debug(
+                f"Take-profit calculated for {signal.token}: "
+                f"{signal.take_profit:.2f} (key_levels={key_levels is not None})"
+            )
+
+        except Exception as e:
+            logger.warning(f"Take-profit calculation failed for {signal.token}: {e}")
+            # Signal remains valid but without take-profit
 
     def get_diagnostics(self) -> dict[str, Any]:
         """Get signal generation diagnostics.
