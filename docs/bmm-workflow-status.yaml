@@ -265,6 +265,65 @@ completed:
       - 410
     status: completed
     title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
+  - completion_date: "2026-03-27"
+    closeout_date: "2026-03-27"
+    completed_stories:
+      - id: ST-AUTOCOG-001
+        status: merged
+      - id: ST-AUTOCOG-004
+        status: merged
+      - id: ST-AUTOCOG-005-T2
+        status: merged
+      - id: ST-AUTOCOG-005-T3
+        status: merged
+      - id: ST-AUTOCOG-006
+        status: merged
+      - id: ST-AUTOCOG-008
+        status: merged
+      - id: ST-AUTOCOG-009
+        status: merged
+      - id: ST-AUTOCOG-010
+        status: merged
+      - id: ST-AUTOCOG-011
+        status: merged
+      - id: ST-AUTOCOG-012
+        status: merged
+      - id: ST-AUTOCOG-013
+        status: merged
+      - id: ST-AUTOCOG-015
+        status: merged
+      - id: ST-AUTOCOG-016
+        status: merged
+    deferred_sp: 15
+    deferred_stories:
+      - id: ST-AUTOCOG-002
+        title: TempMemory Migration
+      - id: ST-AUTOCOG-003
+        title: sys.path Fix
+      - id: ST-AUTOCOG-005-T1
+        title: BeliefStore Debug
+      - id: ST-AUTOCOG-007
+        title: Belief Expansion
+      - id: ST-AUTOCOG-014
+        title: Autonomy Tuning
+    description:
+      Sprint AUTOCOG-2026-03-27 closed with 11 of 16 stories merged.
+      5 stories deferred to backlog for future scheduling.
+    id: AUTOCOG-2026-03-27
+    notes:
+      - "Sprint closed at inception - items moved to backlog for future scheduling"
+      - "11 stories merged to main"
+      - "5 stories deferred (15 SP)"
+      - "Module imports successfully - 312 tests passing"
+      - "Critical fixes: Discord spam prevention, BeliefStore Redis persistence"
+      - "Deferred stories: ST-AUTOCOG-002, ST-AUTOCOG-003, ST-AUTOCOG-005-T1,
+        ST-AUTOCOG-007, ST-AUTOCOG-014"
+    rationale: Sprint closed at inception, items moved to backlog for future scheduling
+    sprint_id: AUTOCOG-2026-03-27
+    status: completed
+    story_count: 16
+    story_points: 48
+    title: AUTOCOG Sprint Closeout
 backlog:
   - acceptance_criteria:
       - AGENTS.md updated with new merge policy including senior-dev authority and merge
