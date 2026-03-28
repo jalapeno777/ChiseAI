@@ -15,6 +15,8 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
+from ..beliefs.models import Belief, BeliefType
+from ..beliefs.store import BeliefStore
 from .belief_expansion import (
     ExpandedBelief,
     ExpansionConfig,
@@ -81,6 +83,61 @@ def _get_pattern_recognizer() -> Any:
     return _pattern_recognizer if _pattern_recognizer else None
 
 
+def expanded_belief_to_belief(expansion: ExpandedBelief) -> Belief:
+    """Convert an ExpandedBelief to a Belief for storage.
+
+    Args:
+        expansion: The expanded belief to convert
+
+    Returns:
+        Belief converted from the expanded belief
+    """
+    return Belief(
+        belief_id=expansion.belief_id,
+        statement=expansion.statement,
+        domain=expansion.domain,
+        confidence=expansion.confidence,
+        evidence_refs=expansion.evidence_refs,
+        sources_quality_score=0.5,
+        status="active",
+        belief_type=BeliefType.INFERENCE,
+        provenance=[f"expansion:{expansion.source_belief_id}"],
+    )
+
+
+def belief_to_expanded_belief(
+    belief: Belief,
+    source_belief_id: str,
+    expansion_type: ExpansionType,
+    relevance_score: float,
+    metadata: dict[str, Any] | None = None,
+) -> ExpandedBelief:
+    """Convert a Belief back to an ExpandedBelief.
+
+    Args:
+        belief: The belief to convert
+        source_belief_id: ID of the source belief this was expanded from
+        expansion_type: Type of expansion that generated this belief
+        relevance_score: Relevance score relative to source belief
+        metadata: Optional additional metadata
+
+    Returns:
+        ExpandedBelief converted from the belief
+    """
+    return ExpandedBelief(
+        belief_id=belief.belief_id,
+        statement=belief.statement,
+        domain=belief.domain,
+        confidence=belief.confidence,
+        source_belief_id=source_belief_id,
+        expansion_type=expansion_type,
+        relevance_score=relevance_score,
+        evidence_refs=belief.evidence_refs,
+        created_at=belief.created_at,
+        metadata=metadata or {},
+    )
+
+
 class BeliefExpander:
     """Generates new beliefs from existing ones through expansion strategies."""
 
@@ -88,16 +145,19 @@ class BeliefExpander:
         self,
         config: ExpansionConfig | None = None,
         qdrant_client: Any | None = None,
+        belief_store: BeliefStore | None = None,
     ):
         """Initialize the belief expander.
 
         Args:
             config: Expansion configuration (uses defaults if None)
-            qdrant_client: Optional Qdrant client for storage
+            qdrant_client: Optional Qdrant client for storage (legacy, use belief_store instead)
+            belief_store: Optional BeliefStore for belief persistence
         """
         self.config = config or ExpansionConfig()
         self._qdrant_client = qdrant_client
         self._qdrant_initialized = False
+        self._belief_store = belief_store
 
     def _get_qdrant_client(self) -> Any | None:
         """Get or create Qdrant client with lazy initialization."""
@@ -390,7 +450,7 @@ class BeliefExpander:
         return len(intersection) / len(union) if union else 0.0
 
     def store_expansion(self, expansion: ExpandedBelief) -> bool:
-        """Store an expanded belief in Qdrant.
+        """Store an expanded belief via BeliefStore.
 
         Args:
             expansion: The expanded belief to store
@@ -398,6 +458,27 @@ class BeliefExpander:
         Returns:
             True if storage succeeded
         """
+        # Prefer BeliefStore if available
+        if self._belief_store is not None:
+            try:
+                belief = expanded_belief_to_belief(expansion)
+                success = self._belief_store.put(belief)
+                if success:
+                    logger.debug(
+                        "Stored expansion %s via BeliefStore",
+                        expansion.belief_id,
+                    )
+                else:
+                    logger.warning(
+                        "BeliefStore.put() returned False for expansion %s",
+                        expansion.belief_id,
+                    )
+                return success
+            except Exception as e:
+                logger.warning("Failed to store expansion via BeliefStore: %s", e)
+                return False
+
+        # Fall back to legacy Qdrant storage
         qdrant_client = self._get_qdrant_client()
         if qdrant_client is None:
             logger.warning("Qdrant unavailable, skipping storage")
@@ -421,7 +502,7 @@ class BeliefExpander:
                 ],
             )
             logger.debug(
-                "Stored expansion %s in Qdrant",
+                "Stored expansion %s in Qdrant (legacy path)",
                 expansion.belief_id,
             )
             return True
@@ -464,6 +545,7 @@ def expand_beliefs(
     beliefs: list[dict[str, Any]],
     config: ExpansionConfig | None = None,
     qdrant_client: Any | None = None,
+    belief_store: BeliefStore | None = None,
     progress_callback: Callable[[ExpansionProgress], None] | None = None,
 ) -> ExpansionResult:
     """Expand a list of beliefs with timeboxing and progress tracking.
@@ -471,13 +553,16 @@ def expand_beliefs(
     Args:
         beliefs: List of belief dictionaries with keys: belief_id, statement, domain, confidence
         config: Expansion configuration
-        qdrant_client: Optional Qdrant client for storage
+        qdrant_client: Optional Qdrant client for storage (legacy, use belief_store instead)
+        belief_store: Optional BeliefStore for belief persistence
         progress_callback: Optional callback for progress updates
 
     Returns:
         ExpansionResult with generated beliefs and progress information
     """
-    expander = BeliefExpander(config=config, qdrant_client=qdrant_client)
+    expander = BeliefExpander(
+        config=config, qdrant_client=qdrant_client, belief_store=belief_store
+    )
     config = config or ExpansionConfig()
 
     progress = ExpansionProgress(total_beliefs=len(beliefs))

@@ -14,7 +14,12 @@ from .belief_expansion import (
     ExpansionResult,
     ExpansionType,
 )
-from .engine import BeliefExpander, expand_beliefs
+from .engine import (
+    BeliefExpander,
+    belief_to_expanded_belief,
+    expand_beliefs,
+    expanded_belief_to_belief,
+)
 
 __all__ = [
     # belief_expansion exports
@@ -30,4 +35,7 @@ __all__ = [
     # engine exports
     "BeliefExpander",
     "expand_beliefs",
+    # conversion exports
+    "expanded_belief_to_belief",
+    "belief_to_expanded_belief",
 ]
