@@ -105,7 +105,7 @@ class LearningStore:
             import os
 
             host = os.environ.get("QDRANT_HOST", "host.docker.internal")
-            port = int(os.environ.get("QDRANT_PORT", "6333"))
+            port = int(os.environ.get("QDRANT_PORT", "6334"))
 
             self._qdrant_client = QdrantClient(host=host, port=port)
             self._ensure_collection()
