@@ -5,19 +5,30 @@ and the neuro-symbolic components, ensuring that:
 1. Shadow mode prevents any live trading impact
 2. Divergence metrics are calculated and reported
 3. Safe fallback when neuro-symbolic components fail
+4. Decision-level audit trail with structured explanations
+5. Discord event emission for key decisions
+6. Redis persistence for historical audit records
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import traceback
+import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+# Redis key prefix for audit trail persistence
+AUDIT_TRAIL_KEY_PREFIX = "bmad:chiseai:autocog:audit"
+AUDIT_TRAIL_LIST_KEY = f"{AUDIT_TRAIL_KEY_PREFIX}:decisions"
+AUDIT_TRAIL_TTL_SECONDS = 30 * 24 * 60 * 60  # 30 days retention
 
 
 @dataclass
@@ -264,6 +275,99 @@ class OutcomeComparison:
         }
 
 
+@dataclass
+class ExplanationPacket:
+    """Structured explanation packet for autonomous decisions.
+
+    This packet provides a human-understandable explanation of why
+    a particular decision was made, including reasoning chain,
+    evidence references, and confidence breakdown.
+
+    Attributes:
+        decision_id: Unique identifier for this decision
+        decision_type: Type of decision (mode_transition, influence_apply,
+                      promotion, demotion, divergence_detected)
+        summary: One-line summary of the decision
+        reasoning_chain: Step-by-step reasoning that led to the decision
+        evidence_refs: List of evidence references supporting the decision
+        confidence_breakdown: Confidence scores for different aspects
+        uncertainty_notes: Explicit notes about uncertainty or caveats
+        influenced_by: Factors that influenced the decision
+        timestamp: When the decision was made
+    """
+
+    decision_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    decision_type: str = ""
+    summary: str = ""
+    reasoning_chain: list[str] = field(default_factory=list)
+    evidence_refs: list[str] = field(default_factory=list)
+    confidence_breakdown: dict[str, float] = field(default_factory=dict)
+    uncertainty_notes: list[str] = field(default_factory=list)
+    influenced_by: dict[str, Any] = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "decision_id": self.decision_id,
+            "decision_type": self.decision_type,
+            "summary": self.summary,
+            "reasoning_chain": self.reasoning_chain,
+            "evidence_refs": self.evidence_refs,
+            "confidence_breakdown": {
+                k: round(v, 4) for k, v in self.confidence_breakdown.items()
+            },
+            "uncertainty_notes": self.uncertainty_notes,
+            "influenced_by": self.influenced_by,
+            "timestamp": self.timestamp,
+        }
+
+
+@dataclass
+class DecisionAuditEntry:
+    """A decision-level audit trail entry.
+
+    Records every significant decision made by the autonomous cognition
+    system, including the decision context, outcome, and explanation.
+
+    Attributes:
+        decision_id: Unique identifier for this decision
+        decision_type: Type of decision (mode_transition, promotion,
+                      demotion, divergence_detected, influence_apply)
+        mode: Current integration mode at time of decision
+        timestamp: When the decision was made
+        summary: Human-readable summary of the decision
+        explanation: Structured explanation packet
+        divergence_metrics: Divergence metrics at time of decision
+        success: Whether the decision action succeeded
+        error: Error message if decision failed
+    """
+
+    decision_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    decision_type: str = ""
+    mode: str = "shadow"
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    summary: str = ""
+    explanation: ExplanationPacket | None = None
+    divergence_metrics: DivergenceMetrics | None = None
+    success: bool = True
+    error: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "decision_id": self.decision_id,
+            "decision_type": self.decision_type,
+            "mode": self.mode,
+            "timestamp": self.timestamp,
+            "summary": self.summary,
+            "explanation": self.explanation.to_dict() if self.explanation else None,
+            "divergence_metrics": (
+                self.divergence_metrics.to_dict() if self.divergence_metrics else None
+            ),
+            "success": self.success,
+            "error": self.error,
+        }
+
+
 class NeuroSymbolicRuntimeIntegrator:
     """Runs shadow/canary/full integration checks with safe fallback.
 
@@ -284,6 +388,12 @@ class NeuroSymbolicRuntimeIntegrator:
     - Normal trading operation with neuro-symbolic influence
     - Continuous divergence monitoring
     - Automatic rollback if drift detected
+
+    PHASE 4 ADDITIONS:
+    - Decision-level audit trail logging every decision
+    - Structured explanation packets for explainability
+    - Discord event emission for key decisions
+    - Redis persistence for historical audit records
     """
 
     # Divergence thresholds
@@ -349,6 +459,24 @@ class NeuroSymbolicRuntimeIntegrator:
         self._current_mode: IntegrationMode = IntegrationMode.SHADOW
         self._consecutive_non_regression_count: int = 0
         self._consecutive_non_regression_history: list[int] = []
+
+        # Phase 4: Decision audit trail
+        self._audit_trail: list[DecisionAuditEntry] = []
+        self._discord_notifier = None  # Lazy-loaded Discord notifier
+
+    @property
+    def audit_trail(self) -> list[DecisionAuditEntry]:
+        """Get the decision audit trail."""
+        return self._audit_trail
+
+    def set_discord_notifier(self, notifier: Any) -> None:
+        """Set Discord notifier for event emission.
+
+        Args:
+            notifier: DiscordNotifier instance for emitting events
+        """
+        self._discord_notifier = notifier
+        logger.info("[RUNTIME_INTEGRATION] Discord notifier set for event emission")
 
     @property
     def shadow_lock(self) -> bool:
@@ -1223,6 +1351,243 @@ class NeuroSymbolicRuntimeIntegrator:
             divergence_score,
         )
 
+    def _create_explanation_packet(
+        self,
+        decision_type: str,
+        summary: str,
+        reasoning_chain: list[str],
+        confidence_breakdown: dict[str, float],
+        influenced_by: dict[str, Any],
+        uncertainty_notes: list[str] | None = None,
+        evidence_refs: list[str] | None = None,
+    ) -> ExplanationPacket:
+        """Create a structured explanation packet for a decision.
+
+        Args:
+            decision_type: Type of decision (promotion, demotion, divergence_detected, etc.)
+            summary: One-line summary of the decision
+            reasoning_chain: Step-by-step reasoning that led to the decision
+            confidence_breakdown: Confidence scores for different aspects
+            influenced_by: Factors that influenced the decision
+            uncertainty_notes: Optional explicit notes about uncertainty
+            evidence_refs: Optional list of evidence references
+
+        Returns:
+            ExplanationPacket with structured explanation
+        """
+        return ExplanationPacket(
+            decision_type=decision_type,
+            summary=summary,
+            reasoning_chain=reasoning_chain,
+            confidence_breakdown=confidence_breakdown,
+            uncertainty_notes=uncertainty_notes or [],
+            evidence_refs=evidence_refs or [],
+            influenced_by=influenced_by,
+        )
+
+    def _log_audit_entry(
+        self,
+        decision_type: str,
+        summary: str,
+        explanation: ExplanationPacket,
+        divergence_metrics: DivergenceMetrics | None = None,
+        success: bool = True,
+        error: str | None = None,
+    ) -> DecisionAuditEntry:
+        """Log a decision audit entry to the in-memory audit trail.
+
+        Args:
+            decision_type: Type of decision
+            summary: Human-readable summary
+            explanation: Structured explanation packet
+            divergence_metrics: Optional divergence metrics at time of decision
+            success: Whether the decision action succeeded
+            error: Optional error message if decision failed
+
+        Returns:
+            DecisionAuditEntry that was logged
+        """
+        entry = DecisionAuditEntry(
+            decision_type=decision_type,
+            mode=self._current_mode.value,
+            summary=summary,
+            explanation=explanation,
+            divergence_metrics=divergence_metrics,
+            success=success,
+            error=error,
+        )
+
+        self._audit_trail.append(entry)
+
+        # Trim audit trail if needed (keep last 1000 entries)
+        if len(self._audit_trail) > 1000:
+            self._audit_trail = self._audit_trail[-1000:]
+
+        # Persist to Redis
+        self._persist_audit_to_redis(entry)
+
+        logger.info(
+            "[RUNTIME_INTEGRATION] Audit entry logged: decision_type=%s, "
+            "decision_id=%s, mode=%s, success=%s",
+            decision_type,
+            entry.decision_id,
+            entry.mode,
+            success,
+        )
+
+        return entry
+
+    def _persist_audit_to_redis(self, entry: DecisionAuditEntry) -> bool:
+        """Persist an audit entry to Redis.
+
+        Args:
+            entry: The audit entry to persist
+
+        Returns:
+            True if persisted successfully, False otherwise
+        """
+        try:
+            from tools.redis_state import (
+                redis_state_expire,
+                redis_state_set,
+                redis_state_zadd,
+            )
+
+            key = f"{AUDIT_TRAIL_LIST_KEY}:{entry.decision_id}"
+            redis_state_set(key, json.dumps(entry.to_dict()))
+            # Set TTL for 30-day retention
+            redis_state_expire(key, AUDIT_TRAIL_TTL_SECONDS)
+
+            # Also add to sorted set by timestamp for time-based queries
+            timestamp_key = f"{AUDIT_TRAIL_KEY_PREFIX}:by_timestamp"
+            try:
+                from datetime import datetime
+
+                ts = datetime.fromisoformat(entry.timestamp).timestamp()
+                redis_state_zadd(timestamp_key, ts, entry.decision_id)
+                redis_state_expire(timestamp_key, AUDIT_TRAIL_TTL_SECONDS)
+            except Exception:
+                pass  # Timestamp sorting is best-effort
+
+            logger.debug(
+                "[RUNTIME_INTEGRATION] Audit entry persisted to Redis: %s",
+                entry.decision_id,
+            )
+            return True
+        except ImportError:
+            logger.debug(
+                "[RUNTIME_INTEGRATION] Redis not available, skipping audit persistence"
+            )
+            return False
+        except Exception as e:
+            logger.warning(
+                "[RUNTIME_INTEGRATION] Failed to persist audit entry to Redis: %s", e
+            )
+            return False
+
+    def _emit_decision_event(
+        self,
+        event_type: str,
+        severity: str,
+        summary: str,
+        impact: str,
+        explanation: ExplanationPacket,
+    ) -> bool:
+        """Emit a Discord event for a key decision.
+
+        Args:
+            event_type: Type of event (mode_promotion, mode_demotion, etc.)
+            severity: Event severity (low, medium, high, critical)
+            summary: Human-readable summary
+            impact: Impact description
+            explanation: Structured explanation packet
+
+        Returns:
+            True if event was emitted successfully, False otherwise
+        """
+        if self._discord_notifier is None:
+            logger.debug(
+                "[RUNTIME_INTEGRATION] Discord notifier not set, skipping event emission"
+            )
+            return False
+
+        try:
+            import asyncio
+
+            # Run async emit in sync context
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            success = loop.run_until_complete(
+                self._discord_notifier.notify_autocog_event(
+                    event_type=event_type,
+                    severity=severity,
+                    summary=summary,
+                    impact=impact,
+                    top_metrics=explanation.confidence_breakdown,
+                    artifact_path=None,
+                    run_id=explanation.decision_id,
+                    title=f"Autonomous Decision: {event_type}",
+                    evidence_reasoning=explanation.reasoning_chain,
+                )
+            )
+
+            if success:
+                logger.info(
+                    "[RUNTIME_INTEGRATION] Discord event emitted: %s (%s)",
+                    event_type,
+                    severity,
+                )
+            return success
+        except Exception as e:
+            logger.warning("[RUNTIME_INTEGRATION] Failed to emit Discord event: %s", e)
+            return False
+
+    def get_audit_trail_report(self) -> dict[str, Any]:
+        """Generate a report of all audit trail entries.
+
+        Returns:
+            Dictionary containing audit trail summary and entries
+        """
+        if not self._audit_trail:
+            return {
+                "summary": {
+                    "total_entries": 0,
+                    "decision_type_distribution": {},
+                    "success_count": 0,
+                    "failure_count": 0,
+                    "message": "No audit trail entries recorded yet",
+                },
+                "entries": [],
+            }
+
+        # Count by decision type
+        decision_type_counts: dict[str, int] = {}
+        success_count = 0
+        failure_count = 0
+
+        for entry in self._audit_trail:
+            decision_type_counts[entry.decision_type] = (
+                decision_type_counts.get(entry.decision_type, 0) + 1
+            )
+            if entry.success:
+                success_count += 1
+            else:
+                failure_count += 1
+
+        return {
+            "summary": {
+                "total_entries": len(self._audit_trail),
+                "decision_type_distribution": decision_type_counts,
+                "success_count": success_count,
+                "failure_count": failure_count,
+            },
+            "entries": [entry.to_dict() for entry in self._audit_trail[-50:]],
+        }
+
     def promote_mode(self) -> tuple[bool, str]:
         """Promote from CANARY to FULL mode.
 
@@ -1255,6 +1620,7 @@ class NeuroSymbolicRuntimeIntegrator:
                 )
 
         # All conditions met - promote
+        old_mode = self._current_mode.value
         self._current_mode = IntegrationMode.FULL
         logger.info(
             "[RUNTIME_INTEGRATION] MODE PROMOTED: CANARY -> FULL "
@@ -1262,6 +1628,53 @@ class NeuroSymbolicRuntimeIntegrator:
             self._consecutive_non_regression_count,
             recent_score,
         )
+
+        # Create audit entry for promotion decision
+        explanation = self._create_explanation_packet(
+            decision_type="promotion",
+            summary=f"Mode promoted from {old_mode} to FULL",
+            reasoning_chain=[
+                f"Consecutive non-regression checks: {self._consecutive_non_regression_count}/{self.REQUIRED_CONSECUTIVE_CHECKS}",
+                f"Recent divergence score: {recent_score:.3f}",
+                f"Promotion threshold: {self.PROMOTE_THRESHOLD}",
+                "All promotion criteria met",
+            ],
+            confidence_breakdown={
+                "consecutive_checks_confidence": min(
+                    self._consecutive_non_regression_count
+                    / self.REQUIRED_CONSECUTIVE_CHECKS,
+                    1.0,
+                ),
+                "divergence_confidence": 1.0
+                - min(recent_score / self.PROMOTE_THRESHOLD, 1.0),
+            },
+            influenced_by={
+                "old_mode": old_mode,
+                "new_mode": "full",
+                "consecutive_checks": self._consecutive_non_regression_count,
+                "divergence_score": recent_score,
+            },
+        )
+
+        self._log_audit_entry(
+            decision_type="promotion",
+            summary=f"Mode promoted from {old_mode} to FULL",
+            explanation=explanation,
+            divergence_metrics=(
+                self._divergence_history[-1] if self._divergence_history else None
+            ),
+            success=True,
+        )
+
+        # Emit Discord event for promotion
+        self._emit_decision_event(
+            event_type="mode_promotion",
+            severity="medium",
+            summary=f"Mode promoted from {old_mode} to FULL",
+            impact=f"Neuro-symbolic influence now active with {self._consecutive_non_regression_count} consecutive checks",
+            explanation=explanation,
+        )
+
         return True, "promotion_succeeded"
 
     def check_auto_demotion(
