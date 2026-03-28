@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from autonomous_cognition.improvement.scoring import composite_score
-from autonomous_cognition.policy_engine import AutonomousPolicyEngine, GateDecision
+from ..policy_engine import AutonomousPolicyEngine, GateDecision
+from .scoring import composite_score
 
 
 @dataclass
