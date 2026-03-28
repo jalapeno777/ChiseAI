@@ -307,7 +307,7 @@ completed:
     notes:
       - "Sprint closed at inception - items moved to backlog for future scheduling"
       - "13 stories merged to main"
-      - "3 stories deferred (9 SP)"
+      - "2 stories deferred (6 SP)"
       - "Module imports successfully - 312 tests passing"
       - "Critical fixes: Discord spam prevention, BeliefStore Redis persistence"
       - "Deferred stories: ST-AUTOCOG-003, ST-AUTOCOG-014"
