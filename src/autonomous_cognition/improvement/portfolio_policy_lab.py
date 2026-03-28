@@ -11,8 +11,8 @@ import hashlib
 from dataclasses import dataclass, field
 from typing import Any
 
-from autonomous_cognition.improvement.hypothesis_generator import Hypothesis
-from autonomous_cognition.improvement.scoring import composite_score
+from .hypothesis_generator import Hypothesis
+from .scoring import composite_score
 
 
 @dataclass
