@@ -19,6 +19,7 @@ completed:
       accuracy, and CI hardening. All 5 stories merged.
     id: EP-LOCAL-CI-001
     merge_commit: 26254f55762ec690a729562fc307b6f00909417e
+    pr_number: 688
     notes:
       - "Quality: pre_push_gate.py runs all checks in ~20s with timing metrics"
       - "Consistency: validate_local_ci_consistency.py detects version/config drift"
@@ -306,6 +307,7 @@ completed:
       2 stories deferred to backlog for future scheduling (ST-AUTOCOG-007
       completed via FIX-AUTOCOG-007-A/B).
     id: AUTOCOG-2026-03-27
+    merge_commit: a0ddb8559b0c504d427b8d5a136fdbf7c5f07969
     notes:
       - "Sprint closed at inception - items moved to backlog for future scheduling"
       - "13 stories merged to main"
@@ -317,6 +319,7 @@ completed:
       - >-
         ST-AUTOCOG-007 (Belief Expansion) completed via FIX-AUTOCOG-007-A
         (2026-03-28, SHA 211de68) and FIX-AUTOCOG-007-B (registry update)
+    pr_number: 760
     rationale: Sprint closed at inception, items moved to backlog for future scheduling
     sprint_id: AUTOCOG-2026-03-27
     status: completed
@@ -552,6 +555,7 @@ backlog:
       health, metrics, and trends. Currently metrics exist in Redis but no visual dashboard.
     estimated_points: 5
     id: ST-MEMORY-INGEST-002
+    merge_commit: 2f870a46c
     notes:
       - Completion report (line 474-477) identified this as immediate Week 1 priority
       - "Metrics available in Redis: chise:governance:consolidation:metrics:ingestion"
@@ -559,6 +563,7 @@ backlog:
       - Should integrate with existing data quality monitoring infrastructure
     owner: TBD
     priority: P1
+    pr_number: 559
     related_story: ST-MEMORY-INGEST-001
     status: completed
     title: Grafana Dashboard for Tempmemory Ingestion Monitoring
@@ -580,12 +585,14 @@ backlog:
       mv commands.
     estimated_points: 4
     id: ST-MEMORY-INGEST-003
+    merge_commit: 90f22fb01
     notes:
       - Completion report (line 486-489) identified this as Month 1 short-term priority
       - Current manual process error-prone and time-consuming
       - Should integrate with existing MemoryArchiver in consolidation system
     owner: TBD
     priority: P2
+    pr_number: 561
     related_story: ST-MEMORY-INGEST-001
     status: completed
     title: Auto-Archival Feature for Ingested Tempmemories
@@ -607,12 +614,14 @@ backlog:
       before commit. Catches errors early and prevents invalid files from reaching ingestion.
     estimated_points: 3
     id: ST-MEMORY-INGEST-004
+    merge_commit: 37a3d2aa6
     notes:
       - Completion report (line 496-498) identified this as Month 1 short-term priority
       - Reduces ingestion failures due to malformed frontmatter
       - Consistent frontmatter quality improves semantic search quality
     owner: TBD
     priority: P2
+    pr_number: 563
     related_story: ST-MEMORY-INGEST-001
     status: completed
     title: Frontmatter Validation Pre-Commit Hook
@@ -633,12 +642,14 @@ backlog:
       to ensure tempmemories are ingested before evaluation runs.
     estimated_points: 4
     id: ST-MEMORY-INGEST-005
+    merge_commit: e68da6500
     notes:
       - Completion report (line 469-472) identified this as immediate Week 1 priority
       - Ensures BrainEval evaluations use most recent memory artifacts
       - Prevents stale memories from affecting evaluation quality
     owner: senior-dev
     priority: P2
+    pr_number: 564
     related_story: ST-MEMORY-INGEST-001
     status: completed
     title: CI Pipeline Integration for Tempmemory Ingestion
