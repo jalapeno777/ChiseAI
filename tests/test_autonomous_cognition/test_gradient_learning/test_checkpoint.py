@@ -1,12 +1,8 @@
 """Unit tests for CheckpointManager."""
 
-import json
-import pickle
 import tempfile
-from pathlib import Path
 
 import pytest
-
 from src.autonomous_cognition.gradient_learning.checkpoint import (
     Checkpoint,
     CheckpointManager,

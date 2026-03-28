@@ -1,6 +1,5 @@
 """Unit tests for GradientComputer."""
 
-import math
 import pytest
 from src.autonomous_cognition.gradient_learning.gradient_computer import (
     GradientComputer,

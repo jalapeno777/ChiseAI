@@ -1,17 +1,15 @@
 """Integration tests for GradientLearningOptimizer."""
 
-import tempfile
 import shutil
+import tempfile
 
 import pytest
-
 from src.autonomous_cognition.gradient_learning import (
-    GradientLearningOptimizer,
-    ParameterUpdateRejected,
-    ScheduleType,
     ClipMode,
-    create_sgd_optimizer,
+    GradientLearningOptimizer,
+    ScheduleType,
     create_adam_optimizer,
+    create_sgd_optimizer,
 )
 
 

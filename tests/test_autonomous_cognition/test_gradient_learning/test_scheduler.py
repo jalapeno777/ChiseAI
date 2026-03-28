@@ -1,14 +1,12 @@
 """Unit tests for LearningRateScheduler."""
 
-import math
 import pytest
 from src.autonomous_cognition.gradient_learning.scheduler import (
-    LearningRateScheduler,
-    ExponentialScheduler,
-    StepScheduler,
-    CosineScheduler,
     ConstantScheduler,
+    CosineScheduler,
+    ExponentialScheduler,
     ScheduleType,
+    StepScheduler,
     create_scheduler,
 )
 

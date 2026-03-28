@@ -2,7 +2,6 @@
 
 import pytest
 from src.autonomous_cognition.gradient_learning.optimizer import (
-    Optimizer,
     SGD,
     Adam,
     OptimizerState,

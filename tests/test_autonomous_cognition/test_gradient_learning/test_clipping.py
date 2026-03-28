@@ -1,11 +1,10 @@
 """Unit tests for GradientClipper."""
 
-import math
 import pytest
 from src.autonomous_cognition.gradient_learning.clipping import (
-    GradientClipper,
     ClipMode,
     ClipResult,
+    GradientClipper,
 )
 
 
