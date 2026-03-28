@@ -330,6 +330,29 @@ completed:
     title: AUTOCOG Sprint Closeout
 backlog:
   - acceptance_criteria:
+      - Docker images use consistent python/python3 PATH across all CI steps
+      - CI steps reference correct python executable without PATH ambiguity
+      - ci-gate FAST_REQUIRED behavior aligned with status file expectations
+      - All CI pipelines pass with drift fixes applied
+      - Validation registry updated with new validation entry for CI drift prevention
+    created_date: "2026-03-28"
+    description: |
+      CI infrastructure drift discovered during EP-AUTOCOG-005 closeout requiring immediate remediation:
+      1. Docker image python vs python3 PATH mismatch in CI steps - CI Docker images have inconsistent python executable naming causing step failures
+      2. FAST_REQUIRED/status-file expectation mismatch in ci-gate - ci-gate step has mismatched expectations on FAST_REQUIRED environment variable and status file format
+    discovered_during: EP-AUTOCOG-005
+    estimated_points: 3
+    id: CI-INFRA-DRIFT-001
+    notes:
+      - "Discovered during EP-AUTOCOG-005 sprint closeout (2026-03-27)"
+      - "Root cause: Docker image inconsistency between python and python3 naming"
+      - "Impact: CI pipeline failures, blocking merges"
+      - "Related: AUTOCOG-2026-03-27 sprint, ST-AUTOCOG-* stories"
+    owner: senior-dev
+    priority: P0-CRITICAL
+    status: planned
+    title: CI Infrastructure Drift - Docker PATH and ci-gate Mismatch Fixes
+  - acceptance_criteria:
       - AGENTS.md updated with new merge policy including senior-dev authority and merge
         attempt definitions
       - SKILL.md updated to match AGENTS.md

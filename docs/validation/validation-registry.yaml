@@ -3689,6 +3689,21 @@ validations:
     test_method: automated
     owner: dev
 
+  - id: V-CI-INFRA-DRIFT-001
+    title: CI Infrastructure Drift Prevention
+    epic_id: CI-INFRA-DRIFT-001
+    story_id: CI-INFRA-DRIFT-001
+    status: pending
+    description: |
+      Validate CI infrastructure drift is detected and prevented through automated checks.
+      CI infrastructure drift discovered during EP-AUTOCOG-005 closeout requiring immediate remediation.
+    acceptance_criteria:
+      - Docker image python/python3 PATH consistency check in CI
+      - ci-gate FAST_REQUIRED/status-file alignment validation
+      - Automated drift detection in pre-commit hooks
+    test_method: automated
+    owner: ops-team
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
