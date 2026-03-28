@@ -12,6 +12,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from autonomous_cognition.action_executor import ActionExecutor  # noqa: F401
 from autonomous_cognition.autonomy_tuner import AutonomyTuner
 from autonomous_cognition.beliefs.consistency_checker import BeliefConsistencyChecker
 from autonomous_cognition.beliefs.explanation import explain_conflict, explain_revision
