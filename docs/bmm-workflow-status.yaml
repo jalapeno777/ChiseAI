@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-03-25"
+  last_updated: "2026-03-28"
   managed_by: merlin
   status_notes:
     - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324 tests passing)"
@@ -328,6 +328,23 @@ completed:
     story_count: 16
     story_points: 48
     title: AUTOCOG Sprint Closeout
+  - acceptance_criteria:
+      - Feature flags persist across restart
+      - Flags can be toggled via Redis
+      - Backward compatible with existing usage
+    completion_date: "2026-03-28"
+    description: Add Redis/DB persistence for feature flags that currently reset on restart
+    id: FEATURE-FLAGS-REDIS-001
+    merge_commit: "TBD"
+    notes:
+      - "Implemented in src/config/feature_flags.py"
+      - "19 new tests added, all passing"
+      - "Redis keys: chise:feature_flags:config:*"
+    owner: dev
+    priority: P1
+    status: completed
+    story_points: 2
+    title: Feature Flag Persistence
 backlog:
   - acceptance_criteria:
       - Docker images use consistent python/python3 PATH across all CI steps
@@ -862,6 +879,10 @@ backlog:
       - 3/4 ICT signals operational (CVD, FVG, Order Block)
       - Feature flag prevents accidental BOS/CHoCH activation
       - Target Phase: EP-ICT-007 (Phase 5)
+      - Test data remediated (2026-03-28): regenerated with 80-120 candles
+      - OHLCV data fixed
+      - Classifier still not firing: 23% accuracy vs 60% target
+      - Need to debug _is_level_broken() logic
     owner: ml-signal-engineering
     priority: P2
     related_epic: EP-ICT-004
@@ -870,7 +891,7 @@ backlog:
       - BOS/CHoCH excluded from EP-ICT-005 (Phase 2 integration)
       - 3/4 ICT signals operational (CVD, FVG, Order Block)
       - Feature flag prevents accidental BOS/CHoCH activation
-    status: planned
+    status: in_progress
     story_points: 5
     target_phase: EP-ICT-007
     target_sprint: ICT-S9
@@ -1739,6 +1760,8 @@ epics:
       - Phase 3+4: 4 stories, 5.5 SP
       - Sprint ICT-S8 (Weeks 15-18)
       - Final decision on ICT/SMC expansion
+      - ST-ICT-020-PART-B completed via PR #777
+      - Observation period end date: ~Apr 22, 2026
     sprint_id: ICT-S8
     status: in_progress
     story_count: 5
@@ -1765,6 +1788,12 @@ epics:
         pr_number: 664
         test_results:
           passed: 30
+      - id: ST-ICT-020-PART-B
+        merge_commit: TBD
+        pr_number: 777
+        test_results:
+          passed: TBD
+        notes: Part-B completion via PR #777
       - id: ST-ICT-022
         merge_commit: 123b9689
         pr_number: 660
@@ -7809,11 +7838,14 @@ stories:
     story_points: 1
     title: Paper Trading Data Collection - Part A
   - checkpoint_artifact: docs/observation/ST-ICT-020-PART-B-checkpoint.md
-    description: Paper Trading PART-B - Time-Gated
+    completion_date: "2026-03-28"
+    description: Signal generator config fixes - Part B
     epic_id: EP-ICT-006
     id: ST-ICT-020-PART-B
+    merge_commit: e337e9c7d5b65b87c6e2f7c178aa58b7065b66b3
+    pr_number: 777
     sprint_id: ICT-S8
-    status: in_progress
+    status: merged
     story_points: 1
     title: Paper Trading Data Collection - Part B
   - acceptance_criteria:

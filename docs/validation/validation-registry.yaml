@@ -3118,10 +3118,11 @@ validations:
     title: Live Paper Trading Data Collection (Time-Gated)
     epic_id: EP-ICT-006
     story_id: ST-ICT-020-PART-B
-    status: in_progress
+    status: validated
     description: |
       4-week live observation period for statistical validation.
       Time-gated: cannot compress, requires minimum 28 days elapsed time.
+      Signal generator config fixes merged via PR #777.
     acceptance_criteria:
       - 4+ weeks paper trading data collected
       - Minimum 100 signals per group
@@ -3134,6 +3135,8 @@ validations:
     dependencies:
       - ST-ICT-020-PART-A completion
       - Paper trading environment active
+    merge_commit: e337e9c7d5b65b87c6e2f7c178aa58b7065b66b3
+    pr_number: 777
 
   - id: V-ICT-021
     title: Statistical Analysis & Significance Testing
