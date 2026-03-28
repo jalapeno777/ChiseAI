@@ -1,6 +1,6 @@
 """Statistical validation module for ICT hypothesis testing."""
 
-from src.validation.statistical.hypothesis_framework import (
+from validation.statistical.hypothesis_framework import (
     EffectSizeThresholds,
     HypothesisDecision,
     HypothesisTestResult,
