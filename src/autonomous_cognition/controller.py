@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .artifacts import SelfAssessmentArtifact
+from .beliefs.store import BeliefStore
+from .expansion import ExpansionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +58,12 @@ class AutonomousCognitionController:
         artifacts_dir: str | Path | None = None,
         redis_client: Any | None = None,
         qdrant_client: Any | None = None,
+        belief_store: BeliefStore | None = None,
     ):
         self._artifacts_dir = Path(artifacts_dir or self.DEFAULT_ARTIFACTS_DIR)
         self._redis_client = redis_client
         self._qdrant_client = qdrant_client
+        self._belief_store = belief_store
         self._config = self._load_config()
         # Deduplication stats (instance-level for test isolation)
         self._stats_files_written: int = 0
@@ -71,6 +75,7 @@ class AutonomousCognitionController:
         artifact_path, _ = self._persist_artifact(artifact)
         self._persist_redis(artifact)
         self._persist_qdrant(artifact)
+        self._run_belief_expansion()
         return artifact, artifact_path
 
     def get_dedup_stats(self) -> dict[str, int]:
@@ -293,6 +298,61 @@ class AutonomousCognitionController:
             )
         except Exception as e:
             logger.warning("Qdrant persistence skipped: %s", e)
+
+    def _run_belief_expansion(self) -> None:
+        """Run belief expansion cycle if belief store is configured."""
+        if self._belief_store is None:
+            logger.debug("BeliefStore not configured, skipping expansion")
+            return
+
+        # Check if experiments are enabled
+        experiments_enabled = self._config.get("experiments", {}).get("enabled", False)
+        if not experiments_enabled:
+            logger.debug("Experiments disabled, skipping belief expansion")
+            return
+
+        try:
+            # Get active beliefs from the store for expansion
+            beliefs = self._belief_store.list_active()
+            if not beliefs:
+                logger.debug("No active beliefs to expand")
+                return
+
+            # Convert beliefs to dict format for expander
+            belief_dicts = [
+                {
+                    "belief_id": b.belief_id,
+                    "statement": b.statement,
+                    "domain": b.domain,
+                    "confidence": b.confidence,
+                }
+                for b in beliefs
+            ]
+
+            # Configure and run expander
+            config = ExpansionConfig(
+                time_limit_seconds=60,  # 1 minute limit per cycle
+                min_confidence=0.5,
+                min_relevance_score=0.6,
+                max_expansions_per_belief=3,
+            )
+
+            # Run expansion via module-level function with BeliefStore
+            from .expansion import expand_beliefs as do_expand_beliefs
+
+            result = do_expand_beliefs(
+                beliefs=belief_dicts,
+                config=config,
+                belief_store=self._belief_store,
+            )
+
+            logger.info(
+                "Belief expansion completed: %d expansions stored, %d filtered",
+                result.progress.expansions_stored,
+                result.progress.expansions_filtered,
+            )
+        except Exception as e:
+            logger.warning("Belief expansion failed: %s", e)
 
     def _load_config(self) -> dict[str, Any]:
         """Load autocog configuration from YAML file."""
