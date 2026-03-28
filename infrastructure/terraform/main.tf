@@ -366,7 +366,7 @@ resource "docker_container" "woodpecker_agent" {
   env = [
     "WOODPECKER_SERVER=woodpecker-server:9000",
     "WOODPECKER_AGENT_SECRET=${var.woodpecker_agent_secret}",
-    "WOODPECKER_MAX_WORKFLOWS=2",
+    "WOODPECKER_MAX_WORKFLOWS=1",
     "WOODPECKER_BACKEND=docker",
     "WOODPECKER_BACKEND_DOCKER_HOST=unix:///run/docker.sock",
     "WOODPECKER_BACKEND_DOCKER_API_VERSION=1.44",
