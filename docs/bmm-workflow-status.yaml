@@ -354,7 +354,7 @@ backlog:
     status: completed
     title: CI Infrastructure Drift - Docker PATH and ci-gate Mismatch Fixes
     completed_date: "2026-03-28"
-    merge_commit: ""
+    merge_commit: "cfc9fe12147ae1d54f27dacbcf470b2df2b4b9bf"
   - acceptance_criteria:
       - AGENTS.md updated with new merge policy including senior-dev authority and merge
         attempt definitions
