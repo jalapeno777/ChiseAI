@@ -7,6 +7,7 @@ specialization, analogy, and inference.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import time
@@ -24,8 +25,35 @@ from .belief_expansion import (
 
 logger = logging.getLogger(__name__)
 
-# Namespace UUID for deterministic expansion point IDs (DNS namespace per RFC 4122)
-_EXPANSION_NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+# SentenceTransformer model singleton for embeddings
+_sentence_model: Any = None
+_sentence_model_lock: Any = None
+
+
+def _get_sentence_model() -> Any:
+    """Get or create the SentenceTransformer model singleton.
+
+    Returns:
+        SentenceTransformer model instance or None if unavailable
+    """
+    global _sentence_model, _sentence_model_lock
+    if _sentence_model_lock is None:
+        import threading
+
+        _sentence_model_lock = threading.Lock()
+
+    if _sentence_model is None:
+        with _sentence_model_lock:
+            if _sentence_model is None:
+                try:
+                    from sentence_transformers import SentenceTransformer
+
+                    _sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+                    logger.info("Loaded SentenceTransformer model: all-MiniLM-L6-v2")
+                except Exception as e:
+                    logger.warning("SentenceTransformer not available: %s", e)
+                    _sentence_model = False
+    return _sentence_model if _sentence_model else None
 
 
 class BeliefExpander:
@@ -177,16 +205,8 @@ class BeliefExpander:
         # Confidence is derived from source confidence with decay
         derived_confidence = confidence * 0.85
 
-        # Deterministic ID from source + expansion type for reproducibility
-        point_id = str(
-            uuid.uuid5(
-                _EXPANSION_NAMESPACE,
-                f"{belief_id}:{expansion_type.value}:{statement}",
-            )
-        )
-
         return ExpandedBelief(
-            belief_id=point_id,
+            belief_id=f"exp_{uuid.uuid4().hex[:12]}",
             statement=derived_statement,
             domain=domain,
             confidence=derived_confidence,
@@ -303,8 +323,11 @@ class BeliefExpander:
             return False
 
         try:
-            # Use uuid5 for deterministic point ID (same input → same UUID)
-            point_id = uuid.uuid5(_EXPANSION_NAMESPACE, expansion.belief_id)
+            import hashlib
+
+            point_id = hashlib.sha256(expansion.belief_id.encode("utf-8")).hexdigest()[
+                :32
+            ]
 
             qdrant_client.upsert(
                 collection_name=self.config.qdrant_collection,
@@ -326,7 +349,7 @@ class BeliefExpander:
             return False
 
     def _generate_embedding(self, text: str) -> list[float]:
-        """Generate a deterministic embedding vector from text.
+        """Generate an embedding vector from text using SentenceTransformer.
 
         Args:
             text: Input text to embed
@@ -334,12 +357,19 @@ class BeliefExpander:
         Returns:
             List of float values representing the embedding
         """
-        import hashlib
-
         dimensions = 384
         if not text:
             return [0.0] * dimensions
 
+        model = _get_sentence_model()
+        if model is not None:
+            try:
+                embedding = model.encode(text, convert_to_numpy=True)
+                return embedding.tolist()
+            except Exception as e:
+                logger.warning("Failed to generate embedding with model: %s", e)
+
+        # Fallback to deterministic hash-based embedding
         values: list[float] = []
         data = text.encode("utf-8")
         for i in range(dimensions):
