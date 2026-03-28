@@ -214,6 +214,10 @@ def validate_story_evidence(
     story_id = story.get("id", "unknown")
     status = story.get("status")
 
+    # Skip sprint closeout entries - they are not stories and don't need story-level evidence
+    if story.get("sprint_id") or story.get("closeout_date"):
+        return
+
     # Skip if status doesn't require evidence
     if status not in REQUIRES_EVIDENCE:
         return
