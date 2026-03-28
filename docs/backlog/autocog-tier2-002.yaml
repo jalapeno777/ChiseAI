@@ -2,7 +2,7 @@ story_id: AUTOCOG-TIER2-002
 title: "Self-Directed Story Proposal Generator"
 priority: P1
 story_points: 2
-status: backlog
+status: completed
 epic: AUTOCOG-TIER2
 created_date: "2026-03-18"
 target_sprint: SPRINT-2026-03-31

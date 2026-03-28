@@ -28,7 +28,7 @@ backlog_items:
   - id: "HOURLY-HEALTH-001"
     title: "Restore hourly-health cron cadence/wrapper path"
     priority: HIGH
-    status: "backlog"
+    status: "in_progress"
     description: |
       Verify and restore hourly-health cron job cadence. The cron wrapper path may be 
       misconfigured, preventing proper execution of the health check script. This item 
@@ -67,10 +67,10 @@ backlog_items:
       the complete evidence write chain.
     acceptance_criteria:
       - All expected Redis keys written on each execution:
-        - chise:cron:hourly-health:last_run
-        - chise:cron:hourly-health:expected_interval (3600)
-        - chise:cron:hourly-health:status
-        - chise:cron:hourly-health:missed_count
+          - chise:cron:hourly-health:last_run
+          - chise:cron:hourly-health:expected_interval (3600)
+          - chise:cron:hourly-health:status
+          - chise:cron:hourly-health:missed_count
       - Write mode tracked (direct vs wrapper)
       - No race conditions in evidence writes
       - Evidence timestamp is accurate
@@ -80,7 +80,7 @@ backlog_items:
       - path: "scripts/monitoring/hourly_health_check.py"
         purpose: "Main health check that calls evidence writes"
     verification_commands:
-      - command: "python3 -c \"from scripts.monitoring.cron_evidence import write_cron_evidence; write_cron_evidence('hourly-health')\""
+      - command: 'python3 -c "from scripts.monitoring.cron_evidence import write_cron_evidence; write_cron_evidence(''hourly-health'')"'
         expected_output: "Success, no errors"
       - command: "redis_state_hgetall(name='chise:cron:hourly-health:last_run')"
         expected_output: "Contains timestamp and status fields"
@@ -96,7 +96,7 @@ backlog_items:
   - id: "HOURLY-HEALTH-003"
     title: "Reduce/clear inflated missed_count after successful runs"
     priority: HIGH
-    status: "backlog"
+    status: "in_progress"
     description: |
       The missed_count in Redis may be inflated from previous failures. Implement 
       logic to clear or reset the missed_count after successful runs to prevent 
@@ -120,7 +120,7 @@ backlog_items:
     verification_commands:
       - command: "redis_state_hget(name='chise:cron:hourly-health:missed_count', key='count')"
         expected_output: "0 after successful run"
-      - command: "python3 -c \"from src.governance.checkpoint.gates import check_g5_cron_cadence; print(check_g5_cron_cadence())\""
+      - command: 'python3 -c "from src.governance.checkpoint.gates import check_g5_cron_cadence; print(check_g5_cron_cadence())"'
         expected_output: "PASS or appropriate status"
       - command: "grep -A 10 'missed_count' scripts/monitoring/cron_evidence.py"
         expected_output: "Shows reset logic implementation"
@@ -152,7 +152,7 @@ backlog_items:
     verification_commands:
       - command: "python3 scripts/monitoring/checkpoint_gate_audit.py"
         expected_output: "All gates PASS, including G5"
-      - command: "python3 -c \"from src.governance.checkpoint.gates import check_g5_cron_cadence; result = check_g5_cron_cadence(); print(f'G5 Status: {result.status}')\""
+      - command: 'python3 -c "from src.governance.checkpoint.gates import check_g5_cron_cadence; result = check_g5_cron_cadence(); print(f''G5 Status: {result.status}'')"'
         expected_output: "G5 Status: PASS"
       - command: "redis_state_hget(name='chise:cron:hourly-health:status', key='value')"
         expected_output: "healthy or ok"

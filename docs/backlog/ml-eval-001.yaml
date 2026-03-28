@@ -2,7 +2,7 @@ story_id: ML-EVAL-001
 title: "BrainEval Integration"
 priority: P2
 story_points: 2
-status: backlog
+status: in_progress
 epic: ML-EVAL
 created_date: "2026-03-18"
 target_sprint: SPRINT-2026-03-31

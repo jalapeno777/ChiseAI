@@ -2,7 +2,7 @@ story_id: ML-DATA-001
 title: "Training Data Quality Gates"
 priority: P1
 story_points: 2
-status: backlog
+status: completed
 epic: ML-DATA
 created_date: "2026-03-18"
 target_sprint: SPRINT-2026-03-31
