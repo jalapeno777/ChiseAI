@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from autonomous_cognition.artifacts import SelfAssessmentArtifact
+from .artifacts import SelfAssessmentArtifact
 
 logger = logging.getLogger(__name__)
 
