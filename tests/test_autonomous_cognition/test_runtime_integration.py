@@ -20,6 +20,7 @@ Phase 4 additions:
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 from autonomous_cognition.runtime_integration import (
