@@ -294,30 +294,25 @@ completed:
         status: merged
       - id: ST-AUTOCOG-016
         status: merged
-    deferred_sp: 15
+    deferred_sp: 9
     deferred_stories:
-      - id: ST-AUTOCOG-002
-        title: TempMemory Migration
       - id: ST-AUTOCOG-003
         title: sys.path Fix
-      - id: ST-AUTOCOG-005-T1
-        title: BeliefStore Debug
       - id: ST-AUTOCOG-007
         title: Belief Expansion
       - id: ST-AUTOCOG-014
         title: Autonomy Tuning
-    description:
-      Sprint AUTOCOG-2026-03-27 closed with 11 of 16 stories merged.
-      5 stories deferred to backlog for future scheduling.
+    description: Sprint AUTOCOG-2026-03-27 closed with 13 of 16 stories merged.
+      3 stories deferred to backlog for future scheduling.
     id: AUTOCOG-2026-03-27
     notes:
       - "Sprint closed at inception - items moved to backlog for future scheduling"
-      - "11 stories merged to main"
-      - "5 stories deferred (15 SP)"
+      - "13 stories merged to main"
+      - "3 stories deferred (9 SP)"
       - "Module imports successfully - 312 tests passing"
       - "Critical fixes: Discord spam prevention, BeliefStore Redis persistence"
-      - "Deferred stories: ST-AUTOCOG-002, ST-AUTOCOG-003, ST-AUTOCOG-005-T1,
-        ST-AUTOCOG-007, ST-AUTOCOG-014"
+      - "Deferred stories: ST-AUTOCOG-003, ST-AUTOCOG-007, ST-AUTOCOG-014"
+      - "ST-AUTOCOG-002 and ST-AUTOCOG-005-T1 completed per Critic review (2026-03-27)"
     rationale: Sprint closed at inception, items moved to backlog for future scheduling
     sprint_id: AUTOCOG-2026-03-27
     status: completed
@@ -1743,7 +1738,7 @@ epics:
       - Only proceeds if Phase 3 confirms ICT adds alpha (p<0.05, effect size >2%)
       - ST-ICT-028-B and ST-ICT-028-C completed (ML Pipeline Integration + Orchestration)
     sprint_id: ICT-S9
-    completion_date: '2026-03-26'
+    completion_date: "2026-03-26"
     status: completed
     story_count: 10
     completed_stories:
@@ -2021,17 +2016,38 @@ epics:
     batches:
       - id: batch-1
         title: "Foundation Layer"
-        stories: ["ST-AUTOCOG-001", "ST-AUTOCOG-002", "ST-AUTOCOG-003", "ST-AUTOCOG-004", "ST-AUTOCOG-005-T1", "ST-AUTOCOG-008"]
+        stories:
+          [
+            "ST-AUTOCOG-001",
+            "ST-AUTOCOG-002",
+            "ST-AUTOCOG-003",
+            "ST-AUTOCOG-004",
+            "ST-AUTOCOG-005-T1",
+            "ST-AUTOCOG-008",
+          ]
         sp: 17
         status: pending
       - id: batch-2
         title: "Core Controller + Redis Fix"
-        stories: ["ST-AUTOCOG-005-T2", "ST-AUTOCOG-005-T3", "ST-AUTOCOG-006", "ST-AUTOCOG-007"]
+        stories:
+          [
+            "ST-AUTOCOG-005-T2",
+            "ST-AUTOCOG-005-T3",
+            "ST-AUTOCOG-006",
+            "ST-AUTOCOG-007",
+          ]
         sp: 11
         status: pending
       - id: batch-3
         title: "Assessment + Notification Polish"
-        stories: ["ST-AUTOCOG-009", "ST-AUTOCOG-010", "ST-AUTOCOG-011", "ST-AUTOCOG-015", "ST-AUTOCOG-016"]
+        stories:
+          [
+            "ST-AUTOCOG-009",
+            "ST-AUTOCOG-010",
+            "ST-AUTOCOG-011",
+            "ST-AUTOCOG-015",
+            "ST-AUTOCOG-016",
+          ]
         sp: 12
         status: pending
       - id: batch-4

@@ -17,7 +17,8 @@ stories:
   - story_id: "AUTOCOG-001"
     title: "Real Qdrant writes for iteration learnings"
     priority: "P0"
-    status: "in_progress"
+    status: "completed"
+    completion_date: "2026-03-27"
     owner: "dev"
     problem:
       - "Iteration learning promotion reports simulated success path instead of guaranteed persistent Qdrant write."
@@ -33,7 +34,8 @@ stories:
   - story_id: "AUTOCOG-002"
     title: "Real Qdrant writes for tempmemory migration"
     priority: "P0"
-    status: "in_progress"
+    status: "completed"
+    completion_date: "2026-03-27"
     owner: "dev"
     problem:
       - "Tempmemory migration currently logs 'would store' for Qdrant path and returns success."
@@ -49,7 +51,8 @@ stories:
   - story_id: "AUTOCOG-003"
     title: "Fix memory dedup vector similarity TypeError and re-enable daily sweep"
     priority: "P0"
-    status: "in_progress"
+    status: "completed"
+    completion_date: "2026-03-27"
     owner: "dev"
     problem:
       - "memory.daily_sweep disabled due to vector similarity TypeError in dedup engine"
@@ -65,7 +68,8 @@ stories:
   - story_id: "AUTOCOG-004"
     title: "Discord governance notification hardening and channel validation"
     priority: "P1"
-    status: "in_progress"
+    status: "completed"
+    completion_date: "2026-03-27"
     owner: "dev"
     problem:
       - "Governance notifier has fragile init path and constitution alerts are placeholder-style."

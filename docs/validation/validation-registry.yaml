@@ -3377,7 +3377,8 @@ validations:
     title: Real Qdrant Writes for Iteration Learnings
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-001
-    status: planned
+    status: validated
+    validation_date: "2026-03-27"
     description: Replace simulated Qdrant writes with real vector storage for iteration learnings
     acceptance_criteria:
       - No simulated "would store" behavior in production paths
@@ -3390,7 +3391,8 @@ validations:
     title: Real Qdrant Writes for Tempmemory Migration
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-002
-    status: planned
+    status: validated
+    validation_date: "2026-03-27"
     description: Replace simulated Qdrant writes with real vector storage for tempmemory migration
     acceptance_criteria:
       - Tempmemory data migrated to real Qdrant storage
@@ -3403,7 +3405,8 @@ validations:
     title: Dedup Vector TypeError Fix + Daily Sweep Re-enable
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-003
-    status: planned
+    status: validated
+    validation_date: "2026-03-27"
     description: Fix TypeError in dedup vector operations and re-enable daily sweep
     acceptance_criteria:
       - TypeError in dedup vector operations fixed
@@ -3416,7 +3419,8 @@ validations:
     title: Discord Governance Notifier Hardening
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-004
-    status: planned
+    status: validated
+    validation_date: "2026-03-27"
     description: Harden Discord governance notifier for reliable operation
     acceptance_criteria:
       - Governance events delivered reliably to Discord
