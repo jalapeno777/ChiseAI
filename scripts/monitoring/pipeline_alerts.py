@@ -31,16 +31,20 @@ class PipelineAlertManager:
     # Redis keys
     HEARTBEAT_KEY = "bmad:chiseai:scheduler:heartbeat"
     ALERT_STATE_KEY = "bmad:chiseai:pipeline:alert_state"
+    CONSUMER_HEALTH_KEY = "paper:signal_consumer:health"
 
     # Alert thresholds
     STALE_THRESHOLD_MINUTES = 5
     BACKLOG_THRESHOLD = 10
+    CONSUMER_STALE_THRESHOLD_MINUTES = 5
 
     def __init__(self, redis_client: redis.Redis | None = None):
         self.redis = redis_client or self._connect_redis()
         self.discord_webhook = os.getenv("DISCORD_WEBHOOK_URL")
         self.last_alert_time = None
         self.alert_cooldown_minutes = 15
+        self.last_consumer_alert_time = None
+        self.consumer_alert_cooldown_minutes = 15
 
     def _connect_redis(self) -> redis.Redis:
         """Connect to Redis."""
@@ -115,8 +119,94 @@ class PipelineAlertManager:
                     )
                     self._record_alert("high_backlog")
 
+            # Check consumer health
+            self.check_consumer_health()
+
         except Exception as e:
             logger.exception(f"Error checking pipeline health: {e}")
+
+    def check_consumer_health(self):
+        """Check signal consumer health and send alerts if stale or recovered."""
+        try:
+            consumer_health = self.redis.hgetall(self.CONSUMER_HEALTH_KEY)
+
+            if not consumer_health:
+                logger.warning("No consumer health found")
+                return
+
+            timestamp_str = consumer_health.get("timestamp", "")
+            status = consumer_health.get("status", "unknown")
+            processed_count = int(consumer_health.get("processed_count", "0"))
+            error_count = int(consumer_health.get("error_count", "0"))
+
+            # Calculate consumer age
+            consumer_age_minutes = 0.0
+            if timestamp_str:
+                try:
+                    last_update = datetime.fromisoformat(timestamp_str)
+                    consumer_age_minutes = (
+                        datetime.now(UTC) - last_update
+                    ).total_seconds() / 60
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid consumer timestamp: {timestamp_str}")
+                    return
+
+            # Check for stale consumer
+            if consumer_age_minutes > self.CONSUMER_STALE_THRESHOLD_MINUTES:
+                if self._should_alert_consumer():
+                    self._send_alert(
+                        severity=AlertSeverity.CRITICAL,
+                        title="🚨 Signal Consumer Stale Alert",
+                        message=f"Signal consumer has not updated health in {consumer_age_minutes:.1f} minutes",
+                        fields={
+                            "Status": status,
+                            "Processed Count": str(processed_count),
+                            "Error Count": str(error_count),
+                            "Last Update Age": f"{consumer_age_minutes:.1f}m",
+                        },
+                    )
+                    self._record_consumer_alert("stale_consumer")
+            # Check for consumer recovery
+            else:
+                last_alert = self._get_last_alert_state()
+                if last_alert == "stale_consumer":
+                    self._send_alert(
+                        severity=AlertSeverity.INFO,
+                        title="✅ Signal Consumer Recovered",
+                        message="Signal consumer is healthy again",
+                        fields={
+                            "Status": status,
+                            "Processed Count": str(processed_count),
+                            "Error Count": str(error_count),
+                        },
+                    )
+                    self._record_consumer_alert("healthy_consumer")
+
+        except Exception as e:
+            logger.exception(f"Error checking consumer health: {e}")
+
+    def _should_alert_consumer(self) -> bool:
+        """Check if we should send consumer alert based on cooldown."""
+        if self.last_consumer_alert_time is None:
+            return True
+
+        cooldown_expired = datetime.now(UTC) > (
+            self.last_consumer_alert_time
+            + timedelta(minutes=self.consumer_alert_cooldown_minutes)
+        )
+
+        return cooldown_expired
+
+    def _record_consumer_alert(self, alert_type: str):
+        """Record consumer alert state in Redis."""
+        self.last_consumer_alert_time = datetime.now(UTC)
+        self.redis.hset(
+            self.ALERT_STATE_KEY,
+            mapping={
+                "last_consumer_alert_type": alert_type,
+                "last_consumer_alert_time": self.last_consumer_alert_time.isoformat(),
+            },
+        )
 
     def _should_alert(self, alert_type: str) -> bool:
         """Check if we should send alert based on cooldown."""

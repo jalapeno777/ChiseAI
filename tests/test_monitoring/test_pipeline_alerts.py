@@ -1,6 +1,6 @@
 """Tests for pipeline alerting system."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import pytest
@@ -206,3 +206,132 @@ class TestPipelineAlertManager:
 
             # Assert
             mock_logger.exception.assert_called_once()
+
+    def test_consumer_stale_alert(self, alert_manager, mock_redis):
+        """Test alert fires when consumer health is stale >5m."""
+        # Arrange - heartbeat is healthy, but consumer health is stale
+        stale_time = (datetime.now(UTC) - timedelta(minutes=10)).isoformat()
+        mock_redis.hgetall.side_effect = [
+            {  # heartbeat
+                "pipeline_status": "healthy",
+                "signals_15m": "10",
+                "consumer_backlog": "0",
+                "latest_signal_age_m": "2.0",
+            },
+            {},  # alert_state - no previous alert
+            {  # consumer health - stale
+                "timestamp": stale_time,
+                "status": "running",
+                "processed_count": "100",
+                "error_count": "5",
+            },
+        ]
+
+        with patch.object(alert_manager, "_send_alert") as mock_send:
+            # Act
+            alert_manager.check_and_alert()
+
+            # Assert - should send consumer stale alert
+            assert mock_send.call_count == 1
+            call_args = mock_send.call_args
+            assert call_args[1]["severity"] == AlertSeverity.CRITICAL
+            assert "Signal Consumer Stale" in call_args[1]["title"]
+
+    def test_consumer_recovery_alert(self, alert_manager, mock_redis):
+        """Test recovery alert fires when consumer comes back healthy."""
+        # Arrange - consumer was stale, now healthy
+        recent_time = datetime.now(UTC).isoformat()
+        mock_redis.hgetall.side_effect = [
+            {  # heartbeat
+                "pipeline_status": "healthy",
+                "signals_15m": "10",
+                "consumer_backlog": "0",
+                "latest_signal_age_m": "2.0",
+            },
+            {},  # alert_state - for pipeline recovery check (no pipeline stale)
+            {  # consumer health - healthy
+                "timestamp": recent_time,
+                "status": "running",
+                "processed_count": "105",
+                "error_count": "5",
+            },
+            {  # alert_state - was stale_consumer (for consumer recovery check)
+                "last_alert_type": "stale_consumer",
+                "last_alert_time": (
+                    datetime.now(UTC) - timedelta(minutes=10)
+                ).isoformat(),
+            },
+        ]
+
+        with patch.object(alert_manager, "_send_alert") as mock_send:
+            # Act
+            alert_manager.check_and_alert()
+
+            # Assert - should send consumer recovery alert
+            assert mock_send.call_count == 1
+            call_args = mock_send.call_args
+            assert call_args[1]["severity"] == AlertSeverity.INFO
+            assert "Signal Consumer Recovered" in call_args[1]["title"]
+
+    def test_consumer_stale_cooldown(self, alert_manager, mock_redis):
+        """Test cooldown prevents duplicate consumer alerts."""
+        # Arrange - consumer is stale but within cooldown period
+        stale_time = (datetime.now(UTC) - timedelta(minutes=10)).isoformat()
+        mock_redis.hgetall.side_effect = [
+            {  # heartbeat
+                "pipeline_status": "healthy",
+                "signals_15m": "10",
+                "consumer_backlog": "0",
+                "latest_signal_age_m": "2.0",
+            },
+            {},  # alert_state - no previous alert
+            {  # consumer health - stale
+                "timestamp": stale_time,
+                "status": "running",
+                "processed_count": "100",
+                "error_count": "5",
+            },
+        ]
+        # Set consumer alert time within cooldown
+        alert_manager.last_consumer_alert_time = datetime.now(UTC) - timedelta(
+            minutes=5
+        )
+
+        with patch.object(alert_manager, "_send_alert") as mock_send:
+            # Act
+            alert_manager.check_and_alert()
+
+            # Assert - should NOT send alert due to cooldown
+            mock_send.assert_not_called()
+
+    def test_consumer_context_in_alert(self, alert_manager, mock_redis):
+        """Test alert includes processed_count, error_count in context."""
+        # Arrange - stale consumer with specific counts
+        stale_time = (datetime.now(UTC) - timedelta(minutes=10)).isoformat()
+        mock_redis.hgetall.side_effect = [
+            {  # heartbeat
+                "pipeline_status": "healthy",
+                "signals_15m": "10",
+                "consumer_backlog": "0",
+                "latest_signal_age_m": "2.0",
+            },
+            {},  # alert_state - no previous alert
+            {  # consumer health - stale with specific counts
+                "timestamp": stale_time,
+                "status": "running",
+                "processed_count": "1234",
+                "error_count": "42",
+            },
+        ]
+
+        with patch.object(alert_manager, "_send_alert") as mock_send:
+            # Act
+            alert_manager.check_and_alert()
+
+            # Assert - alert fields include processed_count and error_count
+            assert mock_send.call_count == 1
+            call_args = mock_send.call_args
+            fields = call_args[1]["fields"]
+            assert fields["Processed Count"] == "1234"
+            assert fields["Error Count"] == "42"
+            assert fields["Status"] == "running"
