@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import inspect
+import json
 import logging
 import os
 import time
@@ -85,6 +86,10 @@ class PaperTradingOrchestrator:
     TARGET_POSITION_UPDATE_MS = 100
     TARGET_TOTAL_PIPELINE_MS = 2000
 
+    # Health key configuration
+    HEALTH_KEY = "paper:orchestrator:health"
+    HEALTH_TTL_SECONDS = 120
+
     def __init__(
         self,
         signal_generator: SignalGenerator,
@@ -102,6 +107,7 @@ class PaperTradingOrchestrator:
         symbol_registry: Any | None = None,
         trade_journal_persistence: TradeJournalRedisPersistence | None = None,
         session_id: str | None = None,
+        redis_client: Any | None = None,
     ):
         """Initialize paper trading orchestrator.
 
@@ -120,6 +126,7 @@ class PaperTradingOrchestrator:
             symbol_registry: Optional SymbolPositionRegistry for symbol-level locking
             trade_journal_persistence: Optional persistence layer for trade journal
             session_id: Optional session ID for journal recovery
+            redis_client: Optional Redis client for health key writes
         """
         self.signal_generator = signal_generator
         self.order_simulator = order_simulator
@@ -133,6 +140,7 @@ class PaperTradingOrchestrator:
         self.outcome_capture = outcome_capture
         self.decision_enhancer = decision_enhancer or TradeDecisionEnhancer()
         self.symbol_registry = symbol_registry
+        self._redis = redis_client
 
         # PAPER-FORENSIC-001: Extract and store connector provenance
         self._connector_provenance = self._extract_connector_provenance(order_simulator)
@@ -266,6 +274,29 @@ class PaperTradingOrchestrator:
         """
         return self._connector_provenance.copy()
 
+    def _update_health(self, status: str = "running") -> None:
+        """Update health key in Redis with current orchestrator status.
+
+        Writes a JSON payload to ``paper:orchestrator:health`` with a 120s TTL.
+        The payload includes status, ISO-8601 timestamp, and processed signal count.
+
+        Args:
+            status: Current status string (``"running"`` or ``"stopped"``).
+        """
+        if self._redis is None:
+            return
+        try:
+            payload = json.dumps(
+                {
+                    "status": status,
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "processed_count": self._metrics.get("signals_processed", 0),
+                }
+            )
+            self._redis.setex(self.HEALTH_KEY, self.HEALTH_TTL_SECONDS, payload)
+        except Exception:
+            logger.debug("Failed to update orchestrator health key", exc_info=True)
+
     async def start(self) -> None:
         """Start the orchestrator and begin processing signals."""
         self._running = True
@@ -287,6 +318,9 @@ class PaperTradingOrchestrator:
                 "No signal consumer configured - Redis signal bridge disabled"
             )
 
+        # Write initial health key
+        self._update_health("running")
+
         logger.info("PaperTradingOrchestrator started")
 
     async def stop(self) -> None:
@@ -306,6 +340,16 @@ class PaperTradingOrchestrator:
         # Stop telemetry
         if self.telemetry:
             await self.telemetry.stop()
+
+        # Delete health key on graceful stop (Option A: explicit delete)
+        if self._redis is not None:
+            try:
+                self._redis.delete(self.HEALTH_KEY)
+            except Exception:
+                logger.debug(
+                    "Failed to delete orchestrator health key on stop",
+                    exc_info=True,
+                )
 
         logger.info("PaperTradingOrchestrator stopped")
 
@@ -353,8 +397,13 @@ class PaperTradingOrchestrator:
                         self._metrics["trades_failed"] += 1
                     # SKIPPED status doesn't increment any metric - just logged
 
+                # Refresh health key after processing a signal
+                self._update_health("running")
+
             except TimeoutError:
                 # No signals in queue, continue loop
+                # Refresh health key to prevent TTL expiry during idle periods
+                self._update_health("running")
                 continue
             except asyncio.CancelledError:
                 break
