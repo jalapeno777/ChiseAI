@@ -310,6 +310,60 @@ steps:
         cat "$${CI_STATUS_DIR}/docker-governance.log"
         echo "$code" > "$${CI_STATUS_DIR}/docker-governance.status"
         exit 0
+  e2e-tests:
+    pull: false
+    image: chiseai-ci-local-ci:py311-20260323
+    environment:
+      CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          # Skip on push-to-main (PR is authoritative)
+          if [ "$${EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+            echo "e2e-tests: SKIPPED (push-to-main, PR is authoritative)"
+            echo "0" > "$${CI_STATUS_DIR}/e2e-tests.status"
+            exit 0
+          fi
+          echo "e2e-tests: Running E2E tests for paper trading pipeline"
+          python3 -m pytest -m e2e tests/e2e/ -v --tb=short --timeout=120
+        ) > "$${CI_STATUS_DIR}/e2e-tests.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/e2e-tests.log"
+        echo "$code" > "$${CI_STATUS_DIR}/e2e-tests.status"
+        exit 0
+  integration-tests:
+    pull: false
+    image: chiseai-ci-local-ci:py311-20260323
+    environment:
+      CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          # Skip on push-to-main (PR is authoritative)
+          if [ "$${EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+            echo "integration-tests: SKIPPED (push-to-main, PR is authoritative)"
+            echo "0" > "$${CI_STATUS_DIR}/integration-tests.status"
+            exit 0
+          fi
+          echo "integration-tests: Installing fakeredis for integration tests"
+          pip install fakeredis || pip install fakeredis --break-system-packages
+          echo "integration-tests: Running integration tests for consumer recovery"
+          python3 -m pytest -m integration tests/integration/ -v --tb=short --timeout=120
+        ) > "$${CI_STATUS_DIR}/integration-tests.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/integration-tests.log"
+        echo "$code" > "$${CI_STATUS_DIR}/integration-tests.status"
+        exit 0
   local-ci:
     pull: false
     image: chiseai-ci-local-ci:py311-20260323
@@ -994,6 +1048,8 @@ steps:
       - risk-invariants
       - brain-regression
       - docker-governance
+      - e2e-tests
+      - integration-tests
       - local-ci
       - brain-eval
       - performance-gate
