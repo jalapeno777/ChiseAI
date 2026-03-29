@@ -7,7 +7,7 @@ with automatic TTL based on cadence type.
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Any
 
 import redis
@@ -65,7 +65,7 @@ class IdempotencyChecker:
         Returns:
             Dictionary with time variables: date, hour, week, month, 6h_bucket
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # ISO week (YYYY-WNN format)
         iso_calendar = now.isocalendar()
@@ -217,7 +217,7 @@ class IdempotencyChecker:
             ttl = self._get_cadence_ttl(cadence)
 
             data = {
-                "timestamp": datetime.now(timezone.utc).timestamp(),
+                "timestamp": datetime.now(UTC).timestamp(),
                 "success": success,
                 "error": error,
             }
