@@ -346,6 +346,25 @@ completed:
     status: completed
     story_points: 2
     title: Feature Flag Persistence
+  - acceptance_criteria:
+      - scripts/start_consumer.py removed (had hardcoded broken paths)
+      - scripts/run_signal_consumer.py confirmed as canonical launcher
+      - No hardcoded /tmp/worktrees/ paths in scripts/
+    completion_date: "2026-03-29"
+    description: |
+      Consolidate startup scripts by removing deprecated start_consumer.py which had
+      hardcoded paths to /tmp/worktrees/PAPER-NOGO-REMEDIATION-002. The canonical
+      launcher is run_signal_consumer.py which uses proper relative paths.
+    id: PAPER-008
+    notes:
+      - "start_consumer.py removed - had hardcoded /tmp/worktrees/PAPER-NOGO-REMEDIATION-002 paths"
+      - "run_signal_consumer.py is the canonical launcher with relative paths"
+      - "No hardcoded worktree paths remain in scripts/"
+    owner: senior-dev
+    priority: P2
+    status: completed
+    story_points: 2
+    title: Consolidate Startup Scripts
 backlog:
   - acceptance_criteria:
       - Docker images use consistent python/python3 PATH across all CI steps
@@ -2217,8 +2236,7 @@ epics:
       - Entries linked to EP-NS-PHASE4-001
     completion_date: "2026-03-28"
     created_date: "2026-03-28"
-    description:
-      Update validation registry with Phase 4 story validations.
+    description: Update validation registry with Phase 4 story validations.
       Part of AUTOCOG-RESTORE-001 deferred work.
     id: FIX-007-B
     merge_commit: 636fbc06b
