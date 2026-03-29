@@ -677,13 +677,13 @@ def tick(
     logger.info(
         f"Tick complete: ran={ran}, failures={failures}, eligible={len(eligible)}"
     )
-    if ran > 0 or failures > 0:
+    if failures > 0:
         send_discord(
             "\n".join(
                 [
-                    "[AUTONOMY TICK]",
-                    f"ran={ran}",
+                    "[AUTONOMY TICK ERROR]",
                     f"failures={failures}",
+                    f"ran={ran}",
                     f"eligible={len(eligible)}",
                     f"dry_run={str(dry_run).lower()}",
                     f"time={iso()}",

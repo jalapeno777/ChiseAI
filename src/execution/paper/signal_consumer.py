@@ -46,6 +46,8 @@ class SignalConsumer:
     PROCESSED_SET_KEY = "paper:signals:processed"
     PROCESSING_KEY_PREFIX = "paper:signal:{signal_id}:processing"
     PROCESSING_MARKER_TTL = 60  # seconds - auto-expire if consumer crashes
+    HEALTH_MARKER_KEY = "paper:signal_consumer:health"
+    HEALTH_MARKER_TTL = 120  # seconds
 
     def __init__(
         self,
@@ -177,8 +179,11 @@ class SignalConsumer:
                 "poll_interval": str(self.poll_interval),
                 "processed_count": str(len(self._processed_signals)),
             }
-            await redis.hset("paper:signal_consumer:health", mapping=health_data)
-            logger.debug("Health marker set in Redis")
+            await redis.hset(self.HEALTH_MARKER_KEY, mapping=health_data)
+            await redis.expire(self.HEALTH_MARKER_KEY, self.HEALTH_MARKER_TTL)
+            logger.debug(
+                "Health marker set in Redis with TTL=%ds", self.HEALTH_MARKER_TTL
+            )
         except Exception as e:
             logger.warning(f"Failed to set health marker: {e}")
 
@@ -186,10 +191,23 @@ class SignalConsumer:
         """Clear the health marker when consumer stops."""
         try:
             redis = await self._get_redis()
-            await redis.delete("paper:signal_consumer:health")
+            await redis.delete(self.HEALTH_MARKER_KEY)
             logger.debug("Health marker cleared from Redis")
         except Exception as e:
             logger.warning(f"Failed to clear health marker: {e}")
+
+    async def _refresh_health_marker_ttl(self) -> None:
+        """Refresh the health marker TTL to keep it alive during polling.
+
+        Called after each successful poll cycle. If the consumer crashes,
+        the marker will expire after HEALTH_MARKER_TTL seconds.
+        """
+        try:
+            redis = await self._get_redis()
+            await redis.expire(self.HEALTH_MARKER_KEY, self.HEALTH_MARKER_TTL)
+            logger.debug("Health marker TTL refreshed to %ds", self.HEALTH_MARKER_TTL)
+        except Exception as e:
+            logger.warning(f"Failed to refresh health marker TTL: {e}")
 
     async def _mark_signal_processed(self, signal_id: str) -> None:
         """Mark a signal as processed in Redis.
@@ -320,6 +338,9 @@ class SignalConsumer:
                 break
             except Exception as e:
                 logger.error(f"Error in polling loop: {e}", exc_info=True)
+
+            # Refresh health marker TTL after each poll cycle
+            await self._refresh_health_marker_ttl()
 
             # Wait before next poll
             await asyncio.sleep(self.poll_interval)
@@ -554,7 +575,7 @@ class SignalConsumer:
         # Check Redis health marker
         try:
             redis = await self._get_redis()
-            marker = await redis.hgetall("paper:signal_consumer:health")
+            marker = await redis.hgetall(self.HEALTH_MARKER_KEY)
             health["redis_marker"] = marker if marker else None
         except Exception as e:
             health["redis_marker_error"] = str(e)
