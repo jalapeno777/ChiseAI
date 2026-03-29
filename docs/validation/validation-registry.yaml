@@ -2306,6 +2306,19 @@ validations:
     test_method: manual
     owner: ops-team
 
+  - id: V-PAPER-008
+    title: Consolidate Startup Scripts Validation
+    epic_id: EP-PAPER-001
+    story_id: PAPER-008
+    status: pending
+    description: Validate deprecated start_consumer.py is removed and run_signal_consumer.py is confirmed as canonical launcher.
+    acceptance_criteria:
+      - scripts/start_consumer.py removed (had hardcoded broken paths)
+      - scripts/run_signal_consumer.py confirmed as canonical launcher
+      - No hardcoded /tmp/worktrees/ paths in scripts/
+    test_method: manual
+    owner: senior-dev
+
   - id: V-INFRA-CONTAINER-001
     title: Container Governance Validation
     epic_id: EP-INFRA-CLEANUP-001
