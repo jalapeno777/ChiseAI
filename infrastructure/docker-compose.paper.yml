@@ -1,0 +1,56 @@
+services:
+  paper-trading-consumer:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.paper-trading
+    container_name: chiseai-paper-trading-consumer
+    restart: unless-stopped
+    networks:
+      - chiseai
+    environment:
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PORT=6380
+      - POSTGRES_HOST=host.docker.internal
+      - POSTGRES_PORT=${POSTGRES_PORT:-5434}
+      - POSTGRES_USER=${POSTGRES_USER:-chiseai}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+      - POSTGRES_DB=${POSTGRES_DB:-chiseai_trading}
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src:/app/scripts
+      - TRADING_SYMBOLS=BTC/USDT,ETH/USDT
+      - SYMBOL_EVAL_INTERVAL_SECONDS=300
+      - PORTFOLIO_VALUE=10000.0
+      - CONFIDENCE_THRESHOLD=0.75
+    volumes:
+      - paper-trading-logs:/var/log/chiseai
+    command: >
+      python3 scripts/run_signal_consumer.py
+      --poll-interval 5.0
+      --portfolio-value 10000.0
+      --confidence-threshold 0.75
+    labels:
+      - "project=chiseai"
+      - "service=paper-trading"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python3 -c "import redis.asyncio as redis; import asyncio; asyncio.run(redis.Redis(host=''host.docker.internal'', port=6380).ping())" && python3 -c "import redis; r=redis.Redis(host=''host.docker.internal'', port=6380); r.ping() and r.exists(''paper:signal_consumer:health'')"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  chiseai:
+    external: true
+
+volumes:
+  paper-trading-logs:
+    driver: local
