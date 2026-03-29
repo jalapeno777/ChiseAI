@@ -188,7 +188,6 @@ def _merge_pr(
         url,
         token,
         {
-            "Do": "merge",
             "head_commit_id": head_sha,
             "merge_when_checks_succeed": merge_when_checks_succeed,
             "delete_branch_after_merge": delete_branch_after_merge,
@@ -219,7 +218,7 @@ def _try_merge_with_retry(
                 token,
                 index=index,
                 head_sha=head_sha,
-                merge_when_checks_succeed=False,
+                merge_when_checks_succeed=True,
                 delete_branch_after_merge=delete_branch,
             )
             return True, attempt
