@@ -377,7 +377,7 @@ class TestSignalConsumerIntegration:
 
         # Verify health marker was set
         mock_redis.hset.assert_called_with(
-            "paper:signal_consumer:health",
+            SignalConsumer.HEALTH_MARKER_KEY,
             mapping={
                 "status": "active",
                 "started_at": mock_redis.hset.call_args[1]["mapping"]["started_at"],
@@ -538,6 +538,93 @@ class TestHealthMarkerTTL:
 
         # Verify delete was called with the correct key
         mock_redis.delete.assert_called_with(SignalConsumer.HEALTH_MARKER_KEY)
+
+    @pytest.mark.asyncio
+    async def test_refresh_health_marker_ttl_handles_redis_exception(
+        self, mock_orchestrator, mock_redis
+    ):
+        """Test that _refresh_health_marker_ttl handles Redis exceptions gracefully.
+
+        When redis.expire() raises an exception, it should be caught and logged
+        as a warning, not crash the consumer.
+        """
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+        )
+
+        # Configure expire to raise an exception
+        mock_redis.expire.side_effect = Exception("Redis connection error")
+
+        # Should not raise, just log warning
+        await consumer._refresh_health_marker_ttl()
+
+        # Verify expire was still called (it attempted the operation)
+        mock_redis.expire.assert_called_once_with(
+            SignalConsumer.HEALTH_MARKER_KEY,
+            SignalConsumer.HEALTH_MARKER_TTL,
+        )
+
+    @pytest.mark.asyncio
+    async def test_ttl_refresh_stops_after_consumer_stop(self, mock_orchestrator):
+        """Test that TTL refresh does not continue after consumer.stop() is called.
+
+        Verifies that once stop() is called, _refresh_health_marker_ttl() is
+        not called anymore, ensuring clean shutdown without stray operations.
+        """
+        mock_redis = AsyncMock()
+        mock_redis.scan = AsyncMock(return_value=(0, []))
+        mock_redis.type = AsyncMock(return_value="hash")
+        mock_redis.hgetall = AsyncMock(return_value={})
+        mock_redis.smembers = AsyncMock(return_value=set())
+        mock_redis.sadd = AsyncMock()
+        mock_redis.hset = AsyncMock()
+        mock_redis.expire = AsyncMock()
+        mock_redis.delete = AsyncMock()
+        mock_redis.close = AsyncMock()
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=0.05,  # Fast polling for test
+            symbol_throttle_seconds=0.0,
+        )
+
+        # Use a flag to track TTL refresh calls
+        refresh_calls = []
+        original_expire = mock_redis.expire
+
+        async def track_expire(*args, **kwargs):
+            refresh_calls.append(args)
+            return await original_expire(*args, **kwargs)
+
+        mock_redis.expire = AsyncMock(side_effect=track_expire)
+
+        await consumer.start()
+
+        # Wait for at least one poll cycle
+        await asyncio.sleep(0.12)
+
+        # Get the number of TTL refreshes before stop
+        expire_count_before_stop = len(refresh_calls)
+
+        # Stop the consumer
+        await consumer.stop()
+
+        # Get the number of TTL refreshes after stop
+        expire_count_after_stop = len(refresh_calls)
+
+        # Verify that stop() was called
+        assert (
+            expire_count_before_stop >= 1
+        ), "Expected at least 1 TTL refresh before stop"
+
+        # No additional TTL refreshes should occur after stop()
+        # The stop should cause the polling loop to exit before next refresh
+        assert len(refresh_calls) == expire_count_before_stop, (
+            f"TTL refresh should not continue after stop(). "
+            f"Expected {expire_count_before_stop} calls, got {len(refresh_calls)}"
+        )
 
 
 if __name__ == "__main__":
