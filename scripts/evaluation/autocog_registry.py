@@ -51,15 +51,45 @@ class Precondition:
     params: dict = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Precondition:
-        """Create a Precondition from a dictionary.
+    def from_dict(cls, data: dict[str, Any] | str) -> Precondition:
+        """Create a Precondition from a dictionary or string.
+
+        Handles three formats:
+        - String shorthand: "file_exists:/path" or "file_exists" (path derived from context)
+        - Dict shorthand: {"file_exists": "/path"} or {"file_exists": {"path": "/path"}}
+        - Full format: {"type": "file_exists", "params": {"path": "/path"}}
 
         Args:
-            data: Dictionary with 'type' and optional 'params' keys.
+            data: Dictionary or string with precondition data.
 
         Returns:
             A Precondition instance.
         """
+        # Handle string shorthand: "file_exists:/path" or just "file_exists"
+        if isinstance(data, str):
+            if ":" in data:
+                precondition_type_str, path = data.split(":", 1)
+                precondition_type = PreconditionType(precondition_type_str)
+                return cls(type=precondition_type, params={"path": path})
+            else:
+                # Just type, no path - will fail precondition check unless path is optional
+                precondition_type = PreconditionType(data)
+                return cls(type=precondition_type, params={})
+
+        # Handle dict shorthand: {"file_exists": "/path"}
+        if len(data) == 1 and "type" not in data:
+            for precondition_type_str, value in data.items():
+                precondition_type = PreconditionType(precondition_type_str)
+                # Value can be a string path or a dict with params
+                if isinstance(value, str):
+                    params = {"path": value}
+                elif isinstance(value, dict):
+                    params = value
+                else:
+                    params = {}
+                return cls(type=precondition_type, params=params)
+
+        # Full format: {"type": "file_exists", "params": {"path": "/path"}}
         precondition_type = PreconditionType(data.get("type", "file_exists"))
         params = data.get("params", {})
         return cls(type=precondition_type, params=params)
@@ -115,6 +145,10 @@ class RetryPolicy:
     def from_dict(cls, data: dict[str, Any] | None) -> RetryPolicy:
         """Create a RetryPolicy from a dictionary.
 
+        Handles both formats:
+        - Full format: {"max_attempts": 3, "initial_delay_seconds": 60, ...}
+        - Shorthand format: {"max_retries": 3, "backoff_seconds": 60}
+
         Args:
             data: Dictionary with retry policy settings, or None/empty.
 
@@ -124,8 +158,10 @@ class RetryPolicy:
         if not data:
             return cls()
         return cls(
-            max_attempts=data.get("max_attempts", 1),
-            initial_delay_seconds=data.get("initial_delay_seconds", 60),
+            max_attempts=data.get("max_attempts", data.get("max_retries", 1)),
+            initial_delay_seconds=data.get(
+                "initial_delay_seconds", data.get("backoff_seconds", 60)
+            ),
             backoff_multiplier=data.get("backoff_multiplier", 2.0),
             max_delay_seconds=data.get("max_delay_seconds", 3600),
         )
@@ -224,7 +260,7 @@ def load_registry(path: Path | None = None) -> list[AutocogJob]:
 def get_autocog_jobs(jobs: list[AutocogJob]) -> list[AutocogJob]:
     """Filter to only enabled autocog jobs.
 
-    An autocog job is defined as a job with job_id starting with "autocog_".
+    An autocog job is defined as a job with job_id starting with "autocog_" or "autocog.".
 
     Args:
         jobs: List of all AutocogJob instances.
@@ -232,7 +268,12 @@ def get_autocog_jobs(jobs: list[AutocogJob]) -> list[AutocogJob]:
     Returns:
         List of only the enabled AutocogJob instances that are autocog jobs.
     """
-    return [job for job in jobs if job.enabled and job.job_id.startswith("autocog_")]
+    return [
+        job
+        for job in jobs
+        if job.enabled
+        and (job.job_id.startswith("autocog_") or job.job_id.startswith("autocog."))
+    ]
 
 
 def get_jobs_by_cadence(jobs: list[AutocogJob], cadence: Cadence) -> list[AutocogJob]:
