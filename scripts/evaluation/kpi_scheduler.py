@@ -152,6 +152,22 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
         self.checkpoint = checkpoint
         super().__init__(*args, **kwargs)
 
+    def _get_fresh_checkpoint(self) -> SchedulerCheckpoint:
+        """Read checkpoint from disk for fresh data.
+
+        Returns:
+            SchedulerCheckpoint: Fresh checkpoint from disk, or cached if read fails.
+        """
+        checkpoint_path = Path("/app/_bmad-output/brain-eval/scheduler/checkpoint.json")
+        if checkpoint_path.exists():
+            try:
+                with open(checkpoint_path) as f:
+                    data = json.load(f)
+                    return SchedulerCheckpoint.from_dict(data)
+            except Exception:
+                pass
+        return self.checkpoint  # fallback to cached
+
     def do_GET(self) -> None:
         """Handle GET requests."""
         if self.path == "/health":
@@ -163,13 +179,14 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
 
     def _handle_health_check(self) -> None:
         """Handle health check request."""
+        checkpoint = self._get_fresh_checkpoint()
         status = {
             "status": "healthy",
-            "state": self.checkpoint.state,
+            "state": checkpoint.state,
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        if self.checkpoint.state == SchedulerState.ERROR.value:
+        if checkpoint.state == SchedulerState.ERROR.value:
             status["status"] = "unhealthy"
             self.send_response(503)
         else:
@@ -181,21 +198,22 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
 
     def _handle_status(self) -> None:
         """Handle detailed status request."""
+        checkpoint = self._get_fresh_checkpoint()
         status = {
             "status": (
                 "healthy"
-                if self.checkpoint.state != SchedulerState.ERROR.value
+                if checkpoint.state != SchedulerState.ERROR.value
                 else "unhealthy"
             ),
-            "state": self.checkpoint.state,
-            "checkpoint": self.checkpoint.to_dict(),
+            "state": checkpoint.state,
+            "checkpoint": checkpoint.to_dict(),
             "timestamp": datetime.now(UTC).isoformat(),
             "jobs": {
                 job_id: {
                     "last_run": ts,
                     "since_last_run": time.time() - ts if ts > 0 else None,
                 }
-                for job_id, ts in self.checkpoint.last_run.items()
+                for job_id, ts in checkpoint.last_run.items()
             },
         }
 
