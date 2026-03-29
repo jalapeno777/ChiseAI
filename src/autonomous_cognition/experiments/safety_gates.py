@@ -255,7 +255,7 @@ class ExperimentSafetyGates:
                     value=sharpe,
                 )
             )
-        elif not isinstance(sharpe, (int, float)):
+        elif not isinstance(sharpe, int | float):
             errors.append(
                 ValidationError(
                     field="sharpe",
@@ -282,7 +282,7 @@ class ExperimentSafetyGates:
                     value=sortino,
                 )
             )
-        elif not isinstance(sortino, (int, float)):
+        elif not isinstance(sortino, int | float):
             errors.append(
                 ValidationError(
                     field="sortino",
@@ -309,7 +309,7 @@ class ExperimentSafetyGates:
                     value=drawdown,
                 )
             )
-        elif not isinstance(drawdown, (int, float)):
+        elif not isinstance(drawdown, int | float):
             errors.append(
                 ValidationError(
                     field="drawdown",
@@ -336,7 +336,7 @@ class ExperimentSafetyGates:
                     value=ece,
                 )
             )
-        elif not isinstance(ece, (int, float)):
+        elif not isinstance(ece, int | float):
             errors.append(
                 ValidationError(
                     field="ece",
