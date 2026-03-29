@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -35,9 +36,50 @@ from governance.notifications.discord_notifier import DiscordNotifier
 logger = logging.getLogger(__name__)
 
 
+def _get_repo_root() -> Path:
+    """Return the repository root directory.
+
+    Resolves relative to the source file location, not CWD, ensuring
+    Woodpecker CI (which may run from different CWDs) still finds paths.
+
+    Resolution order:
+    1. CHISEAI_REPO_ROOT environment variable (if set)
+    2. Walk up from this file's location looking for pyproject.toml marker
+    """
+    # Priority: explicit env var
+    env_root = os.environ.get("CHISEAI_REPO_ROOT")
+    if env_root:
+        root = Path(env_root).resolve()
+        if root.exists():
+            return root
+        # Fall through to file-based detection if env var is invalid
+
+    # Walk up from this file: src/autonomous_cognition/full_cycle.py
+    # -> src/autonomous_cognition -> src -> <repo_root>
+    current = Path(__file__).resolve()
+    for _ in range(6):  # max 6 levels up to repo root
+        current = current.parent
+        if (current / "pyproject.toml").exists():
+            return current
+        if (current / "src").exists() and current.name != "src":
+            # Continue walking up
+            pass
+
+    # Ultimate fallback: return parent of src/autonomous_cognition
+    # This preserves legacy behavior (paths relative to where script is run)
+    fallback = Path(__file__).resolve().parent.parent.parent
+    logging.warning(
+        "Could not determine repo root from file system; "
+        "falling back to %s. Set CHISEAI_REPO_ROOT env var to silence this.",
+        fallback,
+    )
+    return fallback
+
+
 def _load_autocog_config() -> dict[str, Any]:
     """Load autocog configuration from YAML file."""
-    config_path = Path("config/autocog.yaml")
+    repo_root = _get_repo_root()
+    config_path = repo_root / "config/autocog.yaml"
     if not config_path.exists():
         logger.warning("Autocog config not found at %s, using defaults", config_path)
         return _default_autocog_config()
@@ -92,10 +134,14 @@ def _merge_autocog_with_defaults(data: dict[str, Any]) -> dict[str, Any]:
 class AutonomousCognitionFullCycle:
     """Coordinates Phases 1-5 for autonomous cognition."""
 
-    DEFAULT_CYCLE_DIR = "_bmad-output/autocog/cycles"
-    DEFAULT_GOVERNANCE_STATE_PATH = "_bmad-output/autocog/governance_state.json"
-    DEFAULT_WEEKLY_META_AUDIT_DIR = "_bmad-output/autocog/meta_audit"
-    CONFIG_PATH = Path("config/autocog.yaml")
+    _REPO_ROOT = _get_repo_root()
+
+    DEFAULT_CYCLE_DIR = str(_REPO_ROOT / "_bmad-output/autocog/cycles")
+    DEFAULT_GOVERNANCE_STATE_PATH = str(
+        _REPO_ROOT / "_bmad-output/autocog/governance_state.json"
+    )
+    DEFAULT_WEEKLY_META_AUDIT_DIR = str(_REPO_ROOT / "_bmad-output/autocog/meta_audit")
+    CONFIG_PATH = _REPO_ROOT / "config/autocog.yaml"
 
     def __init__(
         self,
@@ -1132,7 +1178,7 @@ class AutonomousCognitionFullCycle:
         self, max_items: int = 5
     ) -> list[dict[str, Any]]:
         """Load latest self-assessment artifacts for trend evidence."""
-        directory = Path("docs/governance/self_assessments")
+        directory = self._REPO_ROOT / "docs/governance/self_assessments"
         if not directory.exists():
             return []
         files = sorted(
@@ -1736,7 +1782,7 @@ class AutonomousCognitionFullCycle:
 
     def _load_latest_revision_artifact(self) -> dict[str, Any] | None:
         """Load latest belief revision artifact for rollback support."""
-        out_dir = Path("_bmad-output/autocog/belief_revisions")
+        out_dir = self._REPO_ROOT / "_bmad-output/autocog/belief_revisions"
         if not out_dir.exists():
             return None
         files = sorted(
@@ -1758,7 +1804,7 @@ class AutonomousCognitionFullCycle:
         blocked_revisions: list[dict[str, Any]],
     ) -> Path:
         """Persist packet for manual approval of high-impact revisions."""
-        out_dir = Path("_bmad-output/autocog/manual_approval_packets")
+        out_dir = self._REPO_ROOT / "_bmad-output/autocog/manual_approval_packets"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"{run_id}.json"
         packet = {
@@ -1828,7 +1874,7 @@ class AutonomousCognitionFullCycle:
         - Individual artifact at _bmad-output/autocog/belief_revisions/{run_id}.json
         - Index entry in _bmad-output/autocog/belief_revisions/index.json for 7-day retrieval
         """
-        out_dir = Path("_bmad-output/autocog/belief_revisions")
+        out_dir = self._REPO_ROOT / "_bmad-output/autocog/belief_revisions"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"{run_id}.json"
 
@@ -1876,7 +1922,7 @@ class AutonomousCognitionFullCycle:
         - last_updated: ISO timestamp of last index update
         - entries: list of revision summaries with metadata for filtering
         """
-        out_dir = Path("_bmad-output/autocog/belief_revisions")
+        out_dir = self._REPO_ROOT / "_bmad-output/autocog/belief_revisions"
         index_path = out_dir / "index.json"
 
         # Load existing index or create new
