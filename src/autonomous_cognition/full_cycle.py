@@ -13,6 +13,28 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from autonomous_cognition.action_executor import ActionExecutor  # noqa: F401
+from autonomous_cognition.autonomy_tuner import AutonomyTuner
+from autonomous_cognition.beliefs.consistency_checker import BeliefConsistencyChecker
+from autonomous_cognition.beliefs.explanation import explain_conflict, explain_revision
+from autonomous_cognition.beliefs.models import Belief, EvidenceRecord
+from autonomous_cognition.beliefs.revision_engine import BeliefRevisionEngine
+from autonomous_cognition.beliefs.store import BeliefStore
+from autonomous_cognition.constitution_audit import ConstitutionAuditEngine
+from autonomous_cognition.contracts import CycleResult
+from autonomous_cognition.controller import AutonomousCognitionController
+from autonomous_cognition.experiments.champion_challenger import (
+    ChampionChallengerEngine,
+)
+from autonomous_cognition.experiments.hypothesis_generator import HypothesisGenerator
+from autonomous_cognition.experiments.portfolio_policy_lab import PortfolioPolicyLab
+from autonomous_cognition.metrics.skip_rate_monitor import SkipRateMonitor
+from autonomous_cognition.runtime_integration import NeuroSymbolicRuntimeIntegrator
+from autonomous_cognition.state_machine import AutonomousCycleStateMachine, CycleState
+from governance.notifications.discord_notifier import DiscordNotifier
+
+logger = logging.getLogger(__name__)
+
 
 def _get_repo_root() -> Path:
     """Return the repository root directory.
@@ -52,29 +74,6 @@ def _get_repo_root() -> Path:
         fallback,
     )
     return fallback
-
-
-from autonomous_cognition.action_executor import ActionExecutor  # noqa: F401
-from autonomous_cognition.autonomy_tuner import AutonomyTuner
-from autonomous_cognition.beliefs.consistency_checker import BeliefConsistencyChecker
-from autonomous_cognition.beliefs.explanation import explain_conflict, explain_revision
-from autonomous_cognition.beliefs.models import Belief, EvidenceRecord
-from autonomous_cognition.beliefs.revision_engine import BeliefRevisionEngine
-from autonomous_cognition.beliefs.store import BeliefStore
-from autonomous_cognition.constitution_audit import ConstitutionAuditEngine
-from autonomous_cognition.contracts import CycleResult
-from autonomous_cognition.controller import AutonomousCognitionController
-from autonomous_cognition.experiments.champion_challenger import (
-    ChampionChallengerEngine,
-)
-from autonomous_cognition.experiments.hypothesis_generator import HypothesisGenerator
-from autonomous_cognition.experiments.portfolio_policy_lab import PortfolioPolicyLab
-from autonomous_cognition.metrics.skip_rate_monitor import SkipRateMonitor
-from autonomous_cognition.runtime_integration import NeuroSymbolicRuntimeIntegrator
-from autonomous_cognition.state_machine import AutonomousCycleStateMachine, CycleState
-from governance.notifications.discord_notifier import DiscordNotifier
-
-logger = logging.getLogger(__name__)
 
 
 def _load_autocog_config() -> dict[str, Any]:
@@ -1637,10 +1636,8 @@ class AutonomousCognitionFullCycle:
                     version_id
                 )  # noqa: SLF001
                 if promoted_version is not None:
-                    rollback_target = (
-                        self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
-                            model_type=promoted_version.model_type
-                        )
+                    rollback_target = self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
+                        model_type=promoted_version.model_type
                     )
                     if rollback_target is not None:
                         self._champion_engine._registry.promote_to_champion(  # noqa: SLF001
