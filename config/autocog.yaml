@@ -6,8 +6,11 @@ version: 1
 
 # Experimental Learning Mode
 # Enables safe experimentation (2-3 experiments per cycle)
+# Enabled 2026-03-29: Batch 4 phased feature enablement
+# Enables hypothesis testing (champion-challenger, portfolio policies)
+# Medium-risk: A-002b adds additional safety gates
 experiments:
-  enabled: false
+  enabled: true
   max_experiments_per_cycle: 3
   safe_mode: true # Only run experiments within safety guardrails
 
