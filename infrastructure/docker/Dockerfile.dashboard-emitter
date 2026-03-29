@@ -1,0 +1,31 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code and scripts
+COPY scripts/ ./scripts/
+COPY src/ ./src/
+
+# Create log directory
+RUN mkdir -p /var/log/chiseai && chmod 755 /var/log/chiseai
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src:/app/scripts
+
+# Health check - verify Redis and InfluxDB connectivity
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python3 -c "import redis; r=redis.Redis(host='host.docker.internal', port=6380); r.ping()" && \
+    curl -s -o /dev/null -w "%{http_code}" http://chiseai-influxdb:18087/health -H "Authorization: Token ${INFLUXDB_TOKEN}" | grep -q "200\|204"
+
+# Run dashboard emitter
+CMD ["python3", "scripts/run_dashboard_emitter.py"]
