@@ -428,3 +428,257 @@ class TestAccuracyOnSyntheticFixtures:
 
             # Should run without error and produce valid result
             assert result is not None
+
+
+class TestIsLevelBrokenCallChain:
+    """Tests that trace the full call chain through _is_level_broken.
+
+    Call chain for BULLISH (BOS):
+        _classify() -> _check_bullish_break() -> _is_level_broken()
+        - swing is a swing_high
+        - level is a swing_high (previous resistance)
+        - is_bullish=True
+
+    Call chain for BEARISH (BOS):
+        _classify() -> _check_bearish_break() -> _is_level_broken()
+        - swing is a swing_low
+        - level is a swing_low (previous support)
+        - is_bullish=False
+    """
+
+    def test_is_level_broken_bullish_swing_high_breaks_above(
+        self,
+    ) -> None:
+        """Test: _is_level_broken called with swing_high breaking above level.
+
+        Call chain: _classify -> _check_bullish_break -> _is_level_broken
+        This is a BULLISH_BOS (break of resistance).
+
+        Setup: swing_high at 50500 breaks above prev swing_high at 50000.
+        Expected: Returns True (level broken).
+        """
+        classifier = BOSCHoCHClassifier()
+
+        # swing_high breaking above previous swing_high (BOS)
+        swing_high = make_swing_high(index=5, price=50500)
+        level_high = make_swing_high(index=2, price=50000)
+
+        data = [create_ohlcv(i * 3600, 50600, 49900) for i in range(10)]
+
+        # is_bullish=True, swing_high price (50500) > level price (50000)
+        result = classifier._is_level_broken(
+            swing=swing_high,
+            level=level_high,
+            data=data,
+            is_bullish=True,
+        )
+
+        assert result is True
+
+    def test_is_level_broken_bullish_swing_high_fails_to_break(
+        self,
+    ) -> None:
+        """Test: _is_level_broken with swing_high NOT breaking above level.
+
+        Call chain: _classify -> _check_bullish_break -> _is_level_broken
+
+        Setup: swing_high at 50500 fails to break above prev swing_high at 51000.
+        Expected: Returns False (level NOT broken).
+        """
+        classifier = BOSCHoCHClassifier()
+
+        swing_high = make_swing_high(index=5, price=50500)
+        level_high = make_swing_high(index=2, price=51000)
+
+        data = [create_ohlcv(i * 3600, 50600, 49900) for i in range(10)]
+
+        # is_bullish=True, but swing_high price (50500) < level price (51000)
+        result = classifier._is_level_broken(
+            swing=swing_high,
+            level=level_high,
+            data=data,
+            is_bullish=True,
+        )
+
+        assert result is False
+
+    def test_is_level_broken_bearish_swing_low_breaks_below(
+        self,
+    ) -> None:
+        """Test: _is_level_broken called with swing_low breaking below level.
+
+        Call chain: _classify -> _check_bearish_break -> _is_level_broken
+        This is a BEARISH_BOS (break of support).
+
+        Setup: swing_low at 49500 breaks below prev swing_low at 50000.
+        Expected: Returns True (level broken).
+        """
+        classifier = BOSCHoCHClassifier()
+
+        swing_low = make_swing_low(index=5, price=49500)
+        level_low = make_swing_low(index=2, price=50000)
+
+        data = [create_ohlcv(i * 3600, 50100, 49400) for i in range(10)]
+
+        # is_bullish=False, swing_low price (49500) < level price (50000)
+        result = classifier._is_level_broken(
+            swing=swing_low,
+            level=level_low,
+            data=data,
+            is_bullish=False,
+        )
+
+        assert result is True
+
+    def test_is_level_broken_bearish_swing_low_fails_to_break(
+        self,
+    ) -> None:
+        """Test: _is_level_broken with swing_low NOT breaking below level.
+
+        Call chain: _classify -> _check_bearish_break -> _is_level_broken
+
+        Setup: swing_low at 50000 fails to break below prev swing_low at 49500.
+        Expected: Returns False (level NOT broken).
+        """
+        classifier = BOSCHoCHClassifier()
+
+        swing_low = make_swing_low(index=5, price=50000)
+        level_low = make_swing_low(index=2, price=49500)
+
+        data = [create_ohlcv(i * 3600, 50100, 49400) for i in range(10)]
+
+        # is_bullish=False, but swing_low price (50000) > level price (49500)
+        result = classifier._is_level_broken(
+            swing=swing_low,
+            level=level_low,
+            data=data,
+            is_bullish=False,
+        )
+
+        assert result is False
+
+
+class TestBearishBOSCallChain:
+    """Test BEARISH_BOS detection through full call chain.
+
+    Full chain: _classify() -> _check_bearish_break() -> _is_level_broken()
+
+    For BEARISH_BOS (break of structure in downtrend):
+    - Current swing is swing_low breaking below previous swing_low
+    - _check_bearish_break receives swing_low and prev_swings
+    - It filters for prev.pivot_type == "swing_low" and calls _is_level_broken
+    - _is_level_broken should return True when swing.price < level.price
+    """
+
+    def test_bearish_bos_with_only_swing_lows(self) -> None:
+        """Test: BEARISH_BOS with only swing_lows - avoids cross-type events."""
+        classifier = BOSCHoCHClassifier()
+
+        # Only swing_lows - simpler pattern to test BEARISH_BOS
+        pivots = [
+            make_swing_low(0, 50000),  # Initial low
+            make_swing_low(1, 49000),  # Lower low = BEARISH_BOS
+        ]
+
+        pivot_result = SwingPivotDetectionResult(
+            pivots=pivots,
+            swing_highs=[p for p in pivots if p.pivot_type == PivotType.SWING_HIGH],
+            swing_lows=[p for p in pivots if p.pivot_type == PivotType.SWING_LOW],
+            data_length=50,
+            window_size=5,
+        )
+        data = [create_ohlcv(i * 3600, 50100, 48900) for i in range(50)]
+
+        result = classifier.classify(pivot_result, data)
+
+        bearish_bos = [
+            e for e in result.events if e.event_type == BOSCHoCHType.BEARISH_BOS
+        ]
+        assert len(bearish_bos) >= 1, (
+            f"Expected at least 1 BEARISH_BOS event, got {len(bearish_bos)}. "
+            f"Events: {[(e.event_type.value, e.break_index) for e in result.events]}"
+        )
+        bos_event = bearish_bos[0]
+        assert bos_event.event_type == BOSCHoCHType.BEARISH_BOS
+        assert bos_event.break_index == 1
+        assert bos_event.is_bos is True
+
+
+class TestBearishCHoCHCallChain:
+    """Test BEARISH_CHOCH detection through full call chain.
+
+    For BEARISH_CHOCH (change of character - bearish):
+    - In an uptrend, a swing_high breaks above a previous swing_high
+    - This signals potential trend change from uptrend to downtrend
+    - Call chain: _classify -> _check_bearish_break -> _is_level_broken
+    - _is_level_broken receives swing_high and level (prev swing_high), is_bullish=False
+    """
+
+    def test_bearish_choch_in_uptrend_sequence(self) -> None:
+        """Test: BEARISH_CHOCH when higher high breaks structure high in uptrend."""
+        classifier = BOSCHoCHClassifier()
+
+        # Uptrend with structure break
+        pivots = [
+            make_swing_high(0, 50000),  # Structure high
+            make_swing_low(1, 49500),  # Higher low
+            make_swing_high(2, 51000),  # Higher high (uptrend)
+            make_swing_high(3, 52000),  # Breaks above 50000 = BEARISH_CHOCH
+        ]
+
+        pivot_result = SwingPivotDetectionResult(
+            pivots=pivots,
+            swing_highs=[p for p in pivots if p.pivot_type == PivotType.SWING_HIGH],
+            swing_lows=[p for p in pivots if p.pivot_type == PivotType.SWING_LOW],
+            data_length=50,
+            window_size=5,
+        )
+        data = [create_ohlcv(i * 3600, 52100, 49900) for i in range(50)]
+
+        result = classifier.classify(pivot_result, data)
+
+        # BEARISH_CHOCH should be detected
+        bearish_choch = [
+            e for e in result.events if e.event_type == BOSCHoCHType.BEARISH_CHOCH
+        ]
+        assert len(bearish_choch) >= 1, (
+            f"Expected at least 1 BEARISH_CHOCH event, got {len(bearish_choch)}. "
+            f"Events: {[(e.event_type.value, e.break_index) for e in result.events]}"
+        )
+        choch_event = bearish_choch[0]
+        assert choch_event.event_type == BOSCHoCHType.BEARISH_CHOCH
+        assert choch_event.is_bos is False
+
+
+class TestCombinedBosEvents:
+    """Tests for multiple BOS events in sequence."""
+
+    def test_bearish_bos_sequence(self) -> None:
+        """Test: BEARISH_BOS events in a downtrend."""
+        classifier = BOSCHoCHClassifier()
+
+        # Downtrend with multiple breaks
+        pivots = [
+            make_swing_low(0, 50000),
+            make_swing_low(1, 49000),  # First break = BEARISH_BOS
+            make_swing_low(2, 48000),  # Second break = BEARISH_BOS
+        ]
+
+        pivot_result = SwingPivotDetectionResult(
+            pivots=pivots,
+            swing_highs=[p for p in pivots if p.pivot_type == PivotType.SWING_HIGH],
+            swing_lows=[p for p in pivots if p.pivot_type == PivotType.SWING_LOW],
+            data_length=50,
+            window_size=5,
+        )
+        data = [create_ohlcv(i * 3600, 50100, 47900) for i in range(50)]
+
+        result = classifier.classify(pivot_result, data)
+
+        bearish_bos = [
+            e for e in result.events if e.event_type == BOSCHoCHType.BEARISH_BOS
+        ]
+        assert len(bearish_bos) >= 1, (
+            f"Expected at least 1 BEARISH_BOS event, got {len(bearish_bos)}. "
+            f"Events: {[(e.event_type.value, e.break_index) for e in result.events]}"
+        )
