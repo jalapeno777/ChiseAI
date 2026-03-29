@@ -12,6 +12,9 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import argparse
 import json
 import logging
+import os
+
+import redis as redis_lib
 
 from autonomous_cognition.full_cycle import AutonomousCognitionFullCycle
 
@@ -44,7 +47,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     """Main entry point."""
     args = parse_args()
-    runner = AutonomousCognitionFullCycle()
+    redis_client = redis_lib.Redis(
+        host=os.getenv("REDIS_HOST", "host.docker.internal"),
+        port=int(os.getenv("REDIS_PORT", "6380")),
+        db=int(os.getenv("REDIS_DB", "0")),
+        password=os.getenv("REDIS_PASSWORD") or None,
+        decode_responses=True,
+    )
+    runner = AutonomousCognitionFullCycle(redis_client=redis_client)
 
     try:
         result = runner.run(notify_discord=args.notify_discord, mode=args.mode)
