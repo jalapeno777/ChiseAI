@@ -241,3 +241,51 @@ def test_belief_revision_blocked_when_causal_support_is_low() -> None:
     assert engine.last_blocked_revisions[0]["reason"].startswith(
         "insufficient_causal_support"
     )
+
+
+def test_consistency_checker_filters_debug_domain() -> None:
+    """Debug and test domain beliefs should be excluded from conflict detection."""
+    checker = BeliefConsistencyChecker()
+    beliefs = [
+        Belief(
+            belief_id="debug_belief_001",
+            statement="Debug test belief that should be filtered.",
+            domain="debug",
+            confidence=0.8,
+        ),
+        Belief(
+            belief_id="normal_belief_001",
+            statement="Normal production belief.",
+            domain="strategy",
+            confidence=0.8,
+        ),
+        Belief(
+            belief_id="test_belief_001",
+            statement="Test belief that should be filtered.",
+            domain="test",
+            confidence=0.7,
+        ),
+    ]
+    conflicts = checker.detect_conflicts(beliefs)
+    assert len(conflicts) == 0, "Debug/test domain beliefs should be filtered out"
+
+
+def test_check_consistency_filters_debug_domain() -> None:
+    """check_consistency should exclude debug/test domain beliefs."""
+    checker = BeliefConsistencyChecker()
+    beliefs = [
+        Belief(
+            belief_id="debug_belief_001",
+            statement="This is obsolete and deprecated.",
+            domain="debug",
+            confidence=0.85,
+        ),
+        Belief(
+            belief_id="normal_belief_001",
+            statement="This is a normal active belief.",
+            domain="strategy",
+            confidence=0.5,
+        ),
+    ]
+    conflicts = checker.check_consistency(beliefs)
+    assert len(conflicts) == 0, "Debug domain beliefs should not generate conflicts"
