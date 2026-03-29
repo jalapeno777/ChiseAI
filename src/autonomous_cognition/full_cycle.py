@@ -1203,7 +1203,148 @@ class AutonomousCognitionFullCycle:
                 notify_loop.run_until_complete(notifier.close())
         if notify_loop:
             notify_loop.close()
+        # Store Aria briefing in Redis for on-demand access by Aria/Craig
+        self._store_aria_briefing(
+            redis_client=redis_client,
+            result=result,
+            mode=mode,
+            shadow_mode=shadow_mode,
+            actions=actions,
+            assessment=assessment,
+            governance_state=governance_state,
+        )
         return result
+
+    def _store_aria_briefing(
+        self,
+        *,
+        redis_client: Any | None,
+        result: CycleResult,
+        mode: str,
+        shadow_mode: bool,
+        actions: list[str],
+        assessment: Any | None,
+        governance_state: dict[str, Any],
+    ) -> None:
+        """Store cycle summary in Redis for Aria to provide on-demand briefings.
+
+        Key: ``autocog:aria_briefing:current``
+        TTL: 24 hours (refreshed each cycle)
+
+        Briefing contains:
+        - Last cycle run timestamp
+        - Last cycle mode and result summary
+        - Current self-assessment score
+        - Current runtime mode (shadow/canary/live)
+        - Active experiments and their status
+        - Recent actions (last 5)
+        - Any errors or warnings
+        - Next scheduled cycle (from governance state)
+        """
+        try:
+            if redis_client is None:
+                logger.warning(
+                    "[ARIA_BRIEFING] Redis client not available, skipping briefing store"
+                )
+                return
+
+            # Determine runtime mode label
+            if shadow_mode:
+                runtime_mode = "shadow"
+            elif mode == "canary":
+                runtime_mode = "canary"
+            else:
+                runtime_mode = "live"
+
+            # Get errors/warnings from metrics
+            errors_and_warnings: list[str] = []
+            if result.metrics.get("budget_warning_cycle") == "cycle_budget_exceeded":
+                errors_and_warnings.append("cycle_budget_exceeded")
+            if (
+                result.metrics.get("budget_warning_self_assessment")
+                == "phase_budget_exceeded"
+            ):
+                errors_and_warnings.append("self_assessment_phase_budget_exceeded")
+            if (
+                result.metrics.get("budget_warning_belief_check")
+                == "phase_budget_exceeded"
+            ):
+                errors_and_warnings.append("belief_check_phase_budget_exceeded")
+            if (
+                result.metrics.get("budget_warning_improvement")
+                == "phase_budget_exceeded"
+            ):
+                errors_and_warnings.append("improvement_phase_budget_exceeded")
+            error_str = result.metrics.get("error")
+            if error_str:
+                errors_and_warnings.append(f"cycle_error: {error_str}")
+
+            # Get next scheduled cycle from governance state
+            next_scheduled = None
+            belief_registry = governance_state.get("belief_registry", {})
+            global_belief = belief_registry.get("__global__", {})
+            next_check_after = global_belief.get("next_check_after")
+            if next_check_after:
+                next_scheduled = next_check_after
+
+            # Build active experiments summary
+            active_experiments = {
+                "count": result.experiments_run,
+                "promotions": result.promotions,
+                "rejections": result.rejections,
+                "status": "completed" if result.status == "completed" else "failed",
+            }
+
+            # Build the briefing payload
+            briefing = {
+                "last_cycle_timestamp": result.completed_at,
+                "last_cycle_mode": mode,
+                "last_cycle_result": result.status,
+                "self_assessment_score": (
+                    round(float(assessment.overall_score), 4)
+                    if assessment
+                    and hasattr(assessment, "overall_score")
+                    and assessment.overall_score is not None
+                    else None
+                ),
+                "self_assessment_status": (
+                    result.self_assessment_status
+                    if result.self_assessment_status
+                    else (
+                        assessment.status
+                        if assessment and hasattr(assessment, "status")
+                        else None
+                    )
+                ),
+                "runtime_mode": runtime_mode,
+                "active_experiments": active_experiments,
+                "recent_actions": actions[-5:] if len(actions) > 5 else actions,
+                "errors_or_warnings": errors_and_warnings,
+                "next_scheduled_cycle": next_scheduled,
+                "run_id": result.run_id,
+                "constitution_violations": result.constitution_violations,
+                "belief_conflicts": result.belief_conflicts,
+                "belief_revisions": result.belief_revisions,
+                "autonomy_level_after": result.autonomy_level_after,
+            }
+
+            # Store in Redis with 24-hour TTL
+            briefing_json = json.dumps(briefing)
+            redis_client.set(
+                "autocog:aria_briefing:current",
+                briefing_json,
+                ex=86400,  # 24 hours TTL
+            )
+            logger.info(
+                "[ARIA_BRIEFING] Stored briefing for run %s, status=%s, score=%s",
+                result.run_id,
+                result.status,
+                briefing.get("self_assessment_score"),
+            )
+
+        except Exception as e:
+            # Never let briefing storage failure affect the cycle result
+            logger.warning("[ARIA_BRIEFING] Failed to store briefing: %s", e)
 
     def _seed_beliefs_from_assessment(self, findings: list[str]) -> list[Belief]:
         """Seed beliefs from latest assessment findings."""
