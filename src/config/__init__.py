@@ -3,10 +3,10 @@
 Provides centralized configuration loading and environment variable management.
 """
 
-from src.config.bootstrap import bootstrap as bootstrap_environment
 from src.config.bootstrap import get_bootstrap_state
 from src.config.env_loader import (
     EnvLoader,
+    bootstrap_environment,
     discord_loader,
     kimi_loader,
     load_discord_config,
