@@ -21,7 +21,7 @@ when:
 
 steps:
   format-check:
-    image: chiseai-ci-lint:py311-20260323
+    image: chiseai-ci-lint:py311-20260329
     commands:
       - |
         set -euo pipefail
@@ -53,7 +53,7 @@ steps:
         echo "push-gate: Black formatting OK"
 
   lint-check:
-    image: chiseai-ci-lint:py311-20260323
+    image: chiseai-ci-lint:py311-20260329
     commands:
       - |
         set -euo pipefail
