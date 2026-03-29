@@ -627,5 +627,179 @@ class TestHealthMarkerTTL:
         )
 
 
+class TestSilentSignalConsumptionFix:
+    """Regression tests for ST-AC7-DEBUG-001.
+
+    Ensures signals for non-allowed symbols are NOT silently consumed
+    (marked as processed) without order creation. The fix ensures:
+    1. Non-allowed symbols are skipped with WARNING log, NOT consumed
+    2. Throttled symbols are skipped with INFO log, NOT consumed
+    3. Signals can be retried if symbol is later added to allowlist
+    """
+
+    @pytest.mark.asyncio
+    async def test_non_allowed_symbol_not_consumed(
+        self, mock_orchestrator, mock_redis, sample_signal_data
+    ):
+        """Non-allowed symbol signal must NOT be marked consumed.
+
+        Before fix: signal was marked 'consumed' + added to processed set
+        at DEBUG log level, making it invisible to future polls.
+
+        After fix: signal is skipped with WARNING, NOT consumed, so it
+        can be picked up if the symbol is later added to allowed_symbols.
+        """
+        signal_id = sample_signal_data["signal_id"]
+        redis_key = f"bmad:chiseai:signals:2026-02-26:BTC_USDT:{signal_id}"
+
+        mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
+        mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
+        mock_redis.smembers = AsyncMock(return_value=set())
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
+        )
+        # Override allowed_symbols to exclude BTC
+        consumer.allowed_symbols = {"ETH/USDT", "SOL/USDT"}
+
+        count = await consumer._poll_once()
+
+        # Must not count as processed
+        assert count == 0
+        # Must NOT have called orchestrator
+        mock_orchestrator.submit_signal.assert_not_called()
+        # Must NOT have marked as consumed in Redis
+        consumed_calls = [
+            c
+            for c in mock_redis.hset.call_args_list
+            if len(c.args) >= 3 and c.args[1] == "status" and c.args[2] == "consumed"
+        ]
+        assert len(consumed_calls) == 0, (
+            f"Signal for non-allowed symbol should NOT be marked consumed. "
+            f"Got {consumed_calls}"
+        )
+        # Must NOT have added to processed set
+        mock_redis.sadd.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_non_allowed_symbol_logged_at_warning(
+        self, mock_orchestrator, mock_redis, sample_signal_data, caplog
+    ):
+        """Non-allowed symbol skip must be logged at WARNING level."""
+        signal_id = sample_signal_data["signal_id"]
+        redis_key = f"bmad:chiseai:signals:2026-02-26:BTC_USDT:{signal_id}"
+
+        mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
+        mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
+        mock_redis.smembers = AsyncMock(return_value=set())
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
+        )
+        consumer.allowed_symbols = {"ETH/USDT"}
+
+        with caplog.at_level("WARNING", logger="execution.paper.signal_consumer"):
+            await consumer._poll_once()
+
+        assert any(
+            "SKIPPED" in rec.message and "non-allowed" in rec.message
+            for rec in caplog.records
+        ), f"Expected WARNING with 'SKIPPED' and 'non-allowed', got: {caplog.text}"
+
+    @pytest.mark.asyncio
+    async def test_throttled_symbol_not_consumed(
+        self, mock_orchestrator, mock_redis, sample_signal_data
+    ):
+        """Throttled symbol signal must NOT be marked consumed.
+
+        Before fix: throttled signal was marked 'consumed' + added to
+        processed set, permanently discarding it.
+
+        After fix: throttled signal returns False but is NOT consumed,
+        so it will be retried after throttle cooldown expires.
+        """
+        signal_id = sample_signal_data["signal_id"]
+        redis_key = f"bmad:chiseai:signals:2026-02-26:BTC_USDT:{signal_id}"
+
+        mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
+        mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
+        mock_redis.smembers = AsyncMock(return_value=set())
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+            symbol_throttle_seconds=300.0,  # 5 minute throttle
+        )
+
+        # First submission succeeds
+        count1 = await consumer._poll_once()
+        assert count1 == 1
+        mock_orchestrator.submit_signal.assert_called_once()
+
+        # Second poll: same symbol should be throttled, NOT consumed
+        mock_orchestrator.submit_signal.reset_mock()
+        count2 = await consumer._poll_once()
+        assert count2 == 0
+        mock_orchestrator.submit_signal.assert_not_called()
+
+        # Verify NOT marked consumed on second poll
+        # Only the first poll should have set consumed
+        consumed_calls = [
+            c
+            for c in mock_redis.hset.call_args_list
+            if len(c.args) >= 3 and c.args[1] == "status" and c.args[2] == "consumed"
+        ]
+        assert len(consumed_calls) == 1, (
+            f"Throttled signal should NOT add a second consumed marker. "
+            f"Got {len(consumed_calls)} consumed calls: {consumed_calls}"
+        )
+        # processed set should only have the first signal
+        sadd_calls = mock_redis.sadd.call_args_list
+        assert len(sadd_calls) == 1, (
+            f"Throttled signal should NOT be added to processed set. "
+            f"Got {len(sadd_calls)} sadd calls: {sadd_calls}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_allowed_symbol_still_consumed_after_fix(
+        self, mock_orchestrator, mock_redis, sample_signal_data
+    ):
+        """Allowed symbols must still be consumed normally after fix."""
+        signal_id = sample_signal_data["signal_id"]
+        redis_key = f"bmad:chiseai:signals:2026-02-26:BTC_USDT:{signal_id}"
+
+        mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
+        mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
+        mock_redis.smembers = AsyncMock(return_value=set())
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
+        )
+        # Ensure BTC/USDT is in the allowed set
+        consumer.allowed_symbols = {"BTC/USDT"}
+
+        count = await consumer._poll_once()
+
+        assert count == 1
+        mock_orchestrator.submit_signal.assert_called_once()
+        # Must be marked consumed
+        mock_redis.hset.assert_any_call(redis_key, "status", "consumed")
+        mock_redis.sadd.assert_called_with(SignalConsumer.PROCESSED_SET_KEY, signal_id)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
