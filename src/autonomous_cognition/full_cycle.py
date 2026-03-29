@@ -36,6 +36,127 @@ from governance.notifications.discord_notifier import DiscordNotifier
 logger = logging.getLogger(__name__)
 
 
+def preflight_check(
+    redis_client: Any | None,
+    qdrant_client: Any | None,
+    notify_discord: bool = False,
+) -> bool:
+    """Run connectivity and environment checks before starting a cycle.
+
+    Checks:
+    1. Redis ping
+    2. Qdrant collections list (health check)
+    3. Config file is readable
+    4. Output directory is writable (or can be created)
+
+    Returns:
+        True if all checks pass.
+
+    Raises:
+        SystemExit with code 1 if any check fails.
+    """
+    repo_root = _get_repo_root()
+    failures: list[str] = []
+
+    # 1. Redis connectivity
+    if redis_client is not None:
+        try:
+            redis_client.ping()
+            logger.info("[PREFLIGHT] Redis ping: OK")
+        except Exception as e:
+            failures.append(f"Redis ping failed: {e}")
+            logger.error("[PREFLIGHT] Redis ping failed: %s", e)
+    else:
+        failures.append("Redis client not available")
+        logger.warning("[PREFLIGHT] Redis client is None")
+
+    # 2. Qdrant connectivity
+    if qdrant_client is not None:
+        try:
+            qdrant_client.get_collections()
+            logger.info("[PREFLIGHT] Qdrant connectivity: OK")
+        except Exception as e:
+            failures.append(f"Qdrant connectivity failed: {e}")
+            logger.error("[PREFLIGHT] Qdrant connectivity failed: %s", e)
+    else:
+        # Qdrant is optional in some modes; warn but don't fail
+        logger.warning("[PREFLIGHT] Qdrant client is None (optional)")
+
+    # 3. Config file readable
+    config_path = repo_root / "config/autocog.yaml"
+    if config_path.exists():
+        try:
+            config_path.read_text(encoding="utf-8")
+            logger.info("[PREFLIGHT] Config file readable: %s", config_path)
+        except Exception as e:
+            failures.append(f"Config file unreadable: {e}")
+            logger.error("[PREFLIGHT] Config file unreadable: %s", e)
+    else:
+        # Config is optional (defaults are used); warn
+        logger.warning(
+            "[PREFLIGHT] Config file not found: %s (will use defaults)", config_path
+        )
+
+    # 4. Output directory writable
+    output_dir = repo_root / "_bmad-output/autocog/cycles"
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        # Test write by creating a temp file and removing it
+        test_file = output_dir / ".preflight_write_test"
+        test_file.write_text("preflight", encoding="utf-8")
+        test_file.unlink()
+        logger.info("[PREFLIGHT] Output directory writable: %s", output_dir)
+    except Exception as e:
+        failures.append(f"Output directory not writable: {e}")
+        logger.error("[PREFLIGHT] Output directory not writable: %s", e)
+
+    # If any check failed, notify Discord (if configured) and exit
+    if failures:
+        failure_summary = "; ".join(failures)
+        logger.error("[PREFLIGHT] Preflight checks failed: %s", failure_summary)
+
+        if notify_discord:
+            try:
+                notifier = DiscordNotifier()
+                loop = asyncio.new_event_loop()
+                loop.run_until_complete(
+                    notifier.notify_autocog_event(
+                        event_type="preflight_failed",
+                        severity="critical",
+                        summary="Autonomous cycle preflight checks failed",
+                        impact=failure_summary,
+                        top_metrics={"failures": len(failures)},
+                        artifact_path=None,
+                        run_id="preflight",
+                        title="Preflight Validation Failed",
+                        issue=(
+                            "One or more preflight checks (Redis, Qdrant, config, "
+                            "or output directory) failed, preventing cycle start."
+                        ),
+                        intended_resolution=(
+                            "Restore connectivity and retry the autonomous cycle."
+                        ),
+                        expected_improvement=(
+                            "Prevents wasted cycles when infrastructure is unavailable."
+                        ),
+                        outcome_status="failed",
+                        evidence_reasoning=failures,
+                    )
+                )
+                loop.run_until_complete(notifier.close())
+                loop.close()
+            except Exception as notify_err:
+                logger.error(
+                    "[PREFLIGHT] Failed to send Discord notification: %s", notify_err
+                )
+
+        logger.critical("[PREFLIGHT] Preflight failed, exiting with code 1")
+        raise SystemExit(1)
+
+    logger.info("[PREFLIGHT] All checks passed")
+    return True
+
+
 def _get_repo_root() -> Path:
     """Return the repository root directory.
 
@@ -210,6 +331,16 @@ class AutonomousCognitionFullCycle:
         notify_loop: asyncio.AbstractEventLoop | None = None
         if notifier is not None:
             notify_loop = asyncio.new_event_loop()
+
+        # Preflight check: validate infrastructure before starting cycle phases
+        redis_client = getattr(self._controller, "_redis_client", None)
+        qdrant_client = getattr(self._controller, "_qdrant_client", None)
+        preflight_check(
+            redis_client=redis_client,
+            qdrant_client=qdrant_client,
+            notify_discord=notify_discord,
+        )
+
         try:
             state_machine.transition(CycleState.SELF_ASSESSING)
             if run_self_assessment:
