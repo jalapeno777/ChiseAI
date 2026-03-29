@@ -65,7 +65,7 @@ steps:
         exit 0
   lint:
     pull: false
-    image: chiseai-ci-lint:py311-20260323
+    image: chiseai-ci-lint:py311-20260329
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
