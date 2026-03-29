@@ -47,6 +47,9 @@ from execution.paper.models import (
     PaperTradeResult,
     TradeStatus,
 )
+from execution.paper.paper_kill_switch import (
+    PaperKillSwitchManager,
+)
 from execution.paper.reason_codes import (
     ReasonCodeMapper,
 )
@@ -108,6 +111,7 @@ class PaperTradingOrchestrator:
         trade_journal_persistence: TradeJournalRedisPersistence | None = None,
         session_id: str | None = None,
         redis_client: Any | None = None,
+        paper_kill_switch: PaperKillSwitchManager | None = None,
     ):
         """Initialize paper trading orchestrator.
 
@@ -127,6 +131,7 @@ class PaperTradingOrchestrator:
             trade_journal_persistence: Optional persistence layer for trade journal
             session_id: Optional session ID for journal recovery
             redis_client: Optional Redis client for health key writes
+            paper_kill_switch: Optional PaperKillSwitchManager for paper trading kill switch.
         """
         self.signal_generator = signal_generator
         self.order_simulator = order_simulator
@@ -141,6 +146,7 @@ class PaperTradingOrchestrator:
         self.decision_enhancer = decision_enhancer or TradeDecisionEnhancer()
         self.symbol_registry = symbol_registry
         self._redis = redis_client
+        self._paper_kill_switch = paper_kill_switch
 
         # PAPER-FORENSIC-001: Extract and store connector provenance
         self._connector_provenance = self._extract_connector_provenance(order_simulator)
@@ -296,6 +302,21 @@ class PaperTradingOrchestrator:
             self._redis.setex(self.HEALTH_KEY, self.HEALTH_TTL_SECONDS, payload)
         except Exception:
             logger.debug("Failed to update orchestrator health key", exc_info=True)
+
+    async def _get_paper_kill_switch(self) -> PaperKillSwitchManager | None:
+        """Get or create PaperKillSwitchManager.
+
+        Note: Does NOT pass self._redis to the manager because the orchestrator's
+        Redis client may be synchronous (used for health keys), while
+        PaperKillSwitchManager requires an async client. The manager creates
+        its own async connection when needed.
+
+        Returns:
+            PaperKillSwitchManager instance or None if not configured
+        """
+        if self._paper_kill_switch is None:
+            self._paper_kill_switch = PaperKillSwitchManager()
+        return self._paper_kill_switch
 
     async def start(self) -> None:
         """Start the orchestrator and begin processing signals."""
@@ -478,7 +499,30 @@ class PaperTradingOrchestrator:
                     )
                 self._last_symbol_processed_ts[symbol_key] = now_ts
 
-            # Step 1: Check kill-switch state
+            # PAPER-009: Check paper trading kill switch before any processing
+            paper_kill_switch = await self._get_paper_kill_switch()
+            if paper_kill_switch:
+                paper_kill_status = await paper_kill_switch.get_status()
+                if paper_kill_status.active:
+                    logger.critical(
+                        f"PAPER KILL SWITCH ACTIVE - blocking trade execution: "
+                        f"reason='{paper_kill_status.reason}' "
+                        f"activated_by='{paper_kill_status.activated_by}' "
+                        f"ttl_remaining={paper_kill_status.ttl_remaining}s "
+                        f"(correlation_id={correlation_id})"
+                    )
+                    async with self._lock:
+                        self._metrics["trades_rejected"] += 1
+                    return PaperTradeResult(
+                        signal=signal,
+                        status=TradeStatus.REJECTED,
+                        reject_reason=[
+                            f"Paper kill switch active: {paper_kill_status.reason}"
+                        ],
+                        correlation_id=correlation_id,
+                    )
+
+            # Step 1: Check kill-switch state (live trading kill switch)
             if self.kill_switch.state.value == "triggered":
                 logger.warning(
                     f"Signal rejected: kill-switch triggered (correlation_id={correlation_id})"

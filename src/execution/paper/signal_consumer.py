@@ -21,6 +21,9 @@ if TYPE_CHECKING:
 
 import contextlib
 
+from execution.paper.paper_kill_switch import (
+    PaperKillSwitchManager,
+)
 from signal_generation.models import SignalDirection, SignalStatus
 
 logger = logging.getLogger(__name__)
@@ -55,6 +58,7 @@ class SignalConsumer:
         redis_client: Any | None = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         symbol_throttle_seconds: float | None = None,
+        paper_kill_switch: PaperKillSwitchManager | None = None,
     ):
         """Initialize the signal consumer.
 
@@ -64,6 +68,8 @@ class SignalConsumer:
             poll_interval: Seconds between polling cycles
             symbol_throttle_seconds: Minimum seconds between submissions per symbol.
                 If None, uses SYMBOL_EVAL_INTERVAL_SECONDS env (default 300s).
+            paper_kill_switch: Optional PaperKillSwitchManager for paper trading kill switch.
+                If None, creates new instance.
         """
         self.orchestrator = orchestrator
         self.poll_interval = poll_interval
@@ -89,6 +95,9 @@ class SignalConsumer:
             self._redis = None
             self._owns_redis = True
 
+        # Initialize paper kill switch manager
+        self._paper_kill_switch = paper_kill_switch
+
         logger.info(
             "SignalConsumer initialized: poll_interval=%ss, symbol_throttle_seconds=%ss, allowed_symbols=%s",
             poll_interval,
@@ -107,6 +116,17 @@ class SignalConsumer:
                 decode_responses=True,
             )
         return self._redis
+
+    async def _get_paper_kill_switch(self) -> PaperKillSwitchManager:
+        """Get or create PaperKillSwitchManager.
+
+        Returns:
+            PaperKillSwitchManager instance
+        """
+        if self._paper_kill_switch is None:
+            redis = await self._get_redis()
+            self._paper_kill_switch = PaperKillSwitchManager(redis_client=redis)
+        return self._paper_kill_switch
 
     async def start(self) -> None:
         """Start the signal consumer polling loop."""
@@ -355,6 +375,18 @@ class SignalConsumer:
 
         try:
             redis = await self._get_redis()
+
+            # Check paper kill switch before processing any signals
+            paper_kill_switch = await self._get_paper_kill_switch()
+            kill_switch_status = await paper_kill_switch.get_status()
+            if kill_switch_status.active:
+                logger.warning(
+                    f"PAPER KILL SWITCH ACTIVE - skipping signal processing: "
+                    f"reason='{kill_switch_status.reason}' "
+                    f"activated_by='{kill_switch_status.activated_by}' "
+                    f"ttl_remaining={kill_switch_status.ttl_remaining}s"
+                )
+                return 0
 
             # Scan for signal keys
             cursor = 0
