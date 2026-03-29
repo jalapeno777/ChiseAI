@@ -15,13 +15,13 @@ RUN apt-get update \
 # Preinstall commonly used CI tooling to avoid repeated pip install overhead.
 RUN python -m pip install --upgrade pip \
     && pip install \
-       black \
-       ruff \
-       mypy \
-       pyyaml \
+       black==26.1.0 \
+       ruff==0.14.8 \
+       mypy==1.18.2 \
+       pyyaml==6.0.3 \
        requests \
-       types-PyYAML \
-       types-requests \
+       types-PyYAML==6.0.12.20250915 \
+       types-requests==2.32.4.20250809 \
        bandit \
        pip-audit \
        tomli \
