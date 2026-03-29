@@ -231,8 +231,13 @@ class SignalConsumer:
             )
             return False
         except Exception as e:
-            logger.warning("Failed to acquire processing lock for %s: %e", signal_id, e)
-            return False
+            # INFRA EXCEPTION - fail closed, don't silently skip
+            logger.error(
+                "Failed to acquire processing lock for %s due to infrastructure error: %s",
+                signal_id,
+                e,
+            )
+            raise  # Re-raise to fail the iteration explicitly
 
     async def _release_processing_lock(self, signal_id: str) -> None:
         """Release the processing lock for a signal.

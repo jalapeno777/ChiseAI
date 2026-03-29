@@ -249,6 +249,28 @@ class TestAtomicProcessingLock:
         )
 
     @pytest.mark.asyncio
+    async def test_acquire_lock_raises_on_redis_connection_error(
+        self, mock_orchestrator
+    ):
+        """_acquire_processing_lock raises exception when Redis connection fails.
+
+        Infrastructure errors (connection refused, timeout, etc.) must NOT result
+        in silent skip. The exception must propagate to fail the iteration closed.
+        """
+        mock_redis = AsyncMock()
+        mock_redis.set = AsyncMock(
+            side_effect=ConnectionError("Redis connection refused")
+        )
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+        )
+
+        with pytest.raises(ConnectionError):
+            await consumer._acquire_processing_lock("sig-123")
+
+    @pytest.mark.asyncio
     async def test_release_lock_deletes_key(self, mock_orchestrator):
         """_release_processing_lock deletes the lock key from Redis."""
         mock_redis = AsyncMock()
