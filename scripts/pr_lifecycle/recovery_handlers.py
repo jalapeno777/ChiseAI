@@ -375,11 +375,10 @@ class AutoRebaseEngine:
             "Content-Type": "application/json",
         }
 
-        # Enable merge when checks succeed
+        # Enable merge when checks succeed (no direct merge)
         data = json.dumps(
             {
-                "Do": "merge",
-                "MergeMessage": "",
+                "merge_when_checks_succeed": True,
             }
         ).encode("utf-8")
 

@@ -246,9 +246,8 @@ class GiteaClient:
             "POST",
             f"/api/v1/repos/{self.owner}/{self.repo}/pulls/{pr_number}/merge",
             {
-                "Do": "merge",
                 "head_commit_id": head_sha,
-                "merge_when_checks_succeed": False,
+                "merge_when_checks_succeed": True,
                 "delete_branch_after_merge": delete_branch,
             },
         )
