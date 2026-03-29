@@ -316,7 +316,7 @@ class BOSCHoCHClassifier:
                 # This is a bearish break of a previous low = BOS
                 if self._is_level_broken(swing, prev, data, is_bullish=False):
                     strength = self._calculate_strength(
-                        prev.price, swing.price, is_bullish=False
+                        swing.price, prev.price, is_bullish=False
                     )
                     if strength >= self.min_strength_ratio:
                         event = BOSCHoCH(
@@ -335,7 +335,7 @@ class BOSCHoCHClassifier:
                 # This is a bearish break of a previous high = CHoCH
                 if self._is_level_broken(swing, prev, data, is_bullish=False):
                     strength = self._calculate_strength(
-                        prev.price, swing.price, is_bullish=False
+                        swing.price, prev.price, is_bullish=False
                     )
                     if strength >= self.min_strength_ratio:
                         event = BOSCHoCH(
@@ -407,11 +407,11 @@ class BOSCHoCHClassifier:
             return 0.0
 
         if is_bullish:
-            # For bullish: how much lower did we go vs level
-            return (level_price - break_price) / level_price
-        else:
-            # For bearish: how much higher did we go vs level
+            # For bullish: how much higher did we break above the level
             return (break_price - level_price) / level_price
+        else:
+            # For bearish: how much lower did we break below the level
+            return (level_price - break_price) / level_price
 
     def _empty_result(self) -> BOSCHoCHClassificationResult:
         """Create an empty result when insufficient data."""
