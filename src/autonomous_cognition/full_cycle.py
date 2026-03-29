@@ -283,7 +283,9 @@ class AutonomousCognitionFullCycle:
         self._audit = ConstitutionAuditEngine()
         self._config = _load_autocog_config()
 
-    def run(self, notify_discord: bool = False, mode: str = "full") -> CycleResult:
+    def run(
+        self, notify_discord: bool = False, mode: str = "full", shadow_mode: bool = True
+    ) -> CycleResult:
         """Run autonomous cognition cycle and persist artifact.
 
         Modes:
@@ -292,6 +294,12 @@ class AutonomousCognitionFullCycle:
         - improvement_cycle: self-assessment + strategy improvement
         - calibration/autonomy_tune: self-assessment + autonomy tuning
         - constitution_audit: self-assessment + constitution audit
+
+        Shadow Mode:
+        - When shadow_mode=True (default), all phases run normally but actions
+          are logged rather than applied to live systems
+        - A shadow report is generated showing what WOULD have been done
+        - This is the safe default before CANARY or FULL mode
         """
         allowed_modes = {
             "full",
@@ -314,6 +322,7 @@ class AutonomousCognitionFullCycle:
         run_id = f"autocog-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
         state_machine = AutonomousCycleStateMachine()
         result = CycleResult.create(run_id=run_id)
+        result.shadow_mode = shadow_mode
         governance_state = self._load_governance_state()
         actions: list[str] = []
         assessment = None
@@ -322,6 +331,8 @@ class AutonomousCognitionFullCycle:
         promotions = 0
         rejections = 0
         phase_durations: dict[str, float] = {}
+        # Shadow mode: collect proposed actions but don't apply them
+        shadow_proposed_actions: list[dict[str, Any]] = []
         max_phase_seconds = 60.0
         max_cycle_seconds = 240.0
         cycle_started_monotonic = time.monotonic()
@@ -769,92 +780,134 @@ class AutonomousCognitionFullCycle:
                     )
                     if outcome.promoted:
                         promotions += 1
-                        self._record_candidate_outcome(
-                            governance_state=governance_state,
-                            hypothesis=hypothesis,
-                            outcome="promoted",
-                            reason=outcome.reason,
-                            evidence_signature=evidence_signature,
-                            version_id=outcome.version_id,
-                        )
-                        if notifier and notify_loop:
-                            notify_loop.run_until_complete(
-                                notifier.notify_autocog_event(
-                                    event_type="improvement_promoted",
-                                    severity="low",
-                                    summary=f"Promoted {hypothesis.hypothesis_id}",
-                                    impact="Candidate passed promotion gates.",
-                                    top_metrics=exp.to_metrics(),
-                                    artifact_path=(
-                                        str(assessment_path)
-                                        if assessment_path
-                                        else None
+                        if shadow_mode:
+                            # Shadow mode: log proposed action but do NOT apply to governance
+                            shadow_proposed_actions.append(
+                                {
+                                    "action": "promote_candidate",
+                                    "candidate_id": hypothesis.hypothesis_id,
+                                    "reason": outcome.reason,
+                                    "version_id": outcome.version_id,
+                                    "metrics": exp.to_metrics(),
+                                    "target_component": getattr(
+                                        hypothesis, "target_component", "unknown"
                                     ),
-                                    run_id=run_id,
-                                    title="Improvement Candidate Promoted",
-                                    issue=(
-                                        "A new candidate policy outperformed the current "
-                                        "baseline under promotion gates."
-                                    ),
-                                    intended_resolution=(
-                                        "Promote the validated candidate into the active "
-                                        "improvement set."
-                                    ),
-                                    expected_improvement=(
-                                        "Improves trading/portfolio behavior while staying "
-                                        "inside risk controls."
-                                    ),
-                                    outcome_status="success",
-                                    evidence_reasoning=[
-                                        f"candidate={hypothesis.hypothesis_id}",
-                                        outcome.reason,
-                                    ],
-                                )
+                                }
                             )
+                            logger.info(
+                                "[SHADOW_MODE] Would promote candidate: %s (version=%s)",
+                                hypothesis.hypothesis_id,
+                                outcome.version_id,
+                            )
+                        else:
+                            # Live mode: apply the promotion
+                            self._record_candidate_outcome(
+                                governance_state=governance_state,
+                                hypothesis=hypothesis,
+                                outcome="promoted",
+                                reason=outcome.reason,
+                                evidence_signature=evidence_signature,
+                                version_id=outcome.version_id,
+                            )
+                            if notifier and notify_loop:
+                                notify_loop.run_until_complete(
+                                    notifier.notify_autocog_event(
+                                        event_type="improvement_promoted",
+                                        severity="low",
+                                        summary=f"Promoted {hypothesis.hypothesis_id}",
+                                        impact="Candidate passed promotion gates.",
+                                        top_metrics=exp.to_metrics(),
+                                        artifact_path=(
+                                            str(assessment_path)
+                                            if assessment_path
+                                            else None
+                                        ),
+                                        run_id=run_id,
+                                        title="Improvement Candidate Promoted",
+                                        issue=(
+                                            "A new candidate policy outperformed the current "
+                                            "baseline under promotion gates."
+                                        ),
+                                        intended_resolution=(
+                                            "Promote the validated candidate into the active "
+                                            "improvement set."
+                                        ),
+                                        expected_improvement=(
+                                            "Improves trading/portfolio behavior while staying "
+                                            "inside risk controls."
+                                        ),
+                                        outcome_status="success",
+                                        evidence_reasoning=[
+                                            f"candidate={hypothesis.hypothesis_id}",
+                                            outcome.reason,
+                                        ],
+                                    )
+                                )
                     else:
                         rejections += 1
-                        self._record_candidate_outcome(
-                            governance_state=governance_state,
-                            hypothesis=hypothesis,
-                            outcome="rejected",
-                            reason=outcome.reason,
-                            evidence_signature=evidence_signature,
-                            version_id=outcome.version_id,
-                        )
-                        if notifier and notify_loop:
-                            notify_loop.run_until_complete(
-                                notifier.notify_autocog_event(
-                                    event_type="improvement_rejected",
-                                    severity="medium",
-                                    summary=f"Rejected {hypothesis.hypothesis_id}",
-                                    impact=outcome.reason,
-                                    top_metrics=exp.to_metrics(),
-                                    artifact_path=(
-                                        str(assessment_path)
-                                        if assessment_path
-                                        else None
+                        if shadow_mode:
+                            # Shadow mode: log proposed rejection but do NOT apply
+                            shadow_proposed_actions.append(
+                                {
+                                    "action": "reject_candidate",
+                                    "candidate_id": hypothesis.hypothesis_id,
+                                    "reason": outcome.reason,
+                                    "version_id": outcome.version_id,
+                                    "metrics": exp.to_metrics(),
+                                    "target_component": getattr(
+                                        hypothesis, "target_component", "unknown"
                                     ),
-                                    run_id=run_id,
-                                    title="Improvement Candidate Rejected",
-                                    issue=(
-                                        "A candidate policy failed one or more promotion "
-                                        "criteria."
-                                    ),
-                                    intended_resolution=(
-                                        "Reject the candidate and preserve the current "
-                                        "champion policy."
-                                    ),
-                                    expected_improvement=(
-                                        "Prevents degraded strategy performance from being "
-                                        "deployed."
-                                    ),
-                                    outcome_status="failed",
-                                    evidence_reasoning=[
-                                        f"candidate={hypothesis.hypothesis_id}",
-                                        outcome.reason,
-                                    ],
-                                )
+                                }
                             )
+                            logger.info(
+                                "[SHADOW_MODE] Would reject candidate: %s (reason=%s)",
+                                hypothesis.hypothesis_id,
+                                outcome.reason,
+                            )
+                        else:
+                            # Live mode: apply the rejection
+                            self._record_candidate_outcome(
+                                governance_state=governance_state,
+                                hypothesis=hypothesis,
+                                outcome="rejected",
+                                reason=outcome.reason,
+                                evidence_signature=evidence_signature,
+                                version_id=outcome.version_id,
+                            )
+                            if notifier and notify_loop:
+                                notify_loop.run_until_complete(
+                                    notifier.notify_autocog_event(
+                                        event_type="improvement_rejected",
+                                        severity="medium",
+                                        summary=f"Rejected {hypothesis.hypothesis_id}",
+                                        impact=outcome.reason,
+                                        top_metrics=exp.to_metrics(),
+                                        artifact_path=(
+                                            str(assessment_path)
+                                            if assessment_path
+                                            else None
+                                        ),
+                                        run_id=run_id,
+                                        title="Improvement Candidate Rejected",
+                                        issue=(
+                                            "A candidate policy failed one or more promotion "
+                                            "criteria."
+                                        ),
+                                        intended_resolution=(
+                                            "Reject the candidate and preserve the current "
+                                            "champion policy."
+                                        ),
+                                        expected_improvement=(
+                                            "Prevents degraded strategy performance from being "
+                                            "deployed."
+                                        ),
+                                        outcome_status="failed",
+                                        evidence_reasoning=[
+                                            f"candidate={hypothesis.hypothesis_id}",
+                                            outcome.reason,
+                                        ],
+                                    )
+                                )
                 phase_durations["improvement_seconds"] = round(
                     time.monotonic() - phase_started, 3
                 )
@@ -1060,7 +1113,24 @@ class AutonomousCognitionFullCycle:
             result.completed_at = datetime.now(UTC).isoformat()
             cycle_path = self._persist_cycle_result(result)
             result.artifact_paths["cycle"] = str(cycle_path)
-            self._save_governance_state(governance_state)
+            # Generate shadow report if in shadow mode
+            if shadow_mode and shadow_proposed_actions:
+                shadow_report_path = self._persist_shadow_report(
+                    run_id=run_id,
+                    proposed_actions=shadow_proposed_actions,
+                    governance_state=governance_state,
+                )
+                result.artifact_paths["shadow_report"] = str(shadow_report_path)
+                result.metrics["shadow_proposed_actions_count"] = len(
+                    shadow_proposed_actions
+                )
+                logger.info(
+                    "[SHADOW_MODE] Shadow report generated with %d proposed actions",
+                    len(shadow_proposed_actions),
+                )
+            # Only save governance state in live mode; shadow mode doesn't modify state
+            if not shadow_mode:
+                self._save_governance_state(governance_state)
             if notifier and notify_loop:
                 # Check if notification should be suppressed via hash-based deduplication
                 should_notify = notifier.should_notify_for_cycle_event(
@@ -1961,6 +2031,83 @@ class AutonomousCognitionFullCycle:
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"{result.run_id}.json"
         out_path.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+        return out_path
+
+    def _persist_shadow_report(
+        self,
+        run_id: str,
+        proposed_actions: list[dict[str, Any]],
+        governance_state: dict[str, Any],
+    ) -> Path:
+        """Persist shadow mode report showing what WOULD have been done.
+
+        This report captures all proposed actions (promotions, rejections) that
+        were evaluated but NOT applied because shadow_mode=True.
+
+        Returns:
+            Path to the shadow report artifact
+        """
+        out_dir = self._REPO_ROOT / "_bmad-output/autocog/shadow_reports"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{run_id}_shadow.json"
+
+        # Separate actions by type for clarity
+        promotions = [a for a in proposed_actions if a["action"] == "promote_candidate"]
+        rejections = [a for a in proposed_actions if a["action"] == "reject_candidate"]
+
+        shadow_report = {
+            "run_id": run_id,
+            "generated_at": datetime.now(UTC).isoformat(),
+            "mode": "shadow",
+            "description": (
+                "This report shows actions that were evaluated during this cycle "
+                "but NOT applied because shadow_mode=True. These actions are safe "
+                "to review but require explicit opt-in to apply."
+            ),
+            "proposed_actions_summary": {
+                "total": len(proposed_actions),
+                "promotions_count": len(promotions),
+                "rejections_count": len(rejections),
+            },
+            "promotions_proposed": [
+                {
+                    "candidate_id": p["candidate_id"],
+                    "version_id": p.get("version_id"),
+                    "reason": p["reason"],
+                    "target_component": p.get("target_component", "unknown"),
+                    "metrics": p.get("metrics", {}),
+                }
+                for p in promotions
+            ],
+            "rejections_proposed": [
+                {
+                    "candidate_id": r["candidate_id"],
+                    "version_id": r.get("version_id"),
+                    "reason": r["reason"],
+                    "target_component": r.get("target_component", "unknown"),
+                    "metrics": r.get("metrics", {}),
+                }
+                for r in rejections
+            ],
+            "governance_state_snapshot": {
+                "candidate_registry_size": len(
+                    governance_state.get("candidate_registry", {})
+                ),
+                "belief_registry_size": len(
+                    governance_state.get("belief_registry", {})
+                ),
+                "pending_verifications_count": len(
+                    governance_state.get("pending_verifications", [])
+                ),
+            },
+            "safety_notice": (
+                "Actions in this report were NOT applied. To apply these actions, "
+                "run the cycle with shadow_mode=False."
+            ),
+        }
+
+        out_path.write_text(json.dumps(shadow_report, indent=2), encoding="utf-8")
+        logger.info("[SHADOW_MODE] Shadow report written to: %s", out_path)
         return out_path
 
     @staticmethod
