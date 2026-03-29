@@ -10,6 +10,8 @@ from typing import Any
 from autonomous_cognition.beliefs.models import Belief, BeliefConflict
 from governance.memory.contradiction import ContradictionDetector
 
+TEST_DOMAINS: frozenset[str] = frozenset({"debug", "test"})
+
 
 class BeliefConsistencyChecker:
     """Find contradictions between active beliefs with additional consistency checks."""
@@ -34,6 +36,16 @@ class BeliefConsistencyChecker:
         domain boundary validation, and evidence freshness validation.
         """
         logger = logging.getLogger(__name__)
+
+        original_count = len(beliefs)
+        beliefs = [b for b in beliefs if b.domain not in TEST_DOMAINS]
+        filtered_count = original_count - len(beliefs)
+        if filtered_count > 0:
+            logger.debug(
+                "[CONSISTENCY_CHECKER] Filtered out %d test/debug domain beliefs",
+                filtered_count,
+            )
+
         logger.info(
             "[CONSISTENCY_CHECKER] Starting consistency check for %d beliefs",
             len(beliefs),
@@ -259,6 +271,7 @@ class BeliefConsistencyChecker:
 
     def detect_conflicts(self, beliefs: list[Belief]) -> list[BeliefConflict]:
         """Detect conflicts among beliefs."""
+        beliefs = [b for b in beliefs if b.domain not in TEST_DOMAINS]
         conflicts: list[BeliefConflict] = []
         for i in range(len(beliefs)):
             for j in range(i + 1, len(beliefs)):
