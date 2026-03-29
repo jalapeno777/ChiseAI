@@ -60,10 +60,13 @@ def main() -> int:
 
         if args.notify_discord:
             notifier = DiscordNotifier()
+            # Fetch previous score from Redis for noise-reduction suppression
+            previous_score = controller._get_previous_score()
             asyncio.run(
                 notifier.notify_self_assessment(
                     artifact=artifact,
                     artifact_path=str(Path(artifact_path)),
+                    previous_score=previous_score,
                 )
             )
             asyncio.run(notifier.close())
