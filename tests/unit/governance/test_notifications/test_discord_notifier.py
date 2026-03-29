@@ -239,7 +239,7 @@ class TestDiscordNotifier:
                 with patch.object(notifier, "_mark_sent") as mark_sent:
                     result = await notifier.notify_autocog_event(
                         event_type="autocog_cycle_completed",
-                        severity="low",
+                        severity="medium",
                         summary="Cycle completed",
                         impact="All phases passed",
                         top_metrics={"promotions": 1},
@@ -826,8 +826,15 @@ class TestDiscordNotifier:
         )
 
     @pytest.mark.asyncio
-    async def test_notify_autocog_event_low_value_routes_to_digest(self, mock_client):
-        """Low-value autocog events go to digest buffer, not immediate send."""
+    async def test_notify_autocog_event_low_value_with_changes_routes_to_digest(
+        self, mock_client
+    ):
+        """Low-value autocog events with meaningful changes go to digest buffer.
+
+        A low-value event that HAS meaningful content (e.g. minor score drift
+        just below the immediate-send threshold but above the nothing-cycle
+        threshold) should still be buffered to digest — not suppressed.
+        """
         notifier = DiscordNotifier(client=mock_client, channel_id="123")
         with patch.object(notifier, "_is_enabled", return_value=True):
             with patch.object(notifier, "_is_duplicate", return_value=False):
@@ -841,7 +848,7 @@ class TestDiscordNotifier:
                             result = await notifier.notify_autocog_event(
                                 event_type="autocog_cycle_completed",
                                 severity="low",
-                                summary="Cycle completed, no changes",
+                                summary="Cycle completed, minor drift",
                                 impact="All phases passed",
                                 top_metrics={"promotions": 0},
                                 artifact_path=None,
@@ -849,6 +856,7 @@ class TestDiscordNotifier:
                                 decision_packet={
                                     "actions_taken": [],
                                     "has_errors": False,
+                                    "score_drift": 0.03,  # above nothing threshold (0.01), below immediate threshold (0.05)
                                 },
                             )
         assert result is True
@@ -944,10 +952,15 @@ class TestDiscordNotifier:
                                 event_type="autocog_cycle_completed",
                                 severity="low",
                                 summary="Buffer full trigger",
-                                impact="None",
+                                impact="Minor drift",
                                 top_metrics={},
                                 artifact_path=None,
                                 run_id="run-004",
+                                decision_packet={
+                                    "actions_taken": [],
+                                    "has_errors": False,
+                                    "score_drift": 0.03,
+                                },
                             )
         mock_flush.assert_called_once()
 
@@ -963,3 +976,265 @@ class TestDiscordNotifier:
         ) as mock_flush:
             await notifier.close()
         mock_flush.assert_called_once()
+
+
+class TestNothingCycleSuppression:
+    """Test complete suppression of nothing-cycles in autocog notifications.
+
+    A nothing-cycle is one where no errors, no actions, no score drift, and
+    no notable experiment results were produced. Such cycles should be
+    suppressed entirely — not sent immediately AND not buffered to digest.
+    """
+
+    @pytest.fixture
+    def mock_client(self):
+        client = Mock()
+        client.send_message = AsyncMock()
+        return client
+
+    def test_is_nothing_cycle_empty(self):
+        """A cycle with no errors, no actions, no drift, no experiments is nothing."""
+        assert DiscordNotifier.is_nothing_cycle() is True
+
+    def test_is_nothing_cycle_with_errors(self):
+        """A cycle with errors is NOT nothing."""
+        assert DiscordNotifier.is_nothing_cycle(has_errors=True) is False
+
+    def test_is_nothing_cycle_with_actions(self):
+        """A cycle with actions is NOT nothing."""
+        assert DiscordNotifier.is_nothing_cycle(actions_taken=3) is False
+
+    def test_is_nothing_cycle_with_score_drift(self):
+        """A cycle with score drift above threshold is NOT nothing."""
+        assert DiscordNotifier.is_nothing_cycle(score_drift=0.05) is False
+
+    def test_is_nothing_cycle_with_tiny_drift(self):
+        """A cycle with score drift below threshold IS nothing."""
+        assert DiscordNotifier.is_nothing_cycle(score_drift=0.005) is True
+
+    def test_is_nothing_cycle_with_notable_experiment(self):
+        """A cycle with notable experiment results is NOT nothing."""
+        assert (
+            DiscordNotifier.is_nothing_cycle(notable_experiment_results=True) is False
+        )
+
+    def test_is_nothing_cycle_custom_threshold(self):
+        """Custom threshold changes the nothing boundary."""
+        assert (
+            DiscordNotifier.is_nothing_cycle(
+                score_drift=0.005, score_drift_threshold=0.001
+            )
+            is False
+        )
+
+    @pytest.mark.asyncio
+    async def test_nothing_cycle_suppressed_completely(self, mock_client):
+        """A nothing-cycle returns False and nothing is sent or buffered."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(
+                    notifier, "add_to_digest", return_value=True
+                ) as mock_add:
+                    result = await notifier.notify_autocog_event(
+                        event_type="autocog_cycle_completed",
+                        severity="low",
+                        summary="Cycle completed, no changes",
+                        impact="All phases passed",
+                        top_metrics={"promotions": 0},
+                        artifact_path=None,
+                        run_id="nothing-run-001",
+                        decision_packet={
+                            "actions_taken": [],
+                            "has_errors": False,
+                        },
+                    )
+        assert result is False
+        # Neither sent immediately nor buffered to digest
+        mock_client.send_message.assert_not_called()
+        mock_add.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_error_cycle_not_suppressed(self, mock_client):
+        """A cycle with errors should still send immediately."""
+        mock_client.send_message.return_value = Mock(success=True)
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(notifier, "_mark_sent"):
+                    result = await notifier.notify_autocog_event(
+                        event_type="autocog_cycle_completed",
+                        severity="low",
+                        summary="Cycle had errors",
+                        impact="Backend timeout",
+                        top_metrics={"error_count": 2},
+                        artifact_path=None,
+                        run_id="error-run-001",
+                        decision_packet={
+                            "actions_taken": [],
+                            "has_errors": True,
+                        },
+                    )
+        assert result is True
+        mock_client.send_message.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_action_cycle_not_suppressed(self, mock_client):
+        """A cycle with actions_taken should still send immediately."""
+        mock_client.send_message.return_value = Mock(success=True)
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(notifier, "_mark_sent"):
+                    result = await notifier.notify_autocog_event(
+                        event_type="autocog_cycle_completed",
+                        severity="low",
+                        summary="Cycle with actions",
+                        impact="Updated 2 beliefs",
+                        top_metrics={"promotions": 2},
+                        artifact_path=None,
+                        run_id="action-run-001",
+                        decision_packet={
+                            "actions_taken": ["update_belief_42"],
+                            "has_errors": False,
+                        },
+                    )
+        assert result is True
+        mock_client.send_message.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_score_drift_cycle_not_suppressed(self, mock_client):
+        """A cycle with notable score drift should route to digest (low sev)."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(
+                    notifier, "add_to_digest", return_value=True
+                ) as mock_add:
+                    with patch.object(
+                        notifier, "should_flush_digest", return_value=False
+                    ):
+                        with patch.object(notifier, "_mark_sent"):
+                            result = await notifier.notify_autocog_event(
+                                event_type="autocog_cycle_completed",
+                                severity="low",
+                                summary="Cycle with score drift",
+                                impact="Score changed",
+                                top_metrics={"score_drift": 0.03},
+                                artifact_path=None,
+                                run_id="drift-run-001",
+                                decision_packet={
+                                    "actions_taken": [],
+                                    "has_errors": False,
+                                    "score_drift": 0.03,
+                                },
+                            )
+        assert result is True
+        mock_add.assert_called_once()
+        mock_client.send_message.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_notable_experiment_cycle_not_suppressed(self, mock_client):
+        """A cycle with notable experiment results should route to digest."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(
+                    notifier, "add_to_digest", return_value=True
+                ) as mock_add:
+                    with patch.object(
+                        notifier, "should_flush_digest", return_value=False
+                    ):
+                        with patch.object(notifier, "_mark_sent"):
+                            result = await notifier.notify_autocog_event(
+                                event_type="autocog_cycle_completed",
+                                severity="low",
+                                summary="Cycle with notable experiment",
+                                impact="New insight",
+                                top_metrics={},
+                                artifact_path=None,
+                                run_id="exp-run-001",
+                                decision_packet={
+                                    "actions_taken": [],
+                                    "has_errors": False,
+                                    "experiments": [
+                                        {"name": "exp1", "notable": True},
+                                    ],
+                                },
+                            )
+        assert result is True
+        mock_add.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_nothing_cycle_no_decision_packet(self, mock_client):
+        """A low-severity event without decision_packet is suppressed (nothing)."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(
+                    notifier, "add_to_digest", return_value=True
+                ) as mock_add:
+                    result = await notifier.notify_autocog_event(
+                        event_type="autocog_cycle_completed",
+                        severity="low",
+                        summary="Cycle completed",
+                        impact="None",
+                        top_metrics={},
+                        artifact_path=None,
+                        run_id="no-dp-run-001",
+                    )
+        # No decision_packet => no actions, no errors, no drift => nothing cycle
+        assert result is False
+        mock_client.send_message.assert_not_called()
+        mock_add.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_high_severity_not_suppressed(self, mock_client):
+        """High severity events are never nothing-cycles (bypass low-value)."""
+        mock_client.send_message.return_value = Mock(success=True)
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(notifier, "_mark_sent"):
+                    result = await notifier.notify_autocog_event(
+                        event_type="autocog_cycle_completed",
+                        severity="high",
+                        summary="High severity no-op",
+                        impact="None",
+                        top_metrics={},
+                        artifact_path=None,
+                        run_id="high-run-001",
+                    )
+        # High severity => not low-value => immediate send
+        assert result is True
+        mock_client.send_message.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_non_notable_experiment_still_nothing(self, mock_client):
+        """Experiments without notable=True don't prevent suppression."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(
+                    notifier, "add_to_digest", return_value=True
+                ) as mock_add:
+                    result = await notifier.notify_autocog_event(
+                        event_type="autocog_cycle_completed",
+                        severity="low",
+                        summary="Cycle with non-notable experiment",
+                        impact="None",
+                        top_metrics={},
+                        artifact_path=None,
+                        run_id="exp-notnotable-run-001",
+                        decision_packet={
+                            "actions_taken": [],
+                            "has_errors": False,
+                            "experiments": [
+                                {"name": "exp1", "notable": False},
+                                {"name": "exp2"},  # no notable key
+                            ],
+                        },
+                    )
+        assert result is False
+        mock_client.send_message.assert_not_called()
+        mock_add.assert_not_called()
