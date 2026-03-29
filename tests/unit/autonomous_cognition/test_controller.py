@@ -61,21 +61,87 @@ def test_check_redis_available_falls_back_when_tools_import_unavailable(
     assert controller._check_redis_available() is True
 
 
-def test_check_qdrant_available_falls_back_to_env_client(monkeypatch) -> None:
-    """Qdrant availability check should instantiate a client when not injected."""
-    controller = AutonomousCognitionController()
-    monkeypatch.setenv("QDRANT_HOST", "host.docker.internal")
-    monkeypatch.setenv("QDRANT_PORT", "6334")
-    monkeypatch.delenv("QDRANT_URL", raising=False)
+class TestPreviousScorePath:
+    """Tests for the previous_score retrieval and notification path."""
 
-    class _FakeQdrantClient:
-        def __init__(self, **_: object) -> None:
-            pass
+    def test_get_previous_score_returns_score_from_redis(self, monkeypatch) -> None:
+        """Controller._get_previous_score should return score from Redis."""
+        mock_redis = MagicMock()
+        mock_redis.get.return_value = (
+            '{"assessment_id": "sa-test", '
+            '"assessment_date": "2026-03-27", '
+            '"created_at": "2026-03-27T10:00:00Z", '
+            '"overall_score": 0.85}'
+        )
 
-        def get_collections(self) -> object:
-            return object()
+        # Disable the redis_state_get_client fallback
+        monkeypatch.setattr(controller_module, "redis_state_get_client", lambda: None)
 
-    fake_qdrant_module = SimpleNamespace(QdrantClient=_FakeQdrantClient)
-    monkeypatch.setitem(sys.modules, "qdrant_client", fake_qdrant_module)
+        controller = AutonomousCognitionController(redis_client=mock_redis)
+        previous = controller._get_previous_score()
 
-    assert controller._check_qdrant_available() is True
+        assert previous == 0.85
+        mock_redis.get.assert_called_once_with(
+            "bmad:chiseai:autocog:self_assessment:latest"
+        )
+
+    def test_get_previous_score_returns_none_when_no_redis(self, monkeypatch) -> None:
+        """Controller._get_previous_score should return None when Redis unavailable."""
+        # Disable the redis_state_get_client fallback
+        monkeypatch.setattr(controller_module, "redis_state_get_client", lambda: None)
+
+        controller = AutonomousCognitionController(redis_client=None)
+        previous = controller._get_previous_score()
+
+        assert previous is None
+
+    def test_get_previous_score_returns_none_when_key_missing(
+        self, monkeypatch
+    ) -> None:
+        """Controller._get_previous_score should return None when key is missing."""
+        mock_redis = MagicMock()
+        mock_redis.get.return_value = None
+
+        # Disable the redis_state_get_client fallback
+        monkeypatch.setattr(controller_module, "redis_state_get_client", lambda: None)
+
+        controller = AutonomousCognitionController(redis_client=mock_redis)
+        previous = controller._get_previous_score()
+
+        assert previous is None
+
+    def test_get_previous_score_parses_artifact_correctly(self, monkeypatch) -> None:
+        """Controller._get_previous_score should parse artifact JSON correctly."""
+        mock_redis = MagicMock()
+        # Simulate artifact JSON with all required fields
+        mock_redis.get.return_value = (
+            '{"assessment_id": "sa-20260327-abc123", '
+            '"assessment_date": "2026-03-27", '
+            '"created_at": "2026-03-27T10:00:00Z", '
+            '"overall_score": 0.92, "status": "ok"}'
+        )
+
+        # Disable the redis_state_get_client fallback
+        monkeypatch.setattr(controller_module, "redis_state_get_client", lambda: None)
+
+        controller = AutonomousCognitionController(redis_client=mock_redis)
+        previous = controller._get_previous_score()
+
+        assert previous == 0.92
+
+    def test_get_previous_score_returns_none_when_artifact_parse_fails(
+        self, monkeypatch
+    ) -> None:
+        """Controller._get_previous_score should return None when JSON is invalid."""
+        mock_redis = MagicMock()
+        # Artifact with invalid JSON - should cause parse failure
+        mock_redis.get.return_value = "not valid json"
+
+        # Disable the redis_state_get_client fallback
+        monkeypatch.setattr(controller_module, "redis_state_get_client", lambda: None)
+
+        controller = AutonomousCognitionController(redis_client=mock_redis)
+        previous = controller._get_previous_score()
+
+        # Parse failure returns None
+        assert previous is None

@@ -1094,30 +1094,16 @@ class AutonomousCognitionFullCycle:
         return index
 
     def _get_previous_assessment_score(self) -> float | None:
-        """Retrieve the overall_score from the most recent prior assessment.
+        """Retrieve overall_score from the previous assessment run via Redis.
 
         Returns:
-            The ``overall_score`` from the previous assessment file, or
-            None if no prior assessment exists or the score cannot be read.
+            The ``overall_score`` from the previous assessment stored in Redis,
+            or None if no prior assessment exists or Redis is unavailable.
+
+        Uses the same Redis key as AutonomousCognitionController
+        (bmad:chiseai:autocog:self_assessment:latest) for consistency.
         """
-        directory = Path("docs/governance/self_assessments")
-        if not directory.exists():
-            return None
-        files = sorted(
-            directory.glob("self_assessment_*.json"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True,
-        )
-        # Skip the most recent one (that's the current run's artifact).
-        # We want the one before it.
-        if len(files) < 2:
-            return None
-        try:
-            payload = json.loads(files[1].read_text(encoding="utf-8"))
-            score = payload.get("overall_score")
-            return float(score) if score is not None else None
-        except (OSError, json.JSONDecodeError, ValueError, TypeError):
-            return None
+        return self._controller._get_previous_score()
 
     def _recent_self_assessment_window(
         self, max_items: int = 5
