@@ -408,12 +408,13 @@ class SignalConsumer:
                                 self.allowed_symbols
                                 and token not in self.allowed_symbols
                             ):
-                                await self._update_signal_status(key, "consumed")
-                                await self._mark_signal_processed(signal.signal_id)
-                                logger.debug(
-                                    "Skipping signal %s for non-allowed symbol %s",
+                                logger.warning(
+                                    "SKIPPED signal %s for non-allowed symbol %s "
+                                    "(allowed=%s); signal NOT consumed — will retry "
+                                    "if symbol is later added to allowlist",
                                     signal.signal_id,
                                     token,
+                                    sorted(self.allowed_symbols),
                                 )
                                 continue
                             submitted = await self._submit_signal(signal, key)
@@ -501,10 +502,9 @@ class SignalConsumer:
             if symbol and self.symbol_throttle_seconds > 0:
                 last_ts = self._last_symbol_submit_ts.get(symbol, 0.0)
                 if (now_ts - last_ts) < self.symbol_throttle_seconds:
-                    await self._update_signal_status(redis_key, "consumed")
-                    await self._mark_signal_processed(signal.signal_id)
                     logger.info(
-                        "Skipped signal %s for %s due throttle (%.1fs < %.1fs)",
+                        "Skipped signal %s for %s due throttle (%.1fs < %.1fs); "
+                        "signal NOT consumed — will retry after cooldown",
                         signal.signal_id,
                         symbol,
                         now_ts - last_ts,
