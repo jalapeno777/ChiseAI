@@ -160,6 +160,8 @@ LESSON
 - added_utc: 2026-03-17T00:00:00Z
 ```
 
+<!-- DEPRECATED: Superseded by LESSON-20260318-worker-verification -->
+
 ```text
 LESSON
 - id: LESSON-20260317-truth-gate-validation
@@ -190,6 +192,7 @@ LESSON
 - expected_outcome: Zero false completion claims; all completions truth-verified
 - evidence_ref: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md, ML-TRAIN-001-closeout.md
 - added_utc: 2026-03-18T17:00:00Z
+- supersedes: LESSON-20260317-truth-gate-validation, LESSON-2026-03-18-001
 ```
 
 ```text
@@ -297,7 +300,7 @@ LESSON
 - added_utc: 2026-03-18T23:59:00Z
 ```
 
-<!-- DEPRECATED: Near-duplicate of LESSON-20260317-truth-gate-validation. Consolidate with supersession reference. -->
+<!-- DEPRECATED: Superseded by LESSON-20260318-worker-verification -->
 
 ```text
 LESSON
@@ -635,62 +638,200 @@ LESSON
 - added_utc: 2026-03-24T21:30:00Z
 ```
 
+```text
+LESSON
+- id: LESSON-20260324-ci-status-file-gate
+- context: Pipeline #2389 — cross-branch-verify, dependency-audit, and docker-live-check all exited 0 but wrote 1 to status files, causing ci-gate to fail.
 - trigger: Advisory-only CI steps write non-zero to .status files causing ci-gate failures
 - actionable_rule: When converting a CI step to advisory-only, BOTH the step exit code AND the .status file write must be 0. The ci-gate reads .status files, not step exit codes.
-- context: Pipeline #2389 — cross-branch-verify, dependency-audit, and docker-live-check all exited 0 but wrote 1 to status files, causing ci-gate to fail.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
 - expected_outcome: Advisory-only steps never cause ci-gate failures
 - evidence_ref: ST-CI-002, ci_gate.py FAST_REQUIRED list
 - added_utc: 2026-03-24T22:00:00Z
+```
 
+```text
+LESSON
+- id: LESSON-20260324-woodpecker-pull-schema
+- context: Pipeline #2386 failed with linter error "Additional property pull is not allowed" when pull was set at root level.
 - trigger: Woodpecker 2.8.3 rejects pull directive at pipeline root level
 - actionable_rule: Use per-step `pull: false` instead of root-level `pull: if-not-present` in .woodpecker/ci.yaml. Woodpecker 2.8.3 schema only allows pull at step level.
-- context: Pipeline #2386 failed with linter error "Additional property pull is not allowed" when pull was set at root level.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
 - expected_outcome: No YAML linter errors from Woodpecker CI config
 - evidence_ref: ST-CI-001, Woodpecker 2.8.3 schema validation
 - added_utc: 2026-03-24T22:00:00Z
+```
 
+```text
+LESSON
+- id: LESSON-20260324-docker-cli-ci-context
+- context: docker-live-check runs `docker inspect` which fails because the Woodpecker agent container doesn't have docker CLI.
 - trigger: CI agent containers lack docker binary causing docker-live-check to fail
 - actionable_rule: Scripts that shell out to docker must detect CI context (e.g., shutil.which("docker") or env var check) and skip gracefully with exit 0 rather than failing.
-- context: docker-live-check runs `docker inspect` which fails because the Woodpecker agent container doesn't have docker CLI.
+- applies_to:
+  - dev
+  - senior-dev
 - expected_outcome: Docker-dependent CI checks skip gracefully in agent containers
 - evidence_ref: ST-CI-002, scripts/ci/docker_live_check.py
 - added_utc: 2026-03-24T22:00:00Z
+```
 
+```text
+LESSON
+- id: LESSON-20260324-transitive-cve-rebuild
+- context: GHSA-5239-wwwm-4pmq (Pygments CVE) found by pip-audit as transitive dep. Initially suppressed with --ignore, then properly fixed by rebuilding image with pygments>=2.18.0.
 - trigger: Pygments transitive CVE in CI dependency-audit image
 - actionable_rule: For transitive dependency CVEs, rebuild the CI Docker image with updated deps rather than suppressing with --ignore flags. Suppression is technical debt that needs tracking.
-- context: GHSA-5239-wwwm-4pmq (Pygments CVE) found by pip-audit as transitive dep. Initially suppressed with --ignore, then properly fixed by rebuilding image with pygments>=2.18.0.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
 - expected_outcome: CVE fixes via image rebuild, not suppression flags
 - evidence_ref: ST-CI-003, infrastructure/docker/Dockerfile.ci-dependency-audit
 - added_utc: 2026-03-24T22:00:00Z
+```
 
 ## Sprint SP-2026-Q1-03 Lessons (2026-03-25)
 
-1. **Verify script/file existence before referencing in worker contracts**
-   - Always confirm files exist before dispatching workers to use them
+```text
+LESSON
+- id: LESSON-20260325-verify-script-existence
+- context: Always confirm files exist before dispatching workers to use them
+- trigger: Verify script/file existence before referencing in worker contracts
+- actionable_rule: Verify script/file existence before referencing in worker contracts
+- applies_to:
+  - jarvis
+  - all workers
+- expected_outcome: No worker dispatched to non-existent scripts or files
+- evidence_ref: Sprint SP-2026-Q1-03 closeout
+- added_utc: 2026-03-25T20:00:00Z
+```
 
-2. **Verify target strings exist with grep before dispatching; don't rely on stale line numbers**
-   - Code changes; line numbers become stale quickly
+```text
+LESSON
+- id: LESSON-20260325-verify-target-strings
+- context: Code changes; line numbers become stale quickly
+- trigger: Verify target strings exist with grep before dispatching; don't rely on stale line numbers
+- actionable_rule: Verify target strings exist with grep before dispatching; don't rely on stale line numbers
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: All dispatch targets verified with grep before use
+- evidence_ref: Sprint SP-2026-Q1-03 closeout
+- added_utc: 2026-03-25T20:00:00Z
+```
 
-3. **Before creating feature branches, check if target is already satisfied on main**
-   - Prevents redundant work and orphaned branches
+```text
+LESSON
+- id: LESSON-20260325-check-main-first
+- context: Prevents redundant work and orphaned branches
+- trigger: Before creating feature branches, check if target is already satisfied on main
+- actionable_rule: Before creating feature branches, check if target is already satisfied on main
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: No redundant feature branches; all work builds on current main
+- evidence_ref: Sprint SP-2026-Q1-03 closeout
+- added_utc: 2026-03-25T20:00:00Z
+```
 
-4. **Story ID patterns (I-\*) don't match gitea_pr_automerge.py validation — add to accepted patterns**
-   - The automerge script needs to accept I-\* pattern for infrastructure stories
+```text
+LESSON
+- id: LESSON-20260325-story-id-patterns
+- context: The automerge script needs to accept I-* pattern for infrastructure stories
+- trigger: Story ID patterns (I-*) don't match gitea_pr_automerge.py validation
+- actionable_rule: Add I-* pattern to accepted story ID patterns in gitea_pr_automerge.py
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: I-* story IDs accepted by automerge validation
+- evidence_ref: Sprint SP-2026-Q1-03 closeout, gitea_pr_automerge.py
+- added_utc: 2026-03-25T20:00:00Z
+```
 
-5. **Woodpecker pipelines can get stuck in "running" state — needs watchdog**
-   - Monitor for stuck pipelines and implement cleanup
+```text
+LESSON
+- id: LESSON-20260325-woodpecker-watchdog
+- context: Monitor for stuck pipelines and implement cleanup
+- trigger: Woodpecker pipelines can get stuck in "running" state
+- actionable_rule: Implement watchdog to detect and clean up stuck Woodpecker pipelines
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: No stuck pipelines; automated detection and cleanup
+- evidence_ref: Sprint SP-2026-Q1-03 closeout
+- added_utc: 2026-03-25T20:00:00Z
+```
 
-6. **Grafana runs on port 3001 (not 3000) in this environment**
-   - Environment-specific configuration detail
+```text
+LESSON
+- id: LESSON-20260325-grafana-port-config
+- context: Environment-specific configuration detail
+- trigger: Grafana runs on port 3001 (not 3000) in this environment
+- actionable_rule: Always verify Grafana port configuration in deployment environment
+- applies_to:
+  - dev
+  - senior-dev
+  - on-call
+- expected_outcome: Correct Grafana port used in all environments
+- evidence_ref: Sprint SP-2026-Q1-03 closeout
+- added_utc: 2026-03-25T20:00:00Z
+```
 
-7. **InfluxDB v2 uses bucket-level retention (not named policies like v1)**
-   - API differences between versions matter for implementation
+```text
+LESSON
+- id: LESSON-20260325-influxdb-retention
+- context: API differences between versions matter for implementation
+- trigger: InfluxDB v2 uses bucket-level retention (not named policies like v1)
+- actionable_rule: Use bucket-level retention policies for InfluxDB v2; not named policies
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: Correct InfluxDB retention configuration per version
+- evidence_ref: Sprint SP-2026-Q1-03 closeout
+- added_utc: 2026-03-25T20:00:00Z
+```
 
-8. **When `ci-gate` fails with `lint.status=123`, inspect the Woodpecker bundle before changing logic**
-   - In pipeline 2488 the real failure was Black formatting drift, not a broken CI control path; `_bmad-output/ci/woodpecker/<pipeline>/raw/ci-gate.log` exposed the exact files immediately.
+```text
+LESSON
+- id: LESSON-20260325-ci-gate-diagnosis
+- context: In pipeline 2488 the real failure was Black formatting drift, not a broken CI control path
+- trigger: When ci-gate fails with lint.status=123, inspect the Woodpecker bundle before changing logic
+- actionable_rule: When ci-gate fails with lint.status=123, inspect the Woodpecker bundle before changing logic
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Correct diagnosis of ci-gate failures; no unnecessary logic changes
+- evidence_ref: Pipeline 2488, _bmad-output/ci/woodpecker/<pipeline>/raw/ci-gate.log
+- added_utc: 2026-03-25T20:00:00Z
+```
 
-9. **After CI-oriented Python edits, run targeted `black --check` on touched files before pushing to main**
-   - Pipeline 2488 failed only because four touched files were not Black-formatted; targeted formatting was enough to turn follow-up pipeline 2489 green.
+```text
+LESSON
+- id: LESSON-20260325-ci-python-formatting
+- context: Pipeline 2488 failed only because four touched files were not Black-formatted
+- trigger: After CI-oriented Python edits, run targeted black --check on touched files before pushing to main
+- actionable_rule: After CI-oriented Python edits, run targeted black --check on touched files before pushing to main
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+- expected_outcome: All Python edits Black-formatted before push; no formatting-related CI failures
+- evidence_ref: Pipeline 2488, Pipeline 2489
+- added_utc: 2026-03-25T20:00:00Z
+```
 
 ```text
 LESSON
