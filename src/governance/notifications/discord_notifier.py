@@ -1134,6 +1134,36 @@ class DiscordNotifier:
             return False
         return not (score_drift is not None and abs(score_drift) >= 0.05)
 
+    @staticmethod
+    def is_nothing_cycle(
+        *,
+        has_errors: bool = False,
+        actions_taken: int = 0,
+        score_drift: float | None = None,
+        score_drift_threshold: float = DEFAULT_NOTIFICATION_SCORE_THRESHOLD,
+        notable_experiment_results: bool = False,
+    ) -> bool:
+        """Determine if a cycle produced nothing meaningful to report.
+
+        A "nothing cycle" is one where ALL of the following are true:
+        - no errors occurred
+        - no actions were taken
+        - score drift is absent or below threshold
+        - no experiment produced notable results
+
+        Nothing cycles should be suppressed entirely — not even sent to the
+        digest buffer — because they represent routine, uneventful runs.
+        """
+        if has_errors:
+            return False
+        if actions_taken > 0:
+            return False
+        if notable_experiment_results:
+            return False
+        return not (
+            score_drift is not None and abs(score_drift) > score_drift_threshold
+        )
+
     async def notify_autocog_event(
         self,
         event_type: str,
@@ -1188,6 +1218,16 @@ class DiscordNotifier:
                 except (TypeError, ValueError):
                     score_drift = None
 
+        # Extract notable_experiment_results from decision_packet
+        notable_experiment_results = False
+        if decision_packet:
+            experiments = decision_packet.get("experiments")
+            if isinstance(experiments, list):
+                notable_experiment_results = any(
+                    isinstance(exp, dict) and exp.get("notable", False)
+                    for exp in experiments
+                )
+
         is_low_value = self._is_low_value_event(
             severity=severity,
             actions_taken=actions_taken,
@@ -1196,6 +1236,21 @@ class DiscordNotifier:
         )
 
         if is_low_value:
+            # Final gate: suppress entirely if nothing meaningful happened
+            is_nothing = DiscordNotifier.is_nothing_cycle(
+                has_errors=has_errors,
+                actions_taken=actions_taken,
+                score_drift=score_drift,
+                notable_experiment_results=notable_experiment_results,
+            )
+            if is_nothing:
+                logger.debug(
+                    "Nothing-cycle suppression: no errors, no actions, "
+                    "no score drift, no notable experiments (run_id=%s)",
+                    run_id,
+                )
+                return False
+
             # Route to digest buffer instead of immediate send
             event_dict: dict[str, Any] = {
                 "event_type": event_type,
