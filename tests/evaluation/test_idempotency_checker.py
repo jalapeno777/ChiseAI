@@ -3,14 +3,13 @@ Unit tests for the idempotency_checker module.
 """
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from scripts.evaluation.idempotency_checker import (
-    IdempotencyChecker,
     CADENCE_TTL_SECONDS,
+    IdempotencyChecker,
 )
 
 
@@ -159,7 +158,7 @@ class TestIdempotencyCheckerShouldRun:
         mock_redis.exists.return_value = True
         mock_redis.get.return_value = json.dumps(
             {
-                "timestamp": datetime.now(timezone.utc).timestamp(),
+                "timestamp": datetime.now(UTC).timestamp(),
                 "success": True,
                 "error": None,
             }
@@ -176,7 +175,7 @@ class TestIdempotencyCheckerShouldRun:
         mock_redis.exists.return_value = True
         mock_redis.get.return_value = json.dumps(
             {
-                "timestamp": datetime.now(timezone.utc).timestamp(),
+                "timestamp": datetime.now(UTC).timestamp(),
                 "success": False,
                 "error": "Previous error occurred",
             }
@@ -278,7 +277,7 @@ class TestIdempotencyCheckerGetLastRun:
     def test_get_last_run_returns_timestamp(self):
         """Test that get_last_run returns the timestamp from Redis."""
         mock_redis = MagicMock()
-        expected_timestamp = datetime.now(timezone.utc).timestamp()
+        expected_timestamp = datetime.now(UTC).timestamp()
         mock_redis.get.return_value = json.dumps(
             {
                 "timestamp": expected_timestamp,
@@ -365,7 +364,7 @@ class TestIdempotencyCheckerTTL:
             "monthly": 2592000,
         }
 
-        assert CADENCE_TTL_SECONDS == expected
+        assert expected == CADENCE_TTL_SECONDS
 
     def test_get_cadence_ttl_hourly(self):
         """Test TTL for hourly cadence."""
