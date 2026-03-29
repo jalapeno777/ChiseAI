@@ -54,6 +54,10 @@ scheduling:
       schedule: "0 2 * * 1"
       description: "Weekly autonomy tune on Monday at 02:00 UTC"
       job_id: autocog.autonomy_tune.weekly
+    - name: autocog-summary-weekly
+      schedule: "0 4 * * 1"
+      description: "Weekly summary report generation on Monday at 04:00 UTC"
+      job_id: autocog.weekly_summary
 
 # Safety Guardrails (immutable via auto-actions)
 safety:
