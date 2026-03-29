@@ -32,7 +32,7 @@ def _get_classifier():
 def _get_pivot_detector():
     from src.market_analysis.structure.swing_pivot import SwingPivotDetector
 
-    return SwingPivotDetector(window_size=3, min_window_size=2, max_window_size=10)
+    return SwingPivotDetector(window_size=2, min_window_size=2, max_window_size=10)
 
 
 # ---------------------------------------------------------------------------
@@ -49,8 +49,8 @@ def _evaluate_bos_choch_scenario(scenario: dict[str, Any]) -> bool:
     expected = scenario["expected"]
     ohlcv_data = ohlcv_from_list(scenario["ohlcv"])
 
-    # Need at least window_size * 2 + 1 candles for swing pivot detection
-    if len(ohlcv_data) < 7:
+    # Need at least window_size * 2 + 1 candles for swing pivot detection (window_size=2 → 5 bars)
+    if len(ohlcv_data) < 5:
         # If we expect no break and have insufficient data, that's correct
         return not expected.get("bos") and not expected.get("choch")
 
