@@ -1110,6 +1110,30 @@ class DiscordNotifier:
             logger.error(f"Failed to send self-assessment notification: {e}")
             return False
 
+    @staticmethod
+    def _is_low_value_event(
+        severity: str,
+        actions_taken: int = 0,
+        has_errors: bool = False,
+        score_drift: float | None = None,
+    ) -> bool:
+        """Determine if an autocog event is low-value and should be digested.
+
+        Low-value criteria:
+        - severity is 'low' (or 'info')
+        - no errors reported
+        - no actions were taken
+        - score drift is minor (< 0.05) or not available
+        """
+        sev = (severity or "low").lower()
+        if sev not in ("low", "info"):
+            return False
+        if has_errors:
+            return False
+        if actions_taken > 0:
+            return False
+        return not (score_drift is not None and abs(score_drift) >= 0.05)
+
     async def notify_autocog_event(
         self,
         event_type: str,
@@ -1127,7 +1151,11 @@ class DiscordNotifier:
         evidence_reasoning: list[str] | None = None,
         decision_packet: dict[str, Any] | None = None,
     ) -> bool:
-        """Send autonomous cognition event notification to Discord."""
+        """Send autonomous cognition event notification to Discord.
+
+        Low-value events (low severity, no errors, no actions, minor drift)
+        are buffered into a digest instead of sent immediately.
+        """
         if not self._is_enabled():
             logger.info("Discord notifications disabled by feature flag")
             return False
@@ -1136,6 +1164,63 @@ class DiscordNotifier:
         if self._is_duplicate(event_id):
             logger.info(f"Skipping duplicate autocog notification: {event_id}")
             return False
+
+        # Extract low-value heuristics from decision_packet or outcome_status
+        actions_taken = 0
+        has_errors = False
+        score_drift = None
+
+        if decision_packet:
+            actions_taken = len(
+                decision_packet.get("actions_taken", [])
+                if isinstance(decision_packet.get("actions_taken"), list)
+                else []
+            )
+            has_errors = bool(
+                decision_packet.get("has_errors", False)
+                or decision_packet.get("error_count", 0) > 0
+            )
+            # Extract score drift from metrics if available
+            drift_val = decision_packet.get("score_drift")
+            if drift_val is not None:
+                try:
+                    score_drift = float(drift_val)
+                except (TypeError, ValueError):
+                    score_drift = None
+
+        is_low_value = self._is_low_value_event(
+            severity=severity,
+            actions_taken=actions_taken,
+            has_errors=has_errors,
+            score_drift=score_drift,
+        )
+
+        if is_low_value:
+            # Route to digest buffer instead of immediate send
+            event_dict: dict[str, Any] = {
+                "event_type": event_type,
+                "severity": severity,
+                "summary": summary,
+                "impact": impact,
+                "top_metrics": top_metrics or {},
+                "artifact_path": artifact_path,
+                "run_id": run_id,
+                "title": title,
+                "issue": issue,
+            }
+            buffered = self.add_to_digest(event_dict)
+            if buffered:
+                logger.info(
+                    "Routed low-value autocog event to digest buffer: %s (run_id=%s)",
+                    event_type,
+                    run_id,
+                )
+                self._mark_sent(event_id)
+                # Flush if buffer is full or interval elapsed
+                if self.should_flush_digest():
+                    await self.send_digest()
+                return True
+            # Fall through to immediate send if add_to_digest rejected
 
         try:
             from .formatters import AutocogEventFormatter
@@ -1173,7 +1258,14 @@ class DiscordNotifier:
             return False
 
     async def close(self) -> None:
-        """Close owned Discord client resources."""
+        """Close owned Discord client resources and flush pending digest."""
+        # Flush any buffered low-severity events before closing
+        if self._low_severity_buffer:
+            try:
+                await self.send_digest()
+            except Exception as e:
+                logger.debug("Digest flush on close skipped: %s", e)
+
         if not self._owns_client or self.client is None:
             return
         try:

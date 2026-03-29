@@ -741,3 +741,225 @@ class TestDiscordNotifier:
                     previous_score=None,
                 )
                 assert result is True  # First run
+
+    # -- Digest routing for autocog events --
+
+    def test_is_low_value_event_basic_low(self):
+        """Low severity, no errors, no actions, no drift -> low value."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="low", actions_taken=0, has_errors=False, score_drift=None
+            )
+            is True
+        )
+
+    def test_is_low_value_event_info(self):
+        """Info severity is also low value."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="info", actions_taken=0, has_errors=False, score_drift=None
+            )
+            is True
+        )
+
+    def test_is_low_value_event_high_severity(self):
+        """High severity is NOT low value regardless of other factors."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="high", actions_taken=0, has_errors=False, score_drift=None
+            )
+            is False
+        )
+
+    def test_is_low_value_event_critical_severity(self):
+        """Critical severity is NOT low value."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="critical", actions_taken=0, has_errors=False, score_drift=None
+            )
+            is False
+        )
+
+    def test_is_low_value_event_with_errors(self):
+        """Events with errors are NOT low value even if low severity."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="low", actions_taken=0, has_errors=True, score_drift=None
+            )
+            is False
+        )
+
+    def test_is_low_value_event_with_actions(self):
+        """Events with actions taken are NOT low value."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="low", actions_taken=3, has_errors=False, score_drift=None
+            )
+            is False
+        )
+
+    def test_is_low_value_event_large_drift(self):
+        """Events with large score drift are NOT low value."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="low", actions_taken=0, has_errors=False, score_drift=0.10
+            )
+            is False
+        )
+
+    def test_is_low_value_event_minor_drift(self):
+        """Events with minor score drift (< 0.05) ARE low value."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="low", actions_taken=0, has_errors=False, score_drift=0.03
+            )
+            is True
+        )
+
+    def test_is_low_value_event_negative_drift(self):
+        """Negative drift magnitude matters, not direction."""
+        assert (
+            DiscordNotifier._is_low_value_event(
+                severity="low", actions_taken=0, has_errors=False, score_drift=-0.10
+            )
+            is False
+        )
+
+    @pytest.mark.asyncio
+    async def test_notify_autocog_event_low_value_routes_to_digest(self, mock_client):
+        """Low-value autocog events go to digest buffer, not immediate send."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(
+                    notifier, "add_to_digest", return_value=True
+                ) as mock_add:
+                    with patch.object(
+                        notifier, "should_flush_digest", return_value=False
+                    ):
+                        with patch.object(notifier, "_mark_sent") as mark_sent:
+                            result = await notifier.notify_autocog_event(
+                                event_type="autocog_cycle_completed",
+                                severity="low",
+                                summary="Cycle completed, no changes",
+                                impact="All phases passed",
+                                top_metrics={"promotions": 0},
+                                artifact_path=None,
+                                run_id="run-001",
+                                decision_packet={
+                                    "actions_taken": [],
+                                    "has_errors": False,
+                                },
+                            )
+        assert result is True
+        mock_add.assert_called_once()
+        call_args = mock_add.call_args[0][0]
+        assert call_args["event_type"] == "autocog_cycle_completed"
+        assert call_args["severity"] == "low"
+        assert call_args["run_id"] == "run-001"
+        # Should NOT have called send (immediate path)
+        mock_client.send_message.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_notify_autocog_event_high_severity_sends_immediately(
+        self, mock_client
+    ):
+        """High severity events bypass digest and send immediately."""
+        mock_client.send_message.return_value = Mock(success=True)
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(notifier, "_mark_sent") as mark_sent:
+                    with patch.object(
+                        notifier, "add_to_digest", return_value=True
+                    ) as mock_add:
+                        result = await notifier.notify_autocog_event(
+                            event_type="autocog_cycle_completed",
+                            severity="high",
+                            summary="Critical finding",
+                            impact="Requires attention",
+                            top_metrics={"promotions": 2},
+                            artifact_path=None,
+                            run_id="run-002",
+                        )
+        assert result is True
+        # High severity should NOT go to digest
+        mock_add.assert_not_called()
+        mock_client.send_message.assert_called_once()
+        mark_sent.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_notify_autocog_event_with_actions_sends_immediately(
+        self, mock_client
+    ):
+        """Low severity events with actions_taken > 0 send immediately."""
+        mock_client.send_message.return_value = Mock(success=True)
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(notifier, "_mark_sent") as mark_sent:
+                    with patch.object(
+                        notifier, "add_to_digest", return_value=True
+                    ) as mock_add:
+                        result = await notifier.notify_autocog_event(
+                            event_type="autocog_cycle_completed",
+                            severity="low",
+                            summary="Cycle with actions",
+                            impact="Two beliefs updated",
+                            top_metrics={"promotions": 2},
+                            artifact_path=None,
+                            run_id="run-003",
+                            decision_packet={
+                                "actions_taken": [
+                                    "update_belief_42",
+                                    "update_belief_43",
+                                ],
+                                "has_errors": False,
+                            },
+                        )
+        assert result is True
+        # Has actions -> immediate send, not digest
+        mock_add.assert_not_called()
+        mock_client.send_message.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_notify_autocog_event_flush_on_buffer_full(self, mock_client):
+        """Digest flushes when buffer reaches max items."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        # Fill buffer to max
+        for i in range(notifier._digest_max_items):
+            notifier._low_severity_buffer.append({"event_type": f"event-{i}"})
+
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(notifier, "add_to_digest", return_value=True):
+                    with patch.object(
+                        notifier,
+                        "send_digest",
+                        new_callable=AsyncMock,
+                        return_value=True,
+                    ) as mock_flush:
+                        with patch.object(notifier, "_mark_sent"):
+                            await notifier.notify_autocog_event(
+                                event_type="autocog_cycle_completed",
+                                severity="low",
+                                summary="Buffer full trigger",
+                                impact="None",
+                                top_metrics={},
+                                artifact_path=None,
+                                run_id="run-004",
+                            )
+        mock_flush.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_close_flushes_digest(self, mock_client):
+        """close() flushes any buffered digest events."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        notifier._low_severity_buffer.append(
+            {"event_type": "pending-event", "severity": "low"}
+        )
+        with patch.object(
+            notifier, "send_digest", new_callable=AsyncMock, return_value=True
+        ) as mock_flush:
+            await notifier.close()
+        mock_flush.assert_called_once()
