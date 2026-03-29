@@ -35,13 +35,15 @@ random.seed(42)
 
 
 def make_candle(
-    ts: int, o: float, h: float, l: float, c: float, v: float = 1000.0
+    ts: int, o: float, h: float, low: float, c: float, v: float = 1000.0
 ) -> list:
-    """Create a valid OHLCV candle array [ts, o, h, l, c, v]."""
+    """Create a valid OHLCV candle array [ts, o, h, low, c, v]."""
     assert h >= o and h >= c, f"High must be >= open and close: h={h} o={o} c={c}"
-    assert l <= o and l <= c, f"Low must be <= open and close: l={l} o={o} c={c}"
-    assert h > l, f"High must be > low: h={h} l={l}"
-    return [ts, round(o, 2), round(h, 2), round(l, 2), round(c, 2), round(v, 1)]
+    assert (
+        low <= o and low <= c
+    ), f"Low must be <= open and close: low={low} o={o} c={c}"
+    assert h > low, f"High must be > low: h={h} low={low}"
+    return [ts, round(o, 2), round(h, 2), round(low, 2), round(c, 2), round(v, 1)]
 
 
 def make_swing_high_candles(
@@ -68,16 +70,16 @@ def make_swing_high_candles(
         o = mid - noise * random.uniform(0, 1)
         c = mid + noise * random.uniform(0, 1)
         h = max(o, c) + noise * random.uniform(0.5, 1)
-        l = min(o, c) - noise * random.uniform(0.5, 1)
-        candles.append(make_candle(ts, o, h, l, c, random.randint(800, 1500)))
+        low = min(o, c) - noise * random.uniform(0.5, 1)
+        candles.append(make_candle(ts, o, h, low, c, random.randint(800, 1500)))
         ts += 60000
 
     # Peak candle
     o = peak_price - noise * random.uniform(0, 0.5)
     c = peak_price + noise * random.uniform(0, 0.5)
     h = max(o, c) + noise * random.uniform(0.5, 1)
-    l = min(o, c) - noise * random.uniform(0.5, 1)
-    candles.append(make_candle(ts, o, h, l, c, random.randint(1200, 2000)))
+    low = min(o, c) - noise * random.uniform(0.5, 1)
+    candles.append(make_candle(ts, o, h, low, c, random.randint(1200, 2000)))
     ts += 60000
 
     # Decline: drop from peak to decline_end
@@ -87,8 +89,8 @@ def make_swing_high_candles(
         o = mid + noise * random.uniform(0, 1)
         c = mid - noise * random.uniform(0, 1)
         h = max(o, c) + noise * random.uniform(0.5, 1)
-        l = min(o, c) - noise * random.uniform(0.5, 1)
-        candles.append(make_candle(ts, o, h, l, c, random.randint(800, 1500)))
+        low = min(o, c) - noise * random.uniform(0.5, 1)
+        candles.append(make_candle(ts, o, h, low, c, random.randint(800, 1500)))
         ts += 60000
 
     return candles
@@ -118,16 +120,16 @@ def make_swing_low_candles(
         o = mid + noise * random.uniform(0, 1)
         c = mid - noise * random.uniform(0, 1)
         h = max(o, c) + noise * random.uniform(0.5, 1)
-        l = min(o, c) - noise * random.uniform(0.5, 1)
-        candles.append(make_candle(ts, o, h, l, c, random.randint(800, 1500)))
+        low = min(o, c) - noise * random.uniform(0.5, 1)
+        candles.append(make_candle(ts, o, h, low, c, random.randint(800, 1500)))
         ts += 60000
 
     # Trough candle
     o = trough_price + noise * random.uniform(0, 0.5)
     c = trough_price - noise * random.uniform(0, 0.5)
     h = max(o, c) + noise * random.uniform(0.5, 1)
-    l = min(o, c) - noise * random.uniform(0.5, 1)
-    candles.append(make_candle(ts, o, h, l, c, random.randint(1200, 2000)))
+    low = min(o, c) - noise * random.uniform(0.5, 1)
+    candles.append(make_candle(ts, o, h, low, c, random.randint(1200, 2000)))
     ts += 60000
 
     # Recovery: rise from trough to recover_end
@@ -137,8 +139,8 @@ def make_swing_low_candles(
         o = mid - noise * random.uniform(0, 1)
         c = mid + noise * random.uniform(0, 1)
         h = max(o, c) + noise * random.uniform(0.5, 1)
-        l = min(o, c) - noise * random.uniform(0.5, 1)
-        candles.append(make_candle(ts, o, h, l, c, random.randint(800, 1500)))
+        low = min(o, c) - noise * random.uniform(0.5, 1)
+        candles.append(make_candle(ts, o, h, low, c, random.randint(800, 1500)))
         ts += 60000
 
     return candles
@@ -226,8 +228,8 @@ def generate_uptrend_bos(
         o = new_price - swing_size * 0.02
         c = new_price + swing_size * 0.02
         h = max(o, c) + swing_size * 0.01
-        l = min(o, c) - swing_size * 0.01
-        candles.append(make_candle(ts_offset, o, h, l, c, random.randint(800, 1500)))
+        low = min(o, c) - swing_size * 0.01
+        candles.append(make_candle(ts_offset, o, h, low, c, random.randint(800, 1500)))
         ts_offset += 60000
 
     return candles[:n_candles]
@@ -317,8 +319,8 @@ def generate_downtrend_bos(
         o = new_price + swing_size * 0.02
         c = new_price - swing_size * 0.02
         h = max(o, c) + swing_size * 0.01
-        l = min(o, c) - swing_size * 0.01
-        candles.append(make_candle(ts_offset, o, h, l, c, random.randint(800, 1500)))
+        low = min(o, c) - swing_size * 0.01
+        candles.append(make_candle(ts_offset, o, h, low, c, random.randint(800, 1500)))
         ts_offset += 60000
 
     return candles[:n_candles]
@@ -418,8 +420,8 @@ def generate_bullish_choch(
         o = price + swing_size * 0.05
         c = price + swing_size * 0.15
         h = max(o, c) + swing_size * 0.05
-        l = min(o, c) - swing_size * 0.02
-        candles.append(make_candle(ts_offset, o, h, l, c, random.randint(1000, 2500)))
+        low = min(o, c) - swing_size * 0.02
+        candles.append(make_candle(ts_offset, o, h, low, c, random.randint(1000, 2500)))
         ts_offset += 60000
 
     # Create reversal swing high ABOVE the last swing low
@@ -443,8 +445,8 @@ def generate_bullish_choch(
         o = new_price - swing_size * 0.02
         c = new_price + swing_size * 0.02
         h = max(o, c) + swing_size * 0.01
-        l = min(o, c) - swing_size * 0.01
-        candles.append(make_candle(ts_offset, o, h, l, c, random.randint(800, 1500)))
+        low = min(o, c) - swing_size * 0.01
+        candles.append(make_candle(ts_offset, o, h, low, c, random.randint(800, 1500)))
         ts_offset += 60000
 
     return candles[:n_candles]
@@ -545,8 +547,8 @@ def generate_bearish_choch(
         o = price + swing_size * 0.05
         c = price - swing_size * 0.15
         h = max(o, c) + swing_size * 0.02
-        l = min(o, c) - swing_size * 0.05
-        candles.append(make_candle(ts_offset, o, h, l, c, random.randint(1000, 2500)))
+        low = min(o, c) - swing_size * 0.05
+        candles.append(make_candle(ts_offset, o, h, low, c, random.randint(1000, 2500)))
         ts_offset += 60000
 
     # Create reversal swing low BELOW the last swing high
@@ -592,8 +594,8 @@ def generate_bearish_choch(
         o = new_price + swing_size * 0.02
         c = new_price - swing_size * 0.02
         h = max(o, c) + swing_size * 0.01
-        l = min(o, c) - swing_size * 0.01
-        candles.append(make_candle(ts_offset, o, h, l, c, random.randint(800, 1500)))
+        low = min(o, c) - swing_size * 0.01
+        candles.append(make_candle(ts_offset, o, h, low, c, random.randint(800, 1500)))
         ts_offset += 60000
 
     return candles[:n_candles]
@@ -633,21 +635,21 @@ def generate_range_no_break(
         o = price + random.uniform(-0.1, 0.1)
         c = price + random.uniform(-0.1, 0.1)
         h = max(o, c) + random.uniform(0.05, 0.2)
-        l = min(o, c) - random.uniform(0.05, 0.2)
+        low = min(o, c) - random.uniform(0.05, 0.2)
 
         # Hard clamp to range with buffer
         h = min(h, ceiling - 0.1)
-        l = max(l, floor + 0.1)
-        # Ensure h > l after rounding (add spread if needed)
-        if round(h, 2) <= round(l, 2):
-            mid = (h + l) / 2
+        clamped_low = max(low, floor + 0.1)
+        # Ensure h > low after rounding (add spread if needed)
+        if round(h, 2) <= round(clamped_low, 2):
+            mid = (h + low) / 2
             h = mid + 0.05
-            l = mid - 0.05
+            low = mid - 0.05
         # Now clamp o and c to be strictly between l and h
-        o = min(max(o, l + 0.01), h - 0.01)
-        c = min(max(c, l + 0.01), h - 0.01)
+        o = min(max(o, low + 0.01), h - 0.01)
+        c = min(max(c, low + 0.01), h - 0.01)
 
-        candles.append(make_candle(ts, o, h, l, c, random.randint(500, 1200)))
+        candles.append(make_candle(ts, o, h, low, c, random.randint(500, 1200)))
         ts += 60000
 
     return candles[:n_candles]
@@ -956,13 +958,13 @@ def validate_scenarios(scenarios: list[dict]) -> list[str]:
             if len(candle) != 6:
                 issues.append(f"{sid}: candle {i} has {len(candle)} values (need 6)")
                 continue
-            ts, o, h, l, c, v = candle
-            if h <= l:
-                issues.append(f"{sid}: candle {i} h={h} <= l={l}")
+            ts, o, h, low, c, v = candle
+            if h <= low:
+                issues.append(f"{sid}: candle {i} h={h} <= low={low}")
             if h < o or h < c:
                 issues.append(f"{sid}: candle {i} h={h} < o={o} or c={c}")
-            if l > o or l > c:
-                issues.append(f"{sid}: candle {i} l={l} > o={o} or c={c}")
+            if low > o or low > c:
+                issues.append(f"{sid}: candle {i} low={low} > o={o} or c={c}")
             if v <= 0:
                 issues.append(f"{sid}: candle {i} volume={v} <= 0")
     return issues
