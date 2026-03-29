@@ -1,0 +1,33 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install additional paper trading dependencies
+RUN pip install --no-cache-dir \
+    psycopg2-binary \
+    asyncpg
+
+# Copy source code
+COPY scripts/ ./scripts/
+COPY src/ ./src/
+
+# Create log directory
+RUN mkdir -p /var/log/chiseai && chmod 755 /var/log/chiseai
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src:/app/scripts
+
+# Run signal consumer
+CMD ["python3", "scripts/run_signal_consumer.py"]
