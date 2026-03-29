@@ -44,6 +44,8 @@ class SignalConsumer:
     DEFAULT_POLL_INTERVAL = 5.0  # seconds
     REDIS_KEY_PATTERN = "paper:signal:*"
     PROCESSED_SET_KEY = "paper:signals:processed"
+    PROCESSING_KEY_PREFIX = "paper:signal:{signal_id}:processing"
+    PROCESSING_MARKER_TTL = 60  # seconds - auto-expire if consumer crashes
     HEALTH_MARKER_KEY = "paper:signal_consumer:health"
     HEALTH_MARKER_TTL = 120  # seconds
 
@@ -220,6 +222,58 @@ class SignalConsumer:
         except Exception as e:
             logger.warning(f"Failed to mark signal {signal_id} as processed: {e}")
 
+    async def _acquire_processing_lock(self, signal_id: str) -> bool:
+        """Atomically acquire a processing lock for a signal.
+
+        Uses Redis SET NX EX to ensure only one consumer instance processes
+        a signal at a time. The lock auto-expires if the consumer crashes.
+
+        Args:
+            signal_id: The unique signal identifier
+
+        Returns:
+            True if lock was acquired, False if already held by another instance
+        """
+        try:
+            redis = await self._get_redis()
+            lock_key = self.PROCESSING_KEY_PREFIX.format(signal_id=signal_id)
+            # SET NX EX = set if not exists, with expiry
+            acquired = await redis.set(
+                lock_key, "1", nx=True, ex=self.PROCESSING_MARKER_TTL
+            )
+            if acquired:
+                logger.debug("Acquired processing lock for signal %s", signal_id)
+                return True
+            logger.debug(
+                "Processing lock already held for signal %s, skipping", signal_id
+            )
+            return False
+        except Exception as e:
+            # INFRA EXCEPTION - fail closed, don't silently skip
+            logger.error(
+                "Failed to acquire processing lock for %s due to infrastructure error: %s",
+                signal_id,
+                e,
+            )
+            raise  # Re-raise to fail the iteration explicitly
+
+    async def _release_processing_lock(self, signal_id: str) -> None:
+        """Release the processing lock for a signal.
+
+        Should be called after successful or failed processing to allow
+        retry if needed (e.g., if processing failed but signal not marked consumed).
+
+        Args:
+            signal_id: The unique signal identifier
+        """
+        try:
+            redis = await self._get_redis()
+            lock_key = self.PROCESSING_KEY_PREFIX.format(signal_id=signal_id)
+            await redis.delete(lock_key)
+            logger.debug("Released processing lock for signal %s", signal_id)
+        except Exception as e:
+            logger.warning("Failed to release processing lock for %s: %e", signal_id, e)
+
     async def _update_signal_status(self, redis_key: str, new_status: str) -> None:
         """Update the status field of a signal in Redis.
 
@@ -339,22 +393,35 @@ class SignalConsumer:
                     if status != "actionable":
                         continue
 
-                    # Convert to Signal object and submit
-                    signal = self._convert_to_signal(signal_data)
-                    if signal:
-                        token = (signal.token or "").upper().strip()
-                        if self.allowed_symbols and token not in self.allowed_symbols:
-                            await self._update_signal_status(key, "consumed")
-                            await self._mark_signal_processed(signal.signal_id)
-                            logger.debug(
-                                "Skipping signal %s for non-allowed symbol %s",
-                                signal.signal_id,
-                                token,
-                            )
-                            continue
-                        submitted = await self._submit_signal(signal, key)
-                        if submitted:
-                            processed_count += 1
+                    # Atomically acquire processing lock to prevent double-processing
+                    if not signal_id or not await self._acquire_processing_lock(
+                        signal_id
+                    ):
+                        continue
+
+                    try:
+                        # Convert to Signal object and submit
+                        signal = self._convert_to_signal(signal_data)
+                        if signal:
+                            token = (signal.token or "").upper().strip()
+                            if (
+                                self.allowed_symbols
+                                and token not in self.allowed_symbols
+                            ):
+                                await self._update_signal_status(key, "consumed")
+                                await self._mark_signal_processed(signal.signal_id)
+                                logger.debug(
+                                    "Skipping signal %s for non-allowed symbol %s",
+                                    signal.signal_id,
+                                    token,
+                                )
+                                continue
+                            submitted = await self._submit_signal(signal, key)
+                            if submitted:
+                                processed_count += 1
+                    finally:
+                        # Always release the processing lock
+                        await self._release_processing_lock(signal_id)
 
                 except Exception as e:
                     logger.error(f"Error processing signal {key}: {e}")
