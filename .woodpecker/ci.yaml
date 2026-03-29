@@ -84,7 +84,7 @@ steps:
             echo "0" > "$${CI_STATUS_DIR}/lint.status"
             exit 0
           fi
-          CHANGED_PY="$(python3 -c 'import json, os; raw=os.environ.get("CI_PIPELINE_FILES","[]"); payload=json.loads(raw) if raw else []; files=[str(item).strip() for item in payload if isinstance(payload, list) and str(item).strip().endswith(".py")]; print(" ".join(files))' 2>/dev/null || true)"
+          CHANGED_PY="$(python3 -c 'import json, os; raw=os.environ.get("CI_PIPELINE_FILES","[]"); payload=json.loads(raw) if raw else []; files=[str(item).strip() for item in payload if isinstance(payload, list) and str(item).strip().endswith(".py") and os.path.isfile(str(item).strip())]; print(" ".join(files))' 2>/dev/null || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
             printf '%s\n' "$CHANGED_PY" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs black --check

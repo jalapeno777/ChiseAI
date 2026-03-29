@@ -37,7 +37,7 @@ steps:
             payload = []
 
         if isinstance(payload, list):
-            files = [str(item).strip() for item in payload if str(item).strip().endswith(".py")]
+            files = [str(item).strip() for item in payload if str(item).strip().endswith(".py") and os.path.isfile(str(item).strip())]
         else:
             files = []
 
@@ -69,7 +69,7 @@ steps:
             payload = []
 
         if isinstance(payload, list):
-            files = [str(item).strip() for item in payload if str(item).strip().endswith(".py")]
+            files = [str(item).strip() for item in payload if str(item).strip().endswith(".py") and os.path.isfile(str(item).strip())]
         else:
             files = []
 
