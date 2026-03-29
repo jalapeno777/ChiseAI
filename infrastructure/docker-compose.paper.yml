@@ -11,10 +11,10 @@ services:
       - REDIS_HOST=host.docker.internal
       - REDIS_PORT=6380
       - POSTGRES_HOST=host.docker.internal
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=chiseai
-      - POSTGRES_PASSWORD=chiseai_secret
-      - POSTGRES_DB=chiseai_trading
+      - POSTGRES_PORT=${POSTGRES_PORT:-5434}
+      - POSTGRES_USER=${POSTGRES_USER:-chiseai}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+      - POSTGRES_DB=${POSTGRES_DB:-chiseai_trading}
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/src:/app/scripts
       - TRADING_SYMBOLS=BTC/USDT,ETH/USDT
