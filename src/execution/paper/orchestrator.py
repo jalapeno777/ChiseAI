@@ -306,13 +306,16 @@ class PaperTradingOrchestrator:
     async def _get_paper_kill_switch(self) -> PaperKillSwitchManager | None:
         """Get or create PaperKillSwitchManager.
 
+        Note: Does NOT pass self._redis to the manager because the orchestrator's
+        Redis client may be synchronous (used for health keys), while
+        PaperKillSwitchManager requires an async client. The manager creates
+        its own async connection when needed.
+
         Returns:
             PaperKillSwitchManager instance or None if not configured
         """
         if self._paper_kill_switch is None:
-            if self._redis is None:
-                return None
-            self._paper_kill_switch = PaperKillSwitchManager(redis_client=self._redis)
+            self._paper_kill_switch = PaperKillSwitchManager()
         return self._paper_kill_switch
 
     async def start(self) -> None:
