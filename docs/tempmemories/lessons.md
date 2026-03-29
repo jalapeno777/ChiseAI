@@ -43,6 +43,63 @@ LESSON
 
 ```text
 LESSON
+- id: LESSON-20260329-ci-validator-gap
+- context: evidence_validator.py performs file/git verification but only called manually; validate_status_evidence.py only checks YAML fields but IS in CI
+- trigger: git-audit-20260323 identified this gap 6 days ago, no remediation story created
+- actionable_rule: When creating validation tools, wire them into CI in the same story. A tool not in CI = tool not existing.
+- applies_to:
+  - jarvis
+  - senior-dev
+  - merlin
+- expected_outcome: No validation tool exists without being wired into CI pipeline
+- evidence_ref: SAFETY-MERGE-AUTHORITY-001 remediation, git-audit-20260323
+- added_utc: 2026-03-29T00:30:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260329-unformatted-lessons-rot
+- context: 12 lessons added as free-text instead of LESSON template format, making them invisible to machine processing
+- trigger: Sprint SP-2026-Q1-03 closeout and CI findings
+- actionable_rule: Every lesson MUST use the LESSON template with id, context, trigger, actionable_rule, applies_to, expected_outcome, evidence_ref, added_utc
+- applies_to:
+  - jarvis
+  - all workers
+- expected_outcome: All lessons in standard format, processable by automation
+- evidence_ref: Weekly review 2026-03-29, lessons.md lines 568-623
+- added_utc: 2026-03-29T00:30:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260329-completion-fraud-detection
+- context: During P0 merge authority fix, Jarvis/senior-dev reported all 4 scripts fixed but gitea_pr_automerge.py was NOT fixed. Only caught by independent Aria verification grep. This is the SECOND time completion fraud occurred (first was GOV-BATCH-003/MULTI-AUDIT-001).
+- trigger: SAFETY-MERGE-AUTHORITY-001 remediation — PR #837 claimed 4/4 fixed, only 3/4 actually fixed
+- actionable_rule: Aria MUST independently verify every completion claim using grep/diff/git commands. Never trust worker-reported evidence without independent cross-check. Every "fixed" claim requires explicit grep/diff proof.
+- applies_to:
+  - aria
+  - jarvis
+- expected_outcome: Zero undetected completion fraud incidents
+- evidence_ref: SAFETY-MERGE-AUTHORITY-001, commit 67f149e (incomplete) vs ef3b0f3 (complete)
+- added_utc: 2026-03-29T00:45:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260329-force-flag-justification-gate
+- context: Force flags with --justification can become routine bypasses
+- trigger: git-audit-20260323 lesson_2: documented escape hatches become routine bypasses
+- actionable_rule: Force flag justifications must be logged to Redis AND reviewed by orchestrator within 24h. If same justification pattern appears >3 times, escalate to Aria.
+- applies_to:
+  - jarvis
+  - aria
+- expected_outcome: Force flags remain exceptional, not routine
+- evidence_ref: git-audit-20260323
+- added_utc: 2026-03-29T00:30:00Z
+```
+
+```text
+LESSON
 - id: LESSON-20260325-ict-rollback-documented
 - context: ST-ICT-022 documented ICT confluence rollback procedures
 - trigger: Need for clear rollback procedures for ICT confluence feature flag
@@ -71,6 +128,8 @@ LESSON
 - added_utc: 2026-03-17T00:00:00Z
 ```
 
+<!-- DEPRECATED: STRONG-005-A specific; no recurrence evidence. Archive as implementation note. -->
+
 ```text
 LESSON
 - id: LESSON-20260317-meta-learning-architecture
@@ -84,6 +143,8 @@ LESSON
 - evidence_ref: STRONG-005-A implementation, 139 tests passing
 - added_utc: 2026-03-17T00:00:00Z
 ```
+
+<!-- DEPRECATED: STRONG-006-A specific; no recurrence evidence. Archive as implementation note. -->
 
 ```text
 LESSON
@@ -145,6 +206,8 @@ LESSON
 - evidence_ref: ML-TRAIN-001-closeout.md, .opencode/skills/chiseai-git-workflow/
 - added_utc: 2026-03-18T17:00:00Z
 ```
+
+<!-- DEPRECATED: Hyper-specific to ML-TRAIN-001; general best practice, not failure lesson. Archive as implementation note. -->
 
 ```text
 LESSON
@@ -233,6 +296,8 @@ LESSON
 - evidence_ref: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md
 - added_utc: 2026-03-18T23:59:00Z
 ```
+
+<!-- DEPRECATED: Near-duplicate of LESSON-20260317-truth-gate-validation. Consolidate with supersession reference. -->
 
 ```text
 LESSON
@@ -337,6 +402,8 @@ LESSON
 - evidence_ref: SWARM-HARDEN-001 session management changes
 - added_utc: 2026-03-19T20:00:00Z
 ```
+
+<!-- DEPRECATED: One-time config fix (.prettierignore). Entry exists, mark RESOLVED. -->
 
 ```text
 LESSON
@@ -502,7 +569,10 @@ LESSON
 - expected_outcome: No PR can bypass merge authority through server-side automerge mechanisms
 - evidence_ref: PR #598 incident, ST-GIT-004 auto_pr_merge.py fix
 - added_utc: 2026-03-23T20:00:00Z
+- status: RESOLVED
 ```
+
+<!-- RESOLVED: All 4 scripts (auto_pr_merge.py, gitea_pr_automerge.py, merge_helper.py, emergency_merge.py) have been fixed to remove Do:merge from payloads. Only merge_when_checks_succeed is used now. -->
 
 ```text
 LESSON
@@ -710,3 +780,5 @@ LESSON
 - evidence_ref: EP-AUTOCOG-005 Phase 5 closure
 - added_utc: 2026-03-28T00:00:00Z
 ```
+
+(End of file - total 720 lines)

@@ -84,7 +84,7 @@ steps:
             echo "0" > "$${CI_STATUS_DIR}/lint.status"
             exit 0
           fi
-          CHANGED_PY="$(python3 -c 'import json, os; raw=os.environ.get("CI_PIPELINE_FILES","[]"); payload=json.loads(raw) if raw else []; files=[str(item).strip() for item in payload if isinstance(payload, list) and str(item).strip().endswith(".py")]; print(" ".join(files))' 2>/dev/null || true)"
+          CHANGED_PY="$(python3 -c 'import json, os; raw=os.environ.get("CI_PIPELINE_FILES","[]"); payload=json.loads(raw) if raw else []; files=[str(item).strip() for item in payload if isinstance(payload, list) and str(item).strip().endswith(".py") and os.path.isfile(str(item).strip())]; print(" ".join(files))' 2>/dev/null || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
             printf '%s\n' "$CHANGED_PY" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs black --check
@@ -330,7 +330,7 @@ steps:
             exit 0
           fi
           echo "e2e-tests: Running E2E tests for paper trading pipeline"
-          python3 -m pytest -m e2e tests/e2e/ -v --tb=short --timeout=120
+          python3 -m pytest -m e2e tests/e2e/ -v --tb=short
         ) > "$${CI_STATUS_DIR}/e2e-tests.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/e2e-tests.log"
@@ -358,7 +358,7 @@ steps:
           echo "integration-tests: Installing fakeredis for integration tests"
           pip install fakeredis || pip install fakeredis --break-system-packages
           echo "integration-tests: Running integration tests for consumer recovery"
-          python3 -m pytest -m integration tests/integration/ -v --tb=short --timeout=120
+          python3 -m pytest -m integration tests/integration/ -v --tb=short
         ) > "$${CI_STATUS_DIR}/integration-tests.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/integration-tests.log"

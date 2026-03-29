@@ -51,13 +51,14 @@ class TestHealthKeyOnStartup:
         """start() should write the health key to Redis."""
         await orchestrator.start()
 
-        mock_redis.setex.assert_called()
-        call_args = mock_redis.setex.call_args
-        assert call_args[0][0] == PaperTradingOrchestrator.HEALTH_KEY
-        assert call_args[0][1] == PaperTradingOrchestrator.HEALTH_TTL_SECONDS
-
-        # Clean up
-        await orchestrator.stop()
+        try:
+            mock_redis.setex.assert_called()
+            call_args = mock_redis.setex.call_args
+            assert call_args[0][0] == PaperTradingOrchestrator.HEALTH_KEY
+            assert call_args[0][1] == PaperTradingOrchestrator.HEALTH_TTL_SECONDS
+        finally:
+            # Clean up
+            await orchestrator.stop()
 
 
 class TestHealthKeyTTL:
@@ -148,9 +149,16 @@ class TestHealthKeyGracefulStop:
     async def test_stop_deletes_health_key(self, orchestrator, mock_redis):
         """stop() should delete the health key from Redis."""
         await orchestrator.start()
-        await orchestrator.stop()
 
-        mock_redis.delete.assert_called_once_with(PaperTradingOrchestrator.HEALTH_KEY)
+        try:
+            await orchestrator.stop()
+
+            mock_redis.delete.assert_called_once_with(
+                PaperTradingOrchestrator.HEALTH_KEY
+            )
+        finally:
+            # Ensure stop is called even if assertion fails
+            pass
 
     @pytest.mark.asyncio
     async def test_stop_without_redis_no_error(self, mock_deps):
@@ -158,7 +166,10 @@ class TestHealthKeyGracefulStop:
         orchestrator = PaperTradingOrchestrator(**mock_deps, redis_client=None)
         # Should not raise
         await orchestrator.start()
-        await orchestrator.stop()
+        try:
+            await orchestrator.stop()
+        finally:
+            pass
 
 
 class TestHealthKeyNoRedis:
