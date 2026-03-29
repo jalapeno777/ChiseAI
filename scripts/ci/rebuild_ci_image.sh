@@ -160,12 +160,24 @@ fi
 
 FULL_IMAGE="${IMAGE_NAME}:${NEW_TAG}"
 
+# All Woodpecker YAML files that may reference CI image tags.
+# If you add a new Woodpecker pipeline that uses CI images, add it here.
+WOODPECKER_CONFIGS=(
+    "${REPO_ROOT}/.woodpecker/ci.yaml"
+    "${REPO_ROOT}/.woodpecker/push.yaml"
+    "${REPO_ROOT}/.woodpecker/cron-security.yaml"
+)
+
 # Dry run output
 if [[ "${DRY_RUN}" == true ]]; then
     log_info "=== DRY RUN MODE ==="
     log_info "Would rebuild image: ${FULL_IMAGE}"
     log_info "Would use Dockerfile: ${DOCKERFILE}"
-    log_info "Would update .woodpecker/ci.yaml with tag: ${NEW_TAG}"
+    log_info "Would update ALL Woodpecker configs referencing ${IMAGE_NAME} with tag: ${NEW_TAG}"
+    log_info "Config files searched:"
+    for wp_file in "${WOODPECKER_CONFIGS[@]}"; do
+        log_info "  - ${wp_file}"
+    done
     if [[ "${NO_PUSH}" == true ]]; then
         log_info "Would NOT commit or push changes"
     else
@@ -219,24 +231,36 @@ fi
 log_success "Prerequisites validated"
 
 # ============================================
-# Step 2: Detect old tag in ci.yaml
+# Step 2: Detect old tag across all Woodpecker configs
 # ============================================
-log_info "Step 2: Detecting old tag in .woodpecker/ci.yaml..."
+log_info "Step 2: Detecting old tag across all Woodpecker configs..."
 
 CI_YAML="${REPO_ROOT}/.woodpecker/ci.yaml"
 
-# Grep for the image and extract its current tag
+# Grep for the image and extract its current tag from any Woodpecker config
 # Pattern: image: chiseai-ci-<name>:<tag>
-OLD_TAG_LINE="$(grep -E "^\s+image:\s+${IMAGE_NAME}:" "${CI_YAML}" | head -1 || true)"
+OLD_TAG_LINE=""
+for wp_file in "${WOODPECKER_CONFIGS[@]}"; do
+    if [[ -f "${wp_file}" ]]; then
+        OLD_TAG_LINE="$(grep -E "^\s+image:\s+${IMAGE_NAME}:" "${wp_file}" | head -1 || true)"
+        if [[ -n "${OLD_TAG_LINE}" ]]; then
+            break
+        fi
+    fi
+done
 
 if [[ -z "${OLD_TAG_LINE}" ]]; then
-    log_error "Could not find ${IMAGE_NAME} in ${CI_YAML}"
+    log_error "Could not find ${IMAGE_NAME} in any Woodpecker config"
+    log_error "Searched:"
+    for wp_file in "${WOODPECKER_CONFIGS[@]}"; do
+        log_error "  - ${wp_file}"
+    done
     exit 1
 fi
 
 # Parse out the old tag
 OLD_TAG="$(echo "${OLD_TAG_LINE}" | sed -E 's/.*image:\s+[^:]+:(.+)/\1/' | tr -d ' ')"
-log_info "Current tag in ci.yaml: ${OLD_TAG}"
+log_info "Current tag: ${OLD_TAG}"
 
 if [[ "${OLD_TAG}" == "${NEW_TAG}" ]]; then
     log_warning "Old tag and new tag are the same: ${NEW_TAG}"
@@ -264,42 +288,56 @@ fi
 log_success "Image built: ${FULL_IMAGE}"
 
 # ============================================
-# Step 4: Update ci.yaml
+# Step 4: Update all Woodpecker configs
 # ============================================
-log_info "Step 4: Updating ${CI_YAML}..."
+log_info "Step 4: Updating all Woodpecker configs with new tag..."
 
-# Replace the old tag with the new tag for this specific image
-# Only modify lines containing this specific image name
-sed -i.bak "s|^\(\s*image:\s*${IMAGE_NAME}:\)${OLD_TAG}|\1${NEW_TAG}|" "${CI_YAML}"
+CHANGED_FILES=()
+for wp_file in "${WOODPECKER_CONFIGS[@]}"; do
+    if [[ ! -f "${wp_file}" ]]; then
+        continue
+    fi
+    # Check if this file references the image with the old tag
+    if grep -qE "^\s+image:\s+${IMAGE_NAME}:${OLD_TAG}" "${wp_file}"; then
+        sed -i.bak "s|^\(\s*image:\s*${IMAGE_NAME}:\)${OLD_TAG}|\1${NEW_TAG}|" "${wp_file}"
+        if [[ ! -f "${wp_file}.bak" ]]; then
+            log_error "sed backup failed for ${wp_file}"
+            exit 1
+        fi
+        # Verify the change was made
+        if ! grep -q "${IMAGE_NAME}:${NEW_TAG}" "${wp_file}"; then
+            log_error "Failed to update ${wp_file} with new tag"
+            mv "${wp_file}.bak" "${wp_file}"
+            exit 1
+        fi
+        rm "${wp_file}.bak"
+        CHANGED_FILES+=("${wp_file}")
+        log_success "Updated ${wp_file}"
+    fi
+done
 
-if [[ ! -f "${CI_YAML}.bak" ]]; then
-    log_error "sed backup failed"
+if [[ ${#CHANGED_FILES[@]} -eq 0 ]]; then
+    log_error "No files were updated. This should not happen since Step 2 found the tag."
     exit 1
 fi
 
-# Verify the change was made
-if ! grep -q "${IMAGE_NAME}:${NEW_TAG}" "${CI_YAML}"; then
-    log_error "Failed to update ci.yaml with new tag"
-    mv "${CI_YAML}.bak" "${CI_YAML}"
-    exit 1
-fi
-
-rm "${CI_YAML}.bak"
-log_success "Updated ${CI_YAML} with new tag: ${NEW_TAG}"
+log_success "Updated ${#CHANGED_FILES[@]} file(s) with new tag: ${NEW_TAG}"
 
 # ============================================
 # Step 5: Validate with yamllint
 # ============================================
-log_info "Step 5: Validating ${CI_YAML} with yamllint..."
+log_info "Step 5: Validating changed files with yamllint..."
 
 if command -v yamllint &> /dev/null; then
-    if ! yamllint "${CI_YAML}"; then
-        log_error "yamllint validation failed. Reverting changes..."
-        # Revert using git
-        git checkout "${CI_YAML}"
-        exit 1
-    fi
-    log_success "yamllint validation passed"
+    for wp_file in "${CHANGED_FILES[@]}"; do
+        if ! yamllint "${wp_file}"; then
+            log_error "yamllint validation failed for ${wp_file}. Reverting changes..."
+            # Revert using git
+            git checkout "${CHANGED_FILES[@]}"
+            exit 1
+        fi
+    done
+    log_success "yamllint validation passed for all changed files"
 else
     log_warning "yamllint not installed, skipping validation"
 fi
@@ -319,7 +357,7 @@ fi
 if [[ "${NO_PUSH}" == false ]]; then
     log_info "Step 7: Committing and pushing changes..."
 
-    git add "${CI_YAML}"
+    git add "${CHANGED_FILES[@]}"
 
     COMMIT_MSG="ci: rebuild ${IMAGE_NAME} with tag ${NEW_TAG}"
 
@@ -339,6 +377,25 @@ if [[ "${NO_PUSH}" == false ]]; then
 fi
 
 # ============================================
+# Step 8: Verify no stale tags remain
+# ============================================
+log_info "Step 8: Verifying no stale tags remain in repo..."
+
+STALE_REFS="$(git grep -l "${IMAGE_NAME}:${OLD_TAG}" -- '*.yaml' '*.yml' '*.sh' 2>/dev/null || true)"
+if [[ -n "${STALE_REFS}" ]]; then
+    log_error "Stale tag references found after update!"
+    log_error "The following files still reference ${IMAGE_NAME}:${OLD_TAG}:"
+    echo "${STALE_REFS}"
+    log_error "Add these files to WOODPECKER_CONFIGS in the script, or update them manually."
+    if [[ "${NO_PUSH}" == false ]]; then
+        log_error "WARNING: Changes have already been committed. Manual fix required."
+    fi
+    exit 1
+fi
+
+log_success "No stale tag references found"
+
+# ============================================
 # Summary
 # ============================================
 echo ""
@@ -346,7 +403,7 @@ log_success "=== REBUILD COMPLETE ==="
 echo ""
 echo "  Image:    ${FULL_IMAGE}"
 echo "  Tag:      ${NEW_TAG}"
-echo "  File:     ${CI_YAML}"
+echo "  Files:    ${CHANGED_FILES[*]}"
 if [[ "${NO_PUSH}" == true ]]; then
     echo "  Push:     SKIPPED (--no-push)"
 else
