@@ -370,19 +370,22 @@ class BOSCHoCHClassifier:
         Returns:
             True if level was broken
         """
-        # For bullish break: current swing low breaks a previous swing low
-        # For bearish break: current swing high breaks a previous swing high
+        # NOTE: Type checking is done by caller (_check_bullish_break or
+        # _check_bearish_break). This method only checks price relationship.
+        #
+        # For bullish break (BOS: break of resistance high):
+        #   - A swing_high breaks above a previous swing_high level
+        #   - Price must be ABOVE the level
+        # For bearish break (BOS: break of support low):
+        #   - A swing_low breaks below a previous swing_low level
+        #   - Price must be BELOW the level
 
         if is_bullish:
-            # Bullish break: swing low must be below previous swing low
-            if swing.pivot_type.value != "swing_low":
-                return False
-            return swing.price < level.price
-        else:
-            # Bearish break: swing high must be above previous swing high
-            if swing.pivot_type.value != "swing_high":
-                return False
+            # Bullish break: swing_high price > previous swing_high level price
             return swing.price > level.price
+        else:
+            # Bearish break: swing_low price < previous swing_low level price
+            return swing.price < level.price
 
     def _calculate_strength(
         self,
