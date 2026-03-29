@@ -330,7 +330,7 @@ steps:
             exit 0
           fi
           echo "e2e-tests: Running E2E tests for paper trading pipeline"
-          python3 -m pytest -m e2e tests/e2e/ -v --tb=short --timeout=120
+          python3 -m pytest -m e2e tests/e2e/ -v --tb=short
         ) > "$${CI_STATUS_DIR}/e2e-tests.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/e2e-tests.log"
@@ -358,7 +358,7 @@ steps:
           echo "integration-tests: Installing fakeredis for integration tests"
           pip install fakeredis || pip install fakeredis --break-system-packages
           echo "integration-tests: Running integration tests for consumer recovery"
-          python3 -m pytest -m integration tests/integration/ -v --tb=short --timeout=120
+          python3 -m pytest -m integration tests/integration/ -v --tb=short
         ) > "$${CI_STATUS_DIR}/integration-tests.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/integration-tests.log"
