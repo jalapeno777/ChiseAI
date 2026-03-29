@@ -84,6 +84,14 @@ def _is_local_test_env() -> bool:
 def _allow_simulator_fallback() -> bool:
     raw = os.getenv("ALLOW_SIMULATOR_FALLBACK", "").strip().lower()
     if raw in {"1", "true", "yes", "on"}:
+        try:
+            from audit.override_audit import log_override_if_active
+
+            log_override_if_active(
+                "ALLOW_SIMULATOR_FALLBACK", reason="allow simulator in trading"
+            )
+        except Exception:
+            pass  # audit is best-effort
         return True
     if raw in {"0", "false", "no", "off"}:
         return False

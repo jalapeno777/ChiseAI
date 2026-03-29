@@ -305,6 +305,19 @@ def main() -> int:
 
     agent_id = (args.agent_id or "").strip().lower()
     allow_non_merlin = os.getenv("CHISE_ALLOW_NON_MERLIN_PR", "0") == "1"
+    if allow_non_merlin:
+        try:
+            from audit.override_audit import log_override_if_active
+
+            log_override_if_active(
+                "CHISE_ALLOW_NON_MERLIN_PR",
+                reason=f"non-merlin agent '{agent_id}' submitting PR",
+            )
+        except Exception:
+            print(
+                f"[AUDIT] CHISE_ALLOW_NON_MERLIN_PR=1 by agent '{agent_id}'",
+                file=sys.stderr,
+            )
     if agent_id != "merlin" and not allow_non_merlin:
         print(
             "ERROR: PR submission is restricted to agent 'merlin'. "

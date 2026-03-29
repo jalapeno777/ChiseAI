@@ -508,6 +508,16 @@ def _env(name: str, default: str = "") -> str:
 def _require_merge_authority_and_lock(store: QueueStore, owner: str) -> None:
     agent_id = _env("AGENT_ID", "").lower()
     allow_non_merlin = _env("CHISE_ALLOW_NON_MERLIN_MERGE", "0") == "1"
+    if allow_non_merlin:
+        try:
+            from audit.override_audit import log_override_if_active
+
+            log_override_if_active(
+                "CHISE_ALLOW_NON_MERLIN_MERGE",
+                reason=f"non-merlin agent '{agent_id}' performing merge",
+            )
+        except Exception:
+            pass  # audit is best-effort
     if agent_id != MERGE_AUTHORITY_AGENT and not allow_non_merlin:
         raise RuntimeError(
             "Merge-enabled queue ticks are restricted to agent 'merlin'. "

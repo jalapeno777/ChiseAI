@@ -98,12 +98,16 @@ def _is_dependency_audit_relevant(changed_files: list[str]) -> bool:
 
 
 def should_run_dependency_audit() -> tuple[bool, str]:
-    if os.environ.get("FORCE_DEPENDENCY_AUDIT", "").strip() == "1":
-        return True, "FORCE_DEPENDENCY_AUDIT=1"
-    if os.environ.get("FORCE_FULL_GATE", "").strip() == "1":
-        return True, "FORCE_FULL_GATE=1"
-    if os.environ.get("CI_FORCE_FULL", "").strip() == "1":
-        return True, "CI_FORCE_FULL=1"
+    for env_var in ("FORCE_DEPENDENCY_AUDIT", "FORCE_FULL_GATE", "CI_FORCE_FULL"):
+        raw = os.environ.get(env_var, "").strip()
+        if raw == "1":
+            try:
+                from audit.override_audit import log_override_if_active
+
+                log_override_if_active(env_var, reason="force dependency audit gate")
+            except Exception:
+                pass  # audit is best-effort
+            return True, f"{env_var}=1"
 
     event = _event_name()
     branch = _branch_name()
