@@ -12,8 +12,10 @@ experiments:
   safe_mode: true # Only run experiments within safety guardrails
 
 # Qdrant Integration
+# Enabled 2026-03-29: Batch 4 phased feature enablement
+# Allows belief graph persistence in Qdrant (low-risk: pre-flight validates connectivity)
 qdrant:
-  write_enabled: false
+  write_enabled: true
   collection_name: "ChiseAI"
   vector_size: 384
 
