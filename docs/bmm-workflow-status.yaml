@@ -361,8 +361,9 @@ completed:
       - "run_signal_consumer.py is the canonical launcher with relative paths"
       - "No hardcoded worktree paths remain in scripts/"
     owner: senior-dev
+    pr_number: 842
     priority: P2
-    status: completed
+    status: in_progress
     story_points: 2
     title: Consolidate Startup Scripts
 backlog:
