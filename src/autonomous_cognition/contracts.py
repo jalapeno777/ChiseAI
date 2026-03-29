@@ -26,6 +26,7 @@ class CycleResult:
     constitution_violations: int = 0
     artifact_paths: dict[str, str] = field(default_factory=dict)
     metrics: dict[str, Any] = field(default_factory=dict)
+    shadow_mode: bool = True  # Shadow mode is the safe default
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -44,6 +45,7 @@ class CycleResult:
             "constitution_violations": self.constitution_violations,
             "artifact_paths": self.artifact_paths,
             "metrics": self.metrics,
+            "shadow_mode": self.shadow_mode,
         }
 
     @classmethod
