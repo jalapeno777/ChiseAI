@@ -1,0 +1,136 @@
+# Canary Mode Configuration for Autonomous Cognition
+# Auto-generated for ST-AUTOCOG-A-006a
+# Timestamp: 2026-03-29T07:00:00Z
+#
+# PURPOSE: This configuration is for CANARY mode validation only.
+# CANARY mode allows small real-money positions (up to 1% of portfolio)
+# to validate neuro-symbolic predictions before promoting to FULL mode.
+#
+# MODE TRANSITION: SHADOW -> CANARY -> FULL
+# - SHADOW: Observe only, no live impact
+# - CANARY: Small position test with strict divergence gates
+# - FULL: Normal trading operation with neuro-symbolic influence
+#
+# CANARY VALIDATION RULES:
+# - Position size is strictly limited
+# - Auto-demotion if divergence exceeds threshold
+# - Requires consecutive successful checks before promotion
+
+version: 1
+
+# =============================================================================
+# RUNTIME MODE (EXPLICIT - NOT DEFAULT)
+# =============================================================================
+# This MUST be set to "canary" for this configuration to be recognized
+# as a canary mode configuration.
+runtime_mode: canary
+
+# =============================================================================
+# EXPERIMENT SETTINGS (CANARY-SPECIFIC - MORE CONSERVATIVE)
+# =============================================================================
+experiments:
+  enabled: true
+  # CANARY: Only 1 experiment per cycle to minimize risk
+  max_experiments_per_cycle: 1
+  safe_mode: true
+  # Canary-specific: require extra validation before experiments
+  require_canary_validation: true
+
+# =============================================================================
+# CANARY POSITION LIMITS
+# =============================================================================
+canary:
+  # Maximum position size as fraction of total portfolio (1%)
+  # This is the HARD LIMIT for canary mode - never exceed this
+  max_position_fraction: 0.01
+
+  # Divergence threshold for canary mode (15% - tighter than shadow)
+  # If divergence exceeds this, canary influence is blocked
+  divergence_threshold: 0.15
+
+  # Auto-demotion threshold (40%)
+  # If divergence exceeds this repeatedly, demote from canary to shadow
+  auto_demote_threshold: 0.40
+
+  # Number of consecutive successful checks required before promotion
+  # to FULL mode
+  required_consecutive_checks: 5
+
+  # Maximum canary trades per day (cap exposure)
+  max_canary_trades_per_day: 3
+
+  # Canary report generation
+  generate_canary_report: true
+  canary_report_interval_cycles: 1
+
+# =============================================================================
+# QDRANT INTEGRATION (CANARY MODE)
+# =============================================================================
+qdrant:
+  write_enabled: true
+  collection_name: "ChiseAI"
+  vector_size: 384
+  # Canary-specific: only write critical belief updates
+  incremental_writes: true
+
+# =============================================================================
+# METRICS AND MONITORING (CANARY-SPECIFIC)
+# =============================================================================
+metrics:
+  # CANARY: Stricter skip rate monitoring
+  skip_rate_alert_threshold: 0.15 # 15% (lower than default)
+  skip_rate_window_days: 7
+  alert_on_high_skip_rate: true
+
+  # CANARY: Track canary-specific metrics
+  canary_metrics:
+    track_pnl_fraction: true
+    track_direction_accuracy: true
+    track_consecutive_success: true
+
+# =============================================================================
+# SAFETY GUARDRAILS (IMMUTABLE VIA AUTO-ACTIONS)
+# =============================================================================
+safety:
+  max_risk_level: "low" # CANARY: Lower risk tolerance
+  require_approval_for: ["high", "critical", "medium"]
+  protected_files:
+    - "src/core/risk_caps.py"
+    - "src/core/governance_bypasses.py"
+    - "docs/bmm-workflow-status.yaml"
+  # CANARY: Extra safety for canary mode
+  canary_safety:
+    block_on_high_divergence: true
+    auto_demote_on_threshold: true
+    max_position_absolute: 100.0 # $100 max position
+
+# =============================================================================
+# NOTIFICATIONS (CANARY - MORE VERBOSE)
+# =============================================================================
+notifications:
+  # CANARY: Lower threshold for notifications (more verbose)
+  notification_score_threshold: 0.005 # 0.5% (lower than default)
+  digest_interval_minutes: 30 # More frequent
+  digest_max_items: 5 # Fewer items per digest
+
+  # CANARY: Additional notification types
+  canary_notifications:
+    notify_on_trade: true
+    notify_on_demotion: true
+    notify_on_promotion_ready: true
+    notify_on_divergence_spike: true
+
+# =============================================================================
+# SCHEDULING (CANARY - MORE FREQUENT CHECKS)
+# =============================================================================
+scheduling:
+  version: 1
+  woodpecker_crons:
+    - name: autocog-canary-hourly
+      schedule: "0 * * * *"
+      description: "Hourly canary validation check"
+      job_id: autocog.canary_validation.hourly
+    - name: autocog-canary-daily
+      schedule: "0 8 * * *"
+      description: "Daily canary report generation at 08:00 UTC"
+      job_id: autocog.canary_report.daily
