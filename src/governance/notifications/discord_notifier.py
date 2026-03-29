@@ -843,9 +843,6 @@ class DiscordNotifier:
             return False
 
         payload = {"content": content}
-        if len(content) > 2000:
-            # Discord webhook content limit is 2000 chars
-            payload["content"] = content[:1997] + "..."
 
         if not self._webhook_url:
             return False
@@ -930,6 +927,34 @@ class DiscordNotifier:
                 await asyncio.sleep(delay)
 
         return False
+
+    async def _send_message_chunked(
+        self, chunks: list[str], max_retries: int = 3
+    ) -> tuple[bool, str | None]:
+        """Send multiple message chunks sequentially as separate Discord messages.
+
+        Returns (success, message_id) where success is True only if ALL chunks
+        were sent successfully. message_id is from the first chunk.
+        """
+        first_message_id = None
+        all_success = True
+
+        for i, chunk in enumerate(chunks):
+            success, message_id = await self._send_with_retry(chunk, max_retries)
+            if i == 0 and message_id:
+                first_message_id = message_id
+            if not success:
+                logger.warning(
+                    "Failed to send chunk %d/%d (event will be partially delivered)",
+                    i + 1,
+                    len(chunks),
+                )
+                all_success = False
+            # Small delay between chunks to avoid rate limiting
+            if i < len(chunks) - 1:
+                await asyncio.sleep(0.2)
+
+        return all_success, first_message_id
 
     async def notify_reflection(
         self,
@@ -1281,7 +1306,7 @@ class DiscordNotifier:
             from .formatters import AutocogEventFormatter
 
             formatter = AutocogEventFormatter()
-            content = formatter.format_event(
+            chunks = formatter.format_event(
                 event_type=event_type,
                 severity=severity,
                 summary=summary,
@@ -1297,7 +1322,16 @@ class DiscordNotifier:
                 evidence_reasoning=evidence_reasoning or [],
                 decision_packet=decision_packet or {},
             )
-            success, message_id = await self._send_with_retry(content)
+            if len(chunks) == 1:
+                success, message_id = await self._send_with_retry(chunks[0])
+            else:
+                logger.info(
+                    "Sending autocog event as %d chunks (event_type=%s, run_id=%s)",
+                    len(chunks),
+                    event_type,
+                    run_id,
+                )
+                success, message_id = await self._send_message_chunked(chunks)
             if success:
                 self._mark_sent(event_id)
                 logger.info(

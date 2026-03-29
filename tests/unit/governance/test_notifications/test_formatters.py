@@ -12,7 +12,7 @@ class TestAutocogEventFormatter:
     def test_format_event_includes_layman_sections(self) -> None:
         formatter = AutocogEventFormatter()
 
-        content = formatter.format_event(
+        chunks = formatter.format_event(
             event_type="improvement_promoted",
             severity="low",
             summary="Promoted candidate h-001",
@@ -31,6 +31,8 @@ class TestAutocogEventFormatter:
             ],
         )
 
+        assert isinstance(chunks, list)
+        content = "\n".join(chunks)
         assert "**Title:** Improvement Candidate Promoted" in content
         assert "**Why This Happened (Plain English):**" in content
         assert (
@@ -48,7 +50,7 @@ class TestAutocogEventFormatter:
     def test_format_event_uses_defaults_when_layman_fields_missing(self) -> None:
         formatter = AutocogEventFormatter()
 
-        content = formatter.format_event(
+        chunks = formatter.format_event(
             event_type="belief_conflict_detected",
             severity="high",
             summary="Contradiction on memory reliability",
@@ -58,6 +60,8 @@ class TestAutocogEventFormatter:
             run_id="autocog-456",
         )
 
+        assert isinstance(chunks, list)
+        content = "\n".join(chunks)
         assert "**Title:** Belief Conflict Detected" in content
         assert (
             "**Why This Happened (Plain English):** Contradiction on memory reliability"
@@ -72,7 +76,7 @@ class TestAutocogEventFormatter:
     def test_format_event_includes_revision_decision_packet(self) -> None:
         formatter = AutocogEventFormatter()
 
-        content = formatter.format_event(
+        chunks = formatter.format_event(
             event_type="belief_revision_applied",
             severity="medium",
             summary="Revision applied",
@@ -108,6 +112,8 @@ class TestAutocogEventFormatter:
             },
         )
 
+        assert isinstance(chunks, list)
+        content = "\n".join(chunks)
         assert "**Revision Decision Packet:**" in content
         assert "Contradiction: Heuristic contradiction phrase detected" in content
         assert (
@@ -122,6 +128,222 @@ class TestAutocogEventFormatter:
             "Rollback Hint: Restore belief-memory-outdated if regressions occur."
             in content
         )
+
+    def test_format_event_returns_list_of_strings(self) -> None:
+        """Test that format_event returns a list of strings, not a single string."""
+        formatter = AutocogEventFormatter()
+
+        chunks = formatter.format_event(
+            event_type="improvement_promoted",
+            severity="low",
+            summary="Promoted candidate h-001",
+            impact="Candidate exceeded promotion gates",
+            top_metrics={"sharpe_delta": 0.11},
+            artifact_path=None,
+            run_id="autocog-123",
+            outcome_status="success",
+        )
+
+        assert isinstance(chunks, list)
+        assert all(isinstance(chunk, str) for chunk in chunks)
+        assert len(chunks) >= 1
+
+    def test_format_event_includes_tldr_summary(self) -> None:
+        """Test that TL;DR summary appears at the top of the first chunk."""
+        formatter = AutocogEventFormatter()
+
+        chunks = formatter.format_event(
+            event_type="belief_revision_applied",
+            severity="medium",
+            summary="Revision applied",
+            impact="Conflict resolved",
+            top_metrics={"revisions": 1},
+            artifact_path=None,
+            run_id="autocog-789",
+            title="Belief Revision Applied",
+            issue="Memory health belief outdated",
+            intended_resolution="Update to healthier belief",
+            outcome_status="success",
+        )
+
+        assert isinstance(chunks, list)
+        first_chunk = chunks[0]
+        assert "**📋 TL;DR:**" in first_chunk
+        # The TL;DR should be near the top (within first 200 chars)
+        tldr_pos = first_chunk.find("**📋 TL;DR:**")
+        assert tldr_pos < 200, "TL;DR should appear near the top of the message"
+        # Should contain some form of the outcome
+        assert "Result:" in first_chunk or "Succeeded" in first_chunk
+
+    def test_format_event_short_content_single_chunk(self) -> None:
+        """Test that short content returns a single chunk (no unnecessary splitting)."""
+        formatter = AutocogEventFormatter()
+
+        chunks = formatter.format_event(
+            event_type="simple_event",
+            severity="low",
+            summary="Simple test",
+            impact="No impact",
+            top_metrics={},
+            artifact_path=None,
+            run_id="run-001",
+        )
+
+        assert isinstance(chunks, list)
+        assert (
+            len(chunks) == 1
+        ), "Short content should not be split into multiple chunks"
+        # Verify no continuation markers
+        assert "(continued" not in chunks[0]
+
+    def test_format_event_long_content_splits_into_chunks(self) -> None:
+        """Test that long content is split into multiple chunks at section boundaries."""
+        formatter = AutocogEventFormatter()
+
+        # Test the _split_into_chunks method directly with content we know exceeds the limit
+        # Create a long section that is bigger than _MAX_DISCORD_MESSAGE_LEN
+        long_line = "x" * 2000  # Single line exceeding the limit
+        long_section = (
+            f"\n\nSection 1:\n{long_line}\n\nSection 2:\nAnother paragraph here."
+        )
+
+        # Should split this into multiple chunks
+        chunks = formatter._split_into_chunks(long_section)
+
+        assert isinstance(chunks, list)
+        assert len(chunks) > 1, "Content exceeding limit should be split"
+        # Verify no chunk exceeds the limit
+        for i, chunk in enumerate(chunks):
+            assert (
+                len(chunk) <= formatter._MAX_DISCORD_MESSAGE_LEN
+            ), f"Chunk {i} exceeds {formatter._MAX_DISCORD_MESSAGE_LEN} chars: {len(chunk)}"
+
+        # Verify all content is preserved (x count matches)
+        full_content = "\n".join(chunks)
+        assert "Section 1" in full_content
+        assert "Section 2" in full_content
+        # All 2000 x's are preserved (just split across chunks)
+        assert (
+            full_content.count("x") == 2000
+        ), f"Expected 2000 x's, got {full_content.count('x')}"
+
+    def test_split_into_chunks_preserves_sections(self) -> None:
+        """Test that _split_into_chunks keeps sections intact on chunk boundaries."""
+        formatter = AutocogEventFormatter()
+
+        # Create content with distinct sections that should stay together
+        section1 = "Section 1 content" * 100  # Long section
+        section2 = "Section 2 content" * 100
+        section3 = "Section 3 content" * 100
+
+        content = f"Header\n\n{section1}\n\n{section2}\n\n{section3}"
+
+        chunks = formatter._split_into_chunks(content)
+
+        # Each chunk should be under the limit
+        for i, chunk in enumerate(chunks):
+            assert len(chunk) <= formatter._MAX_DISCORD_MESSAGE_LEN
+
+        # Verify sections are preserved (not split in middle)
+        full_content = "\n".join(chunks)
+        assert "Section 1 content" in full_content
+        assert "Section 2 content" in full_content
+        assert "Section 3 content" in full_content
+
+    def test_format_event_continuation_markers(self) -> None:
+        """Test that non-first chunks have continuation markers."""
+        formatter = AutocogEventFormatter()
+
+        # Create content long enough to require splitting
+        long_evidence = [f"Reason {i}: " + "x" * 100 for i in range(15)]
+
+        chunks = formatter.format_event(
+            event_type="split_event",
+            severity="high",
+            summary="An event that will be split",
+            impact="Testing chunking",
+            top_metrics={"m1": "v1", "m2": "v2", "m3": "v3", "m4": "v4", "m5": "v5"},
+            artifact_path=None,
+            run_id="run-003",
+            evidence_reasoning=long_evidence,
+        )
+
+        assert isinstance(chunks, list)
+        if len(chunks) > 1:
+            # Check continuation markers on non-first chunks
+            for i in range(1, len(chunks)):
+                assert (
+                    "(continued" in chunks[i]
+                ), f"Chunk {i} should have continuation marker"
+                assert (
+                    f"/{len(chunks)})" in chunks[i]
+                ), f"Chunk {i} should show total chunk count"
+
+    def test_no_data_loss_when_splitting(self) -> None:
+        """Test that splitting preserves all data - no truncation or data loss."""
+        formatter = AutocogEventFormatter()
+
+        # Create event with all possible fields populated
+        decision_packet = {
+            "contradiction": "test contradiction",
+            "previous_belief": {
+                "belief_id": "prev-001",
+                "statement": "Previous statement",
+            },
+            "replacement_belief": {
+                "belief_id": "new-001",
+                "statement": "Replacement statement",
+            },
+            "selection_rationale": "Better evidence",
+            "expected_improvements": ["improvement 1", "improvement 2"],
+            "source_diversity": {
+                "distinct_source_families": 3,
+                "non_llm_source_families": 2,
+                "source_families": ["family1", "family2"],
+            },
+            "rollback_hint": "rollback if needed",
+        }
+
+        chunks = formatter.format_event(
+            event_type="belief_revision_applied",
+            severity="medium",
+            summary="Full test event",
+            impact="Testing data preservation",
+            top_metrics={"metric1": 100, "metric2": 200},
+            artifact_path="/path/to/artifact.json",
+            run_id="run-full-001",
+            title="Full Test Event",
+            issue="Test issue",
+            intended_resolution="Test resolution",
+            expected_improvement="Test improvement",
+            outcome_status="success",
+            evidence_reasoning=["Reason 1", "Reason 2", "Reason 3"],
+            decision_packet=decision_packet,
+        )
+
+        assert isinstance(chunks, list)
+        full_content = "\n".join(chunks)
+
+        # Verify no truncation text appears
+        assert "[truncated" not in full_content
+        assert "..." not in full_content
+
+        # Verify all key data is present
+        assert "Full Test Event" in full_content
+        assert "Test issue" in full_content
+        assert "Test resolution" in full_content
+        assert "Test improvement" in full_content
+        assert "Reason 1" in full_content
+        assert "Reason 3" in full_content
+        assert "test contradiction" in full_content
+        assert "prev-001" in full_content
+        assert "new-001" in full_content
+        assert "Better evidence" in full_content
+        assert "improvement 1" in full_content
+        assert "rollback if needed" in full_content
+        assert "metric1" in full_content
+        assert "metric2" in full_content
+        assert "/path/to/artifact.json" in full_content
 
 
 class TestSelfAssessmentNotificationFormatter:
