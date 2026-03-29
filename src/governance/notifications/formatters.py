@@ -341,6 +341,177 @@ class AutocogEventFormatter:
 
     _MAX_DISCORD_MESSAGE_LEN = 1900
 
+    def _generate_layman_summary(
+        self,
+        event_type: str,
+        title: str | None,
+        issue: str | None,
+        intended_resolution: str | None,
+        outcome_status: str | None,
+        summary: str,
+    ) -> str:
+        """Generate a concise 1-2 sentence plain English summary.
+
+        Examples:
+        - belief_revision_applied: "The system updated an outdated belief about memory
+          health with a newer, better-evidenced version. Result: Succeeded."
+        - belief_conflict_detected: "The system detected two contradictory beliefs
+          about memory reliability and is working to resolve them."
+        - Generic: "[Title]. [resolution or summary in one sentence]. Result: [status]."
+        """
+        # Normalize outcome status
+        normalized_outcome = (outcome_status or "unknown").strip().lower()
+        outcome_display = {
+            "success": "Succeeded",
+            "succeeded": "Succeeded",
+            "pass": "Succeeded",
+            "failed": "Failed",
+            "failure": "Failed",
+            "error": "Failed",
+            "partial": "Partially Succeeded",
+            "in_progress": "In Progress",
+            "in progress": "In Progress",
+            "unknown": None,
+        }.get(normalized_outcome, outcome_status)
+
+        # Build the summary based on available information
+        display_title = title or event_type.replace("_", " ").title()
+
+        # Special handling for specific event types
+        if event_type == "belief_revision_applied":
+            parts = []
+            if issue:
+                parts.append(f"The system updated an outdated belief about {issue}.")
+            elif intended_resolution:
+                parts.append(f"The system {intended_resolution.lower()}")
+            else:
+                parts.append("The system applied a belief revision.")
+            if outcome_display:
+                parts.append(f"Result: {outcome_display}.")
+            return " ".join(parts)[:200]
+
+        if event_type == "belief_conflict_detected":
+            if issue:
+                return f"The system detected two contradictory beliefs about {issue} and is working to resolve them."[
+                    :200
+                ]
+            return "The system detected contradictory beliefs and is working to resolve them."[
+                :200
+            ]
+
+        if event_type == "improvement_promoted":
+            if intended_resolution:
+                return f"{display_title}. {intended_resolution} Result: {outcome_display or 'Completed'}."[
+                    :200
+                ]
+            return f"{display_title}. {summary[:100]} Result: {outcome_display or 'Completed'}."[
+                :200
+            ]
+
+        # Generic fallback
+        parts = [f"{display_title}."]
+        if intended_resolution:
+            parts.append(f"{intended_resolution[:80]}.")
+        elif summary:
+            parts.append(f"{summary[:80]}.")
+        if outcome_display:
+            parts.append(f"Result: {outcome_display}.")
+        return " ".join(parts)[:200]
+
+    def _split_into_chunks(self, content: str) -> list[str]:
+        """Split content into Discord-safe chunks at section boundaries.
+
+        Splits on double-newline boundaries (between sections) to keep
+        sections intact. Each chunk is at most _MAX_DISCORD_MESSAGE_LEN chars.
+        No data is ever lost — long content gets split into multiple chunks.
+
+        Continuation chunks get a "(continued X/Y)" header prepended.
+        """
+        if len(content) <= self._MAX_DISCORD_MESSAGE_LEN:
+            return [content]
+
+        # Split into sections on double-newline boundaries
+        sections = content.split("\n\n")
+        chunks: list[str] = []
+        current_chunk = ""
+        total_chunks = 0
+
+        for section in sections:
+            # Check if adding this section would exceed the limit
+            separator = "\n\n" if current_chunk else ""
+            potential_chunk = current_chunk + separator + section
+
+            if len(potential_chunk) <= self._MAX_DISCORD_MESSAGE_LEN:
+                current_chunk = potential_chunk
+            else:
+                # Current chunk is full, save it and start a new one
+                if current_chunk:
+                    chunks.append(current_chunk)
+                    total_chunks += 1
+                    # Prepend continuation header to new chunk
+                    cont_header = f"(continued {total_chunks + 1}/?)\n\n"
+                    current_chunk = cont_header + section
+                else:
+                    # Single section exceeds limit - need to split within the section
+                    # Hard-split at newlines within the section to preserve data
+                    sub_sections: list[str] = []
+                    sub_lines: list[str] = []
+                    sub_len = 0
+                    for line in section.split("\n"):
+                        line_len = len(line) + 1  # +1 for newline
+                        if (
+                            sub_len + line_len > self._MAX_DISCORD_MESSAGE_LEN
+                            and sub_lines
+                        ):
+                            sub_sections.append("\n".join(sub_lines))
+                            sub_lines = [line]
+                            sub_len = line_len
+                        else:
+                            sub_lines.append(line)
+                            sub_len += line_len
+                    if sub_lines:
+                        sub_sections.append("\n".join(sub_lines))
+
+                    # Add all sub-sections as separate chunks with continuation markers
+                    for j, sub_section in enumerate(sub_sections):
+                        if sub_section == "":
+                            continue
+                        # If sub_section itself exceeds limit, split by characters
+                        while len(sub_section) > self._MAX_DISCORD_MESSAGE_LEN:
+                            # Split at character level for very long lines
+                            split_point = (
+                                self._MAX_DISCORD_MESSAGE_LEN - 50
+                            )  # Leave room for continuation
+                            chunks.append(sub_section[:split_point])
+                            total_chunks += 1
+                            sub_section = sub_section[split_point:]
+
+                        if j == 0:
+                            # First sub-section becomes the current chunk
+                            cont_header = f"(continued {total_chunks + 1}/?)\n\n"
+                            current_chunk = cont_header + sub_section
+                        else:
+                            # Additional sub-sections become their own chunks
+                            chunks.append(sub_section)
+                            total_chunks += 1
+
+        # Don't forget the last chunk
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        # Now fix the total count in continuation headers
+        total = len(chunks)
+        final_chunks: list[str] = []
+        for i, chunk in enumerate(chunks):
+            if i == 0:
+                final_chunks.append(chunk)
+            else:
+                # Replace the "??" with actual total
+                fixed_chunk = chunk.replace("/?)", f"/{total})")
+                final_chunks.append(fixed_chunk)
+
+        return final_chunks
+
     def format_event(
         self,
         event_type: str,
@@ -357,7 +528,7 @@ class AutocogEventFormatter:
         outcome_status: str | None = None,
         evidence_reasoning: list[str] | None = None,
         decision_packet: dict[str, Any] | None = None,
-    ) -> str:
+    ) -> list[str]:
         """Format a standardized autonomous cognition event."""
         evidence_reasoning = evidence_reasoning or []
         decision_packet = decision_packet or {}
@@ -388,8 +559,20 @@ class AutocogEventFormatter:
             "unknown": "Unknown",
         }.get(normalized_outcome, outcome_status or "Unknown")
 
+        # Generate layman summary first
+        layman_summary = self._generate_layman_summary(
+            event_type=event_type,
+            title=title,
+            issue=issue,
+            intended_resolution=intended_resolution,
+            outcome_status=outcome_status,
+            summary=summary,
+        )
+
         lines = [
             f"{icon} **Autonomous Cognition Event**",
+            "",
+            f"**📋 TL;DR:** {layman_summary}",
             "",
             f"**Title:** {display_title}",
             f"**Why This Happened (Plain English):** {layman_issue}",
@@ -456,7 +639,7 @@ class AutocogEventFormatter:
                 lines.append(f"  • {key}: {value}")
 
         lines.extend(["", f"**Artifact Path:** `{artifact_path or 'N/A'}`"])
-        return self._truncate_message("\n".join(lines))
+        return self._split_into_chunks("\n".join(lines))
 
     def _truncate_message(self, content: str) -> str:
         """Trim content to stay safely within Discord 2000-char limit."""
