@@ -1,6 +1,8 @@
 """Discord notifier for governance events."""
 
 import asyncio
+import hashlib
+import json
 import logging
 import re
 from datetime import UTC, datetime, timedelta
@@ -331,6 +333,217 @@ class DiscordNotifier:
         if previous_score is None:
             return True
         return abs(current_score - previous_score) > threshold
+
+    def _get_cycle_hash_key(self, mode: str) -> str:
+        """Get Redis key for cycle hash storage.
+
+        Args:
+            mode: The autocog mode (e.g., 'full', 'fast')
+
+        Returns:
+            Redis key string for the cycle hash.
+        """
+        return f"autocog:last_cycle_hash:{mode}"
+
+    def _get_stored_cycle_hash(self, mode: str) -> str | None:
+        """Retrieve stored cycle hash from Redis.
+
+        Args:
+            mode: The autocog mode
+
+        Returns:
+            The stored hash string or None if not found.
+        """
+        redis = get_redis_client()
+        if redis is None:
+            return None
+        try:
+            from tools.redis_state import redis_state_get
+
+            key = self._get_cycle_hash_key(mode)
+            return redis_state_get(key)
+        except Exception as e:
+            logger.warning(f"Failed to get stored cycle hash: {e}")
+            return None
+
+    def _store_cycle_hash(
+        self, mode: str, hash_value: str, ttl_seconds: int = 86400
+    ) -> None:
+        """Store cycle hash in Redis with TTL.
+
+        Args:
+            mode: The autocog mode
+            hash_value: The SHA-256 hash to store
+            ttl_seconds: TTL in seconds (default 24h)
+        """
+        redis = get_redis_client()
+        if redis is None:
+            return
+        try:
+            from tools.redis_state import redis_state_expire, redis_state_set
+
+            key = self._get_cycle_hash_key(mode)
+            redis_state_set(key, hash_value)
+            redis_state_expire(key, ttl_seconds)
+            logger.debug(f"Stored cycle hash for mode={mode} with TTL={ttl_seconds}s")
+        except Exception as e:
+            logger.warning(f"Failed to store cycle hash: {e}")
+
+    @staticmethod
+    def _compute_cycle_metrics_hash(
+        errors: list | None,
+        actions_taken: int,
+        score: float | None,
+        previous_score: float | None,
+        metrics: dict[str, Any] | None,
+    ) -> str:
+        """Compute deterministic SHA-256 hash of cycle metrics.
+
+        Excludes timestamps and run_id. The hash is computed from a JSON-serialized
+        dict of the relevant metrics.
+
+        Args:
+            errors: List of error strings (can be empty or None)
+            actions_taken: Number of actions taken in the cycle
+            score: Current cycle score (or None)
+            previous_score: Previous cycle score (or None)
+            metrics: Additional metrics dict (timestamps/run_id will be stripped)
+
+        Returns:
+            SHA-256 hex digest of the metrics dict
+        """
+        # Build hashable dict excluding timestamps and run_id
+        hashable: dict[str, Any] = {
+            "errors": sorted(errors) if errors else [],
+            "actions_taken": actions_taken,
+        }
+
+        # Only include score-related fields if they have values
+        if score is not None:
+            hashable["score"] = score
+        if previous_score is not None:
+            hashable["previous_score"] = previous_score
+
+        # Filter metrics to exclude timestamps and run_id
+        if metrics:
+            excluded_keys = {
+                "timestamp",
+                "run_id",
+                "start_time",
+                "end_time",
+                "created_at",
+            }
+            filtered_metrics = {
+                k: v
+                for k, v in metrics.items()
+                if k.lower() not in excluded_keys and v is not None
+            }
+            # Sort for deterministic ordering
+            hashable["metrics"] = dict(sorted(filtered_metrics.items()))
+
+        # JSON serialize with sorted keys for determinism
+        json_str = json.dumps(hashable, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(json_str.encode("utf-8")).hexdigest()
+
+    def should_notify_for_cycle_event(
+        self,
+        mode: str,
+        errors: list | None = None,
+        actions_taken: int = 0,
+        score: float | None = None,
+        previous_score: float | None = None,
+        score_drift_threshold: float = DEFAULT_NOTIFICATION_SCORE_THRESHOLD,
+        metrics: dict[str, Any] | None = None,
+    ) -> bool:
+        """Determine whether a cycle event warrants a Discord notification.
+
+        Uses content-based deduplication via deterministic hash to suppress
+        notifications when cycle metrics haven't meaningfully changed.
+
+        Always notifies (returns True) when:
+        - errors are present
+        - actions_taken > 0
+        - score drift exceeds threshold (abs(score - previous_score) > threshold)
+
+        Otherwise, compares hash of current metrics against previously stored
+        hash for the given mode. If hash matches, notification is suppressed.
+
+        Args:
+            mode: The autocog mode (e.g., 'full', 'fast'). Used as part of
+                the Redis key to allow different hash tracking per mode.
+            errors: List of error strings from the cycle (can be None or empty)
+            actions_taken: Number of actions taken during the cycle
+            score: Current overall score from the cycle
+            previous_score: Previous cycle score for drift calculation
+            score_drift_threshold: Minimum score delta to always notify
+            metrics: Additional metrics dict for hash computation. Timestamps
+                and run_id keys are excluded for determinism.
+
+        Returns:
+            True if notification should be sent, False if it should be suppressed.
+        """
+        # Compute hash of current metrics FIRST (needed for storage even on "always notify" cases)
+        current_hash = self._compute_cycle_metrics_hash(
+            errors=errors,
+            actions_taken=actions_taken,
+            score=score,
+            previous_score=previous_score,
+            metrics=metrics,
+        )
+
+        # Get stored hash for this mode
+        stored_hash = self._get_stored_cycle_hash(mode)
+
+        # Always notify if errors are present
+        if errors:
+            logger.debug(
+                f"Cycle event has errors, always notify: mode={mode}, error_count={len(errors)}"
+            )
+            self._store_cycle_hash(mode, current_hash)
+            return True
+
+        # Always notify if actions were taken
+        if actions_taken > 0:
+            logger.debug(
+                f"Cycle event has actions_taken={actions_taken}, always notify"
+            )
+            self._store_cycle_hash(mode, current_hash)
+            return True
+
+        # Always notify if score drift exceeds threshold
+        if score is not None and previous_score is not None:
+            drift = abs(score - previous_score)
+            if drift > score_drift_threshold:
+                logger.debug(
+                    f"Cycle event score drift={drift:.4f} exceeds threshold={score_drift_threshold}, "
+                    f"always notify"
+                )
+                self._store_cycle_hash(mode, current_hash)
+                return True
+
+        # First run for this mode - always notify, store hash
+        if stored_hash is None:
+            logger.debug(
+                f"No stored hash for mode={mode}, first run - notifying and storing hash"
+            )
+            self._store_cycle_hash(mode, current_hash)
+            return True
+
+        # Hash matches previous run - suppress notification
+        if current_hash == stored_hash:
+            logger.debug(
+                f"Cycle hash unchanged for mode={mode}, suppressing notification "
+                f"(hash={current_hash[:16]}...)"
+            )
+            return False
+
+        # Hash differs - notify and update stored hash
+        logger.debug(
+            f"Cycle hash changed for mode={mode}, notifying and updating hash "
+            f"(old={stored_hash[:16]}..., new={current_hash[:16]}...)"
+        )
+        self._store_cycle_hash(mode, current_hash)
+        return True
 
     def add_to_digest(self, event: dict[str, Any]) -> bool:
         """Buffer a low-severity event for batched digest delivery.
