@@ -335,12 +335,13 @@ completed:
     completion_date: "2026-03-28"
     description: Add Redis/DB persistence for feature flags that currently reset on restart
     id: FEATURE-FLAGS-REDIS-001
-    merge_commit: "TBD"
+    merge_commit: "d1d7bc0b4"
     notes:
       - "Implemented in src/config/feature_flags.py"
       - "19 new tests added, all passing"
       - "Redis keys: chise:feature_flags:config:*"
     owner: dev
+    pr_number: 780
     priority: P1
     status: completed
     story_points: 2
@@ -367,6 +368,7 @@ backlog:
       - "Related: AUTOCOG-2026-03-27 sprint, ST-AUTOCOG-* stories"
       - "Fix: Standardized all bare 'python' calls to 'python3' in .woodpecker/ci.yaml"
     owner: senior-dev
+    pr_number: 774
     priority: P0-CRITICAL
     status: completed
     title: CI Infrastructure Drift - Docker PATH and ci-gate Mismatch Fixes
