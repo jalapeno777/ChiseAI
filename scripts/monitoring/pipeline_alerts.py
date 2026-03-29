@@ -57,6 +57,9 @@ class PipelineAlertManager:
     def check_and_alert(self):
         """Check pipeline health and send alerts if needed."""
         try:
+            # Check consumer health (independent of scheduler heartbeat)
+            self.check_consumer_health()
+
             heartbeat = self.redis.hgetall(self.HEARTBEAT_KEY)
 
             if not heartbeat:
@@ -119,9 +122,6 @@ class PipelineAlertManager:
                     )
                     self._record_alert("high_backlog")
 
-            # Check consumer health
-            self.check_consumer_health()
-
         except Exception as e:
             logger.exception(f"Error checking pipeline health: {e}")
 
@@ -168,7 +168,7 @@ class PipelineAlertManager:
                     self._record_consumer_alert("stale_consumer")
             # Check for consumer recovery
             else:
-                last_alert = self._get_last_alert_state()
+                last_alert = self._get_last_consumer_alert_state()
                 if last_alert == "stale_consumer":
                     self._send_alert(
                         severity=AlertSeverity.INFO,
@@ -234,6 +234,11 @@ class PipelineAlertManager:
         """Get last alert state from Redis."""
         state = self.redis.hgetall(self.ALERT_STATE_KEY)
         return state.get("last_alert_type", "")
+
+    def _get_last_consumer_alert_state(self) -> str:
+        """Get last consumer alert state from Redis."""
+        state = self.redis.hgetall(self.ALERT_STATE_KEY)
+        return state.get("last_consumer_alert_type", "")
 
     def _send_alert(
         self, severity: AlertSeverity, title: str, message: str, fields: dict
