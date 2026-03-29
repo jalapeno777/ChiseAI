@@ -2,7 +2,7 @@
 # Container-native scheduler for BrainEval cadence jobs
 # Story: ST-EVAL-SCHEDULER-001
 
-version: '3.8'
+version: "3.8"
 
 services:
   brain-scheduler:
@@ -11,37 +11,43 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.scheduler
     image: chiseai-brain-scheduler:latest
     container_name: chiseai-brain-scheduler
-    
+
     # Network configuration
     networks:
       - chiseai
-    
+
     # Environment variables
     environment:
       # Redis connection
       - REDIS_HOST=chiseai-redis
       - REDIS_PORT=6380
       - REDIS_DB=0
-      
+
       # Scheduler intervals (in seconds)
-      - SCHEDULER_INTERVAL_6H=${SCHEDULER_INTERVAL_6H:-21600}      # 6 hours
-      - SCHEDULER_INTERVAL_DAILY=${SCHEDULER_INTERVAL_DAILY:-86400}  # 24 hours
-      - SCHEDULER_INTERVAL_WEEKLY=${SCHEDULER_INTERVAL_WEEKLY:-604800}  # 7 days
-      
+      - SCHEDULER_INTERVAL_6H=${SCHEDULER_INTERVAL_6H:-21600} # 6 hours
+      - SCHEDULER_INTERVAL_DAILY=${SCHEDULER_INTERVAL_DAILY:-86400} # 24 hours
+      - SCHEDULER_INTERVAL_WEEKLY=${SCHEDULER_INTERVAL_WEEKLY:-604800} # 7 days
+
       # Scheduler configuration
       - SCHEDULER_OUTPUT_DIR=/app/_bmad-output/brain-eval/scheduler
       - SCHEDULER_HEALTH_PORT=8080
-      - SCHEDULER_CHECKPOINT_INTERVAL=300  # 5 minutes
-      
+      - SCHEDULER_CHECKPOINT_INTERVAL=300 # 5 minutes
+
       # Python configuration
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
-    
+
+      # Autocog configuration
+      - AUTOCOG_ENABLED=true
+      - AUTOCOG_OUTPUT_DIR=/app/_bmad-output/autocog
+
     # Volume mounts for output directory
     volumes:
       - brain-scheduler-output:/app/_bmad-output/brain-eval/scheduler
       - brain-scheduler-logs:/app/logs
-    
+      # Mount for autocog output
+      - brain-scheduler-autocog:/app/_bmad-output/autocog
+
     # Health check configuration
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -49,20 +55,20 @@ services:
       timeout: 10s
       start_period: 60s
       retries: 3
-    
+
     # Restart policy
     restart: unless-stopped
-    
+
     # Resource limits
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
-    
+
     # Logging configuration
     logging:
       driver: "json-file"
@@ -76,6 +82,8 @@ volumes:
   brain-scheduler-output:
     driver: local
   brain-scheduler-logs:
+    driver: local
+  brain-scheduler-autocog:
     driver: local
 
 # External network (managed by Terraform)

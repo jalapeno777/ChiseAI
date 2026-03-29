@@ -46,6 +46,13 @@ COPY scripts/evaluation/ /app/scripts/evaluation/
 COPY src/ /app/src/
 COPY config/ /app/config/
 
+# Copy ops scripts needed for autocog jobs
+COPY scripts/ops/ /app/scripts/ops/
+RUN chmod +x /app/scripts/ops/*.py
+
+# Create autocog output directory
+RUN mkdir -p /app/_bmad-output/autocog/cycles
+
 # Ensure scripts are executable
 RUN chmod +x /app/scripts/evaluation/*.py
 
