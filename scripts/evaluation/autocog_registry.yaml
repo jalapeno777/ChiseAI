@@ -1,0 +1,137 @@
+# Autocog Job Registry
+# Defines all autocog jobs for the evaluation system
+
+jobs:
+  - job_id: "autocog_15m_health_check"
+    enabled: true
+    cadence: "15m"
+    timeout_seconds: 120
+    risk_level: "low"
+    idempotency_key: "health-check-15m"
+    command: ["python", "-m", "scripts.evaluation.validate_cadence", "--check"]
+    preconditions:
+      - type: "file_exists"
+        params:
+          path: "scripts/evaluation/validate_cadence.py"
+    retry_policy:
+      max_attempts: 3
+      initial_delay_seconds: 30
+      backoff_multiplier: 2.0
+      max_delay_seconds: 300
+    required_approvals: []
+
+  - job_id: "autocog_hourly_kpi"
+    enabled: true
+    cadence: "1h"
+    timeout_seconds: 300
+    risk_level: "medium"
+    idempotency_key: "kpi-hourly"
+    command: ["python", "-m", "scripts.evaluation.kpi_scheduler", "--run"]
+    preconditions:
+      - type: "file_exists"
+        params:
+          path: "scripts/evaluation/kpi_scheduler.py"
+      - type: "env_var"
+        params:
+          name: "REDIS_HOST"
+    retry_policy:
+      max_attempts: 2
+      initial_delay_seconds: 60
+      backoff_multiplier: 1.5
+      max_delay_seconds: 600
+    required_approvals: []
+
+  - job_id: "autocog_6h_mini_brain"
+    enabled: true
+    cadence: "6h"
+    timeout_seconds: 600
+    risk_level: "medium"
+    idempotency_key: "mini-brain-6h"
+    command:
+      ["python", "-m", "scripts.evaluation.mini_brain_eval", "--cadence", "6h"]
+    preconditions:
+      - type: "file_exists"
+        params:
+          path: "scripts/evaluation/mini_brain_eval.py"
+      - type: "dir_exists"
+        params:
+          path: "output/evaluations"
+    retry_policy:
+      max_attempts: 2
+      initial_delay_seconds: 120
+      backoff_multiplier: 2.0
+      max_delay_seconds: 900
+    required_approvals: ["aria"]
+
+  - job_id: "autocog_daily_reflection"
+    enabled: true
+    cadence: "daily"
+    timeout_seconds: 1800
+    risk_level: "high"
+    idempotency_key: "daily-reflection"
+    command:
+      ["python", "-m", "scripts.evaluation.run_weekly_reflection", "--daily"]
+    preconditions:
+      - type: "file_exists"
+        params:
+          path: "scripts/evaluation/run_weekly_reflection.py"
+      - type: "env_var"
+        params:
+          name: "DATABASE_URL"
+    retry_policy:
+      max_attempts: 1
+      initial_delay_seconds: 300
+      backoff_multiplier: 1.0
+      max_delay_seconds: 300
+    required_approvals: ["aria", "craig"]
+
+  - job_id: "autocog_weekly_trends"
+    enabled: true
+    cadence: "weekly"
+    timeout_seconds: 3600
+    risk_level: "high"
+    idempotency_key: "weekly-trends"
+    command: ["python", "-m", "scripts.evaluation.run_daily_trends", "--weekly"]
+    preconditions:
+      - type: "file_exists"
+        params:
+          path: "scripts/evaluation/run_daily_trends.py"
+      - type: "flag"
+        params:
+          name: "ENABLE_WEEKLY_TRENDS"
+    retry_policy:
+      max_attempts: 1
+      initial_delay_seconds: 600
+      backoff_multiplier: 1.0
+      max_delay_seconds: 600
+    required_approvals: ["craig"]
+
+  - job_id: "autocog_monthly_report"
+    enabled: false
+    cadence: "monthly"
+    timeout_seconds: 7200
+    risk_level: "high"
+    idempotency_key: "monthly-report"
+    command: ["python", "-m", "scripts.evaluation.run_monthly_report"]
+    preconditions:
+      - type: "dir_exists"
+        params:
+          path: "output/reports"
+    retry_policy:
+      max_attempts: 1
+      initial_delay_seconds: 900
+      backoff_multiplier: 1.0
+      max_delay_seconds: 900
+    required_approvals: ["craig"]
+
+  # Non-autocog job (should be filtered out)
+  - job_id: "manual_backup"
+    enabled: true
+    cadence: "daily"
+    timeout_seconds: 300
+    risk_level: "low"
+    idempotency_key: "manual-backup"
+    command: ["python", "-m", "scripts.backup", "--all"]
+    preconditions: []
+    retry_policy: {}
+    required_approvals: []
