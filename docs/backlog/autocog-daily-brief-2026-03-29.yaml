@@ -1,0 +1,35 @@
+story_id: BL-AUTOCOG-DAILY-BRIEF-001
+title: "Daily Autocog Progress Brief (3-day monitoring)"
+created: "2026-03-29"
+due: "2026-04-01"
+priority: medium
+status: open
+owner: aria
+
+description: |
+  After the complete autocog remediation (25 PRs, 55 SP, ~400 tests),
+  monitor the autocog system daily for 3 days to verify it's running
+  correctly and producing value. Provide Craig with a brief summary each day.
+
+acceptance_criteria:
+  - Check scheduler container health (docker ps, health endpoint)
+  - Verify autocog jobs ran (check _bmad-output/autocog/cycles/ for daily artifacts)
+  - Check Redis for stored cycle hashes and aria briefing key
+  - Review any Discord notifications sent (should be minimal on stable system)
+  - Check for any errors in scheduler logs
+  - Summarize findings to Craig
+
+schedule:
+  - day1: "2026-03-30" # Monday — first full day with weekly jobs
+  - day2: "2026-03-31"
+  - day3: "2026-04-01" # Final check before closing
+
+context:
+  - Scheduler runs 18 jobs (13 BrainEval + 5 autocog)
+  - Autocog jobs: hourly belief consistency, daily improvement + constitution, weekly calibration + autonomy tune
+  - Notifications use hash suppression — only sends on change or error
+  - Shadow mode is default — no live changes applied
+  - Weekly summary runs Mondays at 04:00 UTC
+
+related:
+  - autocog-remediation-session-2026-03-29
