@@ -1,0 +1,49 @@
+services:
+  dashboard-emitter:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.dashboard-emitter
+    container_name: chiseai-dashboard-emitter
+    restart: unless-stopped
+    networks:
+      - chiseai
+    environment:
+      - INFLUXDB_URL=http://chiseai-influxdb:18087
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:?INFLUXDB_TOKEN required}
+      - INFLUXDB_ORG=${INFLUXDB_ORG:-chiseai}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET:-chiseai}
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PORT=6380
+      - REDIS_DB=0
+      - POLL_INTERVAL=1.0
+      - HEALTHCHECK_INTERVAL=30
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src:/app/scripts
+    volumes:
+      - dashboard-emitter-logs:/var/log/chiseai
+    labels:
+      - "project=chiseai"
+      - "service=dashboard-emitter"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python3 -c \"import redis; r=redis.Redis(host='host.docker.internal', port=6380); r.ping()\" && curl -s -o /dev/null -w '%{http_code}' http://chiseai-influxdb:18087/health -H 'Authorization: Token ${INFLUXDB_TOKEN}' | grep -q '200\\|204'",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  chiseai:
+    external: true
+
+volumes:
+  dashboard-emitter-logs:
+    driver: local
