@@ -885,51 +885,74 @@ class AutonomousCognitionFullCycle:
             result.artifact_paths["cycle"] = str(cycle_path)
             self._save_governance_state(governance_state)
             if notifier and notify_loop:
-                notify_loop.run_until_complete(
-                    notifier.notify_autocog_event(
-                        event_type="autocog_cycle_completed",
-                        severity="low" if result.status == "completed" else "critical",
-                        summary=f"Autonomous cycle {result.status}",
-                        impact=(
-                            "Mode pipeline executed successfully."
-                            if result.status == "completed"
-                            else "Cycle terminated with failure."
-                        ),
-                        top_metrics={
-                            "belief_conflicts": result.belief_conflicts,
-                            "belief_revisions": result.belief_revisions,
-                            "experiments_run": result.experiments_run,
-                            "promotions": result.promotions,
-                            "rejections": result.rejections,
-                        },
-                        artifact_path=str(cycle_path),
-                        run_id=run_id,
-                        title="Autonomous Cycle Completed",
-                        issue=(
-                            "A scheduled end-to-end cognition maintenance and "
-                            "improvement run was executed."
-                        ),
-                        intended_resolution=(
-                            "Complete the full phase pipeline and persist decision "
-                            "artifacts."
-                        ),
-                        expected_improvement=(
-                            "Sustains continuous learning, calibration, and governance "
-                            "visibility."
-                        ),
-                        outcome_status=(
-                            "success" if result.status == "completed" else "failed"
-                        ),
-                        evidence_reasoning=[
-                            f"mode={mode}",
-                            f"status={result.status}",
-                            f"belief_conflicts={result.belief_conflicts}",
-                            f"belief_revisions={result.belief_revisions}",
-                            f"experiments_run={result.experiments_run}",
-                            f"promotions={result.promotions}",
-                        ],
-                    )
+                # Check if notification should be suppressed via hash-based deduplication
+                should_notify = notifier.should_notify_for_cycle_event(
+                    mode=mode,
+                    errors=result.errors if hasattr(result, "errors") else None,
+                    actions_taken=len(actions),
+                    score=assessment.overall_score if assessment else None,
+                    previous_score=self._get_previous_assessment_score(),
+                    score_drift_threshold=0.01,
+                    metrics=result.metrics if hasattr(result, "metrics") else None,
                 )
+                if should_notify:
+                    notify_loop.run_until_complete(
+                        notifier.notify_autocog_event(
+                            event_type="autocog_cycle_completed",
+                            severity=(
+                                "low" if result.status == "completed" else "critical"
+                            ),
+                            summary=f"Autonomous cycle {result.status}",
+                            impact=(
+                                "Mode pipeline executed successfully."
+                                if result.status == "completed"
+                                else "Cycle terminated with failure."
+                            ),
+                            top_metrics={
+                                "belief_conflicts": result.belief_conflicts,
+                                "belief_revisions": result.belief_revisions,
+                                "experiments_run": result.experiments_run,
+                                "promotions": result.promotions,
+                                "rejections": result.rejections,
+                            },
+                            artifact_path=str(cycle_path),
+                            run_id=run_id,
+                            title="Autonomous Cycle Completed",
+                            issue=(
+                                "A scheduled end-to-end cognition maintenance and "
+                                "improvement run was executed."
+                            ),
+                            intended_resolution=(
+                                "Complete the full phase pipeline and persist decision "
+                                "artifacts."
+                            ),
+                            expected_improvement=(
+                                "Sustains continuous learning, calibration, and governance "
+                                "visibility."
+                            ),
+                            outcome_status=(
+                                "success" if result.status == "completed" else "failed"
+                            ),
+                            evidence_reasoning=[
+                                f"mode={mode}",
+                                f"status={result.status}",
+                                f"belief_conflicts={result.belief_conflicts}",
+                                f"belief_revisions={result.belief_revisions}",
+                                f"experiments_run={result.experiments_run}",
+                                f"promotions={result.promotions}",
+                            ],
+                        )
+                    )
+                else:
+                    logger.info(
+                        "Autocog cycle notification suppressed due to hash match "
+                        "(mode=%s, status=%s)",
+                        mode,
+                        result.status,
+                    )
+                    result.metrics["notifications_suppressed"] = (
+                        result.metrics.get("notifications_suppressed", 0) + 1
+                    )
                 notify_loop.run_until_complete(notifier.close())
         if notify_loop:
             notify_loop.close()
