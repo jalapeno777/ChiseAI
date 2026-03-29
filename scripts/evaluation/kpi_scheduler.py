@@ -49,6 +49,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+import yaml
+
+from scripts.evaluation.autocog_registry import Cadence, get_autocog_jobs, load_registry
+from scripts.evaluation.idempotency_checker import IdempotencyChecker
+
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -78,9 +83,7 @@ class SchedulerCheckpoint:
 
     Attributes:
         state: Current scheduler state
-        last_run_6h: Timestamp of last 6h cycle run
-        last_run_daily: Timestamp of last daily cycle run
-        last_run_weekly: Timestamp of last weekly cycle run
+        last_run: Dict mapping job_id to timestamp of last run
         cycle_count: Total number of cycles executed
         error_count: Number of errors encountered
         last_error: Last error message if any
@@ -88,21 +91,20 @@ class SchedulerCheckpoint:
     """
 
     state: str = SchedulerState.INITIALIZING.value
-    last_run_6h: float = 0.0
-    last_run_daily: float = 0.0
-    last_run_weekly: float = 0.0
+    last_run: dict[str, float] = field(default_factory=dict)
     cycle_count: int = 0
     error_count: int = 0
     last_error: str | None = None
-    version: str = "1.0"
+    version: str = "2.0"
 
     def to_dict(self) -> dict[str, Any]:
         """Convert checkpoint to dictionary."""
         return {
             "state": self.state,
-            "last_run_6h": self.last_run_6h,
-            "last_run_daily": self.last_run_daily,
-            "last_run_weekly": self.last_run_weekly,
+            "last_run_6h": self.last_run.get("ops.kpi_ingest_6h", 0.0),
+            "last_run_daily": self.last_run.get("ops.daily_trends", 0.0),
+            "last_run_weekly": self.last_run.get("governance.weekly_reflection", 0.0),
+            "last_run": self.last_run,
             "cycle_count": self.cycle_count,
             "error_count": self.error_count,
             "last_error": self.last_error,
@@ -112,16 +114,29 @@ class SchedulerCheckpoint:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SchedulerCheckpoint:
-        """Create checkpoint from dictionary."""
+        """Create checkpoint from dictionary with v1->v2 migration."""
+        version = data.get("version", "1.0")
+
+        if version == "1.0":
+            # Migration: convert old scalar fields to dict entries
+            last_run = {}
+            if "last_run_6h" in data:
+                last_run["ops.kpi_ingest_6h"] = data["last_run_6h"]
+            if "last_run_daily" in data:
+                last_run["ops.daily_trends"] = data["last_run_daily"]
+            if "last_run_weekly" in data:
+                last_run["governance.weekly_reflection"] = data["last_run_weekly"]
+        else:
+            # v2+: use dict directly
+            last_run = data.get("last_run", {})
+
         return cls(
             state=data.get("state", SchedulerState.INITIALIZING.value),
-            last_run_6h=data.get("last_run_6h", 0.0),
-            last_run_daily=data.get("last_run_daily", 0.0),
-            last_run_weekly=data.get("last_run_weekly", 0.0),
+            last_run=last_run,
             cycle_count=data.get("cycle_count", 0),
             error_count=data.get("error_count", 0),
             last_error=data.get("last_error"),
-            version=data.get("version", "1.0"),
+            version=version,
         )
 
 
@@ -175,6 +190,13 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
             "state": self.checkpoint.state,
             "checkpoint": self.checkpoint.to_dict(),
             "timestamp": datetime.now(UTC).isoformat(),
+            "jobs": {
+                job_id: {
+                    "last_run": ts,
+                    "since_last_run": time.time() - ts if ts > 0 else None,
+                }
+                for job_id, ts in self.checkpoint.last_run.items()
+            },
         }
 
         self.send_response(200 if status["status"] == "healthy" else 503)
@@ -285,6 +307,17 @@ class KPIScheduler:
 
         # Load checkpoint if exists
         self._load_checkpoint()
+
+        # Load job registry
+        self.registry_path = (
+            Path(project_root) / "config" / "autonomy_job_registry.yaml"
+        )
+        self.all_jobs = load_registry(self.registry_path)
+        self.autocog_jobs = get_autocog_jobs(self.all_jobs)
+        self.idempotency = IdempotencyChecker()
+        logger.info(
+            f"Loaded {len(self.all_jobs)} jobs, {len(self.autocog_jobs)} autocog jobs"
+        )
 
     def run_6h_cycle(self) -> int:
         """Run 6h mini ingest/eval cycle.
@@ -402,6 +435,59 @@ class KPIScheduler:
             logger.exception(f"Weekly cycle failed: {e}")
             self._log_cycle_complete("weekly", success=False, error=str(e))
             self.record_cycle_complete("weekly", success=False, error=str(e))
+            return 1
+
+    def run_autocog_job(self, job) -> int:
+        """Execute a single autocog job with idempotency check."""
+        # Check idempotency
+        if not self.idempotency.should_run(
+            job.job_id, job.idempotency_key, job.cadence.value
+        ):
+            logger.info(f"Job {job.job_id} already ran in this window, skipping")
+            return 0
+
+        # Check preconditions
+        if not job.is_ready():
+            logger.warning(f"Job {job.job_id} preconditions not met, skipping")
+            return 1
+
+        if self.dry_run:
+            logger.info(f"DRY RUN: Would run {job.job_id}")
+            self.idempotency.record_completion(
+                job.job_id, job.idempotency_key, success=True
+            )
+            return 0
+
+        # Execute job
+        try:
+            cmd = [
+                sys.executable
+            ] + job.command  # command is already list like ['python3', 'script.py', '--arg']
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=job.timeout_seconds,
+            )
+            success = result.returncode == 0
+            self.idempotency.record_completion(
+                job.job_id,
+                job.idempotency_key,
+                success=success,
+                error=result.stderr if not success else None,
+            )
+            return result.returncode
+        except subprocess.TimeoutExpired:
+            logger.error(f"Job {job.job_id} timed out after {job.timeout_seconds}s")
+            self.idempotency.record_completion(
+                job.job_id, job.idempotency_key, success=False, error="Timeout"
+            )
+            return 1
+        except Exception as e:
+            logger.exception(f"Job {job.job_id} failed: {e}")
+            self.idempotency.record_completion(
+                job.job_id, job.idempotency_key, success=False, error=str(e)
+            )
             return 1
 
     def run_all_dry(self) -> int:
@@ -557,23 +643,17 @@ class KPIScheduler:
         logger.info(f"Scheduler state changed to: {state.value}")
 
     def record_cycle_complete(
-        self, cycle: str, success: bool, error: str | None = None
+        self, job_id: str, success: bool, error: str | None = None
     ) -> None:
         """Record cycle completion in checkpoint.
 
         Args:
-            cycle: Cycle name (6h, daily, weekly)
+            job_id: Job identifier (e.g., '6h', 'daily', 'weekly', 'autocog.*')
             success: Whether cycle succeeded
             error: Error message if failed
         """
         current_time = time.time()
-
-        if cycle == "6h":
-            self.checkpoint.last_run_6h = current_time
-        elif cycle == "daily":
-            self.checkpoint.last_run_daily = current_time
-        elif cycle == "weekly":
-            self.checkpoint.last_run_weekly = current_time
+        self.checkpoint.last_run[job_id] = current_time
 
         self.checkpoint.cycle_count += 1
 
@@ -614,11 +694,11 @@ def run_daemon() -> int:
     scheduler = KPIScheduler(output_dir=output_dir, checkpoint=checkpoint)
     scheduler.update_checkpoint_state(SchedulerState.INITIALIZING)
 
-    # Initialize last run times from checkpoint
+    # Initialize last run times from checkpoint (v2: use dict)
     last_run = {
-        "6h": checkpoint.last_run_6h,
-        "daily": checkpoint.last_run_daily,
-        "weekly": checkpoint.last_run_weekly,
+        "6h": checkpoint.last_run.get("ops.kpi_ingest_6h", 0.0),
+        "daily": checkpoint.last_run.get("ops.daily_trends", 0.0),
+        "weekly": checkpoint.last_run.get("governance.weekly_reflection", 0.0),
     }
 
     logger.info(
@@ -665,8 +745,34 @@ def run_daemon() -> int:
             if current_time - last_run["weekly"] >= interval_weekly:
                 logger.info("Triggering weekly cycle")
                 exit_code = scheduler.run_weekly_cycle()
-                scheduler.record_cycle_complete("weekly", success=(exit_code == 0))
+                scheduler.record_cycle_complete(
+                    "governance.weekly_reflection", success=(exit_code == 0)
+                )
                 last_run["weekly"] = current_time
+
+            # Check autocog jobs
+            for job in scheduler.autocog_jobs:
+                if not job.enabled:
+                    continue
+
+                # Determine interval based on cadence
+                cadence_intervals = {
+                    Cadence.MIN_15: 15 * 60,
+                    Cadence.HOURLY: 60 * 60,
+                    Cadence.HOURLY_6: 6 * 60 * 60,
+                    Cadence.DAILY: 24 * 60 * 60,
+                    Cadence.WEEKLY: 7 * 24 * 60 * 60,
+                    Cadence.MONTHLY: 30 * 24 * 60 * 60,
+                }
+                interval = cadence_intervals.get(job.cadence, 24 * 60 * 60)
+
+                last_run_ts = scheduler.checkpoint.last_run.get(job.job_id, 0)
+                if current_time - last_run_ts >= interval:
+                    logger.info(f"Triggering autocog job {job.job_id}")
+                    exit_code = scheduler.run_autocog_job(job)
+                    scheduler.record_cycle_complete(
+                        job.job_id, success=(exit_code == 0)
+                    )
 
             # Sleep for 60 seconds before next check (or until shutdown)
             shutdown_requested.wait(timeout=60)
