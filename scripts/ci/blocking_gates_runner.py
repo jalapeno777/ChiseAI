@@ -98,6 +98,15 @@ class BlockingGatesRunner:
             "CI_STATUS_DIR", "/tmp/ci-status"
         )
         self.force_full = force_full or os.environ.get("CI_FORCE_FULL", "0") == "1"
+        if self.force_full:
+            try:
+                from audit.override_audit import log_override_if_active
+
+                log_override_if_active(
+                    "CI_FORCE_FULL", reason="force full gate run in blocking gates"
+                )
+            except Exception:
+                pass  # audit is best-effort
         self.report = GatesReport()
 
     def log(self, message: str) -> None:
