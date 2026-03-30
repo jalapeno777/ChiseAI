@@ -1108,34 +1108,6 @@ validations:
     test_method: automated
     owner: frontend-team
 
-  - id: V-NS-023
-    title: Performance Reporting System
-    epic_id: EP-NS-005
-    story_id: ST-NS-023
-    status: planned
-    description: Validate daily/weekly/monthly performance report generation
-    acceptance_criteria:
-      - Reports are generated automatically on schedule
-      - Reports include PnL, drawdown, win rate, and trade statistics
-      - Reports are delivered via email and dashboard
-      - Historical reports are archived and queryable
-    test_method: automated
-    owner: frontend-team
-
-  - id: V-NS-024
-    title: Discord Community Integration
-    epic_id: EP-NS-005
-    story_id: ST-NS-024
-    status: planned
-    description: Validate community discussion features via Discord integration
-    acceptance_criteria:
-      - Users can join community Discord server
-      - Signal discussions are threaded and searchable
-      - Community metrics are tracked (active users, engagement)
-      - Moderation tools are available for admins
-    test_method: manual
-    owner: frontend-team
-
   # EP-NS-006: Infrastructure & Quality
   - id: V-NS-029
     title: Test Coverage Compliance
@@ -3705,7 +3677,7 @@ validations:
     title: Autonomy Tuning + Constitution Audit
     epic_id: AUTOCOG-RESTORE-001
     story_id: ST-AUTOCOG-014
-    status: planned
+    status: validated
     description: Tune autonomy parameters and audit constitution compliance
     acceptance_criteria:
       - Autonomy parameters tuned for operational stability
