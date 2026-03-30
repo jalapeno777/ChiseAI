@@ -1066,3 +1066,23 @@ steps:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
       - "set -euo pipefail\npython3 scripts/ci/ci_gate.py\n"
+  pr-automerge:
+    pull: false
+    image: python:3.11-slim
+    depends_on:
+      - ci-gate
+    when:
+      event:
+        - pull_request
+    environment:
+      GITEA_BASE_URL: http://host.docker.internal:3000
+      GITEA_OWNER: craig
+      GITEA_REPO: ChiseAI
+      GITEA_TOKEN:
+        from_secret: gitea_token
+      CHISE_AUTOPR_BASE: main
+      CHISE_AUTOPR_PROTECTED_BRANCHES: main,develop
+      CHISE_AUTOPR_SOURCE_BRANCH: ${CI_COMMIT_BRANCH}
+      CHISE_AUTOPR_ENABLE_SERVER_AUTOMERGE: "1"
+    commands:
+      - python3 scripts/pr_lifecycle/auto_pr_merge.py automerge --enable-automerge
