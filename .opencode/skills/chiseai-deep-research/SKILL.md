@@ -1,6 +1,6 @@
 ---
 name: chiseai-deep-research
-description: Systematic deep research methodology with multi-source synthesis, evidence grading, and structured deliverables.
+description: "Evidence-first deep research methodology with multi-source synthesis, evidence grading, and structured deliverables."
 metadata:
   version: "1.1"
   opencode_min_version: "1.1.60"
@@ -21,9 +21,16 @@ Produce high-quality, evidence-backed research deliverables by enforcing a syste
 - **"Compare [A] vs [B] for [use case]"** — When multi-option analysis with evidence is needed
 - **"What are the best practices for [domain]?"** — When industry-standard approaches must be identified
 - **"Investigate [problem/solution space]"** — When exploring a problem space before architecture or strategy decisions
-- **Pre-architecture research** — Before `chiseai-create-architecture` when domain understanding is incomplete
+- **Pre-architecture research** — Before `bmad-create-architecture` when domain understanding is incomplete
 - **Pre-strategy research** — Before strategy DSL design when market/domain data is needed
 - **Technical evaluation** — When evaluating tools, libraries, frameworks, or platforms for adoption
+
+## When Not To Use
+
+- **Quick factual lookups** — Use direct web search or simple grep instead
+- **Shallow surveys** — When a 5-minute overview suffices and source traceability is unnecessary
+- **Real-time data needs** — When fresh live data is required (deep research is time-boxed and retrospective)
+- **Brainstorming mode** — When interactive ideation is needed (use bmad-brainstorming instead)
 
 ## Research Methodology
 
@@ -94,7 +101,7 @@ Produce a structured deliverable:
 
 ## Integration with Other Skills
 
-- **Before `chiseai-create-architecture`** — Use deep research to understand domain constraints and options
+- **Before `bmad-create-architecture`** — Use deep research to understand domain constraints and options
 - **Before `chiseai-strategy-dsl-design`** — Use deep research to evaluate market patterns and approaches
 - **Before `bmad-domain-research`** — Deep research can feed into formal domain research reports
 - **Before `bmad-technical-research`** — Deep research provides the evidence base for technical research
@@ -119,7 +126,7 @@ Stop and deliver early if:
 
 Always deliver a partial findings document rather than abandoning the research silently.
 
-## Troubleshooting / Safety
+## Troubleshooting/Safety
 
 | Problem                                 | Remedy                                                                                        |
 | --------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -136,7 +143,7 @@ Always deliver a partial findings document rather than abandoning the research s
 - **bmad-technical-research** — Technology evaluation and architecture research
 - **bmad-analyst** — Analyst agent for data interpretation
 - **chiseai-data-first** — Enforce data gathering before analysis
-- **chiseai-create-architecture** — Architecture design (post-research)
+- **bmad-create-architecture** — Architecture design (post-research)
 - **chiseai-strategy-dsl-design** — Strategy DSL design (post-research)
 - **bmad-market-research** — Competitive and customer market research
 
