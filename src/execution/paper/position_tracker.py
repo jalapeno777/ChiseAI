@@ -15,6 +15,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from redis.asyncio import Redis
+
+from .position_persistence import PositionPersistence
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,13 +103,22 @@ class PaperPositionTracker:
         _open_positions: Dictionary of open positions by ID
         _closed_positions: List of closed positions
         _lock: Async lock for thread safety
+        _persistence: Optional Redis persistence manager
     """
 
-    def __init__(self) -> None:
-        """Initialize the position tracker."""
+    def __init__(self, enable_persistence: bool = False) -> None:
+        """Initialize the position tracker.
+
+        Args:
+            enable_persistence: If True, enables Redis persistence for positions
+        """
         self._open_positions: dict[str, PaperPosition] = {}
         self._closed_positions: list[PaperPosition] = []
         self._lock = asyncio.Lock()
+        self._persistence: PositionPersistence | None = None
+
+        if enable_persistence:
+            self._persistence = PositionPersistence()
 
         logger.info("PaperPositionTracker initialized")
 
@@ -143,6 +156,10 @@ class PaperPositionTracker:
             )
 
             self._open_positions[position.position_id] = position
+
+            # Persist to Redis if persistence is enabled
+            if self._persistence is not None:
+                await self._persistence.persist_position(position)
 
             logger.info(
                 f"Opened position: {position.position_id} "
@@ -188,6 +205,10 @@ class PaperPositionTracker:
             # Move to closed positions
             del self._open_positions[position_id]
             self._closed_positions.append(position)
+
+            # Persist to Redis if persistence is enabled (updates closed state)
+            if self._persistence is not None:
+                await self._persistence.persist_position(position)
 
             logger.info(
                 f"Closed position: {position_id} "
@@ -277,7 +298,49 @@ class PaperPositionTracker:
         async with self._lock:
             self._open_positions.clear()
             self._closed_positions.clear()
+            # Also clear Redis persistence if enabled
+            if self._persistence is not None:
+                positions = await self._persistence.load_all_positions()
+                for pos in positions:
+                    await self._persistence.remove_position(pos.position_id)
             logger.info("All positions cleared")
+
+    async def enable_persistence(self, redis_client: Redis | None = None) -> None:
+        """Enable Redis persistence for positions.
+
+        Args:
+            redis_client: Optional Redis client to use
+        """
+        async with self._lock:
+            self._persistence = PositionPersistence(redis_client)
+            logger.info("Position persistence enabled")
+
+    async def recover_from_persistence(self) -> int:
+        """Recover positions from Redis persistence.
+
+        Loads all persisted positions from Redis and restores them to the tracker.
+        Open positions are restored to _open_positions, closed positions to
+        _closed_positions.
+
+        Returns:
+            Number of positions recovered
+        """
+        if self._persistence is None:
+            raise RuntimeError(
+                "Persistence not enabled. Call enable_persistence first."
+            )
+
+        async with self._lock:
+            positions = await self._persistence.load_all_positions()
+
+            for position in positions:
+                if position.is_open:
+                    self._open_positions[position.position_id] = position
+                else:
+                    self._closed_positions.append(position)
+
+            logger.info(f"Recovered {len(positions)} positions from persistence")
+            return len(positions)
 
     def get_stats(self) -> dict[str, Any]:
         """Get tracker statistics.
