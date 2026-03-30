@@ -130,6 +130,7 @@ class ICTDataCollector:
 
         Disables signal capture and flushes remaining data to Redis.
         """
+        # Acquire lock only for state changes and task cleanup
         async with self._lock:
             if not self._enabled:
                 logger.warning("Collection not started")
@@ -144,10 +145,11 @@ class ICTDataCollector:
                     await self._flush_task
                 self._flush_task = None
 
-            # Final flush
-            await self._flush_to_redis()
+        # Call flush OUTSIDE the lock to avoid deadlock
+        # (_flush_to_redis acquires the same lock; asyncio.Lock is not reentrant)
+        await self._flush_to_redis()
 
-            logger.info("ICT data collection stopped")
+        logger.info("ICT data collection stopped")
 
     async def collect_signal(
         self,
