@@ -6,9 +6,6 @@ Tests bot commands, notification delivery, and moderation tools.
 For V-NS-024: Signal posted → bot notifies → community discusses
 """
 
-from datetime import UTC
-from unittest.mock import AsyncMock, Mock, patch
-
 import pytest
 
 
