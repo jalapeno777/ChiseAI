@@ -9,6 +9,10 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+from execution.reconciliation.config import (
+    ReconciliationConfig,
+    ReconciliationTimingConfig,
+)
 from execution.reconciliation.models import (
     CountDiscrepancy,
     ReconciliationResult,
@@ -19,33 +23,6 @@ if TYPE_CHECKING:
     from execution.telemetry.exporter import ExecutionTelemetryExporter
 
 logger = logging.getLogger(__name__)
-
-
-class ReconciliationConfig:
-    """Configuration for reconciliation thresholds.
-
-    Attributes:
-        warn_threshold_pct: Percentage delta that triggers WARN status
-        fail_threshold_pct: Percentage delta that triggers FAIL status
-        categories: List of categories to reconcile
-    """
-
-    def __init__(
-        self,
-        warn_threshold_pct: float = 1.0,
-        fail_threshold_pct: float = 5.0,
-        categories: list[str] | None = None,
-    ):
-        """Initialize reconciliation config.
-
-        Args:
-            warn_threshold_pct: Percentage delta for WARN (default 1%)
-            fail_threshold_pct: Percentage delta for FAIL (default 5%)
-            categories: Categories to reconcile (default: signals, orders, fills, outcomes)
-        """
-        self.warn_threshold_pct = warn_threshold_pct
-        self.fail_threshold_pct = fail_threshold_pct
-        self.categories = categories or ["signals", "orders", "fills", "outcomes"]
 
 
 class OutcomeReconciliationService:
@@ -92,19 +69,25 @@ class OutcomeReconciliationService:
         environment: str = "paper",
         portfolio_id: str = "default",
         time_range: timedelta | None = None,
+        interval_seconds: int | None = None,
     ) -> ReconciliationResult:
         """Perform reconciliation between telemetry and persisted counts.
 
         Args:
             environment: Trading environment (paper/live)
             portfolio_id: Portfolio identifier
-            time_range: Time range to reconcile (default: last 24 hours)
+            time_range: Time range to reconcile (overrides interval_seconds)
+            interval_seconds: Lookback interval in seconds (3600=1h, 86400=24h).
+                Uses config default if not specified.
 
         Returns:
             ReconciliationResult with comparison details
         """
         if time_range is None:
-            time_range = timedelta(hours=24)
+            if interval_seconds is not None:
+                time_range = timedelta(seconds=interval_seconds)
+            else:
+                time_range = self.config.timing.default_time_range
 
         end_time = datetime.now(UTC)
         start_time = end_time - time_range
@@ -157,6 +140,50 @@ class OutcomeReconciliationService:
             logger.warning(f"Found {len(discrepancies)} discrepancies")
 
         return result
+
+    async def reconcile_hourly(
+        self,
+        environment: str = "paper",
+        portfolio_id: str = "default",
+    ) -> ReconciliationResult:
+        """Run reconciliation for last hour (3600s).
+
+        Convenience method for hourly reconciliation.
+
+        Args:
+            environment: Trading environment (paper/live)
+            portfolio_id: Portfolio identifier
+
+        Returns:
+            ReconciliationResult with comparison details
+        """
+        return await self.reconcile(
+            environment=environment,
+            portfolio_id=portfolio_id,
+            interval_seconds=ReconciliationTimingConfig.INTERVAL_HOURLY,
+        )
+
+    async def reconcile_daily(
+        self,
+        environment: str = "paper",
+        portfolio_id: str = "default",
+    ) -> ReconciliationResult:
+        """Run reconciliation for last 24 hours (86400s).
+
+        Convenience method for daily reconciliation.
+
+        Args:
+            environment: Trading environment (paper/live)
+            portfolio_id: Portfolio identifier
+
+        Returns:
+            ReconciliationResult with comparison details
+        """
+        return await self.reconcile(
+            environment=environment,
+            portfolio_id=portfolio_id,
+            interval_seconds=ReconciliationTimingConfig.INTERVAL_DAILY,
+        )
 
     def calculate_delta(
         self,
