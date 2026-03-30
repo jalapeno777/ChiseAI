@@ -304,7 +304,7 @@ resource "docker_container" "gitea" {
 
 resource "docker_container" "woodpecker_server" {
   name  = "woodpecker-server"
-  image = "woodpeckerci/woodpecker-server:latest"
+  image = "woodpeckerci/woodpecker-server:v3.12.0"
 
   env = [
     "WOODPECKER_OPEN=false",
@@ -361,7 +361,7 @@ resource "docker_container" "woodpecker_server" {
 
 resource "docker_container" "woodpecker_agent" {
   name  = "woodpecker-agent"
-  image = "woodpeckerci/woodpecker-agent:latest"
+  image = "woodpeckerci/woodpecker-agent:v3.12.0"
 
   env = [
     "WOODPECKER_SERVER=woodpecker-server:9000",
