@@ -6,7 +6,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-03-25"
+  last_updated: "2026-03-30"
 
 # Validation entries
 validations:
@@ -3791,7 +3791,7 @@ validations:
     title: CI Infrastructure Drift Prevention
     epic_id: CI-INFRA-DRIFT-001
     story_id: CI-INFRA-DRIFT-001
-    status: completed
+    status: validated
     description: |
       Validate CI infrastructure drift is detected and prevented through automated checks.
       CI infrastructure drift discovered during EP-AUTOCOG-005 closeout requiring immediate remediation.

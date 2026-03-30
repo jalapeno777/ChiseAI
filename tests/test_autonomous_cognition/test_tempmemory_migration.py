@@ -6,17 +6,11 @@ with rollback capability.
 
 from __future__ import annotations
 
-import tempfile
-from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-import yaml
-
-from src.autonomous_cognition.learning_store import LearningRecord, LearningStore
+from src.autonomous_cognition.learning_store import LearningStore
 from src.autonomous_cognition.tempmemory_migration import (
-    BACKUP_DIR,
     RECORD_TYPE_TEMPMEMORY,
     TempmemoryMigrator,
     TempmemoryRecord,

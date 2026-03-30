@@ -3,21 +3,20 @@
 from __future__ import annotations
 
 import time
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from src.autonomous_cognition.expansion import (
     DEFAULT_MIN_CONFIDENCE,
     DEFAULT_MIN_RELEVANCE_SCORE,
     DEFAULT_TIME_LIMIT_SECONDS,
+    BeliefExpander,
+    ExpandedBelief,
     ExpansionConfig,
     ExpansionProgress,
     ExpansionResult,
     ExpansionType,
-    ExpandedBelief,
+    expand_beliefs,
 )
-from src.autonomous_cognition.expansion import BeliefExpander, expand_beliefs
 
 
 class TestExpandedBelief:
