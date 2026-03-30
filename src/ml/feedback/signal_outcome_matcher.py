@@ -296,17 +296,16 @@ class SignalOutcomeMatcher:
 
         try:
             async with self.db_pool.acquire() as conn:
-                # Query pending outcomes (status = 'filled' but no signal_id)
+                # Query pending outcomes (no signal_id = unmatched)
                 rows = await conn.fetch(
                     """
                     SELECT outcome_id, order_id, symbol, side, fill_price,
                            fill_quantity, fill_timestamp, outcome_type, metadata
                     FROM signal_outcomes
-                    WHERE status = 'filled'
-                      AND signal_id IS NULL
-                      AND created_at < NOW() - INTERVAL '%s minutes'
+                    WHERE signal_id IS NULL
+                      AND created_at < NOW() - INTERVAL $1 minutes
                     ORDER BY fill_timestamp ASC
-                    LIMIT %s
+                    LIMIT $2
                     """,
                     min_age_minutes,
                     limit,
