@@ -10,7 +10,7 @@ import json
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -274,7 +274,7 @@ class TestReportModels:
 
     def test_weekly_report_model(self):
         """Test V-NS-023.11: WeeklyReport model."""
-        from src.reporting.models import WeeklyReport, StrategyPerformance
+        from src.reporting.models import StrategyPerformance, WeeklyReport
 
         # Create strategy performance entries
         strategies = [
