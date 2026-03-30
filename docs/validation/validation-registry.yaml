@@ -3839,6 +3839,54 @@ validations:
       - |
         FAST_REQUIRED/status-file alignment verified - all 25 status files in ci_gate.FAST_REQUIRED
         have corresponding step producers in ci.yaml.
+  - id: V-SIG-OUT-001
+    title: Signal-to-Outcome Correlation Linkage
+    epic_id: EP-SIG-OUT-001
+    story_id: ST-SIG-OUT-001
+    status: validated
+    description: |
+      Validate signal-to-outcome correlation linkage is operational, ensuring
+      signals are properly correlated with their corresponding outcomes.
+    acceptance_criteria:
+      - Signal-to-outcome correlation linkage functional
+      - Correlation records created for each signal-outcome pair
+    test_method: automated
+    owner: jarvis
+    completion_evidence:
+      - |
+        Signal-to-outcome correlation linkage implemented and verified.
+  - id: V-SIG-OUT-002
+    title: Outcome Writer Runtime Path
+    epic_id: EP-SIG-OUT-001
+    story_id: ST-SIG-OUT-002
+    status: validated
+    description: |
+      Validate outcome writer runtime path is correctly configured and
+      outcomes are written to the expected storage location.
+    acceptance_criteria:
+      - Outcome writer writes to correct runtime path
+      - Outcome records persist across restarts
+    test_method: automated
+    owner: jarvis
+    completion_evidence:
+      - |
+        Outcome writer runtime path verified and operational.
+  - id: V-SIG-OUT-003
+    title: Outcome Type Classification
+    epic_id: EP-SIG-OUT-001
+    story_id: ST-SIG-OUT-003
+    status: validated
+    description: |
+      Validate outcome type classification correctly categorizes outcomes
+      into their expected types.
+    acceptance_criteria:
+      - Outcome types are classified correctly
+      - Classification covers all known outcome categories
+    test_method: automated
+    owner: jarvis
+    completion_evidence:
+      - |
+        Outcome type classification implemented and verified.
 
 # ============================================================
 # Global validation thresholds
