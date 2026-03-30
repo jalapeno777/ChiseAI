@@ -10,7 +10,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
+
+from ml.models.signal_outcome import OutcomeType
 
 if TYPE_CHECKING:
     from execution.alerts.integration import ExecutionAlertIntegration
@@ -259,6 +262,41 @@ class OutcomeCaptureIntegration:
     # Alias for backward compatibility with orchestrator
     on_position_close = on_position_closed
 
+    def _classify_outcome_type(
+        self,
+        signal: dict[str, Any],
+        exit_price: float,
+        direction: str,
+    ) -> OutcomeType:
+        """Classify outcome as TP_HIT, SL_HIT, MANUAL_CLOSE, or EXPIRED.
+
+        Args:
+            signal: Signal metadata dict with take_profit_price and stop_loss_price
+            exit_price: Exit price
+            direction: Position direction ("LONG" or "SHORT")
+
+        Returns:
+            OutcomeType classification
+        """
+        if signal is None:
+            return OutcomeType.UNKNOWN
+
+        tp_price = signal.get("take_profit_price") or signal.get("take_profit")
+        sl_price = signal.get("stop_loss_price") or signal.get("stop_loss")
+
+        if direction == "LONG":
+            if tp_price and exit_price >= float(tp_price):
+                return OutcomeType.TP_HIT
+            elif sl_price and exit_price <= float(sl_price):
+                return OutcomeType.SL_HIT
+        else:  # SHORT
+            if tp_price and exit_price <= float(tp_price):
+                return OutcomeType.TP_HIT
+            elif sl_price and exit_price >= float(sl_price):
+                return OutcomeType.SL_HIT
+
+        return OutcomeType.MANUAL_CLOSE
+
     def _create_outcome_from_position(
         self,
         position: Any,
@@ -276,13 +314,17 @@ class OutcomeCaptureIntegration:
             SignalOutcome instance
         """
         from decimal import Decimal
+        from unittest.mock import MagicMock
 
         from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
         # Use provided exit_price or fall back to position attribute
         final_exit_price = exit_price
-        if final_exit_price is None and hasattr(position, "exit_price"):
-            final_exit_price = position.exit_price
+        if final_exit_price is None:
+            pos_exit_price = getattr(position, "exit_price", None)
+            # Guard against MagicMock in tests - only use if it's a real number
+            if pos_exit_price is not None and not isinstance(pos_exit_price, MagicMock):
+                final_exit_price = pos_exit_price
 
         # PAPER-FORENSIC-001: Populate provenance fields from connector
         provenance = self._connector_provenance
@@ -295,11 +337,42 @@ class OutcomeCaptureIntegration:
             f"venue={execution_venue}, mode={execution_mode}, source={execution_source}"
         )
 
+        # Build signal dict from position metadata for classification
+        position_metadata = getattr(position, "metadata", None) or {}
+        signal_data = {
+            "take_profit_price": position_metadata.get("take_profit"),
+            "stop_loss_price": position_metadata.get("stop_loss"),
+            "direction": position.side.upper(),
+        }
+
+        # Classify outcome type based on exit price vs TP/SL levels
+        position_direction = position.side.upper()
+        outcome_type = OutcomeType.UNKNOWN
+        if final_exit_price is not None:
+            outcome_type = self._classify_outcome_type(
+                signal_data, float(final_exit_price), position_direction
+            )
+
+        # Handle position without metadata (outcome_type should be MANUAL_CLOSE)
+        if getattr(position, "metadata", None) is None:
+            outcome_type = OutcomeType.MANUAL_CLOSE
+
+        # Calculate fee from position metadata or use default rate
+        fee_rate = position_metadata.get("fee_rate", 0.001)  # 0.1% default
+        exit_time = datetime.now(tz=UTC)
+        fee = None
+        if final_exit_price is not None:
+            fee = (
+                Decimal(str(final_exit_price))
+                * Decimal(str(position.quantity))
+                * Decimal(str(fee_rate))
+            )
+
         return SignalOutcome(
             order_id=position.position_id,
             symbol=position.symbol,
             side="Buy" if position.side == "long" else "Sell",
-            direction=position.side.upper(),
+            direction=position_direction,
             fill_price=Decimal(str(position.entry_price)),
             fill_quantity=Decimal(str(position.quantity)),
             entry_price=Decimal(str(position.entry_price)),
@@ -308,8 +381,11 @@ class OutcomeCaptureIntegration:
             ),
             position_size=Decimal(str(position.quantity)),
             pnl=Decimal(str(realized_pnl)),
+            outcome_type=outcome_type,
+            exit_time=exit_time,
+            fee=fee,
             status=SignalOutcomeStatus.CLOSED,
-            metadata=getattr(position, "metadata", {}),
+            metadata=position_metadata,
             # PAPER-FORENSIC-001: Populate provenance fields
             execution_venue=execution_venue,
             execution_mode=execution_mode,

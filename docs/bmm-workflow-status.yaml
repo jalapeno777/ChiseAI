@@ -437,6 +437,31 @@ completed:
       - "Added 4 new lessons, deprecated 5 old lessons"
       - "Related commit: 282ed00c"
     owner: jarvis
+  - id: EP-SIG-OUT-001
+    title: Signal-to-Outcome Pipeline
+    description: |
+      Signal-to-outcome correlation linkage, outcome writer runtime path, and
+      outcome type classification. Establishes the full pipeline from signal
+      generation through outcome recording and categorization.
+    completion_date: "2026-03-30"
+    priority: P1
+    status: completed
+    story_points: 3
+    stories:
+      - id: ST-SIG-OUT-001
+        title: Signal-to-outcome correlation linkage
+        status: completed
+      - id: ST-SIG-OUT-002
+        title: Outcome writer runtime path
+        status: completed
+      - id: ST-SIG-OUT-003
+        title: Outcome type classification
+        status: completed
+    notes:
+      - "ST-SIG-OUT-001: Signal-to-outcome correlation linkage"
+      - "ST-SIG-OUT-002: Outcome writer runtime path"
+      - "ST-SIG-OUT-003: Outcome type classification"
+    owner: jarvis
 backlog:
   - acceptance_criteria:
       - Docker images use consistent python/python3 PATH across all CI steps
@@ -1957,6 +1982,21 @@ epics:
       - ST-AUTOCOG-005-T2
       - ST-AUTOCOG-005-T3
     story_points: 5
+  - id: EP-SIG-OUT-001
+    name: Signal-to-Outcome Pipeline
+    description: >
+      Signal-to-outcome correlation linkage, outcome writer runtime path,
+      and outcome type classification. Establishes the full pipeline from
+      signal generation through outcome recording and categorization.
+    sprint_id: p0-7
+    status: completed
+    story_count: 3
+    story_ids:
+      - ST-SIG-OUT-001
+      - ST-SIG-OUT-002
+      - ST-SIG-OUT-003
+    story_points: 3
+    completion_date: "2026-03-30"
   - id: ST-ICT-028-A
     name: ICT Feature Engineering Pipeline
     title: ICT Feature Engineering Pipeline
