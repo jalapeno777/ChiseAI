@@ -3116,7 +3116,7 @@ validations:
     test_method: manual
     owner: operations
     observation_start: "2026-03-25"
-    target_completion: "2026-04-22"
+    target_completion: "2026-05-15"
     dependencies:
       - ST-ICT-020-PART-A completion
       - Paper trading environment active
@@ -3170,7 +3170,7 @@ validations:
     title: Redis Position Persistence
     epic_id: EP-ICT-006
     story_id: ST-ICT-023
-    status: planned
+    status: validated
     description: |
       Redis position state persistence - verify writes and reads to ensure
       position state survives process restarts.
@@ -3181,6 +3181,8 @@ validations:
       - Write latency < 10ms under normal load
     test_method: automated
     owner: platform-team
+    merge_commit: d92af20e6f812d1578868e46dd7fb1c4493c0976
+    pr_number: 671
     dependencies:
       - Redis connection availability
       - Position state schema defined
@@ -3189,7 +3191,7 @@ validations:
     title: Startup State Recovery
     epic_id: EP-ICT-006
     story_id: ST-ICT-023
-    status: planned
+    status: validated
     description: |
       Startup state recovery from Redis - verify recovery logic correctly
       reconstructs position state on application startup.
@@ -3200,6 +3202,8 @@ validations:
       - Graceful handling of missing Redis data
     test_method: automated
     owner: platform-team
+    merge_commit: d92af20e6f812d1578868e46dd7fb1c4493c0976
+    pr_number: 671
     dependencies:
       - V-ICT-015 completion
 
@@ -3207,7 +3211,7 @@ validations:
     title: Reconciliation Timing Configuration
     epic_id: EP-ICT-006
     story_id: ST-ICT-023
-    status: planned
+    status: validated
     description: |
       Reconciliation timing configuration - verify 3600s/86400s settings
       are correctly applied for hourly and daily reconciliation.
@@ -3218,6 +3222,8 @@ validations:
       - Configuration is externalized and auditable
     test_method: automated
     owner: operations
+    merge_commit: d92af20e6f812d1578868e46dd7fb1c4493c0976
+    pr_number: 671
     dependencies:
       - V-ICT-015 completion
 
@@ -3225,7 +3231,7 @@ validations:
     title: Data Collection Wiring
     epic_id: EP-ICT-006
     story_id: ST-ICT-024
-    status: planned
+    status: validated
     description: |
       Data collection wiring - verify ICT data collector is instantiated
       in production startup path and collecting experiment data.
@@ -3236,6 +3242,8 @@ validations:
       - Zero keys observed issue resolved
     test_method: automated
     owner: ml-team
+    merge_commit: 22a1068a
+    pr_number: 670
     dependencies:
       - ST-ICT-023 completion (Phase A)
 
@@ -3243,7 +3251,7 @@ validations:
     title: Experiment Key Generation
     epic_id: EP-ICT-006
     story_id: ST-ICT-024
-    status: planned
+    status: validated
     description: |
       Experiment key schema definition and generation - verify key format
       is consistent and collision-free.
@@ -3254,6 +3262,8 @@ validations:
       - No collision with existing Redis keys
     test_method: automated
     owner: ml-team
+    merge_commit: 22a1068a
+    pr_number: 670
     dependencies:
       - V-ICT-018 completion
 
@@ -3261,7 +3271,7 @@ validations:
     title: B0 Dry-Run Signal Rates
     epic_id: EP-ICT-006
     story_id: ST-ICT-024
-    status: planned
+    status: validated
     description: |
       B0 24-hour ICT signal-rate dry-run - verify signal rates remain
       within expected bounds during 24-hour observation.
@@ -3272,6 +3282,8 @@ validations:
       - Dry-run completes without errors
     test_method: automated
     owner: operations
+    merge_commit: 22a1068a
+    pr_number: 670
     dependencies:
       - V-ICT-018 completion
 

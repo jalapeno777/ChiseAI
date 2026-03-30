@@ -1912,6 +1912,7 @@ epics:
       - ST-ICT-020-PART-B completed via PR #777
       - Observation period end date: May 15, 2026 (extended from ~Apr 22, 2026)
       - Remediation plan added: 11.5 SP (ST-ICT-023, ST-ICT-024)
+      - Sprint ICT-S8-REMEDIATION: 9 SP (ST-ICT-025 through ST-ICT-028)
     sprint_id: ICT-S8
     status: in_progress
     story_count: 7
