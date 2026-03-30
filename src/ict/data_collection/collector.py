@@ -7,6 +7,7 @@ for experiment analysis.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import os
 import uuid
@@ -139,10 +140,8 @@ class ICTDataCollector:
             # Cancel flush task
             if self._flush_task:
                 self._flush_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self._flush_task
-                except asyncio.CancelledError:
-                    pass
                 self._flush_task = None
 
             # Final flush

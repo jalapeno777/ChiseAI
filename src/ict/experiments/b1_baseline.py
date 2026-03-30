@@ -6,7 +6,6 @@ for use as the control group in experiments.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any

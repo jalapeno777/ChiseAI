@@ -6,8 +6,10 @@ order flow, and market structure detection.
 
 import os
 
-# Lazy imports for data collection to avoid circular dependencies
+# Lazy imports to avoid circular dependencies
 _collector_instance = None
+_experiment_registry_instance = None
+_experiment_factory_instance = None
 
 
 def get_data_collector():
@@ -32,14 +34,32 @@ def get_data_collector():
     return _collector_instance
 
 
-# Import experiment components for convenience
-from src.ict.experiments import ExperimentKey, ExperimentRegistry
-from src.ict.experiments.factory import ExperimentFactory
+def get_experiment_registry():
+    """Get or create the global experiment registry instance."""
+    global _experiment_registry_instance
+
+    if _experiment_registry_instance is None:
+        from src.ict.experiments.registry import ExperimentRegistry
+
+        _experiment_registry_instance = ExperimentRegistry()
+
+    return _experiment_registry_instance
+
+
+def get_experiment_factory():
+    """Get or create the global experiment factory instance."""
+    global _experiment_factory_instance
+
+    if _experiment_factory_instance is None:
+        from src.ict.experiments.factory import ExperimentFactory
+
+        _experiment_factory_instance = ExperimentFactory()
+
+    return _experiment_factory_instance
+
 
 __all__ = [
-    "ICTDataCollector",
     "get_data_collector",
-    "ExperimentKey",
-    "ExperimentRegistry",
-    "ExperimentFactory",
+    "get_experiment_registry",
+    "get_experiment_factory",
 ]
