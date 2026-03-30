@@ -9,6 +9,7 @@ For ST-FINAL-CLOSURE-001: Blocker Closure
 from __future__ import annotations
 
 import logging
+import numbers
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -314,7 +315,6 @@ class OutcomeCaptureIntegration:
             SignalOutcome instance
         """
         from decimal import Decimal
-        from unittest.mock import MagicMock
 
         from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
@@ -322,8 +322,8 @@ class OutcomeCaptureIntegration:
         final_exit_price = exit_price
         if final_exit_price is None:
             pos_exit_price = getattr(position, "exit_price", None)
-            # Guard against MagicMock in tests - only use if it's a real number
-            if pos_exit_price is not None and not isinstance(pos_exit_price, MagicMock):
+            # Only use if it's a real number (rejects MagicMock, str, dict, etc.)
+            if pos_exit_price is not None and isinstance(pos_exit_price, numbers.Real):
                 final_exit_price = pos_exit_price
 
         # PAPER-FORENSIC-001: Populate provenance fields from connector
