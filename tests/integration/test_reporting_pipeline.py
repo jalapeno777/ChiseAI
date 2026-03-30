@@ -6,9 +6,7 @@ Tests all report types (daily, weekly, monthly) and export formats.
 For V-NS-023: Report generates → delivers → displays
 """
 
-import asyncio
 import json
-import os
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path

@@ -164,7 +164,7 @@ class TestReportingDiscordBridge:
         """Test V-NS-025.6: Long messages with newlines are split for Discord."""
         # Create a long message with newlines (realistic scenario)
         # Each line is under the limit, but total exceeds it
-        lines = ["Line of content number {}".format(i) * 10 for i in range(100)]
+        lines = [f"Line of content number {i}" * 10 for i in range(100)]
         long_content = "\n".join(lines)
 
         # Split message
