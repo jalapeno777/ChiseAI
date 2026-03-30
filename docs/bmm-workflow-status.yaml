@@ -8,7 +8,8 @@ metadata:
     - "MiniMax: DISABLED per PAPER-LLM-DIAG-001 (initialization delays)"
     - "Phase 4 Neuro-Symbolic Runtime Integration: CODE COMPLETE (2026-03-28)"
     - "Git divergence incident resolved 2026-03-28 - local main reset to origin/main after duplicate commit detection"
-    - "Weekly review 2026-03-29: P0 merge authority bypass fixed, override audit logging, post-merge verify script, CI tag drift fix, lessons normalization (8 branches merged)"
+    - "Weekly review 2026-03-29: P0 merge authority bypass fixed, override audit logging,"
+    - "  post-merge verify script, CI tag drift fix, lessons normalization (8 branches merged)"
 completed:
   - acceptance_criteria:
       - ST-LOCAL-001: Pre-push gate unification with timing metrics
@@ -369,7 +370,11 @@ completed:
     title: Consolidate Startup Scripts
   - id: SAFETY-MERGE-AUTHORITY-001
     title: Remove Direct Merge Bypass from Scripts
-    description: 'P0 CRITICAL - Removed direct merge bypass ("Do": "merge") from 4 scripts that could bypass CI checks. Files modified: scripts/pr_lifecycle/auto_pr_merge.py, scripts/ops/merge_reconciler.py, scripts/pr_lifecycle/recovery_handlers.py, scripts/gitea_pr_automerge.py.'
+    description: >-
+      P0 CRITICAL - Removed direct merge bypass ("Do": "merge") from 4 scripts
+      that could bypass CI checks. Files modified:
+      scripts/pr_lifecycle/auto_pr_merge.py, scripts/ops/merge_reconciler.py,
+      scripts/pr_lifecycle/recovery_handlers.py, scripts/gitea_pr_automerge.py.
     completion_date: "2026-03-29"
     priority: P0-CRITICAL
     status: completed
@@ -384,7 +389,10 @@ completed:
     owner: jarvis
   - id: REPO-AUDIT-001
     title: Override-Force Audit Logging
-    description: New scripts/audit/override_audit.py module. 5 scripts instrumented with Redis audit logging for CHISE_ALLOW_NON_MERLIN_*, FORCE_DEPENDENCY_AUDIT, CI_FORCE_FULL, ALLOW_SIMULATOR_FALLBACK. 30-day TTL, stderr fallback.
+    description: >-
+      New scripts/audit/override_audit.py module. 5 scripts instrumented with
+      Redis audit logging for CHISE_ALLOW_NON_MERLIN_*, FORCE_DEPENDENCY_AUDIT,
+      CI_FORCE_FULL, ALLOW_SIMULATOR_FALLBACK. 30-day TTL, stderr fallback.
     completion_date: "2026-03-29"
     priority: P1
     status: completed
@@ -397,7 +405,9 @@ completed:
     owner: jarvis
   - id: REPO-VERIFY-001
     title: Post-Merge Verification Automation
-    description: New scripts/ops/post_merge_verify.sh (~500 lines) automating the 5-step reconcile loop from AGENTS.md. Supports --ci JSON mode, exit codes 0/1/2.
+    description: >-
+      New scripts/ops/post_merge_verify.sh (~500 lines) automating the 5-step
+      reconcile loop from AGENTS.md. Supports --ci JSON mode, exit codes 0/1/2.
     completion_date: "2026-03-29"
     priority: P1
     status: completed
@@ -410,7 +420,10 @@ completed:
     owner: jarvis
   - id: REPO-CI-001
     title: CI Image Tag Drift Fix
-    description: scripts/ci/rebuild_ci_image.sh now updates ALL Woodpecker configs (ci.yaml, push.yaml, cron-security.yaml) via WOODPECKER_CONFIGS array. Added stale tag verification step.
+    description: >-
+      scripts/ci/rebuild_ci_image.sh now updates ALL Woodpecker configs
+      (ci.yaml, push.yaml, cron-security.yaml) via WOODPECKER_CONFIGS array.
+      Added stale tag verification step.
     completion_date: "2026-03-29"
     priority: P1
     status: completed
@@ -423,7 +436,11 @@ completed:
     owner: jarvis
   - id: LESSONS-001
     title: Lessons Normalization
-    description: "12 free-text lessons converted to LESSON template format, 3 duplicate truth-gate lessons consolidated (canonical: LESSON-20260318-worker-verification). Total: 59 structured lessons. Added 4 new lessons and deprecated 5 old lessons."
+    description: >-
+      "12 free-text lessons converted to LESSON template format, 3 duplicate
+      truth-gate lessons consolidated (canonical:
+      LESSON-20260318-worker-verification). Total: 59 structured lessons.
+      Added 4 new lessons and deprecated 5 old lessons."
     completion_date: "2026-03-29"
     priority: P1
     status: completed
@@ -471,9 +488,14 @@ backlog:
       - Validation registry updated with new validation entry for CI drift prevention
     created_date: "2026-03-28"
     description: |
-      CI infrastructure drift discovered during EP-AUTOCOG-005 closeout requiring immediate remediation:
-      1. Docker image python vs python3 PATH mismatch in CI steps - CI Docker images have inconsistent python executable naming causing step failures
-      2. FAST_REQUIRED/status-file expectation mismatch in ci-gate - ci-gate step has mismatched expectations on FAST_REQUIRED environment variable and status file format
+      CI infrastructure drift discovered during EP-AUTOCOG-005 closeout
+      requiring immediate remediation:
+      1. Docker image python vs python3 PATH mismatch in CI steps - CI
+         Docker images have inconsistent python executable naming causing
+         step failures
+      2. FAST_REQUIRED/status-file expectation mismatch in ci-gate -
+         ci-gate step has mismatched expectations on FAST_REQUIRED
+         environment variable and status file format
     discovered_during: EP-AUTOCOG-005
     estimated_points: 3
     id: CI-INFRA-DRIFT-001
