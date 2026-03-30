@@ -358,6 +358,7 @@ completed:
       hardcoded paths to /tmp/worktrees/PAPER-NOGO-REMEDIATION-002. The canonical
       launcher is run_signal_consumer.py which uses proper relative paths.
     id: PAPER-008
+    merge_commit: e0c0fe69199bb91045838cf21147a4584358d90d
     notes:
       - "start_consumer.py removed - had hardcoded /tmp/worktrees/PAPER-NOGO-REMEDIATION-002 paths"
       - "run_signal_consumer.py is the canonical launcher with relative paths"
@@ -379,6 +380,7 @@ completed:
     priority: P0-CRITICAL
     status: completed
     story_points: 2
+    merge_commit: 60fe02b6ffc56e8ac31e6a23645c4bc658897dbd
     merge_commits:
       - 67f149e
       - ef3b0f3
@@ -387,6 +389,7 @@ completed:
       - "PR #837 (partial), final fix via direct Merlin merge"
       - "Files: auto_pr_merge.py, merge_reconciler.py, recovery_handlers.py, gitea_pr_automerge.py"
     owner: jarvis
+    pr_number: 837
   - id: REPO-AUDIT-001
     title: Override-Force Audit Logging
     description: >-
@@ -397,7 +400,8 @@ completed:
     priority: P1
     status: completed
     story_points: 1
-    merge_commit: 7d2987a5
+    pr_number: '~'
+    merge_commit: 7d2987a58ebe51081a957a37f1d10479e80ca156
     notes:
       - "New module: scripts/audit/override_audit.py"
       - "5 scripts instrumented with Redis audit logging"
@@ -412,7 +416,8 @@ completed:
     priority: P1
     status: completed
     story_points: 2
-    merge_commit: 1ba19a85
+    pr_number: '~'
+    merge_commit: 1ba19a8512c510d5004db76b543a0ed873ea29ff
     notes:
       - "New script: scripts/ops/post_merge_verify.sh (~500 lines)"
       - "Automates 5-step reconcile loop from AGENTS.md"
@@ -428,7 +433,8 @@ completed:
     priority: P1
     status: completed
     story_points: 1
-    merge_commit: 4bc124e0
+    pr_number: '~'
+    merge_commit: 4bc124e01bcfa51d2bcba86174c1771071ce927c
     notes:
       - "Script: scripts/ci/rebuild_ci_image.sh"
       - "Updates all Woodpecker configs via WOODPECKER_CONFIGS array"
@@ -445,7 +451,8 @@ completed:
     priority: P1
     status: completed
     story_points: 2
-    merge_commit: 19253c5
+    pr_number: '847'
+    merge_commit: 19253c50c1f33f2ce1b380f93e049ce22d790fea
     notes:
       - "12 free-text lessons converted to LESSON template format"
       - "3 duplicate truth-gate lessons consolidated"
