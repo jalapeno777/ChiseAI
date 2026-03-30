@@ -83,7 +83,7 @@
           "id": "glm-5-turbo",
         },
         "glm-5.0-thinking": {
-          "id": "glm-5-turbo",
+          "id": "glm-5.1",
           "options": {
             "thinking": {
               "type": "enabled",
@@ -156,7 +156,7 @@
     "discord": {
       "type": "remote",
       "url": "http://host.docker.internal:9577/mcp",
-      "enabled": true,
+      "enabled": false,
     },
     "serena": {
       "type": "local",
