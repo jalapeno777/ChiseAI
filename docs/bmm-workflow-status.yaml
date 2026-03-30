@@ -400,7 +400,7 @@ completed:
     priority: P1
     status: completed
     story_points: 1
-    pr_number: '~'
+    pr_number: "~"
     merge_commit: 7d2987a58ebe51081a957a37f1d10479e80ca156
     notes:
       - "New module: scripts/audit/override_audit.py"
@@ -416,7 +416,7 @@ completed:
     priority: P1
     status: completed
     story_points: 2
-    pr_number: '~'
+    pr_number: "~"
     merge_commit: 1ba19a8512c510d5004db76b543a0ed873ea29ff
     notes:
       - "New script: scripts/ops/post_merge_verify.sh (~500 lines)"
@@ -433,7 +433,7 @@ completed:
     priority: P1
     status: completed
     story_points: 1
-    pr_number: '~'
+    pr_number: "~"
     merge_commit: 4bc124e01bcfa51d2bcba86174c1771071ce927c
     notes:
       - "Script: scripts/ci/rebuild_ci_image.sh"
@@ -451,7 +451,7 @@ completed:
     priority: P1
     status: completed
     story_points: 2
-    pr_number: '847'
+    pr_number: "847"
     merge_commit: 19253c50c1f33f2ce1b380f93e049ce22d790fea
     notes:
       - "12 free-text lessons converted to LESSON template format"
@@ -471,6 +471,8 @@ completed:
     priority: P1
     status: completed
     story_points: 3
+    pr_number: "859"
+    merge_commit: 4694d21703dfebe838f51df7846f0089896034be
     stories:
       - id: ST-SIG-OUT-001
         title: Signal-to-outcome correlation linkage
@@ -2026,6 +2028,8 @@ epics:
       - ST-SIG-OUT-003
     story_points: 3
     completion_date: "2026-03-30"
+    pr_number: "859"
+    merge_commit: 4694d21703dfebe838f51df7846f0089896034be
   - id: ST-ICT-028-A
     name: ICT Feature Engineering Pipeline
     title: ICT Feature Engineering Pipeline

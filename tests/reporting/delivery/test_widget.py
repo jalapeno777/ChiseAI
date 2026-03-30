@@ -1,6 +1,7 @@
 """Tests for ReportWidget dashboard component."""
 
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -220,7 +221,10 @@ class TestReportWidget:
         assert results == []  # No reports in cache
 
     @pytest.mark.asyncio
-    async def test_search_reports_by_title(self, widget, sample_widget_data):
+    @patch.object(ReportWidget, "_refresh_cache", new_callable=AsyncMock)
+    async def test_search_reports_by_title(
+        self, mock_refresh, widget, sample_widget_data
+    ):
         """Test searching reports by title."""
         # Manually populate cache
         widget._cache = sample_widget_data
@@ -230,7 +234,10 @@ class TestReportWidget:
         assert results[0].title == "Daily Report - 2026-03-29"
 
     @pytest.mark.asyncio
-    async def test_search_reports_by_summary(self, widget, sample_widget_data):
+    @patch.object(ReportWidget, "_refresh_cache", new_callable=AsyncMock)
+    async def test_search_reports_by_summary(
+        self, mock_refresh, widget, sample_widget_data
+    ):
         """Test searching reports by summary content."""
         widget._cache = sample_widget_data
 
@@ -239,7 +246,10 @@ class TestReportWidget:
         assert results[0].report_id == "report_2"
 
     @pytest.mark.asyncio
-    async def test_search_reports_case_insensitive(self, widget, sample_widget_data):
+    @patch.object(ReportWidget, "_refresh_cache", new_callable=AsyncMock)
+    async def test_search_reports_case_insensitive(
+        self, mock_refresh, widget, sample_widget_data
+    ):
         """Test search is case insensitive."""
         widget._cache = sample_widget_data
 
@@ -250,7 +260,10 @@ class TestReportWidget:
         assert len(results) == 1
 
     @pytest.mark.asyncio
-    async def test_search_reports_with_type_filter(self, widget, sample_widget_data):
+    @patch.object(ReportWidget, "_refresh_cache", new_callable=AsyncMock)
+    async def test_search_reports_with_type_filter(
+        self, mock_refresh, widget, sample_widget_data
+    ):
         """Test searching with report type filter."""
         widget._cache = sample_widget_data
 
@@ -259,7 +272,10 @@ class TestReportWidget:
         assert results[0].report_type == "weekly"
 
     @pytest.mark.asyncio
-    async def test_search_reports_no_match(self, widget, sample_widget_data):
+    @patch.object(ReportWidget, "_refresh_cache", new_callable=AsyncMock)
+    async def test_search_reports_no_match(
+        self, mock_refresh, widget, sample_widget_data
+    ):
         """Test search with no matching reports."""
         widget._cache = sample_widget_data
 
