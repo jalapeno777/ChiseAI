@@ -4,7 +4,6 @@ Tests for Discord Community Rate Limiter.
 Validates rate limiting behavior for commands, messages, and identify operations.
 """
 
-
 import pytest
 from src.community.discord.ratelimit import (
     RateLimitConfig,

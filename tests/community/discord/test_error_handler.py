@@ -4,7 +4,6 @@ Tests for Discord Community Error Handler.
 Validates error handling, exponential backoff, and error tracking.
 """
 
-
 import pytest
 from src.community.discord.error_handler import (
     APIError,
