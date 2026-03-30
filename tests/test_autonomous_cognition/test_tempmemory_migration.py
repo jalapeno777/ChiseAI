@@ -258,13 +258,11 @@ Content for file {i}.
 
         # Create index.md and regular file
         (tmp_path / "index.md").write_text("Index content")
-        (tmp_path / "regular.md").write_text(
-            """---
+        (tmp_path / "regular.md").write_text("""---
 story_id: ST-SKIP-001
 ---
 Content.
-"""
-        )
+""")
 
         migrator = TempmemoryMigrator(tempmemory_dir=tmp_path)
         result = migrator.migrate_all(create_backups=False)
