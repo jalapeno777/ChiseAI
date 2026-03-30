@@ -1004,23 +1004,56 @@ class DiscordClient:
                 method="bot",
             )
 
-        # Bot client sending requires the client to be running
-        # This is a placeholder for full bot implementation
-        # In production, this would:
-        # 1. Fetch the channel by ID from the guild
-        # 2. Validate guild lock
-        # 3. Send the message
-        # 4. Return the message ID
-        logger.warning("Bot client sending not fully implemented - using placeholder")
+        if not self.bot or not self.bot.is_ready():
+            logger.debug("Bot not connected/ready - falling back to webhook")
+            return DeliveryResult(
+                success=False,
+                error="Bot not available",
+                channel_name=resolved_channel_name,
+                channel_id=channel_id,
+                method="bot",
+            )
 
-        # Placeholder: Return failure to trigger webhook fallback
-        return DeliveryResult(
-            success=False,
-            error="Bot client sending not implemented (placeholder)",
-            channel_name=resolved_channel_name,
-            channel_id=channel_id,
-            method="bot",
-        )
+        try:
+            channel = self.bot.get_channel(channel_id)
+            if channel is None:
+                channel = await self.bot.fetch_channel(channel_id)
+
+            if channel is None:
+                logger.warning(f"Could not find channel {channel_id} via bot")
+                return DeliveryResult(
+                    success=False,
+                    error=f"Channel {channel_id} not found",
+                    channel_name=resolved_channel_name,
+                    channel_id=channel_id,
+                    method="bot",
+                )
+
+            # Send message
+            kwargs = {}
+            if content:
+                kwargs["content"] = content
+            if embeds:
+                kwargs["embeds"] = embeds
+
+            message = await channel.send(**kwargs)
+
+            return DeliveryResult(
+                success=True,
+                message_id=str(message.id),
+                channel_name=getattr(channel, "name", str(channel_id)),
+                channel_id=channel_id,
+                method="bot",
+            )
+        except Exception as e:
+            logger.warning(f"Bot send failed: {e}")
+            return DeliveryResult(
+                success=False,
+                error=str(e),
+                channel_name=resolved_channel_name,
+                channel_id=channel_id,
+                method="bot",
+            )
 
     def _validate_guild_for_send(self) -> bool:
         """Validate guild lock for sending messages.
