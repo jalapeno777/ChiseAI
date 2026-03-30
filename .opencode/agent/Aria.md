@@ -3,7 +3,7 @@ name: "aria"
 description: "Primary orchestrator. Strategy-first: gathers project context, aligns with Craig, delegates planning/execution to Jarvis, enforces acceptance criteria, live validation, and release hygiene."
 mode: primary
 # Model note:
-model: "openai/gpt-5.3-codex" # fallback intentionally disabled (Aria Codex-only policy)
+model: "zai-coding-plan/glm-5.0-thinking"       # "openai/gpt-5.3-codex" # fallback intentionally disabled (Aria Codex-only policy)
 temperature: 0.35
 permission:
   task:
