@@ -16,8 +16,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import joblib
-
 
 class ModelRegistryError(Exception):
     """Base exception for model registry errors."""
@@ -247,6 +245,8 @@ class FilesystemBackend(StorageBackend):
         metadata: ModelMetadata,
     ) -> ModelVersion:
         """Save a model with metadata to filesystem."""
+        import joblib
+
         model_dir = self._get_model_dir(metadata.model_name, metadata.version)
         model_dir.mkdir(parents=True, exist_ok=True)
 
@@ -269,6 +269,8 @@ class FilesystemBackend(StorageBackend):
 
     def load_model(self, model_name: str, version: str) -> tuple[Any, ModelMetadata]:
         """Load a model and its metadata from filesystem."""
+        import joblib
+
         model_dir = self._get_model_dir(model_name, version)
 
         if not model_dir.exists():
