@@ -39,7 +39,7 @@ class TestReportingDiscordBridge:
         scheduler = ReportScheduler(
             influxdb_client=mock_influxdb,
             output_dir=temp_output_dir,
-            default_discord_webhook="https://discord.com/api/webhooks/test/webhook",  # noqa: S104 - test URL
+            default_discord_webhook="https://discord.com/api/webhooks/test/webhook",  # allow-secret
         )
         return scheduler
 
@@ -58,7 +58,7 @@ class TestReportingDiscordBridge:
             name="test_discord_schedule",
             report_type="daily",
             cron_expression="0 9 * * *",
-            discord_webhook="https://discord.com/api/webhooks/test/schedule",  # noqa: S104 - test URL
+            discord_webhook="https://discord.com/api/webhooks/test/schedule",  # allow-secret
         )
 
         assert schedule.discord_webhook is not None
@@ -192,7 +192,7 @@ class TestDiscordAlertTypes:
         return ReportScheduler(
             influxdb_client=None,
             output_dir="./test_reports",
-            default_discord_webhook="https://discord.com/api/webhooks/test",  # noqa: S104
+            default_discord_webhook="https://discord.com/api/webhooks/test",  # allow-secret
         )
 
     def test_alert_emoji_mapping(self, report_scheduler):
@@ -247,7 +247,7 @@ class TestSubscriptionBasedDelivery:
             name="daily_trading",
             report_type="daily",
             cron_expression="0 9 * * *",
-            discord_webhook="https://discord.com/api/webhooks/trading",  # noqa: S104
+            discord_webhook="https://discord.com/api/webhooks/trading",  # allow-secret
         )
 
         # Add weekly schedule for general channel
@@ -255,7 +255,7 @@ class TestSubscriptionBasedDelivery:
             name="weekly_general",
             report_type="weekly",
             cron_expression="0 10 * * 0",
-            discord_webhook="https://discord.com/api/webhooks/general",  # noqa: S104
+            discord_webhook="https://discord.com/api/webhooks/general",  # allow-secret
         )
 
         assert schedule1.discord_webhook != schedule2.discord_webhook
@@ -296,7 +296,7 @@ class TestReportDeliveryReliability:
         return ReportScheduler(
             influxdb_client=None,
             output_dir="./test_reports",
-            default_discord_webhook="https://discord.com/api/webhooks/test",  # noqa: S104
+            default_discord_webhook="https://discord.com/api/webhooks/test",  # allow-secret
         )
 
     @pytest.mark.asyncio
@@ -310,7 +310,7 @@ class TestReportDeliveryReliability:
             return_value=False,
         ):
             result = await report_scheduler._send_to_discord(
-                "https://discord.com/api/webhooks/test",  # noqa: S104
+                "https://discord.com/api/webhooks/test",  # allow-secret
                 "Test message",
                 "Test Title",
             )
