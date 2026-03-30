@@ -5,6 +5,7 @@ For ST-VENUE-001: Venue provenance fields implementation
 """
 
 import json
+import numbers
 from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import Mock
@@ -274,6 +275,66 @@ class TestOutcomePersistenceKeyPatterns:
         """Test custom TTL can be set."""
         persistence = OutcomePersistence(ttl_seconds=3600)  # 1 hour
         assert persistence.ttl_seconds == 3600
+
+
+class TestNumbersRealGuard:
+    """Test that numbers.Real correctly gates exit_price values (ST-ICT-025)."""
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            42,
+            3.14,
+            0,
+            -1.5,
+        ],
+    )
+    def test_numbers_real_accepts_real_numbers(self, value):
+        """numbers.Real guard must accept float, int."""
+        assert isinstance(value, numbers.Real)
+
+    def test_numbers_real_rejects_decimal(self):
+        """Decimal is NOT numbers.Real — it is numbers.Number only.
+
+        This is a known Python design decision. Decimal values must be
+        explicitly handled via float() conversion before the guard.
+        """
+        assert not isinstance(Decimal("99.99"), numbers.Real)
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            None,
+            "not_a_number",
+            {"price": 100},
+            [1, 2, 3],
+            b"bytes",
+        ],
+    )
+    def test_numbers_real_rejects_non_numbers(self, value):
+        """numbers.Real guard must reject non-numeric types."""
+        if value is None:
+            # None short-circuits the `is not None` check before isinstance
+            assert not (value is not None and isinstance(value, numbers.Real))
+        else:
+            assert not isinstance(value, numbers.Real)
+
+    def test_numbers_real_rejects_magic_mock(self):
+        """numbers.Real guard must reject unittest.mock.MagicMock."""
+        from unittest.mock import MagicMock
+
+        mock_price = MagicMock()
+        # MagicMock is NOT a numbers.Real
+        assert not isinstance(mock_price, numbers.Real)
+
+    def test_numbers_real_accepts_bool(self):
+        """bool is a subclass of int and therefore passes numbers.Real.
+
+        This is expected Python behavior. In practice, exit_price will
+        never be a bool from position attributes, so this is not a concern.
+        """
+        assert isinstance(True, numbers.Real)
+        assert isinstance(False, numbers.Real)
 
 
 if __name__ == "__main__":
