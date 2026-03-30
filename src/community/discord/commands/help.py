@@ -7,7 +7,6 @@ with detailed usage information.
 
 import logging
 from dataclasses import dataclass
-from typing import Optional, List, Dict
 
 import discord
 from discord import app_commands
@@ -22,9 +21,9 @@ class CommandHelp:
     name: str
     description: str
     usage: str
-    examples: List[str]
-    aliases: List[str] = None
-    permissions: Optional[str] = None
+    examples: list[str]
+    aliases: list[str] = None
+    permissions: str | None = None
 
     def __post_init__(self):
         if self.aliases is None:
@@ -40,7 +39,7 @@ class CategoryHelp:
     name: str
     emoji: str
     description: str
-    commands: List[CommandHelp]
+    commands: list[CommandHelp]
 
 
 # Command help data organized by category
@@ -175,7 +174,7 @@ COMMAND_CATEGORIES = {
 
 
 def create_help_embed(
-    category: Optional[str] = None, command: Optional[str] = None
+    category: str | None = None, command: str | None = None
 ) -> discord.Embed:
     """
     Create a help embed.
@@ -258,7 +257,7 @@ def create_help_embed(
 
     # Create overview of categories
     overview = ""
-    for key, cat_help in COMMAND_CATEGORIES.items():
+    for _, cat_help in COMMAND_CATEGORIES.items():
         overview += f"{cat_help.emoji} **{cat_help.name}**: {cat_help.description}\n"
 
     embed.add_field(name="Categories", value=overview, inline=False)
@@ -308,8 +307,8 @@ class HelpCommand:
         )
         async def help_command(
             interaction: discord.Interaction,
-            category: Optional[str] = None,
-            command: Optional[str] = None,
+            category: str | None = None,
+            command: str | None = None,
         ) -> None:
             """Display help information."""
             if not self.bot.check_command_rate_limit(interaction.user.id):
@@ -327,7 +326,7 @@ class HelpCommand:
         @help_command.autocomplete("category")
         async def category_autocomplete(
             interaction: discord.Interaction, current: str
-        ) -> List[app_commands.Choice]:
+        ) -> list[app_commands.Choice]:
             """Autocomplete for category parameter."""
             categories = [
                 app_commands.Choice(name="Statistics 📊", value="stats"),

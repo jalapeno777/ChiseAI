@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from .user_auth import ROLE_HIERARCHY, UserRole
+from .user_auth import UserRole
 
 logger = logging.getLogger(__name__)
 

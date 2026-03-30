@@ -8,7 +8,6 @@ manage notification preferences, and view subscription status.
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, List
 
 import discord
 from discord import app_commands
@@ -36,7 +35,7 @@ class SubscriptionTier(Enum):
         return limits[self]
 
     @property
-    def features(self) -> List[str]:
+    def features(self) -> list[str]:
         """Features available for this tier."""
         feature_map = {
             SubscriptionTier.FREE: ["Basic signals", "Daily summary"],
@@ -67,11 +66,11 @@ class Subscription:
 
     user_id: int
     tier: SubscriptionTier
-    subscribed_at: Optional[str] = None
+    subscribed_at: str | None = None
     signals_received_today: int = 0
-    last_signal_reset: Optional[str] = None
-    enabled_pairs: List[str] = None
-    enabled_strategies: List[str] = None
+    last_signal_reset: str | None = None
+    enabled_pairs: list[str] = None
+    enabled_strategies: list[str] = None
 
     def __post_init__(self):
         if self.enabled_pairs is None:
@@ -120,7 +119,7 @@ class SubscriptionManager:
         sub.tier = tier
         logger.info(f"User {user_id} tier updated to {tier.value}")
 
-    async def update_pairs(self, user_id: int, pairs: List[str]) -> None:
+    async def update_pairs(self, user_id: int, pairs: list[str]) -> None:
         """
         Update enabled pairs for a user.
 
@@ -131,7 +130,7 @@ class SubscriptionManager:
         sub = await self.get_subscription(user_id)
         sub.enabled_pairs = pairs
 
-    async def update_strategies(self, user_id: int, strategies: List[str]) -> None:
+    async def update_strategies(self, user_id: int, strategies: list[str]) -> None:
         """
         Update enabled strategies for a user.
 
@@ -328,7 +327,7 @@ class SubscriptionCommands:
         @app_commands.describe(action="Action to perform (add, remove, list)")
         @app_commands.describe(pair="Trading pair (e.g., BTC/USDT)")
         async def sub_pairs(
-            interaction: discord.Interaction, action: str, pair: Optional[str] = None
+            interaction: discord.Interaction, action: str, pair: str | None = None
         ) -> None:
             """Manage which trading pairs to receive signals for."""
             if not self.bot.check_command_rate_limit(interaction.user.id):
@@ -431,7 +430,7 @@ class SubscriptionCommands:
         async def sub_strategies(
             interaction: discord.Interaction,
             action: str,
-            strategy: Optional[str] = None,
+            strategy: str | None = None,
         ) -> None:
             """Manage which trading strategies to receive signals for."""
             if not self.bot.check_command_rate_limit(interaction.user.id):

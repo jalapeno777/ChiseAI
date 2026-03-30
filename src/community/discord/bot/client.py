@@ -5,17 +5,15 @@ Implements the community bot with rate limiting, error handling,
 command registration, and event processing.
 """
 
-import asyncio
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Optional
 
 import discord
 from discord import app_commands
 
-from ..ratelimit import RateLimiter, RateLimitConfig
 from ..error_handler import ErrorHandler, ErrorHandlerConfig
+from ..ratelimit import RateLimitConfig, RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +25,7 @@ class BotConfig:
     command_prefix: str = "!"
     mention_enabled: bool = True
     devs: list[int] = field(default_factory=list)
-    error_webhook_url: Optional[str] = None
+    error_webhook_url: str | None = None
     rate_limit_config: RateLimitConfig = field(default_factory=RateLimitConfig)
     error_handler_config: ErrorHandlerConfig = field(default_factory=ErrorHandlerConfig)
 
@@ -43,7 +41,7 @@ class CommunityBot(discord.Client):
     - User authentication and authorization
     """
 
-    def __init__(self, config: Optional[BotConfig] = None):
+    def __init__(self, config: BotConfig | None = None):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.guild_messages = True
@@ -254,7 +252,7 @@ class CommunityBot(discord.Client):
 
 
 def create_bot(
-    token: Optional[str] = None, config: Optional[BotConfig] = None
+    token: str | None = None, config: BotConfig | None = None
 ) -> CommunityBot:
     """
     Factory function to create and configure the bot.

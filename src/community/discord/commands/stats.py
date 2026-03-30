@@ -7,7 +7,6 @@ and community activity metrics.
 
 import logging
 from dataclasses import dataclass
-from typing import Optional, List
 from datetime import datetime, timedelta
 
 import discord
@@ -28,8 +27,8 @@ class TradingStats:
     win_rate: float = 0.0
     avg_trade_size: float = 0.0
     most_traded_pair: str = "N/A"
-    period_start: Optional[datetime] = None
-    period_end: Optional[datetime] = None
+    period_start: datetime | None = None
+    period_end: datetime | None = None
 
 
 @dataclass

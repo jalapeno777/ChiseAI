@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import traceback
+from collections import defaultdict
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
@@ -264,9 +265,7 @@ class ErrorHandler:
         # Determine severity
         if isinstance(error, AuthenticationError):
             severity = ErrorSeverity.CRITICAL
-        elif isinstance(error, PermissionError):
-            severity = ErrorSeverity.HIGH
-        elif isinstance(error, RateLimitError):
+        elif isinstance(error, (PermissionError, RateLimitError)):
             severity = ErrorSeverity.HIGH
         elif isinstance(error, APIError):
             severity = ErrorSeverity.MEDIUM
@@ -408,7 +407,3 @@ class ErrorHandler:
             List of recent error entries.
         """
         return self._error_history[-limit:]
-
-
-# Import defaultdict at module level
-from collections import defaultdict

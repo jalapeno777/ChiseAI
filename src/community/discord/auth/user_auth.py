@@ -9,13 +9,13 @@ Provides:
 
 from __future__ import annotations
 
-import asyncio
 import functools
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -164,12 +164,16 @@ class DiscordUser:
             display_name=data.get("display_name", ""),
             role=UserRole(data.get("role", "guest")),
             trading_account=data.get("trading_account"),
-            joined_at=datetime.fromisoformat(data["joined_at"])
-            if "joined_at" in data
-            else datetime.now(UTC),
-            last_active=datetime.fromisoformat(data["last_active"])
-            if "last_active" in data
-            else datetime.now(UTC),
+            joined_at=(
+                datetime.fromisoformat(data["joined_at"])
+                if "joined_at" in data
+                else datetime.now(UTC)
+            ),
+            last_active=(
+                datetime.fromisoformat(data["last_active"])
+                if "last_active" in data
+                else datetime.now(UTC)
+            ),
             is_active=data.get("is_active", True),
             metadata=data.get("metadata", {}),
         )
@@ -345,7 +349,7 @@ class UserAuth:
             return None
 
         try:
-            from tools.redis_state import redis_state_hgetall, redis_state_json_get
+            from tools.redis_state import redis_state_hgetall
 
             key = self._get_redis_key(discord_id)
             user_data = redis_state_hgetall(key)
