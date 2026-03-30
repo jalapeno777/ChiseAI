@@ -3193,6 +3193,116 @@ validations:
     merge_commit: 123b9689
     pr_number: 660
 
+  # EP-ICT-006 Remediation: Position Persistence & Data Collection
+  - id: V-ICT-015
+    title: Redis Position Persistence
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-023
+    status: planned
+    description: |
+      Redis position state persistence - verify writes and reads to ensure
+      position state survives process restarts.
+    acceptance_criteria:
+      - Position state written to Redis on every update
+      - Position state readable from Redis after restart
+      - No data loss during normal restart sequence
+      - Write latency < 10ms under normal load
+    test_method: automated
+    owner: platform-team
+    dependencies:
+      - Redis connection availability
+      - Position state schema defined
+
+  - id: V-ICT-016
+    title: Startup State Recovery
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-023
+    status: planned
+    description: |
+      Startup state recovery from Redis - verify recovery logic correctly
+      reconstructs position state on application startup.
+    acceptance_criteria:
+      - Application reads position state from Redis on startup
+      - All open positions correctly recovered
+      - Position history integrity maintained
+      - Graceful handling of missing Redis data
+    test_method: automated
+    owner: platform-team
+    dependencies:
+      - V-ICT-015 completion
+
+  - id: V-ICT-017
+    title: Reconciliation Timing Configuration
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-023
+    status: planned
+    description: |
+      Reconciliation timing configuration - verify 3600s/86400s settings
+      are correctly applied for hourly and daily reconciliation.
+    acceptance_criteria:
+      - Hourly reconciliation runs at 3600s interval
+      - Daily reconciliation runs at 86400s interval
+      - Reconciliation completes within expected time window
+      - Configuration is externalized and auditable
+    test_method: automated
+    owner: operations
+    dependencies:
+      - V-ICT-015 completion
+
+  - id: V-ICT-018
+    title: Data Collection Wiring
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-024
+    status: planned
+    description: |
+      Data collection wiring - verify ICT data collector is instantiated
+      in production startup path and collecting experiment data.
+    acceptance_criteria:
+      - Data collector instantiated in production startup
+      - Data collector registers with signal pipeline
+      - Experiment keys written to Redis
+      - Zero keys observed issue resolved
+    test_method: automated
+    owner: ml-team
+    dependencies:
+      - ST-ICT-023 completion (Phase A)
+
+  - id: V-ICT-019
+    title: Experiment Key Generation
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-024
+    status: planned
+    description: |
+      Experiment key schema definition and generation - verify key format
+      is consistent and collision-free.
+    acceptance_criteria:
+      - Experiment keys follow defined schema (exp:control:{timestamp})
+      - Keys are unique per signal event
+      - Key format supports all experiment groups (B0-B5)
+      - No collision with existing Redis keys
+    test_method: automated
+    owner: ml-team
+    dependencies:
+      - V-ICT-018 completion
+
+  - id: V-ICT-020
+    title: B0 Dry-Run Signal Rates
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-024
+    status: planned
+    description: |
+      B0 24-hour ICT signal-rate dry-run - verify signal rates remain
+      within expected bounds during 24-hour observation.
+    acceptance_criteria:
+      - Signal rate stays within 10x baseline bounds
+      - No signal bursts during dry-run period
+      - Signal quality metrics within acceptable range
+      - Dry-run completes without errors
+    test_method: automated
+    owner: operations
+    dependencies:
+      - V-ICT-018 completion
+
   # EP-ICT-007: ICT Post-Validation Expansion (Phase 5)
   - id: V-ICT-023
     title: Dynamic Weight Adjustment
