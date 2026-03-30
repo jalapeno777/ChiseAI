@@ -1,6 +1,5 @@
 """Tests for report exporters (JSON, CSV, PDF)."""
 
-import io
 import json
 from datetime import UTC, datetime
 
@@ -435,8 +434,9 @@ Some detailed information here.
                 pass
         else:
             # With reportlab, should work with actual canvas
-            from reportlab.pdfgen import canvas
             import io
+
+            from reportlab.pdfgen import canvas
 
             buffer = io.BytesIO()
             c = canvas.Canvas(buffer)

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-import time
+
+import pytest
 
 from reporting.delivery.webhook import WebhookNotifier
 
