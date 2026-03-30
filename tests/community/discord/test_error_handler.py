@@ -4,20 +4,16 @@ Tests for Discord Community Error Handler.
 Validates error handling, exponential backoff, and error tracking.
 """
 
-import asyncio
-import time
-from unittest.mock import MagicMock, AsyncMock, patch
 
 import pytest
-
 from src.community.discord.error_handler import (
-    ErrorHandler,
-    ErrorSeverity,
-    DiscordError,
-    RateLimitError,
     APIError,
     AuthenticationError,
+    DiscordError,
+    ErrorHandler,
+    ErrorSeverity,
     PermissionError,
+    RateLimitError,
 )
 
 

@@ -4,15 +4,11 @@ Tests for Discord Community Rate Limiter.
 Validates rate limiting behavior for commands, messages, and identify operations.
 """
 
-import asyncio
-import time
-from unittest.mock import MagicMock
 
 import pytest
-
 from src.community.discord.ratelimit import (
-    RateLimiter,
     RateLimitConfig,
+    RateLimiter,
     RateLimitStatus,
 )
 
