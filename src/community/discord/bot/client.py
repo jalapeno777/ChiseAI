@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 import discord
 from discord import app_commands
 
-from ..error_handler import ErrorHandler, ErrorHandlerConfig
+from ..error_handler import ErrorHandler
 from ..ratelimit import RateLimitConfig, RateLimiter
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,9 @@ class BotConfig:
     devs: list[int] = field(default_factory=list)
     error_webhook_url: str | None = None
     rate_limit_config: RateLimitConfig = field(default_factory=RateLimitConfig)
-    error_handler_config: ErrorHandlerConfig = field(default_factory=ErrorHandlerConfig)
+    error_max_retries: int = 3
+    error_initial_backoff: float = 1.0
+    error_max_backoff: float = 60.0
 
 
 class CommunityBot(discord.Client):
@@ -56,7 +58,12 @@ class CommunityBot(discord.Client):
         self.rate_limiter = RateLimiter(config=self.config.rate_limit_config)
 
         # Initialize error handler
-        self.error_handler = ErrorHandler(config=self.config.error_handler_config)
+        self.error_handler = ErrorHandler(
+            max_retries=self.config.error_max_retries,
+            initial_backoff=self.config.error_initial_backoff,
+            max_backoff=self.config.error_max_backoff,
+            ops_webhook_url=self.config.error_webhook_url,
+        )
 
         # Command tree for slash commands
         self.tree = app_commands.CommandTree(self)
@@ -108,10 +115,10 @@ class CommunityBot(discord.Client):
             return
 
         # Check message rate limit
-        if not self.rate_limiter.check_message_rate(
-            message.channel.id, message.author.id
-        ):
-            limit_status = self.rate_limiter.get_status("message", message.channel.id)
+        is_allowed, limit_status = await self.rate_limiter.check_channel_message(
+            str(message.channel.id)
+        )
+        if not is_allowed:
             remaining = limit_status.remaining if limit_status else 0
             await message.channel.send(
                 f"⚠️ Message rate limit reached. Please wait before sending more messages. ({remaining} remaining)"
@@ -136,7 +143,7 @@ class CommunityBot(discord.Client):
         )
 
     async def on_command_error(
-        self, context: discord.ApplicationContext, error: Exception
+        self, context: discord.AppCommandContext, error: Exception
     ) -> None:
         """
         Handle errors from application commands.
@@ -148,7 +155,8 @@ class CommunityBot(discord.Client):
         logger.error(f"Command error in {context.command}: {error}")
 
         # Check if it's a rate limit error
-        if self.rate_limiter.is_rate_limited(context.user.id):
+        user_status = self.rate_limiter.get_user_status(str(context.user.id))
+        if user_status.is_limited:
             await context.response.send_message(
                 "⚠️ You are rate limited. Please wait before using more commands.",
                 ephemeral=True,
@@ -163,7 +171,11 @@ class CommunityBot(discord.Client):
             return
 
         # Handle other errors
-        error_id = await self.error_handler.handle_error(
+        import uuid
+
+        error_id = f"err-{uuid.uuid4().hex[:8]}"
+        await self.error_handler.handle_event_error(
+            event="on_command_error",
             error=error,
             context={
                 "command": context.command.name if context.command else "unknown",
@@ -193,11 +205,13 @@ class CommunityBot(discord.Client):
             "kwargs": str(kwargs)[:500],
         }
 
-        await self.error_handler.handle_error(
-            error=Exception(f"Event error in {event_method}"), context=error_info
+        await self.error_handler.handle_event_error(
+            event=event_method,
+            error=Exception(f"Event error in {event_method}"),
+            context=error_info,
         )
 
-    def check_command_rate_limit(self, user_id: int) -> bool:
+    async def check_command_rate_limit(self, user_id: int) -> bool:
         """
         Check if a user is rate limited for commands.
 
@@ -207,7 +221,8 @@ class CommunityBot(discord.Client):
         Returns:
             True if allowed, False if rate limited
         """
-        return self.rate_limiter.check_command_rate(user_id)
+        is_allowed, _ = await self.rate_limiter.check_user_command(str(user_id))
+        return is_allowed
 
     def get_command_remaining(self, user_id: int) -> int:
         """
@@ -219,7 +234,7 @@ class CommunityBot(discord.Client):
         Returns:
             Number of remaining commands
         """
-        status = self.rate_limiter.get_status("command", user_id)
+        status = self.rate_limiter.get_user_status(str(user_id))
         return status.remaining if status else 0
 
     def register_command(self, name: str, command) -> None:
