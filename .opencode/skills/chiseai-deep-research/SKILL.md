@@ -1,8 +1,8 @@
 ---
 name: chiseai-deep-research
-description: Systematic deep research methodology for complex technical and domain topics requiring multi-source synthesis, evidence grading, and structured deliverables.
+description: Systematic deep research methodology with multi-source synthesis, evidence grading, and structured deliverables.
 metadata:
-  version: "1.0"
+  version: "1.1"
   opencode_min_version: "1.1.60"
   author: "ChiseAI Team"
   last_updated: "2026-03-30"
@@ -106,3 +106,45 @@ Produce a structured deliverable:
 - **Date-ignorant research** — Using outdated information for fast-moving technologies
 - **Summary-only delivery** — Providing a brief summary without the detailed evidence backing it
 - **Skipping the gap analysis** — Not acknowledging what could not be found or verified
+
+## Exit Conditions
+
+Stop and deliver early if:
+
+- **Source exhaustion** — No new relevant sources found after 3 consecutive searches with varied queries
+- **Time budget exceeded** — The estimated depth threshold was reached; narrow scope and deliver what was found
+- **User redirects** — User explicitly changes scope or cancels the research mid-stream
+- **Sufficient confidence** — All research questions have A or B grade evidence and success criteria are met
+- **Contradiction dead-end** — Core claim has F-Contradicted evidence with no resolution path; flag and escalate
+
+Always deliver a partial findings document rather than abandoning the research silently.
+
+## Troubleshooting / Safety
+
+| Problem                                 | Remedy                                                                                        |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Too many sources, drowning in data      | Narrow scope to top 3 most relevant questions; use evidence grading to prioritize A/B sources |
+| All sources are D-grade                 | Flag explicitly; do not present as fact; recommend primary-source investigation               |
+| Search tools return no results          | Try alternate query phrasing, broader terms, or different search tool                         |
+| Sources contradict each other           | Present all positions with evidence grades; do not pick a side without A-grade evidence       |
+| Research scope expanding uncontrollably | Time-box explicitly; document deferred items under Gaps and Risks                             |
+| Hallucination risk (no sources found)   | State "I could not verify this" rather than fabricating; mark as D-grade                      |
+
+## Related Skills
+
+- **bmad-domain-research** — Formal domain/industry research report generation
+- **bmad-technical-research** — Technology evaluation and architecture research
+- **bmad-analyst** — Analyst agent for data interpretation
+- **chiseai-data-first** — Enforce data gathering before analysis
+- **chiseai-create-architecture** — Architecture design (post-research)
+- **chiseai-strategy-dsl-design** — Strategy DSL design (post-research)
+- **bmad-market-research** — Competitive and customer market research
+
+## Related Commands
+
+No dedicated commands. This skill is invoked by agent routing when the task matches "When To Use" triggers.
+
+Use standard iteration commands for session management:
+
+- `.opencode/command/chise-iterloop-start.md` — Start iteration tracking
+- `.opencode/command/chise-iterloop-close.md` — Close iteration and promote learnings
