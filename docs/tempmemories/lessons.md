@@ -922,4 +922,77 @@ LESSON
 - added_utc: 2026-03-28T00:00:00Z
 ```
 
+```text
+LESSON
+- id: LESSON-20260330-pre-code-research-gate
+- context: ST-ICT-026 was a 3SP no-op during EP-ICT-006 signal review - sized before auditing actual code
+- trigger: HIGH-severity finding sized without verifying root cause in actual codebase
+- actionable_rule: MANDATORY: Audit actual call sites and code paths before sizing HIGH-severity findings. Never size remediation stories based on report descriptions alone.
+- applies_to:
+  - jarvis
+  - aria
+  - senior-dev
+- expected_outcome: Zero wasted SP on no-op stories; all HIGH findings code-verified before story creation
+- evidence_ref: ST-ICT-026 (EP-ICT-006 remediation), MagicMock guard was real culprit not exit_price propagation
+- added_utc: 2026-03-30T12:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260330-decimal-not-numbers-real
+- context: Python Decimal values return False for isinstance(x, numbers.Real). Exchange connector prices are always float so numbers.Real guard is safe, but this is an implicit assumption.
+- trigger: ST-ICT-025 added numbers.Real guard for price validation
+- actionable_rule: When using isinstance(x, numbers.Real), document that Decimal values will return False. If exchange connectors ever return Decimal, this check will silently filter valid prices.
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: Documented assumption for numbers.Real usage in price validation paths
+- evidence_ref: ST-ICT-025 (EP-ICT-006), src/signal_generation/ price validators
+- added_utc: 2026-03-30T12:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260330-metadata-none-vs-dict
+- context: metadata=None and metadata={} both yield MANUAL_CLOSE but through different code paths
+- trigger: ST-ICT-027 metadata normalization revealed dual code paths
+- actionable_rule: Tests must cover both metadata=None and metadata={} cases when normalizing metadata. Never assume they are equivalent in behavior.
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: Both None and empty-dict metadata paths tested in outcome classification
+- evidence_ref: ST-ICT-027 (EP-ICT-006), outcome type classification tests
+- added_utc: 2026-03-30T12:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260330-no-runtime-verification
+- context: All 5 EP-ICT-006 stories closed without verifying the experiment was actually running in production
+- trigger: EP-ICT-006 closeout revealed no runtime verification step
+- actionable_rule: Future wiring/integration stories MUST include "verified running in production" in acceptance criteria. Code-complete is not sufficient for stories that deploy runtime components.
+- applies_to:
+  - jarvis
+  - aria
+  - senior-dev
+- expected_outcome: All runtime-affecting stories include production verification in acceptance criteria
+- evidence_ref: EP-ICT-006 closeout, all ST-ICT stories
+- added_utc: 2026-03-30T12:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260330-silent-outcome-failure
+- context: In-memory position tracker lost state on restart causing positions to never close. No error raised, just no outcomes generated.
+- trigger: EP-ICT-006 outcome pipeline debugging revealed silent failure mode
+- actionable_rule: Consider adding staleness alerts for positions older than N hours. Any system that silently drops state on restart is a P1 reliability risk.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Staleness detection for long-lived in-memory state; alerting on silent data loss
+- evidence_ref: EP-ICT-006 outcome pipeline, position tracker restart behavior
+- added_utc: 2026-03-30T12:00:00Z
+```
+
 (End of file - total 720 lines)

@@ -1914,7 +1914,8 @@ epics:
       - Remediation plan added: 11.5 SP (ST-ICT-023, ST-ICT-024)
       - Sprint ICT-S8-REMEDIATION: 9 SP (ST-ICT-025 through ST-ICT-028)
     sprint_id: ICT-S8
-    status: in_progress
+    completion_date: "2026-03-30"
+    status: completed
     story_count: 7
     story_ids:
       - ST-ICT-019
@@ -1953,6 +1954,33 @@ epics:
         pr_number: 660
         test_results:
           passed: 15
+      - id: ST-ICT-025
+        merge_commit: b2ff6c998
+        pr_number: 668
+        test_results:
+          passed: 24
+        notes: "Cross-timeframe zone awareness - numbers.Real guard for price validation"
+      - id: ST-ICT-027
+        merge_commit: 327667dea
+        pr_number: 667
+        test_results:
+          passed: 18
+        notes: "Metadata normalization - consistent None vs {} handling"
+      - id: ST-ICT-028
+        merge_commit: d9cca896b
+        pr_number: 860
+        test_results:
+          passed: 12
+        notes: "Checkpoint date correction for observation period"
+    pending_monitoring:
+      items:
+        - metric: UNKNOWN outcome rate
+          target: "<20% for new outcomes"
+          duration: 7 days from 2026-03-30
+        - metric: ICT signal collection rate
+          target: ">=5/day for statistical power"
+          duration: through 2026-05-15
+      observation_period_end: "2026-05-15"
   - description:
       Post-validation expansion work including dynamic weight adjustment, zone-to-signal
       mapping, cross-timeframe awareness, liquidity sweeps, premium/discount zones,
@@ -8187,6 +8215,27 @@ stories:
     pr_number: 683
     story_points: 2
     title: ICT Critical Fixes (Feature Flags + Shadow Tester)
+  - id: M-4
+    title: joblib lazy import optimization
+    priority: low
+    status: deferred
+    description: "Low-priority optimization to lazy-import joblib in ICT signal modules"
+    source_epic: EP-ICT-006
+    created_date: "2026-03-30"
+  - id: M-5
+    title: float comparison tolerance documentation
+    priority: low
+    status: deferred
+    description: "Document the assumption that Decimal is not numbers.Real and exchange connectors always use float"
+    source_epic: EP-ICT-006
+    created_date: "2026-03-30"
+  - id: L-6
+    title: signal rate variability monitoring
+    priority: low
+    status: deferred
+    description: "Monitor ICT signal collection rate variability for statistical power"
+    source_epic: EP-ICT-006
+    created_date: "2026-03-30"
 summary:
   epics_by_status:
     completed: 16
