@@ -369,7 +369,7 @@ completed:
     title: Consolidate Startup Scripts
   - id: SAFETY-MERGE-AUTHORITY-001
     title: Remove Direct Merge Bypass from Scripts
-    description: "P0 CRITICAL - Removed direct merge bypass (\"Do\": \"merge\") from 4 scripts that could bypass CI checks. Files modified: scripts/pr_lifecycle/auto_pr_merge.py, scripts/ops/merge_reconciler.py, scripts/pr_lifecycle/recovery_handlers.py, scripts/gitea_pr_automerge.py."
+    description: 'P0 CRITICAL - Removed direct merge bypass ("Do": "merge") from 4 scripts that could bypass CI checks. Files modified: scripts/pr_lifecycle/auto_pr_merge.py, scripts/ops/merge_reconciler.py, scripts/pr_lifecycle/recovery_handlers.py, scripts/gitea_pr_automerge.py.'
     completion_date: "2026-03-29"
     priority: P0-CRITICAL
     status: completed
@@ -1854,17 +1854,21 @@ epics:
       - Sprint ICT-S8 (Weeks 15-18)
       - Final decision on ICT/SMC expansion
       - ST-ICT-020-PART-B completed via PR #777
-      - Observation period end date: ~Apr 22, 2026
+      - Observation period end date: May 15, 2026 (extended from ~Apr 22, 2026)
+      - Remediation plan added: 11.5 SP (ST-ICT-023, ST-ICT-024)
     sprint_id: ICT-S8
     status: in_progress
-    story_count: 5
+    story_count: 7
     story_ids:
       - ST-ICT-019
       - ST-ICT-020-PART-A
       - ST-ICT-020-PART-B
       - ST-ICT-021
       - ST-ICT-022
-    story_points: 5.5
+      - ST-ICT-023
+      - ST-ICT-024
+    story_points: 17
+    remediation_plan_sp: 11.5
     completed_stories:
       - id: ST-ICT-019
         merge_commit: bb8aa77c
