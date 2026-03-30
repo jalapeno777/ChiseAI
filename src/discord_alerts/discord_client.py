@@ -1004,7 +1004,7 @@ class DiscordClient:
                 method="bot",
             )
 
-        if not self.bot or not self.bot.is_ready():
+        if not self._bot_client or not self._bot_client.is_ready():
             logger.debug("Bot not connected/ready - falling back to webhook")
             return DeliveryResult(
                 success=False,
@@ -1015,9 +1015,9 @@ class DiscordClient:
             )
 
         try:
-            channel = self.bot.get_channel(channel_id)
+            channel = self._bot_client.get_channel(channel_id)
             if channel is None:
-                channel = await self.bot.fetch_channel(channel_id)
+                channel = await self._bot_client.fetch_channel(channel_id)
 
             if channel is None:
                 logger.warning(f"Could not find channel {channel_id} via bot")
