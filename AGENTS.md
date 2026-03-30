@@ -127,6 +127,10 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 **Then run:** `chise-autocog-daily-run` → `chise-autocog-review` → `chise-autocog-action`
 **Why:** Adds backend+Aria dual-layer review, severity-based routing, and Discord-observable actions.
 
+### "I need to research a topic thoroughly before making a decision..."
+**Load:** `chiseai-deep-research`
+**Why:** Enforces multi-source discovery, evidence grading, and structured deliverables to avoid shallow analysis or hallucinated claims.
+
 ## 📋 Quick Skill Reference Table
 
 | Skill | Primary Use | Key Commands |
@@ -147,6 +151,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 | `chiseai-skill-autonomy` | Autonomous skill routing/coverage/effectiveness with non-blocking fallback | `chise-skill-autonomy-tick`, `chise-skill-backlog-ingest`, `chise-skill-promote`, `chise-skill-rollback` |
 | `chiseai-autocog-orchestration` | Autonomous cognition oversight, Aria review, and severity-based auto-action | `chise-autocog-daily-run`, `chise-autocog-review`, `chise-autocog-action` |
 | `chiseai-workflow-status-guard` | Hardening and recovery for workflow status YAML | `chise-status-yaml-guard` |
+| `chiseai-deep-research` | Systematic multi-source research with evidence grading | N/A |
 | `python-quality` | Python code quality | N/A |
 | `scripts/ci/rebuild_ci_image.sh` | Rebuild CI Docker images | `./scripts/ci/rebuild_ci_image.sh <image>` |
 
@@ -334,6 +339,7 @@ Authoritative detail sources (load on demand):
 - `chiseai-metacognition-ops` - Metacognitive prediction/outcome/calibration workflow
 - `chiseai-skill-autonomy` - Autonomous skill KPI loop with non-blocking missing-skill fallback
 - `chiseai-autocog-orchestration` - Aria autonomous cognition oversight with backend review and severity-based action routing
+- `chiseai-deep-research` - Systematic deep research methodology with multi-source synthesis and evidence grading
 
 ---
 
