@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 
 import discord
 from discord import app_commands
-from discord.app_commands import Transform
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ class CommunityStats:
     active_voice_channels: int = 0
 
 
-class StatsTransformer(Transform[TradingStats, str]):
+class StatsTransformer(app_commands.Transformer):
     """Transformer for trading stats display."""
 
     @classmethod
