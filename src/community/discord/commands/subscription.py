@@ -11,8 +11,12 @@ from enum import Enum
 
 import discord
 from discord import app_commands
+from tools.redis_state import redis_state_hdel, redis_state_hgetall, redis_state_hset
 
 logger = logging.getLogger(__name__)
+
+# Redis hash key for subscriptions
+SUBSCRIPTIONS_HASH_KEY = "bmad:chiseai:community:subscriptions"
 
 
 class SubscriptionTier(Enum):
@@ -81,15 +85,82 @@ class Subscription:
 
 class SubscriptionManager:
     """
-    Manages user subscriptions and preferences.
+    Manages user subscriptions and preferences with Redis persistence.
     """
 
     def __init__(self):
-        """Initialize the subscription manager."""
-        # TODO: Replace with Redis/database storage
+        """Initialize the subscription manager with Redis persistence."""
         self._subscriptions: dict[int, Subscription] = {}
         self._default_pairs = ["BTC/USDT", "ETH/USDT"]
         self._default_strategies = ["momentum", "grid"]
+        self._load_from_redis()
+
+    def _load_from_redis(self) -> None:
+        """Load subscriptions from Redis into memory cache."""
+        try:
+            redis_data = redis_state_hgetall(SUBSCRIPTIONS_HASH_KEY)
+            for user_id_str, sub_data in redis_data.items():
+                try:
+                    user_id = int(user_id_str)
+                    if isinstance(sub_data, dict):
+                        # Reconstruct Subscription from dict
+                        tier_str = sub_data.get("tier", "free")
+                        tier = (
+                            SubscriptionTier(tier_str)
+                            if isinstance(tier_str, str)
+                            else SubscriptionTier.FREE
+                        )
+                        sub = Subscription(
+                            user_id=user_id,
+                            tier=tier,
+                            subscribed_at=sub_data.get("subscribed_at"),
+                            signals_received_today=sub_data.get(
+                                "signals_received_today", 0
+                            ),
+                            last_signal_reset=sub_data.get("last_signal_reset"),
+                            enabled_pairs=sub_data.get("enabled_pairs") or [],
+                            enabled_strategies=sub_data.get("enabled_strategies") or [],
+                        )
+                        self._subscriptions[user_id] = sub
+                    elif isinstance(sub_data, str):
+                        # Legacy format or JSON string - skip, let it be recreated
+                        pass
+                except (ValueError, TypeError) as e:
+                    logger.debug(
+                        f"Failed to parse subscription for user {user_id_str}: {e}"
+                    )
+                    continue
+            logger.info(f"Loaded {len(self._subscriptions)} subscriptions from Redis")
+        except Exception as e:
+            logger.warning(
+                f"Failed to load subscriptions from Redis, using empty cache: {e}"
+            )
+
+    def _persist_to_redis(self, user_id: int, subscription: Subscription) -> None:
+        """Persist a single subscription to Redis."""
+        try:
+            sub_dict = {
+                "tier": subscription.tier.value,
+                "subscribed_at": subscription.subscribed_at,
+                "signals_received_today": subscription.signals_received_today,
+                "last_signal_reset": subscription.last_signal_reset,
+                "enabled_pairs": subscription.enabled_pairs or [],
+                "enabled_strategies": subscription.enabled_strategies or [],
+            }
+            redis_state_hset(SUBSCRIPTIONS_HASH_KEY, str(user_id), sub_dict)
+        except Exception as e:
+            logger.warning(
+                f"Failed to persist subscription for user {user_id} to Redis: {e}"
+            )
+
+    def _remove_from_redis(self, user_id: int) -> None:
+        """Remove a subscription from Redis."""
+        try:
+            redis_state_hdel(SUBSCRIPTIONS_HASH_KEY, str(user_id))
+        except Exception as e:
+            logger.warning(
+                f"Failed to remove subscription for user {user_id} from Redis: {e}"
+            )
 
     async def get_subscription(self, user_id: int) -> Subscription:
         """
@@ -105,6 +176,8 @@ class SubscriptionManager:
             self._subscriptions[user_id] = Subscription(
                 user_id=user_id, tier=SubscriptionTier.FREE
             )
+            # Persist new subscription to Redis
+            self._persist_to_redis(user_id, self._subscriptions[user_id])
         return self._subscriptions[user_id]
 
     async def update_tier(self, user_id: int, tier: SubscriptionTier) -> None:
@@ -117,6 +190,7 @@ class SubscriptionManager:
         """
         sub = await self.get_subscription(user_id)
         sub.tier = tier
+        self._persist_to_redis(user_id, sub)
         logger.info(f"User {user_id} tier updated to {tier.value}")
 
     async def update_pairs(self, user_id: int, pairs: list[str]) -> None:
@@ -129,6 +203,7 @@ class SubscriptionManager:
         """
         sub = await self.get_subscription(user_id)
         sub.enabled_pairs = pairs
+        self._persist_to_redis(user_id, sub)
 
     async def update_strategies(self, user_id: int, strategies: list[str]) -> None:
         """
@@ -140,6 +215,7 @@ class SubscriptionManager:
         """
         sub = await self.get_subscription(user_id)
         sub.enabled_strategies = strategies
+        self._persist_to_redis(user_id, sub)
 
     def check_signal_limit(self, user_id: int) -> bool:
         """
