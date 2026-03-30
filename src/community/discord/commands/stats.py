@@ -293,7 +293,18 @@ class StatsCommand:
                     timestamp=datetime.utcnow(),
                 )
 
-                medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+                medals = [
+                    "🥇",
+                    "🥈",
+                    "🥉",
+                    "4️⃣",
+                    "5️⃣",
+                    "6️⃣",
+                    "7️⃣",
+                    "8️⃣",
+                    "9️⃣",
+                    "🔟",
+                ]
 
                 description = ""
                 for i, (name, pnl, win_rate) in enumerate(placeholder_traders):
