@@ -2,6 +2,7 @@
 """Tests for OutcomePersistence with venue provenance fields.
 
 For ST-VENUE-001: Venue provenance fields implementation
+For ST-ICT-027: Metadata cleanup and classification coverage
 """
 
 import json
@@ -12,8 +13,10 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
+from src.execution.outcome_capture.integration import OutcomeCaptureIntegration
 from src.execution.persistence.outcome_persistence import OutcomePersistence
 from src.ml.models.signal_outcome import (
+    OutcomeType,
     SignalOutcome,
 )
 
@@ -335,6 +338,160 @@ class TestNumbersRealGuard:
         """
         assert isinstance(True, numbers.Real)
         assert isinstance(False, numbers.Real)
+
+
+class TestMetadataOutcomeClassification:
+    """ST-ICT-027: Verify metadata-based outcome classification.
+
+    Tests the asymmetry between metadata=None (MANUAL_CLOSE) and
+    metadata={} (UNKNOWN when no TP/SL levels), plus correct TP/SL
+    classification when metadata contains take_profit/stop_loss.
+    """
+
+    @pytest.fixture
+    def capture(self):
+        """Create OutcomeCaptureIntegration with no persistence/alerts."""
+        return OutcomeCaptureIntegration(
+            persistence=None,
+            alerts=None,
+            enabled=True,
+            connector_provenance={},
+        )
+
+    @staticmethod
+    def _make_position(
+        *,
+        side="long",
+        entry_price=50000.0,
+        quantity=1.0,
+        exit_price=52000.0,
+        metadata=None,
+    ):
+        """Create a mock position object."""
+        pos = Mock()
+        pos.side = side
+        pos.entry_price = entry_price
+        pos.quantity = quantity
+        pos.exit_price = exit_price
+        pos.position_id = "pos-test-001"
+        pos.symbol = "BTCUSDT"
+        pos.metadata = metadata
+        return pos
+
+    def test_metadata_none_yields_manual_close(self, capture):
+        """When position.metadata is None, outcome_type must be MANUAL_CLOSE."""
+        pos = self._make_position(metadata=None, exit_price=52000.0)
+        outcome = capture._create_outcome_from_position(pos, realized_pnl=200.0)
+
+        assert outcome.outcome_type == OutcomeType.MANUAL_CLOSE
+
+    def test_empty_metadata_dict_yields_manual_close(self, capture):
+        """When metadata is {}, _classify_outcome_type has no TP/SL → MANUAL_CLOSE.
+
+        This is distinct from metadata=None which also yields MANUAL_CLOSE but
+        via the explicit None-guard on line 359 rather than the classification
+        fallback.
+        """
+        pos = self._make_position(metadata={}, exit_price=52000.0)
+        outcome = capture._create_outcome_from_position(pos, realized_pnl=200.0)
+
+        assert outcome.outcome_type == OutcomeType.MANUAL_CLOSE
+
+    def test_long_tp_hit(self, capture):
+        """LONG position with exit_price >= take_profit → TP_HIT."""
+        pos = self._make_position(
+            side="long",
+            entry_price=50000.0,
+            exit_price=51000.0,
+            metadata={"take_profit": 50500.0},
+        )
+        outcome = capture._create_outcome_from_position(pos, realized_pnl=1000.0)
+
+        assert outcome.outcome_type == OutcomeType.TP_HIT
+
+    def test_long_sl_hit(self, capture):
+        """LONG position with exit_price <= stop_loss → SL_HIT."""
+        pos = self._make_position(
+            side="long",
+            entry_price=50000.0,
+            exit_price=49500.0,
+            metadata={"stop_loss": 49800.0},
+        )
+        outcome = capture._create_outcome_from_position(pos, realized_pnl=-500.0)
+
+        assert outcome.outcome_type == OutcomeType.SL_HIT
+
+    def test_short_tp_hit(self, capture):
+        """SHORT position with exit_price <= take_profit → TP_HIT."""
+        pos = self._make_position(
+            side="short",
+            entry_price=50000.0,
+            exit_price=49000.0,
+            metadata={"take_profit": 49500.0},
+        )
+        outcome = capture._create_outcome_from_position(pos, realized_pnl=1000.0)
+
+        assert outcome.outcome_type == OutcomeType.TP_HIT
+
+    def test_short_sl_hit(self, capture):
+        """SHORT position with exit_price >= stop_loss → SL_HIT."""
+        pos = self._make_position(
+            side="short",
+            entry_price=50000.0,
+            exit_price=50500.0,
+            metadata={"stop_loss": 50200.0},
+        )
+        outcome = capture._create_outcome_from_position(pos, realized_pnl=-500.0)
+
+        assert outcome.outcome_type == OutcomeType.SL_HIT
+
+    def test_metadata_both_tp_sl_exit_between(self, capture):
+        """When exit_price is between TP and SL, no hit → MANUAL_CLOSE for both None and {}."""
+        # With metadata=None → MANUAL_CLOSE (via explicit None guard)
+        pos_none = self._make_position(
+            side="long",
+            exit_price=50200.0,
+            metadata=None,
+        )
+        outcome_none = capture._create_outcome_from_position(
+            pos_none, realized_pnl=200.0
+        )
+        assert outcome_none.outcome_type == OutcomeType.MANUAL_CLOSE
+
+        # With metadata={} → MANUAL_CLOSE (via _classify_outcome_type default)
+        pos_empty = self._make_position(
+            side="long",
+            exit_price=50200.0,
+            metadata={},
+        )
+        outcome_empty = capture._create_outcome_from_position(
+            pos_empty, realized_pnl=200.0
+        )
+        assert outcome_empty.outcome_type == OutcomeType.MANUAL_CLOSE
+
+    def test_no_exit_price_yields_unknown(self, capture):
+        """When exit_price is None and metadata={}, outcome_type stays UNKNOWN."""
+        pos = Mock()
+        pos.side = "long"
+        pos.entry_price = 50000.0
+        pos.quantity = 1.0
+        pos.exit_price = None
+        pos.position_id = "pos-test-no-exit"
+        pos.symbol = "BTCUSDT"
+        pos.metadata = {}
+
+        outcome = capture._create_outcome_from_position(pos, realized_pnl=0.0)
+
+        assert outcome.outcome_type == OutcomeType.UNKNOWN
+        assert outcome.exit_price is None
+
+    def test_metadata_preserved_in_outcome(self, capture):
+        """Metadata dict is passed through to SignalOutcome.metadata."""
+        md = {"take_profit": 51000.0, "stop_loss": 49000.0, "fee_rate": 0.0005}
+        pos = self._make_position(metadata=md, exit_price=52000.0)
+        outcome = capture._create_outcome_from_position(pos, realized_pnl=2000.0)
+
+        assert outcome.metadata == md
 
 
 if __name__ == "__main__":

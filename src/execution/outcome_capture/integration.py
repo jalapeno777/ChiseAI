@@ -269,7 +269,7 @@ class OutcomeCaptureIntegration:
         exit_price: float,
         direction: str,
     ) -> OutcomeType:
-        """Classify outcome as TP_HIT, SL_HIT, MANUAL_CLOSE, or EXPIRED.
+        """Classify outcome as TP_HIT, SL_HIT, or MANUAL_CLOSE.
 
         Args:
             signal: Signal metadata dict with take_profit_price and stop_loss_price
@@ -337,8 +337,10 @@ class OutcomeCaptureIntegration:
             f"venue={execution_venue}, mode={execution_mode}, source={execution_source}"
         )
 
-        # Build signal dict from position metadata for classification
-        position_metadata = getattr(position, "metadata", None) or {}
+        # Normalize position metadata: None → {} for consistent dict access.
+        # Preserves explicit None for MANUAL_CLOSE classification below.
+        raw_metadata = getattr(position, "metadata", None)
+        position_metadata = raw_metadata or {}
         signal_data = {
             "take_profit_price": position_metadata.get("take_profit"),
             "stop_loss_price": position_metadata.get("stop_loss"),
@@ -353,8 +355,8 @@ class OutcomeCaptureIntegration:
                 signal_data, float(final_exit_price), position_direction
             )
 
-        # Handle position without metadata (outcome_type should be MANUAL_CLOSE)
-        if getattr(position, "metadata", None) is None:
+        # Position without metadata always results in MANUAL_CLOSE
+        if raw_metadata is None:
             outcome_type = OutcomeType.MANUAL_CLOSE
 
         # Calculate fee from position metadata or use default rate
