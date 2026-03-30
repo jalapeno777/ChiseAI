@@ -4,8 +4,8 @@ title: Live Paper Trading Data Collection - Time-Gated
 epic_id: EP-ICT-006
 status: in_progress
 observation_start: "2026-03-25"
-target_completion: "2026-04-22"
-duration_weeks: 4
+target_completion: "2026-05-15"
+duration_weeks: 7
 owner: operations
 ---
 
@@ -19,7 +19,11 @@ owner: operations
 | Week 1     | 2026-04-01 | ⏳ Pending  | -                 | -                   | -       | Review interim    |
 | Week 2     | 2026-04-08 | ⏳ Pending  | -                 | -                   | -       | Review interim    |
 | Week 3     | 2026-04-15 | ⏳ Pending  | -                 | -                   | -       | Review interim    |
-| Final      | 2026-04-22 | ⏳ Pending  | -                 | -                   | -       | Go/No-Go decision |
+| Week 4     | 2026-04-22 | ⏳ Pending  | -                 | -                   | -       | Review interim    |
+| Week 5     | 2026-04-29 | ⏳ Pending  | -                 | -                   | -       | Review interim    |
+| Week 6     | 2026-05-06 | ⏳ Pending  | -                 | -                   | -       | Review interim    |
+| Week 7     | 2026-05-13 | ⏳ Pending  | -                 | -                   | -       | Review interim    |
+| Final      | 2026-05-15 | ⏳ Pending  | -                 | -                   | -       | Go/No-Go decision |
 
 ## Early Stopping Criteria
 
