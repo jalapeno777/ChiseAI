@@ -25,7 +25,6 @@ services:
       - paper-trading-logs:/var/log/chiseai
     command: >
       python3 scripts/run_signal_consumer.py
-      --poll-interval 5.0
       --portfolio-value 10000.0
       --confidence-threshold 0.75
     labels:
