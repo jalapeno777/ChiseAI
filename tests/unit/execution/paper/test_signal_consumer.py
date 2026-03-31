@@ -6,6 +6,7 @@ Tests the Redis → Orchestrator signal bridge functionality.
 from __future__ import annotations
 
 import asyncio
+import json
 import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
@@ -36,6 +37,10 @@ def mock_redis():
     redis.hset = AsyncMock()
     redis.close = AsyncMock()
     redis.delete = AsyncMock()
+    # Stream-related mocks
+    redis.xgroup_create = AsyncMock()
+    redis.xreadgroup = AsyncMock(return_value=None)
+    redis.xack = AsyncMock(return_value=1)
     return redis
 
 
@@ -52,6 +57,14 @@ def sample_signal_data():
         "timeframe": "1h",
         "mode": "monitor",
     }
+
+
+@pytest.fixture
+def sample_stream_message(sample_signal_data):
+    """Create a sample stream message as produced by S4 XADD."""
+    message_id = "1708950000000-0"
+    fields = {"data": json.dumps(sample_signal_data)}
+    return message_id, fields
 
 
 class TestSignalConsumer:
@@ -309,6 +322,12 @@ class TestSignalConsumerIntegration:
         mock_redis.smembers = AsyncMock(return_value=set())
         mock_redis.sadd = AsyncMock()
         mock_redis.hset = AsyncMock()
+        mock_redis.expire = AsyncMock()
+        mock_redis.get = AsyncMock(return_value=None)
+        mock_redis.set = AsyncMock(return_value=True)
+        mock_redis.delete = AsyncMock()
+        # Stream mocks: return empty so SCAN fallback is used
+        mock_redis.xreadgroup = AsyncMock(return_value=None)
 
         consumer = SignalConsumer(
             orchestrator=mock_orchestrator,
@@ -799,6 +818,243 @@ class TestSilentSignalConsumptionFix:
         # Must be marked consumed
         mock_redis.hset.assert_any_call(redis_key, "status", "consumed")
         mock_redis.sadd.assert_called_with(SignalConsumer.PROCESSED_SET_KEY, signal_id)
+
+
+class TestStreamBasedConsumption:
+    """Tests for XREADGROUP-based stream consumption (S5).
+
+    Verifies that the consumer reads from paper:signals:stream via XREADGROUP,
+    acknowledges messages with XACK, and falls back to SCAN for legacy keys.
+    """
+
+    @pytest.mark.asyncio
+    async def test_ensure_stream_group_creates_group(
+        self, mock_orchestrator, mock_redis
+    ):
+        """Test that _ensure_stream_group creates consumer group on stream."""
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+        )
+
+        await consumer._ensure_stream_group()
+
+        mock_redis.xgroup_create.assert_called_once_with(
+            name=SignalConsumer.STREAM_KEY,
+            groupname=SignalConsumer.CONSUMER_GROUP,
+            id="$",
+            mkstream=True,
+        )
+
+    @pytest.mark.asyncio
+    async def test_ensure_stream_group_handles_busygroup(
+        self, mock_orchestrator, mock_redis
+    ):
+        """Test that BUSYGROUP error is handled gracefully."""
+        from redis.exceptions import ResponseError
+
+        mock_redis.xgroup_create.side_effect = ResponseError(
+            "BUSYGROUP Consumer Group name already exists"
+        )
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+        )
+
+        # Should NOT raise
+        await consumer._ensure_stream_group()
+
+        mock_redis.xgroup_create.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_read_from_stream_returns_messages(
+        self, mock_orchestrator, mock_redis, sample_stream_message
+    ):
+        """Test that _read_from_stream returns parsed messages."""
+        message_id, fields = sample_stream_message
+        mock_redis.xreadgroup.return_value = [
+            (SignalConsumer.STREAM_KEY, [(message_id, fields)])
+        ]
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+        )
+
+        messages = await consumer._read_from_stream()
+
+        assert len(messages) == 1
+        assert messages[0][0] == message_id
+        assert messages[0][1] == fields
+
+    @pytest.mark.asyncio
+    async def test_read_from_stream_returns_empty_on_no_messages(
+        self, mock_orchestrator, mock_redis
+    ):
+        """Test that _read_from_stream returns empty list when no messages."""
+        mock_redis.xreadgroup.return_value = None
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+        )
+
+        messages = await consumer._read_from_stream()
+
+        assert messages == []
+
+    @pytest.mark.asyncio
+    async def test_ack_stream_message(self, mock_orchestrator, mock_redis):
+        """Test that _ack_stream_message calls XACK correctly."""
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+        )
+
+        await consumer._ack_stream_message("1708950000000-0")
+
+        mock_redis.xack.assert_called_once_with(
+            SignalConsumer.STREAM_KEY,
+            SignalConsumer.CONSUMER_GROUP,
+            "1708950000000-0",
+        )
+
+    @pytest.mark.asyncio
+    async def test_poll_once_processes_stream_messages(
+        self, mock_orchestrator, mock_redis, sample_signal_data, sample_stream_message
+    ):
+        """Test that poll_once processes actionable stream messages."""
+        message_id, fields = sample_stream_message
+        signal_id = sample_signal_data["signal_id"]
+
+        # Setup stream to return one message
+        mock_redis.xreadgroup.return_value = [
+            (SignalConsumer.STREAM_KEY, [(message_id, fields)])
+        ]
+        mock_redis.smembers = AsyncMock(return_value=set())
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
+        )
+
+        count = await consumer._poll_once()
+
+        assert count == 1
+        mock_orchestrator.submit_signal.assert_called_once()
+        # Must acknowledge the stream message
+        mock_redis.xack.assert_called_once_with(
+            SignalConsumer.STREAM_KEY,
+            SignalConsumer.CONSUMER_GROUP,
+            message_id,
+        )
+        # Must add to processed set
+        mock_redis.sadd.assert_called_with(SignalConsumer.PROCESSED_SET_KEY, signal_id)
+
+    @pytest.mark.asyncio
+    async def test_poll_once_skips_non_actionable_stream_messages(
+        self, mock_orchestrator, mock_redis, sample_signal_data
+    ):
+        """Test that non-actionable stream messages are acknowledged and skipped."""
+        non_actionable_data = {**sample_signal_data, "status": "logged_only"}
+        message_id = "1708950000001-0"
+        fields = {"data": json.dumps(non_actionable_data)}
+
+        mock_redis.xreadgroup.return_value = [
+            (SignalConsumer.STREAM_KEY, [(message_id, fields)])
+        ]
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
+        )
+
+        count = await consumer._poll_once()
+
+        assert count == 0
+        mock_orchestrator.submit_signal.assert_not_called()
+        # Non-actionable messages should still be acknowledged to avoid re-reading
+        mock_redis.xack.assert_called_once_with(
+            SignalConsumer.STREAM_KEY,
+            SignalConsumer.CONSUMER_GROUP,
+            message_id,
+        )
+
+    @pytest.mark.asyncio
+    async def test_poll_once_falls_back_to_scan_when_stream_empty(
+        self, mock_orchestrator, mock_redis, sample_signal_data
+    ):
+        """Test that SCAN fallback works when stream has no messages."""
+        signal_id = sample_signal_data["signal_id"]
+        redis_key = f"paper:signal:{signal_id}"
+
+        # Stream returns empty
+        mock_redis.xreadgroup.return_value = None
+        # SCAN returns a legacy key
+        mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
+        mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
+        mock_redis.smembers = AsyncMock(return_value=set())
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
+        )
+
+        count = await consumer._poll_once()
+
+        assert count == 1
+        mock_orchestrator.submit_signal.assert_called_once()
+        # Legacy path should update status
+        mock_redis.hset.assert_called_with(redis_key, "status", "consumed")
+
+    @pytest.mark.asyncio
+    async def test_stream_non_allowed_symbol_not_consumed(
+        self, mock_orchestrator, mock_redis, sample_signal_data
+    ):
+        """Non-allowed symbol stream messages must NOT be acknowledged."""
+        message_id = "1708950000002-0"
+        fields = {"data": json.dumps(sample_signal_data)}
+
+        mock_redis.xreadgroup.return_value = [
+            (SignalConsumer.STREAM_KEY, [(message_id, fields)])
+        ]
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
+        )
+        consumer.allowed_symbols = {"ETH/USDT"}
+
+        count = await consumer._poll_once()
+
+        assert count == 0
+        mock_orchestrator.submit_signal.assert_not_called()
+        # Must NOT ack non-allowed symbol messages (so they can be retried)
+        mock_redis.xack.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_start_ensures_stream_group(self, mock_orchestrator, mock_redis):
+        """Test that start() calls _ensure_stream_group."""
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=1.0,
+        )
+
+        await consumer.start()
+        await consumer.stop()
+
+        mock_redis.xgroup_create.assert_called_once()
 
 
 if __name__ == "__main__":
