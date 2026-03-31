@@ -352,9 +352,7 @@ def main() -> int:
         return 0
     if args.cmd == "automerge":
         if not args.enable_automerge:
-            print(
-                "automerge skipped: pass --enable-automerge to allow merge actions"
-            )
+            print("automerge skipped: pass --enable-automerge to allow merge actions")
             return 0
         merged = auto_merge(cfg)
         print(f"automerge complete: merged={merged}")
