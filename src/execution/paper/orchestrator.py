@@ -56,6 +56,7 @@ from execution.paper.reason_codes import (
 from execution.paper.trade_journal import TradeJournal
 from execution.paper.trade_journal_persistence import TradeJournalRedisPersistence
 from execution.paper.trade_journal_service import TradeJournalService
+from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
 logger = logging.getLogger(__name__)
 
@@ -823,6 +824,36 @@ class PaperTradingOrchestrator:
 
                 # Step 6: Record trade metrics
                 await self._record_trade(position, signal, correlation_id)
+
+                # Q2: Emit SignalOutcome at OPEN - track trade opening with PENDING status
+                open_outcome = SignalOutcome(
+                    signal_id=signal.signal_id if signal.signal_id else None,
+                    order_id=filled_order.order_id,
+                    symbol=signal.token,
+                    side="Buy" if signal.direction.value == "long" else "Sell",
+                    direction=signal.direction.value.upper(),
+                    fill_price=filled_order.avg_fill_price,
+                    fill_quantity=filled_order.filled_quantity,
+                    fill_timestamp=filled_order.filled_at
+                    if hasattr(filled_order, "filled_at") and filled_order.filled_at
+                    else datetime.now(UTC),
+                    entry_price=filled_order.avg_fill_price,
+                    entry_time=filled_order.filled_at
+                    if hasattr(filled_order, "filled_at") and filled_order.filled_at
+                    else datetime.now(UTC),
+                    position_size=filled_order.filled_quantity,
+                    status=SignalOutcomeStatus.PENDING,
+                    metadata={
+                        **self._connector_provenance,
+                        "signal_type": "OPEN",
+                        "correlation_id": correlation_id,
+                    },
+                )
+                logger.debug(
+                    f"SignalOutcome emitted at OPEN: outcome_id={open_outcome.outcome_id} "
+                    f"symbol={open_outcome.symbol} status={open_outcome.status.value} "
+                    f"(correlation_id={correlation_id})"
+                )
 
                 # Calculate total latency
                 total_latency_ms = (time.perf_counter() - start_time) * 1000
