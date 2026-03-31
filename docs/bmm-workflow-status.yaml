@@ -499,6 +499,7 @@ completed:
     priority: P1
     status: completed
     story_points: 2
+    pr_number: "872"
     merge_commit: 9451226f9cfececcb718d5fb266e4e42339d6b7f
     target_commit: 15921483bbd4e61033707a67a959f0d9091edaca
     notes:
