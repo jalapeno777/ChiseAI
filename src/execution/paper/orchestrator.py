@@ -975,6 +975,15 @@ class PaperTradingOrchestrator:
                     f"(correlation_id={correlation_id})"
                 )
 
+                # Wire outcome_capture.on_trade_open() to persist PENDING outcome
+                if self.outcome_capture:
+                    try:
+                        await self.outcome_capture.on_trade_open(
+                            open_outcome, correlation_id
+                        )
+                    except Exception as e:
+                        logger.warning(f"outcome_capture.on_trade_open failed: {e}")
+
                 # Calculate total latency
                 total_latency_ms = (time.perf_counter() - start_time) * 1000
 
