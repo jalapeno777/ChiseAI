@@ -4,6 +4,7 @@ import sys
 from datetime import UTC, datetime
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 _MODULE_PATH = (
     Path(__file__).resolve().parents[2]
@@ -60,3 +61,59 @@ def test_ensure_prs_creates_new_pr_even_if_historical_pr_exists(monkeypatch) -> 
     created = auto_pr_merge.ensure_prs(cfg)
     assert created == 1
     assert len(calls) == 1
+
+
+@patch("auto_pr_merge._safe_req_json")
+def test_auto_merge_merges_green_conflict_free_pr(mock_req_json: MagicMock) -> None:
+    cfg = _cfg()
+    cfg.enable_server_automerge = True
+    pr = {
+        "number": 42,
+        "state": "open",
+        "mergeable": True,
+        "head": {"ref": "feature/test-branch", "sha": "abc123", "label": "craig:feature/test-branch"},
+        "user": {"login": "chise-bot"},
+    }
+
+    def _fake_req(_cfg, method: str, path: str, body=None):
+        if method == "GET" and "/pulls?state=open" in path:
+            return [pr]
+        if method == "GET" and path.endswith("/pulls/42"):
+            return pr
+        if method == "GET" and path.endswith("/commits/abc123/status"):
+            return {"state": "success"}
+        if method == "POST" and path.endswith("/pulls/42/merge"):
+            return {"merged": True}
+        raise AssertionError(f"Unexpected request: {method} {path}")
+
+    mock_req_json.side_effect = _fake_req
+
+    assert auto_pr_merge.auto_merge(cfg) == 1
+
+
+@patch("auto_pr_merge._safe_req_json")
+def test_auto_merge_skips_unmerged_pr_when_status_not_green(
+    mock_req_json: MagicMock,
+) -> None:
+    cfg = _cfg()
+    cfg.enable_server_automerge = True
+    pr = {
+        "number": 42,
+        "state": "open",
+        "mergeable": True,
+        "head": {"ref": "feature/test-branch", "sha": "abc123", "label": "craig:feature/test-branch"},
+        "user": {"login": "chise-bot"},
+    }
+
+    def _fake_req(_cfg, method: str, path: str, body=None):
+        if method == "GET" and "/pulls?state=open" in path:
+            return [pr]
+        if method == "GET" and path.endswith("/pulls/42"):
+            return pr
+        if method == "GET" and path.endswith("/commits/abc123/status"):
+            return {"state": "pending"}
+        raise AssertionError(f"Unexpected request: {method} {path}")
+
+    mock_req_json.side_effect = _fake_req
+
+    assert auto_pr_merge.auto_merge(cfg) == 0

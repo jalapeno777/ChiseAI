@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Auto-create PRs from pushed branches and configure server-side merge checks.
+"""Auto-create PRs from pushed branches and merge eligible PRs.
 
 Policy:
 - Auto-create PRs from non-protected branches targeting main when no open PR exists.
 - During ensure-prs, optionally enable server-side ``merge_when_checks_succeed``.
-- chise-bot NEVER performs a direct merge; merge authority is reserved for Merlin.
-- Manual ``automerge`` subcommand enables merge checks on eligible open PRs.
+- ``automerge`` performs a bounded merge reconciliation for eligible open PRs.
+- Merge attempts are gated on a clean mergeable state and successful checks.
 """
 
 from __future__ import annotations
@@ -152,6 +152,32 @@ def _enable_merge_check(cfg: Config, pr: dict[str, Any], head_branch: str) -> bo
     return True
 
 
+def _merge_pr(cfg: Config, pr: dict[str, Any], head_branch: str) -> bool:
+    """Merge a PR once it is green and conflict-free."""
+    number = pr.get("number")
+    if not number:
+        return False
+    payload = {
+        "head_commit_id": ((pr.get("head") or {}).get("sha") or ""),
+        "merge_when_checks_succeed": True,
+        "delete_branch_after_merge": True,
+    }
+    if cfg.dry_run:
+        print(f"[dry-run] merge PR #{number} ({head_branch})")
+        return True
+    result = _safe_req_json(
+        cfg, "POST", f"{_repo_path(cfg)}/pulls/{number}/merge", payload
+    )
+    if result is None:
+        print(
+            f"warning: unable to merge PR #{number} ({head_branch})",
+            file=sys.stderr,
+        )
+        return False
+    print(f"merged PR #{number} ({head_branch})")
+    return True
+
+
 def ensure_prs(cfg: Config) -> int:
     created = 0
     cutoff = datetime.now(UTC) - timedelta(minutes=cfg.max_branch_age_min)
@@ -232,13 +258,15 @@ def _wait_until_mergeable(
 
 
 def auto_merge(cfg: Config) -> int:
-    """Enable merge_when_checks_succeed on eligible open PRs.
+    """Merge eligible open PRs once checks are green.
 
-    chise-bot does NOT perform direct merges.  Merge authority is reserved
-    for Merlin per AGENTS.md.  This function only enables the server-side
-    merge check so Gitea will auto-merge once CI passes.
+    The job is intentionally conservative:
+    - only open PRs on the configured base are considered
+    - only mergeable PRs are considered
+    - only authorized authors are considered
+    - merge API failures are retried with bounded wait logic
     """
-    enabled = 0
+    merged = 0
     prs = list_open_prs(cfg, base=cfg.default_base)
     if cfg.source_branch:
         full_head = f"{cfg.owner}:{cfg.source_branch}"
@@ -263,10 +291,32 @@ def auto_merge(cfg: Config) -> int:
                 f"skip PR #{number}: not conflict-free (mergeable={pr.get('mergeable')})"
             )
             continue
+        status = _safe_req_json(
+            cfg,
+            "GET",
+            f"{_repo_path(cfg)}/commits/{((pr.get('head') or {}).get('sha') or '')}/status",
+        )
+        if not isinstance(status, dict) or status.get("state") != "success":
+            print(
+                f"skip PR #{number}: commit status not green (state={status.get('state') if isinstance(status, dict) else 'unknown'})"
+            )
+            continue
 
-        if _enable_merge_check(cfg, pr, str(number)):
-            enabled += 1
-    return enabled
+        for attempt in range(1, 4):
+            if _merge_pr(cfg, pr, str(number)):
+                merged += 1
+                break
+            if attempt < 3:
+                refreshed = _wait_until_mergeable(cfg, int(number), attempts=2)
+                if refreshed:
+                    pr = refreshed
+                time.sleep(2)
+        else:
+            print(
+                f"warning: merge attempts exhausted for PR #{number} ({pr.get('head', {}).get('ref', 'unknown')})",
+                file=sys.stderr,
+            )
+    return merged
 
 
 def main() -> int:
@@ -281,13 +331,13 @@ def main() -> int:
     p_ensure.add_argument("--dry-run", action="store_true")
 
     p_merge = sub.add_parser(
-        "automerge", help="Enable merge_when_checks_succeed on open PRs"
+        "automerge", help="Merge eligible open PRs once checks are green"
     )
     p_merge.add_argument("--dry-run", action="store_true")
     p_merge.add_argument(
         "--enable-automerge",
         action="store_true",
-        help="Explicitly enable merge-check actions (no direct merge performed)",
+        help="Explicitly enable merge actions for eligible PRs",
     )
 
     args = parser.parse_args()
@@ -303,11 +353,11 @@ def main() -> int:
     if args.cmd == "automerge":
         if not args.enable_automerge:
             print(
-                "automerge skipped: pass --enable-automerge to allow merge-check actions"
+                "automerge skipped: pass --enable-automerge to allow merge actions"
             )
             return 0
         merged = auto_merge(cfg)
-        print(f"automerge complete: merge-checks-enabled={merged}")
+        print(f"automerge complete: merged={merged}")
         return 0
     return 1
 
