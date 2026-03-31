@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -87,6 +88,8 @@ class PaperKillSwitchManager:
         default_ttl: Default TTL in seconds for kill switch activation
     """
 
+    CACHE_TTL_SECONDS: float = 30.0
+
     def __init__(
         self,
         redis_client: Any | None = None,
@@ -101,6 +104,13 @@ class PaperKillSwitchManager:
         self._redis = redis_client
         self._owns_redis = redis_client is None
         self.default_ttl = default_ttl
+        self._status_cache: PaperKillSwitchStatus | None = None
+        self._status_cache_time: float | None = None
+
+    def _invalidate_cache(self) -> None:
+        """Invalidate the status cache."""
+        self._status_cache = None
+        self._status_cache_time = None
 
     async def _get_redis(self) -> Any:
         """Get or create Redis client."""
@@ -117,29 +127,49 @@ class PaperKillSwitchManager:
     async def get_status(self) -> PaperKillSwitchStatus:
         """Get current kill switch status.
 
+        Returns cached status if within CACHE_TTL_SECONDS, otherwise
+        fetches fresh status from Redis.
+
         Returns:
             PaperKillSwitchStatus with current state
         """
+        # Return cached status if still fresh
+        if (
+            self._status_cache is not None
+            and self._status_cache_time is not None
+            and time.time() - self._status_cache_time < self.CACHE_TTL_SECONDS
+        ):
+            return self._status_cache
+
         try:
             redis = await self._get_redis()
             data = await redis.hgetall(PAPER_KILL_SWITCH_KEY)
 
             if not data:
-                return PaperKillSwitchStatus(active=False)
+                status = PaperKillSwitchStatus(active=False)
+                self._status_cache = status
+                self._status_cache_time = time.time()
+                return status
 
             # Get TTL for remaining time
             ttl = await redis.ttl(PAPER_KILL_SWITCH_KEY)
             if ttl < 0:
                 # Key doesn't exist or has no TTL
-                return PaperKillSwitchStatus(active=False)
+                status = PaperKillSwitchStatus(active=False)
+                self._status_cache = status
+                self._status_cache_time = time.time()
+                return status
 
-            return PaperKillSwitchStatus(
+            status = PaperKillSwitchStatus(
                 active=True,
                 reason=data.get("reason", ""),
                 activated_at=data.get("activated_at"),
                 activated_by=data.get("activated_by", ""),
                 ttl_remaining=ttl,
             )
+            self._status_cache = status
+            self._status_cache_time = time.time()
+            return status
 
         except Exception as e:
             logger.error(f"Failed to get kill switch status: {e}")
@@ -196,6 +226,16 @@ class PaperKillSwitchManager:
                 f"PAPER KILL SWITCH ACTIVATED: {reason} (by={activated_by}, ttl={ttl}s)"
             )
 
+            # Invalidate cache and set to new active status
+            self._status_cache = PaperKillSwitchStatus(
+                active=True,
+                reason=reason,
+                activated_at=activated_at,
+                activated_by=activated_by,
+                ttl_remaining=ttl,
+            )
+            self._status_cache_time = time.time()
+
             return True
 
         except Exception as e:
@@ -213,6 +253,7 @@ class PaperKillSwitchManager:
             await redis.delete(PAPER_KILL_SWITCH_KEY)
 
             logger.info("Paper kill switch deactivated")
+            self._invalidate_cache()
             return True
 
         except Exception as e:
@@ -246,30 +287,63 @@ def get_redis_client() -> Any:  # noqa: D401 — kept for backward compat
     return get_redis_client_sync(decode_responses=True)
 
 
+# Module-level cache for sync convenience functions
+_sync_status_cache: PaperKillSwitchStatus | None = None
+_sync_status_cache_time: float | None = None
+
+
+def _invalidate_sync_cache() -> None:
+    """Invalidate the module-level sync status cache."""
+    global _sync_status_cache, _sync_status_cache_time
+    _sync_status_cache = None
+    _sync_status_cache_time = None
+
+
 def get_status_sync() -> PaperKillSwitchStatus:
     """Get current kill switch status (synchronous).
+
+    Returns cached status if within CACHE_TTL_SECONDS, otherwise
+    fetches fresh status from Redis.
 
     Returns:
         PaperKillSwitchStatus with current state
     """
+    global _sync_status_cache, _sync_status_cache_time
+
+    # Return cached status if still fresh
+    if (
+        _sync_status_cache is not None
+        and _sync_status_cache_time is not None
+        and time.time() - _sync_status_cache_time
+        < PaperKillSwitchManager.CACHE_TTL_SECONDS
+    ):
+        return _sync_status_cache
+
     try:
         redis = get_redis_client()
         data = redis.hgetall(PAPER_KILL_SWITCH_KEY)
 
         if not data:
-            return PaperKillSwitchStatus(active=False)
+            _sync_status_cache = PaperKillSwitchStatus(active=False)
+            _sync_status_cache_time = time.time()
+            return _sync_status_cache
 
         ttl = redis.ttl(PAPER_KILL_SWITCH_KEY)
         if ttl < 0:
-            return PaperKillSwitchStatus(active=False)
+            _sync_status_cache = PaperKillSwitchStatus(active=False)
+            _sync_status_cache_time = time.time()
+            return _sync_status_cache
 
-        return PaperKillSwitchStatus(
+        status = PaperKillSwitchStatus(
             active=True,
             reason=data.get("reason", ""),
             activated_at=data.get("activated_at"),
             activated_by=data.get("activated_by", ""),
             ttl_remaining=ttl,
         )
+        _sync_status_cache = status
+        _sync_status_cache_time = time.time()
+        return status
 
     except Exception as e:
         logger.error(f"Failed to get kill switch status: {e}")
@@ -316,6 +390,17 @@ def activate_sync(
             f"PAPER KILL SWITCH ACTIVATED: {reason} (by={activated_by}, ttl={ttl}s)"
         )
 
+        # Invalidate cache and set to new active status
+        global _sync_status_cache, _sync_status_cache_time
+        _sync_status_cache = PaperKillSwitchStatus(
+            active=True,
+            reason=reason,
+            activated_at=activated_at,
+            activated_by=activated_by,
+            ttl_remaining=ttl,
+        )
+        _sync_status_cache_time = time.time()
+
         return True
 
     except Exception as e:
@@ -334,6 +419,7 @@ def deactivate_sync() -> bool:
         redis.delete(PAPER_KILL_SWITCH_KEY)
 
         logger.info("Paper kill switch deactivated")
+        _invalidate_sync_cache()
         return True
 
     except Exception as e:
