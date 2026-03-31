@@ -76,6 +76,9 @@ class OutcomePersistence:
     FILL_INDEX_KEY = "paper:index:fills"
     OUTCOME_INDEX_KEY = "paper:index:outcomes"
 
+    # Stream keys for event-driven consumption (REPO-PAPER-003-S4)
+    SIGNAL_STREAM_KEY = "paper:signals:stream"
+
     def __init__(
         self,
         redis_client: Any | None = None,
@@ -283,6 +286,12 @@ class OutcomePersistence:
             # Add to index
             redis.zadd(self.SIGNAL_INDEX_KEY, {key: signal.timestamp.timestamp()})
             redis.expire(self.SIGNAL_INDEX_KEY, self.ttl_seconds)
+
+            # Append to stream for event-driven consumption (XREADGROUP)
+            redis.xadd(
+                self.SIGNAL_STREAM_KEY,
+                {"data": json.dumps(data)},
+            )
 
             logger.debug(f"Persisted signal: {key}")
             return key
