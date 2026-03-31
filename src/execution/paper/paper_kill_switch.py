@@ -17,6 +17,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from execution.paper.redis_config import (
+    get_redis_client as _get_async_redis_client,
+)
+from execution.paper.redis_config import (
+    get_redis_client_sync,
+)
+
 logger = logging.getLogger(__name__)
 
 # Redis key for paper trading kill switch
@@ -98,13 +105,7 @@ class PaperKillSwitchManager:
     async def _get_redis(self) -> Any:
         """Get or create Redis client."""
         if self._redis is None:
-            import redis.asyncio as redis
-
-            self._redis = redis.Redis(
-                host="host.docker.internal",
-                port=6380,
-                decode_responses=True,
-            )
+            self._redis = _get_async_redis_client(decode_responses=True)
         return self._redis
 
     async def close(self) -> None:
@@ -240,15 +241,9 @@ class PaperKillSwitchActiveError(Exception):
 
 
 # Convenience functions for synchronous contexts (CLI scripts)
-def get_redis_client() -> Any:
+def get_redis_client() -> Any:  # noqa: D401 — kept for backward compat
     """Get a synchronous Redis client for CLI scripts."""
-    import redis
-
-    return redis.Redis(
-        host="host.docker.internal",
-        port=6380,
-        decode_responses=True,
-    )
+    return get_redis_client_sync(decode_responses=True)
 
 
 def get_status_sync() -> PaperKillSwitchStatus:
