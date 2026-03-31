@@ -125,6 +125,74 @@ class OutcomeCaptureIntegration:
             self._alerts = ExecutionAlertIntegration()
         return self._alerts
 
+    async def on_trade_open(
+        self,
+        outcome: Any,
+        correlation_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Handle trade open event - persists PENDING SignalOutcome.
+
+        Records that a trade was opened with PENDING outcome status.
+        This is the integration point called from the paper trading
+        orchestrator after a position is opened.
+
+        Args:
+            outcome: SignalOutcome with PENDING status
+            correlation_id: Correlation ID for tracing
+
+        Returns:
+            Capture result dictionary
+        """
+        if not self.enabled:
+            return {"captured": False, "reason": "disabled"}
+
+        capture_result: dict[str, Any] = {
+            "captured": True,
+            "outcome_key": None,
+            "alerts": {},
+            "errors": [],
+        }
+
+        try:
+            # Persist the PENDING outcome to Redis and sync to PostgreSQL
+            persistence = self._get_persistence()
+            outcome_key = await persistence.persist_outcome_async(
+                outcome, correlation_id
+            )
+            capture_result["outcome_key"] = outcome_key
+
+            if outcome_key:
+                self._stats["outcomes_persisted"] += 1
+
+            logger.debug(
+                f"[OUTCOME-OPEN] Persisted trade open outcome: "
+                f"outcome_id={outcome.outcome_id} symbol={outcome.symbol} "
+                f"key={outcome_key} (correlation_id={correlation_id})"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to persist trade open outcome: {e}")
+            capture_result["errors"].append(str(e))
+            capture_result["captured"] = False
+            self._stats["errors"] += 1
+
+        try:
+            # G5: Send open alert
+            alerts = self._get_alerts()
+            alert_result = await alerts.on_trade_opened(outcome)
+            capture_result["alerts"] = alert_result
+
+            if alert_result.get("sent"):
+                self._stats["open_alerts_sent"] += 1
+
+        except Exception as e:
+            logger.error(f"Failed to send open alert: {e}")
+            capture_result["errors"].append(str(e))
+            self._stats["errors"] += 1
+
+        capture_result["captured"] = len(capture_result["errors"]) == 0
+        return capture_result
+
     async def on_trade_result(
         self,
         result: PaperTradeResult,
