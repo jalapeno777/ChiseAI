@@ -563,6 +563,19 @@ class PaperTradingOrchestrator:
                         self._metrics["gate_g1_throttle_count"],
                         correlation_id,
                     )
+                    # ST-ICT-Q3: Record signal rejection at throttle gate
+                    if self.outcome_capture:
+                        try:
+                            await self.outcome_capture.on_signal_rejected(
+                                signal,
+                                "G1_THROTTLE",
+                                "Signal throttled by per-symbol cadence",
+                                correlation_id,
+                            )
+                        except Exception as e:
+                            logger.warning(
+                                f"outcome_capture.on_signal_rejected(G1) failed: {e}"
+                            )
                     return PaperTradeResult(
                         signal=signal,
                         status=TradeStatus.REJECTED,
@@ -596,6 +609,19 @@ class PaperTradingOrchestrator:
                         self._metrics["gate_g2_paper_kill_count"],
                         correlation_id,
                     )
+                    # ST-ICT-Q3: Record signal rejection at paper kill gate
+                    if self.outcome_capture:
+                        try:
+                            await self.outcome_capture.on_signal_rejected(
+                                signal,
+                                "G2_PAPER_KILL",
+                                f"Paper kill switch active: {paper_kill_status.reason}",
+                                correlation_id,
+                            )
+                        except Exception as e:
+                            logger.warning(
+                                f"outcome_capture.on_signal_rejected(G2) failed: {e}"
+                            )
                     return PaperTradeResult(
                         signal=signal,
                         status=TradeStatus.REJECTED,
@@ -618,6 +644,19 @@ class PaperTradingOrchestrator:
                     self._metrics["gate_g3_live_kill_count"],
                     correlation_id,
                 )
+                # ST-ICT-Q3: Record signal rejection at live kill gate
+                if self.outcome_capture:
+                    try:
+                        await self.outcome_capture.on_signal_rejected(
+                            signal,
+                            "G3_LIVE_KILL",
+                            "Kill-switch triggered",
+                            correlation_id,
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"outcome_capture.on_signal_rejected(G3) failed: {e}"
+                        )
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.REJECTED,
@@ -678,6 +717,19 @@ class PaperTradingOrchestrator:
                         self._metrics["gate_g4_no_price_count"],
                         correlation_id,
                     )
+                    # ST-ICT-Q3: Record signal rejection at no-price gate
+                    if self.outcome_capture:
+                        try:
+                            await self.outcome_capture.on_signal_rejected(
+                                signal,
+                                "G4_NO_PRICE",
+                                f"No market price available for {signal.token}",
+                                correlation_id,
+                            )
+                        except Exception as e:
+                            logger.warning(
+                                f"outcome_capture.on_signal_rejected(G4) failed: {e}"
+                            )
                     return PaperTradeResult(
                         signal=signal,
                         status=TradeStatus.REJECTED,
@@ -744,6 +796,19 @@ class PaperTradingOrchestrator:
                             self._metrics["gate_g7_same_dir_skip_count"],
                             correlation_id,
                         )
+                        # ST-ICT-Q3: Record signal skip at same-dir gate
+                        if self.outcome_capture:
+                            try:
+                                await self.outcome_capture.on_signal_rejected(
+                                    signal,
+                                    "G7_SAME_DIR_SKIP",
+                                    f"Already in {signal_side} position for {signal.token}",
+                                    correlation_id,
+                                )
+                            except Exception as e:
+                                logger.warning(
+                                    f"outcome_capture.on_signal_rejected(G7) failed: {e}"
+                                )
                         return PaperTradeResult(
                             signal=signal,
                             status=TradeStatus.SKIPPED,
@@ -785,6 +850,19 @@ class PaperTradingOrchestrator:
                         self._metrics["gate_g6_llm_reject_count"],
                         correlation_id,
                     )
+                    # ST-ICT-Q3: Record signal rejection at LLM gate
+                    if self.outcome_capture:
+                        try:
+                            await self.outcome_capture.on_signal_rejected(
+                                signal,
+                                "G6_LLM_REJECT",
+                                f"LLM rejection: {enhanced.rationale}",
+                                correlation_id,
+                            )
+                        except Exception as e:
+                            logger.warning(
+                                f"outcome_capture.on_signal_rejected(G6) failed: {e}"
+                            )
                     return PaperTradeResult(
                         signal=signal,
                         status=TradeStatus.REJECTED,
@@ -864,6 +942,19 @@ class PaperTradingOrchestrator:
                     self._metrics["gate_g5_risk_reject_count"],
                     correlation_id,
                 )
+                # ST-ICT-Q3: Record signal rejection at risk gate
+                if self.outcome_capture:
+                    try:
+                        await self.outcome_capture.on_signal_rejected(
+                            signal,
+                            "G5_RISK_REJECT",
+                            str(assessment.violations),
+                            correlation_id,
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"outcome_capture.on_signal_rejected(G5) failed: {e}"
+                        )
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.REJECTED,
@@ -1055,6 +1146,19 @@ class PaperTradingOrchestrator:
                     self._metrics["gate_g8_order_not_filled_count"],
                     correlation_id,
                 )
+                # ST-ICT-Q3: Record signal rejection at order-not-filled gate
+                if self.outcome_capture:
+                    try:
+                        await self.outcome_capture.on_signal_rejected(
+                            signal,
+                            "G8_ORDER_NOT_FILLED",
+                            f"Order state: {filled_order.state.value}",
+                            correlation_id,
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"outcome_capture.on_signal_rejected(G8) failed: {e}"
+                        )
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.FAILED,
@@ -1079,6 +1183,19 @@ class PaperTradingOrchestrator:
                 self._metrics["gate_g9_exception_count"],
                 correlation_id,
             )
+            # ST-ICT-Q3: Record signal rejection at exception gate
+            if self.outcome_capture:
+                try:
+                    await self.outcome_capture.on_signal_rejected(
+                        signal,
+                        "G9_EXCEPTION",
+                        str(e),
+                        correlation_id,
+                    )
+                except Exception as cap_e:
+                    logger.warning(
+                        f"outcome_capture.on_signal_rejected(G9) failed: {cap_e}"
+                    )
             return PaperTradeResult(
                 signal=signal,
                 status=TradeStatus.FAILED,

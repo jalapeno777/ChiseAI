@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import numbers
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -87,6 +88,7 @@ class OutcomeCaptureIntegration:
             "outcomes_persisted": 0,
             "open_alerts_sent": 0,
             "close_alerts_sent": 0,
+            "rejections_captured": 0,
             "errors": 0,
         }
 
@@ -330,6 +332,96 @@ class OutcomeCaptureIntegration:
 
     # Alias for backward compatibility with orchestrator
     on_position_close = on_position_closed
+
+    async def on_signal_rejected(
+        self,
+        signal: Any,
+        gate_id: str,
+        reason: str,
+        correlation_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Record a signal rejection from a gate.
+
+        Persists a lightweight SignalOutcome with ERROR status and rejection
+        metadata so the outcome pipeline has full observability into why
+        signals were rejected.
+
+        Args:
+            signal: The rejected signal (or signal dict).
+            gate_id: Identifier of the rejection gate (e.g. "G1_THROTTLE").
+            reason: Human-readable rejection reason.
+            correlation_id: Correlation ID for tracing.
+
+        Returns:
+            Capture result dictionary.
+        """
+        if not self.enabled:
+            return {"captured": False, "reason": "disabled"}
+
+        capture_result: dict[str, Any] = {
+            "captured": True,
+            "gate_id": gate_id,
+            "errors": [],
+        }
+
+        try:
+            from decimal import Decimal
+
+            from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
+
+            symbol = getattr(signal, "token", None) or signal.get("token", "unknown")
+            side = getattr(signal, "side", None) or signal.get("side", "unknown")
+
+            provenance = self._connector_provenance
+            now = datetime.now(tz=UTC)
+
+            outcome = SignalOutcome(
+                order_id=correlation_id or uuid.uuid4().hex[:12],
+                symbol=symbol,
+                side="Buy" if str(side).lower() == "long" else "Sell",
+                direction=str(side).upper(),
+                fill_price=Decimal("0"),
+                fill_quantity=Decimal("0"),
+                entry_price=Decimal("0"),
+                exit_price=None,
+                position_size=Decimal("0"),
+                pnl=Decimal("0"),
+                outcome_type=OutcomeType.UNKNOWN,
+                exit_time=now,
+                fee=None,
+                status=SignalOutcomeStatus.ERROR,
+                metadata={
+                    "rejection_gate": gate_id,
+                    "rejection_reason": reason,
+                    "correlation_id": correlation_id,
+                },
+                execution_venue=provenance.get("execution_venue", ""),
+                execution_mode=provenance.get("execution_mode", ""),
+                execution_source=provenance.get("execution_source", ""),
+            )
+
+            persistence = self._get_persistence()
+            outcome_key = await persistence.persist_outcome_async(
+                outcome, correlation_id
+            )
+            capture_result["outcome_key"] = outcome_key
+
+            if outcome_key:
+                self._stats["rejections_captured"] += 1
+
+            logger.info(
+                f"[OUTCOME-CAPTURE] Signal rejected at {gate_id}: "
+                f"symbol={symbol}, reason={reason}, "
+                f"correlation_id={correlation_id}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to capture signal rejection: {e}")
+            capture_result["errors"].append(str(e))
+            capture_result["captured"] = False
+            self._stats["errors"] += 1
+
+        return capture_result
 
     def _classify_outcome_type(
         self,
