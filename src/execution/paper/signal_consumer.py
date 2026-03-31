@@ -24,6 +24,7 @@ import contextlib
 from execution.paper.paper_kill_switch import (
     PaperKillSwitchManager,
 )
+from execution.paper.redis_config import get_redis_client
 from signal_generation.models import SignalDirection, SignalStatus
 
 logger = logging.getLogger(__name__)
@@ -108,13 +109,7 @@ class SignalConsumer:
     async def _get_redis(self) -> Any:
         """Get or create Redis client."""
         if self._redis is None:
-            import redis.asyncio as redis
-
-            self._redis = redis.Redis(
-                host="host.docker.internal",
-                port=6380,
-                decode_responses=True,
-            )
+            self._redis = get_redis_client(decode_responses=True)
         return self._redis
 
     async def _get_paper_kill_switch(self) -> PaperKillSwitchManager:
