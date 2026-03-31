@@ -56,6 +56,17 @@ def _branch_name() -> str:
     ).strip()
 
 
+def _is_ci_context() -> bool:
+    return bool(
+        os.environ.get("CI_PIPELINE_NUMBER", "").strip()
+        or os.environ.get("CI_COMMIT_BRANCH", "").strip()
+        or os.environ.get("WOODPECKER_BUILD_EVENT", "").strip()
+        or os.environ.get("CI_BUILD_EVENT", "").strip()
+        or os.environ.get("WOODPECKER_EVENT", "").strip()
+        or os.environ.get("CI_PIPELINE_EVENT", "").strip()
+    )
+
+
 def _parse_env_changed_files() -> list[str]:
     raw = os.environ.get("CI_PIPELINE_FILES", "").strip()
     if not raw:
@@ -83,7 +94,17 @@ def _git_changed_files() -> list[str]:
 
 
 def _changed_files() -> list[str]:
-    return _parse_env_changed_files() or _git_changed_files()
+    env_files = _parse_env_changed_files()
+    if env_files:
+        return env_files
+
+    # Woodpecker PR builds should receive CI_PIPELINE_FILES from the pipeline
+    # metadata. If it is missing in CI, skip instead of falling back to git:
+    # the CI images used for these jobs do not guarantee git is installed.
+    if _is_ci_context():
+        return []
+
+    return _git_changed_files()
 
 
 def _is_dependency_audit_relevant(changed_files: list[str]) -> bool:
