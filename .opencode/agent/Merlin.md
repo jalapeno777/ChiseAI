@@ -67,6 +67,8 @@ When assigned by Jarvis, perform this exact sequence:
 - Ensure candidate branches have been pushed so push-triggered auto-PR can create/update PRs.
 - Use direct `scripts/gitea_pr_automerge.py ...` only for exceptional recovery (auto-PR outage/manual override/backfill).
 - All Gitea API calls must use owner=craig (Gitea username, not filesystem username tacopants).
+- If Gitea MCP is unavailable or cannot complete the operation, use the official `tea` CLI as the fallback instead of ad-hoc web UI steps or guessed API calls.
+- When using `tea`, record the exact command, base URL, and auth environment used in the evidence bundle.
 
 2. CI monitoring and diagnosis
 

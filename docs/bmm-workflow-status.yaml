@@ -254,6 +254,8 @@ completed:
       - docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md
       - docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md
     id: AUDIT-DELTA-FIX-001
+    pr_number: "407"
+    merge_commit: 48725e8068161d60222eaaf154a499781e00a268
     merge_commits:
       - 48725e8068161d60222eaaf154a499781e00a268
       - 56fb76ee36cd9d900a5aec4870d47280334efe95
@@ -499,12 +501,15 @@ completed:
     priority: P1
     status: completed
     story_points: 2
+    pr_number: "872"
     merge_commit: 9451226f9cfececcb718d5fb266e4e42339d6b7f
     target_commit: 15921483bbd4e61033707a67a959f0d9091edaca
     notes:
       - "Skill: .opencode/skills/chiseai-deep-research/SKILL.md"
       - "Fixes: description quoting, When Not To Use section, bmad-create-architecture refs"
       - "Merged via Merlin authority, feature branch deleted"
+      - "REMEDIATION: SKILL.md replaced with approved 371-line V3 design on 2026-03-30
+        (original 157-line generic was incorrect)"
     owner: merlin
 backlog:
   - acceptance_criteria:

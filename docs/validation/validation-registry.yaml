@@ -2565,12 +2565,13 @@ validations:
     epic_id: EP-CI-001
     story_id: REPO-STATUS-GUARD-001
     status: validated
-    description: Validate workflow status guard catches YAML corruption and supports mandatory repair escalation.
+    description: Validate workflow status guard catches YAML corruption, supports mandatory repair escalation, and preserves legacy deferred status compatibility in workflow transition checks.
     acceptance_criteria:
       - scripts/governance/status_guard.py validate returns non-zero on malformed workflow YAML
       - scripts/governance/status_guard.py attempt escalates to repair_required after configured threshold
       - scripts/governance/status_guard.py repair produces parseable YAML and passes yamllint + status_write_gate
       - CI status-write-gate runs status_guard validation when workflow status file changes
+      - Workflow transition validation accepts legacy deferred workflow states without failing the governance gate
     test_method: automated
     owner: qa-team
 

@@ -16,6 +16,7 @@ Valid Status Transitions:
     completed → archived
     completed → merged
     backlog → planned
+    any status → deferred
     Any status → deprecated (admin override)
 
 Exit Codes:
@@ -49,6 +50,7 @@ DEFAULT_WORKFLOW_FILE = Path("docs/bmm-workflow-status.yaml")
 # Valid status values
 VALID_STATUSES = {
     "backlog",
+    "deferred",
     "planned",
     "in_progress",
     "completed",
@@ -59,7 +61,7 @@ VALID_STATUSES = {
 }
 
 # Terminal statuses (cannot transition out of these)
-TERMINAL_STATUSES = {"archived", "cancelled", "deprecated"}
+TERMINAL_STATUSES = {"archived", "cancelled", "deferred", "deprecated"}
 
 # Status transition rules: {from_status: [allowed_to_statuses]}
 # Special case: "*" in allowed_to_statuses means any status can transition there
@@ -411,7 +413,7 @@ def is_valid_transition(from_status: str, to_status: str) -> tuple[bool, str]:
         return False, f"Invalid target status: '{to_status}'"
 
     # Any status can transition to deprecated (admin override)
-    if to_lower == "deprecated":
+    if to_lower in {"deprecated", "deferred"}:
         return True, ""
 
     # Check terminal statuses - cannot transition out
@@ -518,8 +520,9 @@ def calculate_expected_epic_status(stories: list[Story]) -> str | None:
     if not stories:
         return None
 
-    # Filter out deprecated stories
-    active_stories = [s for s in stories if s.status != "deprecated"]
+    # Filter out non-actionable stories.
+    # Deprecated stories are retired, and deferred stories are intentionally parked.
+    active_stories = [s for s in stories if s.status not in {"deprecated", "deferred"}]
 
     if not active_stories:
         return "deprecated"
