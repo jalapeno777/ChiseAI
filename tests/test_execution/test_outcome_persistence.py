@@ -207,6 +207,11 @@ class TestOutcomePersistenceBasic:
         assert key is not None
         assert "paper:signal:" in key
         mock_redis.set.assert_called_once()
+        mock_redis.xadd.assert_called_once()
+        # Verify XADD targets the correct stream key
+        xadd_call = mock_redis.xadd.call_args
+        assert xadd_call[0][0] == "paper:signals:stream"
+        assert "data" in xadd_call[0][1]
 
     def test_get_recent_outcomes_empty(self, persistence, mock_redis):
         """Test getting recent outcomes when none exist."""
