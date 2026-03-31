@@ -47,6 +47,9 @@ class SignalConsumer:
 
     DEFAULT_POLL_INTERVAL = 5.0  # seconds
     REDIS_KEY_PATTERN = "paper:signal:*"
+    STREAM_KEY = "paper:signals:stream"
+    CONSUMER_GROUP = "paper-signal-group"
+    CONSUMER_NAME = "paper-signal-consumer"
     PROCESSED_SET_KEY = "paper:signals:processed"
     PROCESSING_KEY_PREFIX = "paper:signal:{signal_id}:processing"
     PROCESSING_MARKER_TTL = 60  # seconds - auto-expire if consumer crashes
@@ -123,6 +126,82 @@ class SignalConsumer:
             self._paper_kill_switch = PaperKillSwitchManager(redis_client=redis)
         return self._paper_kill_switch
 
+    async def _ensure_stream_group(self) -> None:
+        """Ensure the consumer group exists on the stream.
+
+        Creates the stream and consumer group if they don't exist.
+        Handles BUSYGROUP error gracefully (group already exists).
+        """
+        try:
+            redis = await self._get_redis()
+            try:
+                await redis.xgroup_create(
+                    name=self.STREAM_KEY,
+                    groupname=self.CONSUMER_GROUP,
+                    id="$",
+                    mkstream=True,
+                )
+                logger.info(
+                    "Created consumer group '%s' on stream '%s'",
+                    self.CONSUMER_GROUP,
+                    self.STREAM_KEY,
+                )
+            except Exception as e:
+                error_str = str(e).upper()
+                if "BUSYGROUP" in error_str:
+                    logger.debug(
+                        "Consumer group '%s' already exists on stream '%s'",
+                        self.CONSUMER_GROUP,
+                        self.STREAM_KEY,
+                    )
+                else:
+                    raise
+        except Exception as e:
+            logger.warning(
+                "Failed to ensure stream group: %s. "
+                "Will fall back to SCAN-based polling.",
+                e,
+            )
+
+    async def _read_from_stream(self) -> list[tuple[str, dict[str, str]]]:
+        """Read new messages from the stream using XREADGROUP.
+
+        Returns:
+            List of (message_id, fields_dict) tuples for unread messages.
+            Empty list if no new messages or on error.
+        """
+        try:
+            redis = await self._get_redis()
+            result = await redis.xreadgroup(
+                groupname=self.CONSUMER_GROUP,
+                consumername=self.CONSUMER_NAME,
+                streams={self.STREAM_KEY: ">"},
+                count=100,
+                block=1000,  # 1s blocking read
+            )
+            messages: list[tuple[str, dict[str, str]]] = []
+            if result:
+                for _stream_key, stream_messages in result:
+                    for message_id, fields in stream_messages:
+                        messages.append((message_id, fields))
+            return messages
+        except Exception as e:
+            logger.warning("Failed to read from stream: %s", e)
+            return []
+
+    async def _ack_stream_message(self, message_id: str) -> None:
+        """Acknowledge a stream message after successful processing.
+
+        Args:
+            message_id: The stream message ID to acknowledge.
+        """
+        try:
+            redis = await self._get_redis()
+            await redis.xack(self.STREAM_KEY, self.CONSUMER_GROUP, message_id)
+            logger.debug("Acknowledged stream message %s", message_id)
+        except Exception as e:
+            logger.warning("Failed to ack stream message %s: %s", message_id, e)
+
     async def start(self) -> None:
         """Start the signal consumer polling loop."""
         if self._running:
@@ -131,6 +210,9 @@ class SignalConsumer:
 
         self._running = True
         start_time = datetime.now(UTC)
+
+        # Ensure consumer group exists for XREADGROUP
+        await self._ensure_stream_group()
 
         # Load previously processed signals from Redis set
         await self._load_processed_signals()
@@ -363,6 +445,9 @@ class SignalConsumer:
     async def _poll_once(self) -> int:
         """Perform a single polling cycle.
 
+        Tries XREADGROUP on the stream first (primary path for S4+ signals),
+        then falls back to SCAN for legacy paper:signal:* keys (backwards compat).
+
         Returns:
             Number of signals processed
         """
@@ -383,7 +468,28 @@ class SignalConsumer:
                 )
                 return 0
 
-            # Scan for signal keys
+            # --- Primary path: XREADGROUP on stream ---
+            stream_messages = await self._read_from_stream()
+            if stream_messages:
+                logger.debug(
+                    "Received %d messages from stream '%s'",
+                    len(stream_messages),
+                    self.STREAM_KEY,
+                )
+                for message_id, fields in stream_messages:
+                    try:
+                        count = await self._process_stream_message(fields, message_id)
+                        processed_count += count
+                    except Exception as e:
+                        logger.error(
+                            "Error processing stream message %s: %s",
+                            message_id,
+                            e,
+                        )
+                        continue
+                return processed_count
+
+            # --- Fallback path: SCAN for legacy paper:signal:* keys ---
             cursor = 0
             signal_keys = []
 
@@ -398,7 +504,7 @@ class SignalConsumer:
                 if cursor == 0:
                     break
 
-            logger.debug(f"Found {len(signal_keys)} signal keys in Redis")
+            logger.debug(f"Found {len(signal_keys)} legacy signal keys in Redis")
 
             # Process each signal
             for key in signal_keys:
@@ -444,7 +550,7 @@ class SignalConsumer:
                                     sorted(self.allowed_symbols),
                                 )
                                 continue
-                            submitted = await self._submit_signal(signal, key)
+                            submitted = await self._submit_signal(signal, redis_key=key)
                             if submitted:
                                 processed_count += 1
                     finally:
@@ -462,6 +568,79 @@ class SignalConsumer:
             logger.info(f"Processed {processed_count} signals in this cycle")
 
         return processed_count
+
+    async def _process_stream_message(
+        self, fields: dict[str, str], message_id: str
+    ) -> int:
+        """Process a single stream message.
+
+        Args:
+            fields: The message fields from the stream entry.
+            message_id: The stream message ID for XACK.
+
+        Returns:
+            1 if signal was processed, 0 otherwise.
+        """
+        import json
+
+        signal_data: dict[str, Any] = {}
+
+        # Stream fields from S4's XADD are stored as a flat hash.
+        # The 'data' field contains JSON with the full signal payload.
+        data_field = fields.get("data")
+        if data_field:
+            try:
+                signal_data = json.loads(data_field)
+            except json.JSONDecodeError:
+                logger.warning(
+                    "Failed to parse JSON data in stream message %s", message_id
+                )
+                return 0
+        else:
+            # Fallback: treat all fields as signal data directly
+            signal_data = dict(fields)
+
+        signal_id = signal_data.get("signal_id", "")
+        if not signal_id:
+            logger.debug("Stream message %s has no signal_id, skipping", message_id)
+            return 0
+
+        # Skip if already in processed set
+        if signal_id in self._processed_signals:
+            await self._ack_stream_message(message_id)
+            return 0
+
+        # Only process actionable signals
+        status = signal_data.get("status", "")
+        if status != "actionable":
+            await self._ack_stream_message(message_id)
+            return 0
+
+        # Convert to Signal object and submit
+        signal = self._convert_to_signal(signal_data)
+        if not signal:
+            await self._ack_stream_message(message_id)
+            return 0
+
+        token = (signal.token or "").upper().strip()
+        if self.allowed_symbols and token not in self.allowed_symbols:
+            logger.warning(
+                "SKIPPED stream signal %s for non-allowed symbol %s "
+                "(allowed=%s); signal NOT consumed — will retry "
+                "if symbol is later added to allowlist",
+                signal.signal_id,
+                token,
+                sorted(self.allowed_symbols),
+            )
+            return 0
+
+        submitted = await self._submit_signal(signal, None)
+        if submitted:
+            # Acknowledge the stream message after successful processing
+            await self._ack_stream_message(message_id)
+            return 1
+
+        return 0
 
     def _convert_to_signal(self, signal_data: dict[str, str]) -> Signal | None:
         """Convert Redis hash data to Signal object.
@@ -512,12 +691,14 @@ class SignalConsumer:
             logger.error(f"Failed to convert signal data: {e}")
             return None
 
-    async def _submit_signal(self, signal: Signal, redis_key: str) -> bool:
+    async def _submit_signal(
+        self, signal: Signal, redis_key: str | None = None
+    ) -> bool:
         """Submit a signal to the orchestrator.
 
         Args:
             signal: The Signal object to submit
-            redis_key: Redis key for updating status
+            redis_key: Redis key for updating status (None for stream-sourced signals)
 
         Returns:
             True if submitted successfully
@@ -544,8 +725,9 @@ class SignalConsumer:
             if symbol:
                 self._last_symbol_submit_ts[symbol] = now_ts
 
-            # Mark as consumed in Redis
-            await self._update_signal_status(redis_key, "consumed")
+            # Mark as consumed in Redis (only for legacy key-based signals)
+            if redis_key:
+                await self._update_signal_status(redis_key, "consumed")
 
             # Add to processed set
             await self._mark_signal_processed(signal.signal_id)
