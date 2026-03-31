@@ -254,6 +254,8 @@ completed:
       - docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md
       - docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md
     id: AUDIT-DELTA-FIX-001
+    pr_number: "407"
+    merge_commit: 48725e8068161d60222eaaf154a499781e00a268
     merge_commits:
       - 48725e8068161d60222eaaf154a499781e00a268
       - 56fb76ee36cd9d900a5aec4870d47280334efe95
