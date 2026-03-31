@@ -18,7 +18,9 @@ def test_changed_files_uses_pipeline_files_when_present(monkeypatch) -> None:
     monkeypatch.setenv("CI_PIPELINE_FILES", '["docs/notes.md","scripts/ci/foo.py"]')
     monkeypatch.setenv("CI_PIPELINE_NUMBER", "3393")
     monkeypatch.setattr(
-        dependency_audit, "_git_changed_files", lambda: (_ for _ in ()).throw(AssertionError("git fallback should not run"))
+        dependency_audit,
+        "_git_changed_files",
+        lambda: (_ for _ in ()).throw(AssertionError("git fallback should not run")),
     )
 
     assert dependency_audit._changed_files() == ["docs/notes.md", "scripts/ci/foo.py"]
@@ -30,7 +32,11 @@ def test_changed_files_skips_git_fallback_in_ci_when_pipeline_files_missing(
     monkeypatch.delenv("CI_PIPELINE_FILES", raising=False)
     monkeypatch.setenv("CI_PIPELINE_NUMBER", "3393")
     monkeypatch.setattr(
-        dependency_audit, "_git_changed_files", lambda: (_ for _ in ()).throw(AssertionError("git fallback should not run in CI"))
+        dependency_audit,
+        "_git_changed_files",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("git fallback should not run in CI")
+        ),
     )
 
     assert dependency_audit._changed_files() == []
