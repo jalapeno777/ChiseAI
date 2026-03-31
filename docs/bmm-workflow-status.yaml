@@ -2246,6 +2246,41 @@ epics:
         test_results:
           passed: 8
         notes: "Dependency tracking for provisional gating"
+  - description: >
+      Pipeline transparency: signal-to-outcome correlation (SignalOutcome
+      wiring), per-gate metrics, signal type tracking, confidence
+      thresholds, ICT pipeline quality filters, and archive/mock
+      cleanup. Goal is full observability of the execution pipeline.
+    id: EP-PIPELINE-TRANSPARENCY
+    name: Pipeline Transparency - Signal/Outcome Observability
+    notes:
+      - "Q2-Q4 + S2/S4/S5 + S1A/S1B + ST1/ST2/ST3"
+      - "Week 1 (Q2,Q3,Q4,P3): SignalOutcome wiring"
+      - "Week 2 (S2,S3,S4,S5,P1,P2,P4): enhancements + fixes"
+      - "Week 3+ (S1A,S1B,ST1,ST2,ST3): ICT real pipeline"
+      - "BLOCKER: Q3 blocked on Q2 (sequential)"
+      - "BLOCKER: S1A blocked on ST2 design"
+    sprint_id: PIPELINE-TRANSPARENCY
+    status: planned
+    story_count: 14
+    story_ids:
+      - Q2
+      - Q3
+      - Q4
+      - P3
+      - S2
+      - S3
+      - S4
+      - S5
+      - S1A
+      - S1B
+      - ST1
+      - ST2
+      - ST3
+      - P1
+      - P2
+      - P4
+    story_points: 19
   - completion_date: "2026-03-25"
     id: ST-CI-EVIDENCE-001
     merge_commit: dc85838
@@ -8259,6 +8294,162 @@ stories:
     description: "Monitor ICT signal collection rate variability for statistical power"
     source_epic: EP-ICT-006
     created_date: "2026-03-30"
+  - description: >
+      Wire SignalOutcome records at trade OPEN event. When a trade order
+      is opened, emit a SignalOutcome record with signal_type='OPEN'.
+      Modifies orchestrator to emit at open order event.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: Q2
+    notes:
+      - "BLOCKER: None"
+      - "Week 1 of Pipeline Transparency epic"
+      - "Owner: dev agent"
+    owner: dev
+    priority: P1-HIGH
+    sprint_id: PIPELINE-W1
+    sp: 2
+    status: planned
+    title: Wire SignalOutcome at Trade OPEN
+  - description: >
+      Add SignalOutcome records at order rejection gates. When a trade
+      order is rejected (risk check fail, signal expired, etc.), emit
+      a SignalOutcome record with outcome_type='REJECTED'.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: Q3
+    notes:
+      - "BLOCKER: Depends on Q2 (must be merged first)"
+      - "Owner: dev agent"
+    owner: dev
+    priority: P1-HIGH
+    sprint_id: PIPELINE-W1
+    sp: 2
+    status: planned
+    title: Wire SignalOutcome at Rejection Gates
+  - description: >
+      Add per-gate outcome metrics to the orchestrator. Emit a metric
+      event for each gate (risk, signal_quality, confidence) with the
+      outcome (pass/fail).
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: Q4
+    notes:
+      - "BLOCKER: None (parallel with Q2)"
+      - "Owner: quickdev agent"
+    owner: quickdev
+    priority: P1-HIGH
+    sprint_id: PIPELINE-W1
+    sp: 1
+    status: planned
+    title: Per-Gate Outcome Metrics
+  - description: >
+      Verify SignalOutcome wiring is correct end-to-end. Check that
+      OPEN and REJECTED outcomes are being written correctly and
+      correlate with trades.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: P3
+    notes:
+      - "BLOCKER: Depends on Q2 and Q3"
+      - "Owner: quickdev agent"
+    owner: quickdev
+    priority: P1-HIGH
+    sprint_id: PIPELINE-W1
+    sp: 1
+    status: planned
+    title: Verify SignalOutcome Wiring
+  - description: >
+      Add signal_type field to SignalOutcome records. Ensure all outcome
+      records include the signal_type that generated the signal.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: S2
+    notes:
+      - "BLOCKER: None"
+    owner: dev
+    priority: P2-MEDIUM
+    sprint_id: PIPELINE-W2
+    sp: 1
+    status: planned
+    title: SignalOutcome signal_type Field
+  - description: >
+      Require confidence >= 0.75 for OPEN signals. Gate trade opens
+      behind a confidence threshold of 0.75.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: S4
+    notes:
+      - "BLOCKER: None"
+    owner: dev
+    priority: P2-MEDIUM
+    sprint_id: PIPELINE-W2
+    sp: 1
+    status: planned
+    title: OPEN Signal Confidence Threshold (>= 0.75)
+  - description: >
+      Cache signals with TTL=5s to dedupe rapid repeat signals. When
+      multiple signals of the same type arrive within 5 seconds, treat
+      as one signal.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: S5
+    notes:
+      - "BLOCKER: None"
+    owner: dev
+    priority: P2-MEDIUM
+    sprint_id: PIPELINE-W2
+    sp: 1
+    status: planned
+    title: Signal Cache with TTL Deduplication
+  - description: >
+      Real ICT signal pipeline with full signal decomposition (H, L, H-OLD,
+      L-OLD, B-OS, CHoCH). Replace mock ICT pipeline with real ICT
+      signal generation and decomposition.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: S1A
+    notes:
+      - "BLOCKER: Depends on ST2 design (detection priority order)"
+      - "Owner: senior-dev agent"
+    owner: senior-dev
+    priority: P2-MEDIUM
+    sprint_id: PIPELINE-W3
+    sp: 2
+    status: planned
+    title: Real ICT Pipeline - Signal Decomposition
+  - description: >
+      ICT signal quality filter - filter out ICT signals below 0.75
+      confidence before they reach the trade engine.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: ST1
+    notes:
+      - "BLOCKER: None"
+    owner: dev
+    priority: P2-MEDIUM
+    sprint_id: PIPELINE-W3
+    sp: 1
+    status: planned
+    title: ICT Signal Quality Filter (confidence >= 0.75)
+  - description: >
+      ICT detection priority order - define ordered priority for ICT
+      detection types (B-OS > CHoCH > H/L > H-OLD/L-OLD). When multiple
+      detections fire, use priority to determine which to act on.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: ST2
+    notes:
+      - "BLOCKER: Needs design decision from Aria on priority order"
+    owner: dev
+    priority: P2-MEDIUM
+    sprint_id: PIPELINE-W3
+    sp: 1
+    status: planned
+    title: ICT Detection Priority Order
+  - description: >
+      Archive mock ICT pipeline - archive or remove the mock ICT
+      pipeline implementation, keeping only the real ICT signal pipeline.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: ST3
+    notes:
+      - "BLOCKER: None (do after S1A is complete)"
+    owner: dev
+    priority: P2-MEDIUM
+    sprint_id: PIPELINE-W3
+    sp: 1
+    status: planned
+    title: Archive Mock ICT Pipeline
 summary:
   epics_by_status:
     completed: 16
