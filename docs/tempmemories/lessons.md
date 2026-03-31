@@ -995,4 +995,19 @@ LESSON
 - added_utc: 2026-03-30T12:00:00Z
 ```
 
+```text
+LESSON
+- id: LESSON-20260330-burn-in-unguarded
+- context: Burn-in testing code shipped to production unguarded - `orchestrator.py:609` was closing positions after 60 seconds unconditionally
+- trigger: Production paper trading positions being closed prematurely after 60 seconds
+- actionable_rule: All test-only behaviors (time limits, forced closes, debug modes) MUST be gated behind explicit env vars defaulting to disabled. Pattern: `os.getenv("FEATURE_NAME", "false").lower() == "true"`.
+- applies_to:
+  - senior-dev
+  - dev
+  - jarvis
+- expected_outcome: Test-only behaviors are disabled by default in production
+- evidence_ref: src/execution/paper/orchestrator.py lines 609-619 (pre-fix showed unguarded `if position_age_seconds > 60:`)
+- added_utc: 2026-03-30T20:45:00Z
+```
+
 (End of file - total 720 lines)

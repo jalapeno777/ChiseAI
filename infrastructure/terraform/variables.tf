@@ -62,6 +62,14 @@ variable "woodpecker_gitea_client" {
   description = "Woodpecker OAuth client ID from Gitea."
   default     = "change-me"
   sensitive   = true
+
+  validation {
+    condition = (
+      trimspace(var.woodpecker_gitea_client) != "" &&
+      lower(trimspace(var.woodpecker_gitea_client)) != "change-me"
+    )
+    error_message = "woodpecker_gitea_client must be the registered Gitea OAuth client ID, not a placeholder."
+  }
 }
 
 variable "woodpecker_gitea_secret" {
@@ -69,6 +77,14 @@ variable "woodpecker_gitea_secret" {
   description = "Woodpecker OAuth client secret from Gitea."
   default     = "change-me"
   sensitive   = true
+
+  validation {
+    condition = (
+      trimspace(var.woodpecker_gitea_secret) != "" &&
+      lower(trimspace(var.woodpecker_gitea_secret)) != "change-me"
+    )
+    error_message = "woodpecker_gitea_secret must be the registered Gitea OAuth client secret, not a placeholder."
+  }
 }
 
 variable "woodpecker_db_password" {

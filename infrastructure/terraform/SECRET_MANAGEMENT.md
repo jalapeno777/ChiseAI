@@ -11,6 +11,7 @@ This document outlines the secret management approach for ChiseAI Terraform infr
 1. **Variable Sensitivity Marking**: All sensitive variables are marked with `sensitive = true` in `variables.tf`
 2. **Git Ignore**: `.gitignore` excludes `**/*.tfvars`, `**/*.tfstate`, and `**/*.tfstate.*` files
 3. **Template File**: `terraform.tfvars.template` provides a sanitized example with placeholder values
+4. **Woodpecker/Gitea pairing**: Woodpecker server variables expect an existing Gitea OAuth app client ID and client secret. The live app name is `woodpecker` and the client ID is `e1df8c79-5252-4cca-9f02-ff9dfb50fb7f`.
 
 ### ⚠️ Security Issues Identified
 

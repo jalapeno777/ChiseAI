@@ -43,7 +43,7 @@ export TF_VAR_chise_postgres_password="your-secure-password"
 export TF_VAR_influxdb_admin_password="your-secure-password"
 export TF_VAR_grafana_admin_password="your-secure-password"
 export TF_VAR_woodpecker_agent_secret="your-secure-secret"
-export TF_VAR_woodpecker_gitea_client="your-client-id"
+export TF_VAR_woodpecker_gitea_client="e1df8c79-5252-4cca-9f02-ff9dfb50fb7f"
 export TF_VAR_woodpecker_gitea_secret="your-client-secret"
 export TF_VAR_woodpecker_db_password="your-db-password"
 export TF_VAR_taiga_secret_key="your-taiga-secret"
@@ -56,10 +56,20 @@ export TF_VAR_bybit_api_secret="your-bybit-secret"
 export TF_VAR_discord_bot_token="your-discord-token"
 ```
 
+If you keep the canonical values in `.env`, you can bootstrap them directly:
+```bash
+source scripts/bootstrap_terraform_woodpecker.sh --print
+source scripts/bootstrap_terraform_woodpecker.sh plan
+source scripts/bootstrap_terraform_woodpecker.sh apply
+```
+
+That bootstrap also exposes `GITEA_TOKEN`, `GITEA_REVIEW_TOKEN`, and `WOODPECKER_TOKEN` from `.env` so repo automation and Woodpecker API calls share the same source of truth.
+
 ### Security Notes
 
 - **NEVER** commit `terraform.tfvars` to version control (it's already in `.gitignore`)
 - **NEVER** commit `terraform.tfstate` to version control (it's already in `.gitignore`)
 - Use remote state with encryption for production deployments
 - Rotate secrets regularly
+- Woodpecker login requires a Gitea OAuth app to exist in the Gitea database; the client ID and secret must match that app exactly. The live Woodpecker app is `woodpecker` with client ID `e1df8c79-5252-4cca-9f02-ff9dfb50fb7f`.
 - See [SECRET_MANAGEMENT.md](./SECRET_MANAGEMENT.md) for detailed security best practices
