@@ -3872,7 +3872,162 @@ validations:
     completion_evidence:
       - |
         Outcome type classification implemented and verified.
-
+  - id: V-PIPELINE-Q2
+    title: SignalOutcome at Trade OPEN
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: Q2
+    status: planned
+    description: |
+      Validate SignalOutcome records are emitted at trade OPEN events.
+    acceptance_criteria:
+      - SignalOutcome record created on order OPEN
+      - record includes signal_id, outcome_type='OPEN', timestamp
+      - record is persisted to outcome storage
+    test_method: automated
+    owner: dev
+  - id: V-PIPELINE-Q3
+    title: SignalOutcome at Rejection Gates
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: Q3
+    status: planned
+    description: |
+      Validate SignalOutcome records are emitted at rejection gates.
+    acceptance_criteria:
+      - SignalOutcome record created on order rejection
+      - record includes signal_id, outcome_type='REJECTED', rejection_reason
+      - record is persisted to outcome storage
+    test_method: automated
+    owner: dev
+  - id: V-PIPELINE-Q4
+    title: Per-Gate Outcome Metrics
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: Q4
+    status: planned
+    description: |
+      Validate per-gate outcome metrics are emitted for each gate.
+    acceptance_criteria:
+      - metric event emitted for each gate (risk, signal_quality, confidence)
+      - metric includes gate name, pass/fail, timestamp
+    test_method: automated
+    owner: quickdev
+  - id: V-PIPELINE-P3
+    title: Verify SignalOutcome Wiring
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: P3
+    status: planned
+    description: |
+      Validate end-to-end SignalOutcome wiring correctness.
+    acceptance_criteria:
+      - OPEN outcomes correlate with actual trade executions
+      - REJECTED outcomes match rejection events
+      - no duplicate or missing outcome records
+    test_method: automated
+    owner: quickdev
+  - id: V-PIPELINE-S2
+    title: SignalOutcome signal_type Field
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: S2
+    status: planned
+    description: |
+      Validate SignalOutcome records include signal_type field.
+    acceptance_criteria:
+      - signal_type field present in all outcome records
+      - signal_type matches the generating signal
+    test_method: automated
+    owner: dev
+  - id: V-PIPELINE-S4
+    title: OPEN Signal Confidence Threshold
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: S4
+    status: planned
+    description: |
+      Validate confidence >= 0.75 gate for OPEN signals.
+    acceptance_criteria:
+      - signals below 0.75 confidence do not trigger OPEN
+      - signals >= 0.75 confidence proceed to OPEN
+    test_method: automated
+    owner: dev
+  - id: V-PIPELINE-S5
+    title: Signal Cache with TTL Deduplication
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: S5
+    status: planned
+    description: |
+      Validate signal cache deduplicates rapid repeat signals within TTL.
+    acceptance_criteria:
+      - multiple signals of same type within 5s treated as one
+      - cache expires after 5s
+    test_method: automated
+    owner: dev
+  - id: V-PIPELINE-S1A-1
+    title: Real ICT Pipeline - B-OS/CHoCH Decomposition
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: S1A-1
+    status: planned
+    description: |
+      Validate real ICT signal pipeline for B-OS and CHoCH decomposition.
+    acceptance_criteria:
+      - B-OS signals generated from real market data
+      - CHoCH signals generated from real market data
+      - signals are real (not mock data)
+      - B-OS detection correctly identifies structure breaks
+      - CHoCH detection correctly identifies character changes
+    test_method: automated
+    owner: senior-dev
+  - id: V-PIPELINE-S1A-2
+    title: Real ICT Pipeline - H/L/H-OLD/L-OLD Decomposition
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: S1A-2
+    status: planned
+    description: |
+      Validate real ICT signal pipeline for H, L, H-OLD, L-OLD decomposition.
+    acceptance_criteria:
+      - H (high) signals generated from real market data
+      - L (low) signals generated from real market data
+      - H-OLD and L-OLD signals generated for old highs/lows
+      - signals are real (not mock data)
+    test_method: automated
+    owner: senior-dev
+  - id: V-PIPELINE-ST1
+    title: ICT Signal Quality Filter
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: ST1
+    status: planned
+    description: |
+      Validate ICT signals below 0.75 confidence are filtered.
+    acceptance_criteria:
+      - ICT signals < 0.75 confidence are blocked
+      - ICT signals >= 0.75 confidence proceed
+    test_method: automated
+    owner: dev
+  - id: V-PIPELINE-ST2
+    title: ICT Detection Priority Order
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: ST2
+    status: planned
+    description: |
+      Validate priority ordering for ICT detection types.
+    acceptance_criteria:
+      - priority order enforced: BOS/CHoCH > Order Blocks > FVG > Liquidity Sweeps
+      - when BOS/CHoCH and another detection fire simultaneously, BOS/CHoCH wins
+      - when Order Blocks and FVG fire simultaneously, Order Blocks wins
+      - when all four fire, BOS/CHoCH wins
+    test_method: automated
+    owner: dev
+  - id: V-PIPELINE-ST3
+    title: Archive Mock ICT Pipeline
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: ST3
+    status: planned
+    description: |
+      Validate mock ICT pipeline is archived and only real pipeline remains.
+    acceptance_criteria:
+      - mock pipeline code archived or removed
+      - real ICT pipeline operational
+    test_method: automated
+    owner: dev
+# ============================================================
+# Global validation thresholds
 # ============================================================
 # Global validation thresholds
 # ============================================================
