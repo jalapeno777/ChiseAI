@@ -3959,15 +3959,32 @@ validations:
       - cache expires after 5s
     test_method: automated
     owner: dev
-  - id: V-PIPELINE-S1A
-    title: Real ICT Pipeline - Signal Decomposition
+  - id: V-PIPELINE-S1A-1
+    title: Real ICT Pipeline - B-OS/CHoCH Decomposition
     epic_id: EP-PIPELINE-TRANSPARENCY
-    story_id: S1A
+    story_id: S1A-1
     status: planned
     description: |
-      Validate real ICT signal pipeline with decomposition (H, L, H-OLD, L-OLD, B-OS, CHoCH).
+      Validate real ICT signal pipeline for B-OS and CHoCH decomposition.
     acceptance_criteria:
-      - ICT signals generated for all decomposition types
+      - B-OS signals generated from real market data
+      - CHoCH signals generated from real market data
+      - signals are real (not mock data)
+      - B-OS detection correctly identifies structure breaks
+      - CHoCH detection correctly identifies character changes
+    test_method: automated
+    owner: senior-dev
+  - id: V-PIPELINE-S1A-2
+    title: Real ICT Pipeline - H/L/H-OLD/L-OLD Decomposition
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    story_id: S1A-2
+    status: planned
+    description: |
+      Validate real ICT signal pipeline for H, L, H-OLD, L-OLD decomposition.
+    acceptance_criteria:
+      - H (high) signals generated from real market data
+      - L (low) signals generated from real market data
+      - H-OLD and L-OLD signals generated for old highs/lows
       - signals are real (not mock data)
     test_method: automated
     owner: senior-dev
@@ -3989,10 +4006,12 @@ validations:
     story_id: ST2
     status: planned
     description: |
-      Validate priority ordering for ICT detection types (B-OS > CHoCH > H/L > H-OLD/L-OLD).
+      Validate priority ordering for ICT detection types.
     acceptance_criteria:
-      - priority order defined and enforced
-      - higher priority detections override lower ones
+      - priority order enforced: BOS/CHoCH > Order Blocks > FVG > Liquidity Sweeps
+      - when BOS/CHoCH and another detection fire simultaneously, BOS/CHoCH wins
+      - when Order Blocks and FVG fire simultaneously, Order Blocks wins
+      - when all four fire, BOS/CHoCH wins
     test_method: automated
     owner: dev
   - id: V-PIPELINE-ST3

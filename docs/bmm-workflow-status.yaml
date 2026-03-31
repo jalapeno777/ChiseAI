@@ -2254,33 +2254,29 @@ epics:
     id: EP-PIPELINE-TRANSPARENCY
     name: Pipeline Transparency - Signal/Outcome Observability
     notes:
-      - "Q2-Q4 + S2/S4/S5 + S1A/S1B + ST1/ST2/ST3"
+      - "Q2-Q4 + S2/S4/S5 + S1A-1/S1A-2 + ST1/ST2/ST3"
       - "Week 1 (Q2,Q3,Q4,P3): SignalOutcome wiring"
       - "Week 2 (S2,S3,S4,S5,P1,P2,P4): enhancements + fixes"
-      - "Week 3+ (S1A,S1B,ST1,ST2,ST3): ICT real pipeline"
+      - "Week 3+ (S1A-1,S1A-2,ST1,ST2,ST3): ICT real pipeline"
       - "BLOCKER: Q3 blocked on Q2 (sequential)"
-      - "BLOCKER: S1A blocked on ST2 design"
+      - "BLOCKER: S1A-1 blocked on ST2 design (ST2 is now unblocked)"
     sprint_id: PIPELINE-TRANSPARENCY
     status: planned
-    story_count: 14
+    story_count: 15
     story_ids:
       - Q2
       - Q3
       - Q4
       - P3
       - S2
-      - S3
       - S4
       - S5
-      - S1A
-      - S1B
+      - S1A-1
+      - S1A-2
       - ST1
       - ST2
       - ST3
-      - P1
-      - P2
-      - P4
-    story_points: 19
+    story_points: 21
   - completion_date: "2026-03-25"
     id: ST-CI-EVIDENCE-001
     merge_commit: dc85838
@@ -8396,20 +8392,38 @@ stories:
     status: planned
     title: Signal Cache with TTL Deduplication
   - description: >
-      Real ICT signal pipeline with full signal decomposition (H, L, H-OLD,
-      L-OLD, B-OS, CHoCH). Replace mock ICT pipeline with real ICT
-      signal generation and decomposition.
+      Real ICT signal pipeline - B-OS and CHoCH decomposition. Implement
+      real ICT signal generation for Break of Structure (B-OS) and Change of
+      Character (CHoCH) detections. Replace mock ICT pipeline with real
+      ICT signal generation for market structure identification.
     epic_id: EP-PIPELINE-TRANSPARENCY
-    id: S1A
+    id: S1A-1
     notes:
-      - "BLOCKER: Depends on ST2 design (detection priority order)"
+      - "BLOCKER: ST2 must be done first (ST2 is now unblocked per Aria)"
       - "Owner: senior-dev agent"
+      - "Part 1 of ICT decomposition (B-OS/CHoCH)"
     owner: senior-dev
     priority: P2-MEDIUM
     sprint_id: PIPELINE-W3
     sp: 2
     status: planned
-    title: Real ICT Pipeline - Signal Decomposition
+    title: Real ICT Pipeline - B-OS/CHoCH Decomposition
+  - description: >
+      Real ICT signal pipeline - H, L, H-OLD, L-OLD decomposition. Implement
+      real ICT signal generation for highs/lows and old highs/lows. These
+      complete the ICT signal decomposition suite.
+    epic_id: EP-PIPELINE-TRANSPARENCY
+    id: S1A-2
+    notes:
+      - "BLOCKER: Depends on S1A-1 (must be merged first)"
+      - "Owner: senior-dev agent"
+      - "Part 2 of ICT decomposition (H/L/H-OLD/L-OLD)"
+    owner: senior-dev
+    priority: P2-MEDIUM
+    sprint_id: PIPELINE-W3
+    sp: 2
+    status: planned
+    title: Real ICT Pipeline - H/L/H-OLD/L-OLD Decomposition
   - description: >
       ICT signal quality filter - filter out ICT signals below 0.75
       confidence before they reach the trade engine.
@@ -8425,12 +8439,16 @@ stories:
     title: ICT Signal Quality Filter (confidence >= 0.75)
   - description: >
       ICT detection priority order - define ordered priority for ICT
-      detection types (B-OS > CHoCH > H/L > H-OLD/L-OLD). When multiple
-      detections fire, use priority to determine which to act on.
+      detection types (BOS/CHoCH > Order Blocks > FVG > Liquidity Sweeps).
+      When multiple detections fire, use priority to determine which to act on.
+      Priority rationale: BOS/CHoCH establishes market structure first,
+      then value/entry quality layers (Order Blocks), then momentum (FVG),
+      then liquidity sweeps last.
     epic_id: EP-PIPELINE-TRANSPARENCY
     id: ST2
     notes:
-      - "BLOCKER: Needs design decision from Aria on priority order"
+      - "BLOCKER: None (Aria has decided priority order)"
+      - "Aria decision: BOS/CHoCH > Order Blocks > FVG > Liquidity Sweeps"
     owner: dev
     priority: P2-MEDIUM
     sprint_id: PIPELINE-W3
