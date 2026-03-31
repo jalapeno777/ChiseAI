@@ -1085,4 +1085,9 @@ steps:
       CHISE_AUTOPR_SOURCE_BRANCH: ${CI_COMMIT_BRANCH}
       CHISE_AUTOPR_ENABLE_SERVER_AUTOMERGE: "1"
     commands:
-      - python3 scripts/pr_lifecycle/auto_pr_merge.py automerge --enable-automerge
+      - |
+        set -euo pipefail
+        python3 scripts/pr_lifecycle/auto_pr_merge.py automerge --enable-automerge || {
+          echo "pr-automerge: non-blocking failure while enabling merge checks; continuing"
+          exit 0
+        }
