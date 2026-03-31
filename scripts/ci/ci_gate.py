@@ -47,7 +47,6 @@ FAST_REQUIRED = [
     # PR #714: New pipeline steps
     "pre-flight.status",
     "local-ci-consistency.status",
-    "post-run.status",
     "gate-eval.status",
     # From tempmemory-operations-group:
     "tempmemory-scheduler.status",

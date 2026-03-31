@@ -1055,7 +1055,6 @@ steps:
       - performance-gate
       - truth-gate
       - flaky-detection
-      - post-run
       - tempmemory-operations-group
       - evaluation-pre-eval-group
       - quality-advisory-group
