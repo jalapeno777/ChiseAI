@@ -2174,8 +2174,8 @@ epics:
       - final_gate_dependency: EP-ICT-006-Part-B
       - All stories merged to main via PRs #679-#683
     sprint_id: ICT-S10
-    completion_date: "2026-03-26"
-    status: in_progress
+    completion_date: "2026-03-31"
+    status: completed
     provisional_gate_status: active
     final_gate_dependency: EP-ICT-006-Part-B
     story_count: 7
@@ -2246,13 +2246,24 @@ epics:
         test_results:
           passed: 8
         notes: "Dependency tracking for provisional gating"
-    backlog:
       - id: ST-ICT-Q2
-        title: "Week 1: Fix SignalOutcome wiring for order_fill events (Q2)"
+        status: completed
+        completion_date: "2026-03-31"
+        merge_commit: "26a834483"
+        pr_number: 879
+        notes: "Fix SignalOutcome wiring for order_fill events (Q2)"
       - id: ST-ICT-Q3
-        title: "Week 1: Fix order_fill null handling downstream of SignalOutcome (Q3)"
+        status: completed
+        completion_date: "2026-03-31"
+        merge_commit: "1afc915e5"
+        notes: "Fix order_fill null handling downstream of SignalOutcome (Q3)"
       - id: ST-ICT-Q4
-        title: "Week 1: Verify P3 signal emission with shadow trading in paper mode (Q4)"
+        status: completed
+        completion_date: "2026-03-31"
+        merge_commit: "b1521ba1"
+        pr_number: 878
+        notes: "Verify P3 signal emission with shadow trading in paper mode (Q4)"
+    backlog:
       - id: ST-ICT-P3
         title: "Week 1: Add per-gate and per-signal-type PnL metrics (P3)"
       - id: ST-ICT-S2
