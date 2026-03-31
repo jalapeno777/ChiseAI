@@ -10,6 +10,7 @@ Follow these steps exactly (do not skip):
    - `GITEA_REVIEW_TOKEN` must be set (dedicated review-bot user; not the PR author).
    - You must know `PR_NUMBER` and `STORY_ID`.
    - CI should be green or actively running with a required context.
+   - Prefer Gitea MCP for any repo lookups needed during review; use the official `tea` CLI if MCP is unavailable or cannot answer the question.
 
 2. Run the review
    - Get two independent reviews in parallel:
@@ -30,3 +31,4 @@ Follow these steps exactly (do not skip):
 
 4. Evidence
    - Capture the review output and the command output in the story iterlog Evidence.
+   - If `tea` was used for a read-only lookup, include the exact command and login name in the evidence.

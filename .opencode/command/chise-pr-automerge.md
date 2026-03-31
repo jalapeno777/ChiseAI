@@ -18,6 +18,7 @@ Prereqs:
 - Set `WORKTREE_PATH` (required). Example: `export WORKTREE_PATH=/tmp/worktrees/ST-NS-001-merlin`
 - Ensure a swarm session exists for this branch:
   - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --check-canonical`
+- Prefer Gitea MCP for read-only repo discovery when available; if it is unavailable or insufficient, use the official `tea` CLI instead of ad-hoc web UI navigation or raw API guessing.
 - Optional helper to derive `STORY_ID` from branch when omitted:
   - `export STORY_ID="$(python3 -c 'import re,os; b=os.environ.get(\"BRANCH\",\"\").upper(); m=re.search(r\"(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)(?:-[A-Z0-9]+){1,}\", b); print(m.group(0) if m else \"\")')"`
 
@@ -34,6 +35,7 @@ Prereqs:
 
 4. Open PR (no merge side effects)
    - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$BRANCH"`
+   - If you need read-only confirmation of repo or PR state before opening the PR, use `tea` first when MCP cannot answer it.
 
 5. Explicit merge (opt-in)
    - If approvals are required, have the review bot approve first:

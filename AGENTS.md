@@ -61,6 +61,12 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 **Then run:** `chise-swarm-session` (`verify`) and push normally
 **Why:** Session verification installs repo-managed hooks; `git push` runs the canonical pre-push gate automatically
 
+### "I need Gitea access and MCP is unavailable or insufficient..."
+**Load:** `chiseai-git-workflow`
+**Then use:** the official `tea` CLI as the fallback for Gitea work the MCP cannot handle
+**Why:** Gitea MCP is the preferred path for structured access, but `tea` is the supported fallback when MCP is missing, unavailable, or cannot express the needed operation.
+**Setup:** see `docs/runbooks/gitea-cli-setup.md`
+
 ### "CI failed on my PR..."
 **Load:** `chiseai-validation`
 **Then run:** `chise-ci-root-cause` → `chise-ci-failure-bundle` commands
@@ -257,6 +263,8 @@ When updating dependencies in CI Docker images:
 - The filesystem username (`tacopants`) is NOT the Gitea username. These are separate systems.
 - All Gitea MCP calls (list_commits, list_pull_requests, get_file_contents, etc.) must use `owner: "craig"`.
 - Scripts that use `GITEA_OWNER` env var should default to `craig` if not set.
+- When Gitea MCP cannot complete the task, use `tea` instead of ad-hoc web UI navigation or raw API guessing.
+- For `tea`, prefer `GITEA_TOKEN` plus `GITEA_BASE_URL` or `GITEA_HOST`, and document the exact command used in evidence.
 
 ### Merge Authority (Explicit Roles)
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
