@@ -505,6 +505,8 @@ completed:
       - "Skill: .opencode/skills/chiseai-deep-research/SKILL.md"
       - "Fixes: description quoting, When Not To Use section, bmad-create-architecture refs"
       - "Merged via Merlin authority, feature branch deleted"
+      - "REMEDIATION: SKILL.md replaced with approved 371-line V3 design on 2026-03-30
+        (original 157-line generic was incorrect)"
     owner: merlin
 backlog:
   - acceptance_criteria:
