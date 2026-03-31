@@ -488,6 +488,24 @@ completed:
       - "ST-SIG-OUT-002: Outcome writer runtime path"
       - "ST-SIG-OUT-003: Outcome type classification"
     owner: jarvis
+  - id: ST-SKILL-DR-001
+    title: Deep Research Skill Creation
+    description: >-
+      Created chiseai-deep-research skill with systematic methodology,
+      multi-source synthesis, evidence grading, and structured deliverables.
+      Includes "When Not To Use" section, corrected skill references,
+      and schema compliance fixes.
+    completion_date: "2026-03-30"
+    priority: P1
+    status: completed
+    story_points: 2
+    merge_commit: 9451226f9cfececcb718d5fb266e4e42339d6b7f
+    target_commit: 15921483bbd4e61033707a67a959f0d9091edaca
+    notes:
+      - "Skill: .opencode/skills/chiseai-deep-research/SKILL.md"
+      - "Fixes: description quoting, When Not To Use section, bmad-create-architecture refs"
+      - "Merged via Merlin authority, feature branch deleted"
+    owner: merlin
 backlog:
   - acceptance_criteria:
       - Docker images use consistent python/python3 PATH across all CI steps
