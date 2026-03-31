@@ -304,6 +304,66 @@ class PaperTradingOrchestrator:
         except Exception:
             logger.debug("Failed to update orchestrator health key", exc_info=True)
 
+    def _emit_gate_outcomes(
+        self,
+        assessment: Any,
+        signal: Any,
+        correlation_id: str,
+    ) -> None:
+        """Emit per-gate outcome metrics for observability.
+
+        Extracts pass/fail outcomes for each named gate (risk, signal_quality,
+        confidence) from the risk assessment and emits structured log lines.
+
+        Args:
+            assessment: RiskAssessment from risk_enforcer.validate_order().
+            signal: Original Signal being processed.
+            correlation_id: Correlation ID for tracing.
+        """
+        violation_rules = {v.rule for v in assessment.violations}
+
+        # Risk gate: overall assessment approval
+        risk_reason = (
+            "; ".join(v.message for v in assessment.violations)
+            if assessment.violations
+            else "no_violations"
+        )
+        logger.info(
+            f"gate_outcome gate=risk outcome={'pass' if assessment.approved else 'fail'} "
+            f"reason={risk_reason} correlation_id={correlation_id}"
+        )
+
+        # Confidence gate: pass if no confidence violation
+        if "confidence" in violation_rules:
+            conf_reason = next(
+                v.message for v in assessment.violations if v.rule == "confidence"
+            )
+            logger.info(
+                f"gate_outcome gate=confidence outcome=fail "
+                f"reason={conf_reason} correlation_id={correlation_id}"
+            )
+        else:
+            logger.info(
+                f"gate_outcome gate=confidence outcome=pass "
+                f"reason=confidence={signal.confidence:.2%} correlation_id={correlation_id}"
+            )
+
+        # Signal quality gate: pass if no blocking violations
+        blocking_rules = {
+            v.rule for v in assessment.violations if v.severity == "block"
+        }
+        if blocking_rules:
+            logger.info(
+                f"gate_outcome gate=signal_quality outcome=fail "
+                f"reason=blocking_violations={sorted(blocking_rules)} "
+                f"correlation_id={correlation_id}"
+            )
+        else:
+            logger.info(
+                f"gate_outcome gate=signal_quality outcome=pass "
+                f"reason=no_blocking_violations correlation_id={correlation_id}"
+            )
+
     async def _get_paper_kill_switch(self) -> PaperKillSwitchManager | None:
         """Get or create PaperKillSwitchManager.
 
@@ -740,6 +800,9 @@ class PaperTradingOrchestrator:
             )
 
             (time.perf_counter() - risk_start) * 1000
+
+            # Q4: Emit per-gate outcome metrics for observability
+            self._emit_gate_outcomes(assessment, signal, correlation_id)
 
             if not assessment.approved:
                 logger.warning(
