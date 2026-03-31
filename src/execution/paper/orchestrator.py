@@ -606,7 +606,14 @@ class PaperTradingOrchestrator:
                 ).total_seconds()
 
                 # Close if position is older than 60 seconds (for burn-in testing)
-                if position_age_seconds > 60:
+                # Only active when ENABLE_BURN_IN_TESTING=true env var is set
+                if (
+                    os.getenv("ENABLE_BURN_IN_TESTING", "false").lower() == "true"
+                    and position_age_seconds > 60
+                ):
+                    logger.debug(
+                        "Burn-in testing is enabled via ENABLE_BURN_IN_TESTING=true"
+                    )
                     await self.close_position(
                         existing_position.position_id, entry_price, reason="time_limit"
                     )
