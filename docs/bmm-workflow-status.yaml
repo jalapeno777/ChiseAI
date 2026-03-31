@@ -2246,6 +2246,43 @@ epics:
         test_results:
           passed: 8
         notes: "Dependency tracking for provisional gating"
+    backlog:
+      - id: ST-ICT-Q2
+        title: "Week 1: Fix SignalOutcome wiring for order_fill events (Q2)"
+      - id: ST-ICT-Q3
+        title: "Week 1: Fix order_fill null handling downstream of SignalOutcome (Q3)"
+      - id: ST-ICT-Q4
+        title: "Week 1: Verify P3 signal emission with shadow trading in paper mode (Q4)"
+      - id: ST-ICT-P3
+        title: "Week 1: Add per-gate and per-signal-type PnL metrics (P3)"
+      - id: ST-ICT-S2
+        title: "Week 2: ICT quality filter to suppress redundant signals (S2)"
+      - id: ST-ICT-S3
+        title: "Week 2: Fix confidence threshold initialization at config load (S3)"
+      - id: ST-ICT-S4
+        title: "Week 2: Add signal type tracking metadata (S4)"
+      - id: ST-ICT-S5
+        title: "Week 2: Archive/mock data cleanup for P2 realism (S5)"
+      - id: ST-ICT-P1
+        title: "Week 2: Migrate P1 signal outcome tracking to database-backed store (P1)"
+      - id: ST-ICT-P2
+        title: "Week 2: Implement P2 signal generation audit trail (P2)"
+      - id: ST-ICT-P4
+        title: "Week 2: Fix P4 signal deduplication logic in concurrent order fills (P4)"
+      - id: ST-ICT-S1A-1
+        title: "Week 3+: Add S1A-1 high_water_mark flush to trade database (S1A-1)"
+      - id: ST-ICT-S1A-2
+        title: "Week 3+: Implement S1A-2 concurrent order-fill deduplication (S1A-2)"
+      - id: ST-ICT-ST1
+        title: "Week 3+: Implement ST1 ICT session-based signal cache (ST1)"
+      - id: ST-ICT-ST2
+        title: "Week 3+: Implement ST2 blocktrade detection in real pipeline (ST2)"
+      - id: ST-ICT-ST3
+        title: "Week 3+: Implement ST3 stop hunt detection pattern recognition (ST3)"
+      - id: ST-ICT-038
+        title: "Week 3+: ICT pipeline NFR measurement and reporting (ST-ICT-038)"
+      - id: ST-ICT-039
+        title: "Week 3+: ICT pipeline documentation and runbook (ST-ICT-039)"
   - description: >
       Pipeline transparency: signal-to-outcome correlation (SignalOutcome
       wiring), per-gate metrics, signal type tracking, confidence
