@@ -128,9 +128,6 @@ class SignalConsumerRunner:
             # Initialize all components
             await self._initialize_components()
 
-            # Start health monitoring
-            asyncio.create_task(self._health_monitoring_loop())
-
             logger.info("SignalConsumer service started successfully")
             return True
 
@@ -222,52 +219,6 @@ class SignalConsumerRunner:
         # Start the orchestrator (this also starts the signal consumer)
         await self.orchestrator.start()
         logger.info("Paper trading orchestrator started")
-
-    async def _health_monitoring_loop(self) -> None:
-        """Background task to update health markers and log status."""
-        while self._running:
-            try:
-                await self._update_health_marker()
-                await self._log_status()
-                await asyncio.sleep(30)  # Update every 30 seconds
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in health monitoring loop: {e}")
-                await asyncio.sleep(5)
-
-    async def _update_health_marker(self) -> None:
-        """Update the health marker in Redis with current status."""
-        try:
-            import redis.asyncio as redis
-
-            redis_client = redis.Redis(
-                host="host.docker.internal",
-                port=6380,
-                decode_responses=True,
-            )
-
-            health_data = {
-                "status": "active" if self._running else "inactive",
-                "started_at": self._start_time.isoformat() if self._start_time else "",
-                "last_heartbeat": datetime.now(UTC).isoformat(),
-                "poll_interval": str(self.poll_interval),
-            }
-
-            # Add consumer stats if available
-            if self.signal_consumer:
-                stats = self.signal_consumer.get_stats()
-                health_data["processed_count"] = str(stats.get("processed_count", 0))
-                health_data["consumer_running"] = str(stats.get("running", False))
-
-            await redis_client.hset("paper:signal_consumer:health", mapping=health_data)
-            await redis_client.expire(
-                "paper:signal_consumer:health", 60
-            )  # 60 second TTL
-            await redis_client.close()
-
-        except Exception as e:
-            logger.warning(f"Failed to update health marker: {e}")
 
     async def _log_status(self) -> None:
         """Log current status of the consumer."""
