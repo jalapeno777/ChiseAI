@@ -200,6 +200,16 @@ class PaperTradingOrchestrator:
             "trades_failed": 0,
             "total_latency_ms": 0.0,
             "avg_latency_ms": 0.0,
+            # Per-gate rejection counters (DEBUG)
+            "gate_g1_throttle_count": 0,
+            "gate_g2_paper_kill_count": 0,
+            "gate_g3_live_kill_count": 0,
+            "gate_g4_no_price_count": 0,
+            "gate_g5_risk_reject_count": 0,
+            "gate_g6_llm_reject_count": 0,
+            "gate_g7_same_dir_skip_count": 0,
+            "gate_g8_order_not_filled_count": 0,
+            "gate_g9_exception_count": 0,
         }
         self._symbol_eval_interval_seconds = max(
             0, int(os.getenv("SYMBOL_EVAL_INTERVAL_SECONDS", "300"))
@@ -547,6 +557,12 @@ class PaperTradingOrchestrator:
                     )
                     async with self._lock:
                         self._metrics["trades_rejected"] += 1
+                        self._metrics["gate_g1_throttle_count"] += 1
+                    logger.debug(
+                        "G1_THROTTLE triggered, count: %d (correlation_id=%s)",
+                        self._metrics["gate_g1_throttle_count"],
+                        correlation_id,
+                    )
                     return PaperTradeResult(
                         signal=signal,
                         status=TradeStatus.REJECTED,
@@ -574,6 +590,12 @@ class PaperTradingOrchestrator:
                     )
                     async with self._lock:
                         self._metrics["trades_rejected"] += 1
+                        self._metrics["gate_g2_paper_kill_count"] += 1
+                    logger.debug(
+                        "G2_PAPER_KILL triggered, count: %d (correlation_id=%s)",
+                        self._metrics["gate_g2_paper_kill_count"],
+                        correlation_id,
+                    )
                     return PaperTradeResult(
                         signal=signal,
                         status=TradeStatus.REJECTED,
@@ -590,6 +612,12 @@ class PaperTradingOrchestrator:
                 )
                 async with self._lock:
                     self._metrics["trades_rejected"] += 1
+                    self._metrics["gate_g3_live_kill_count"] += 1
+                logger.debug(
+                    "G3_LIVE_KILL triggered, count: %d (correlation_id=%s)",
+                    self._metrics["gate_g3_live_kill_count"],
+                    correlation_id,
+                )
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.REJECTED,
@@ -644,6 +672,12 @@ class PaperTradingOrchestrator:
                     )
                     async with self._lock:
                         self._metrics["trades_rejected"] += 1
+                        self._metrics["gate_g4_no_price_count"] += 1
+                    logger.debug(
+                        "G4_NO_PRICE triggered, count: %d (correlation_id=%s)",
+                        self._metrics["gate_g4_no_price_count"],
+                        correlation_id,
+                    )
                     return PaperTradeResult(
                         signal=signal,
                         status=TradeStatus.REJECTED,
@@ -703,6 +737,13 @@ class PaperTradingOrchestrator:
                         logger.debug(
                             f"Already in {signal_side} position for {signal.token}, skipping"
                         )
+                        async with self._lock:
+                            self._metrics["gate_g7_same_dir_skip_count"] += 1
+                        logger.debug(
+                            "G7_SAME_DIR_SKIP triggered, count: %d (correlation_id=%s)",
+                            self._metrics["gate_g7_same_dir_skip_count"],
+                            correlation_id,
+                        )
                         return PaperTradeResult(
                             signal=signal,
                             status=TradeStatus.SKIPPED,
@@ -736,15 +777,21 @@ class PaperTradingOrchestrator:
                         logger.info(
                             f"Signal rejected by LLM: {signal.token} - {enhanced.rationale}"
                         )
-                        async with self._lock:
-                            self._metrics["trades_rejected"] += 1
-                        return PaperTradeResult(
-                            signal=signal,
-                            status=TradeStatus.REJECTED,
-                            # TODO: When models.py is updated, use RejectReason enum directly
-                            reject_reason=[f"LLM rejection: {enhanced.rationale}"],
-                            correlation_id=correlation_id,
-                        )
+                    async with self._lock:
+                        self._metrics["trades_rejected"] += 1
+                        self._metrics["gate_g6_llm_reject_count"] += 1
+                    logger.debug(
+                        "G6_LLM_REJECT triggered, count: %d (correlation_id=%s)",
+                        self._metrics["gate_g6_llm_reject_count"],
+                        correlation_id,
+                    )
+                    return PaperTradeResult(
+                        signal=signal,
+                        status=TradeStatus.REJECTED,
+                        # TODO: When models.py is updated, use RejectReason enum directly
+                        reject_reason=[f"LLM rejection: {enhanced.rationale}"],
+                        correlation_id=correlation_id,
+                    )
                     # Log LLM input for observability
                     logger.debug(
                         f"LLM enhanced decision: {signal.token} "
@@ -811,6 +858,12 @@ class PaperTradingOrchestrator:
                 )
                 async with self._lock:
                     self._metrics["trades_rejected"] += 1
+                    self._metrics["gate_g5_risk_reject_count"] += 1
+                logger.debug(
+                    "G5_RISK_REJECT triggered, count: %d (correlation_id=%s)",
+                    self._metrics["gate_g5_risk_reject_count"],
+                    correlation_id,
+                )
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.REJECTED,
@@ -996,6 +1049,12 @@ class PaperTradingOrchestrator:
                 )
                 async with self._lock:
                     self._metrics["trades_failed"] += 1
+                    self._metrics["gate_g8_order_not_filled_count"] += 1
+                logger.debug(
+                    "G8_ORDER_NOT_FILLED triggered, count: %d (correlation_id=%s)",
+                    self._metrics["gate_g8_order_not_filled_count"],
+                    correlation_id,
+                )
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.FAILED,
@@ -1014,6 +1073,12 @@ class PaperTradingOrchestrator:
 
             async with self._lock:
                 self._metrics["trades_failed"] += 1
+                self._metrics["gate_g9_exception_count"] += 1
+            logger.debug(
+                "G9_EXCEPTION triggered, count: %d (correlation_id=%s)",
+                self._metrics["gate_g9_exception_count"],
+                correlation_id,
+            )
             return PaperTradeResult(
                 signal=signal,
                 status=TradeStatus.FAILED,
