@@ -71,7 +71,11 @@ def test_auto_merge_merges_green_conflict_free_pr(mock_req_json: MagicMock) -> N
         "number": 42,
         "state": "open",
         "mergeable": True,
-        "head": {"ref": "feature/test-branch", "sha": "abc123", "label": "craig:feature/test-branch"},
+        "head": {
+            "ref": "feature/test-branch",
+            "sha": "abc123",
+            "label": "craig:feature/test-branch",
+        },
         "user": {"login": "chise-bot"},
     }
 
@@ -101,7 +105,11 @@ def test_auto_merge_skips_unmerged_pr_when_status_not_green(
         "number": 42,
         "state": "open",
         "mergeable": True,
-        "head": {"ref": "feature/test-branch", "sha": "abc123", "label": "craig:feature/test-branch"},
+        "head": {
+            "ref": "feature/test-branch",
+            "sha": "abc123",
+            "label": "craig:feature/test-branch",
+        },
         "user": {"login": "chise-bot"},
     }
 
