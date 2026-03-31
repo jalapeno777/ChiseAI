@@ -834,13 +834,17 @@ class PaperTradingOrchestrator:
                     direction=signal.direction.value.upper(),
                     fill_price=filled_order.avg_fill_price,
                     fill_quantity=filled_order.filled_quantity,
-                    fill_timestamp=filled_order.filled_at
-                    if hasattr(filled_order, "filled_at") and filled_order.filled_at
-                    else datetime.now(UTC),
+                    fill_timestamp=(
+                        filled_order.filled_at
+                        if hasattr(filled_order, "filled_at") and filled_order.filled_at
+                        else datetime.now(UTC)
+                    ),
                     entry_price=filled_order.avg_fill_price,
-                    entry_time=filled_order.filled_at
-                    if hasattr(filled_order, "filled_at") and filled_order.filled_at
-                    else datetime.now(UTC),
+                    entry_time=(
+                        filled_order.filled_at
+                        if hasattr(filled_order, "filled_at") and filled_order.filled_at
+                        else datetime.now(UTC)
+                    ),
                     position_size=filled_order.filled_quantity,
                     status=SignalOutcomeStatus.PENDING,
                     metadata={
