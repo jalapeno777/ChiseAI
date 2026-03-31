@@ -39,6 +39,7 @@ logs/
 screenshots/
 .swarm-worktrees/
 .swarm-session.json
+.worktrees/
 
 # Local development files
 *.log
