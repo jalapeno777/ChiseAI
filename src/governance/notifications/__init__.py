@@ -1,6 +1,7 @@
 """Discord notification module for governance events."""
 
 from .discord_notifier import DiscordNotifier
+from .event_router import DigestBuilder, NotificationEventRouter, RoutingDecision
 from .formatters import (
     AutocogEventFormatter,
     DecisionNotificationFormatter,
@@ -8,6 +9,7 @@ from .formatters import (
     ReflectionNotificationFormatter,
     SelfAssessmentNotificationFormatter,
 )
+from .severity_mapper import DEFAULT_SEVERITY, SeverityMapper
 
 __all__ = [
     "DiscordNotifier",
@@ -16,4 +18,9 @@ __all__ = [
     "SelfAssessmentNotificationFormatter",
     "AutocogEventFormatter",
     "LowSeverityDigestFormatter",
+    "NotificationEventRouter",
+    "RoutingDecision",
+    "DigestBuilder",
+    "SeverityMapper",
+    "DEFAULT_SEVERITY",
 ]
