@@ -131,7 +131,7 @@ def assemble_aria_context(
     items: list[ContextItem] = []
 
     # CURRENT_TASK_DETAILS: Current cycle findings and recommendations
-    for i, finding in enumerate(findings):
+    for finding in findings:
         items.append(
             ContextItem(
                 content=f"Finding: {finding}",

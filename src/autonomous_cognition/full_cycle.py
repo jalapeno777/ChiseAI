@@ -2122,10 +2122,8 @@ class AutonomousCognitionFullCycle:
                     version_id
                 )  # noqa: SLF001
                 if promoted_version is not None:
-                    rollback_target = (
-                        self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
-                            model_type=promoted_version.model_type
-                        )
+                    rollback_target = self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
+                        model_type=promoted_version.model_type
                     )
                     if rollback_target is not None:
                         self._champion_engine._registry.promote_to_champion(  # noqa: SLF001
