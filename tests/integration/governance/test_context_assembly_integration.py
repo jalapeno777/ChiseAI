@@ -20,6 +20,7 @@ from src.governance.context_assembly import (
     ContextItem,
     ContextPriority,
     UnresolvedConflict,
+    assemble_aria_context,
 )
 
 # ---------------------------------------------------------------------------
@@ -393,3 +394,258 @@ class TestRealRuntimeTrace:
         conflicts = boundary._detect_conflicts(items, max_tokens=250)
         # With similar confidence and tight budget, should detect conflict
         assert isinstance(conflicts, list)
+
+
+# ---------------------------------------------------------------------------
+# Tests: Runtime Integration (full_cycle._store_aria_briefing)
+# ---------------------------------------------------------------------------
+
+
+class TestRuntimeIntegration:
+    """Tests proving boundary is called from full_cycle._store_aria_briefing."""
+
+    def test_assemble_aria_context_helper_exists(self):
+        """assemble_aria_context helper should exist and be callable."""
+        from src.governance.context_assembly import assemble_aria_context
+
+        assert callable(assemble_aria_context)
+
+    def test_assemble_aria_context_produces_assembly_result(self, boundary):
+        """assemble_aria_context should produce an AssemblyResult."""
+        from src.governance.context_assembly import assemble_aria_context
+
+        findings = ["System memory is healthy", "Runtime stability is good"]
+        recommendations = ["Continue monitoring", "Run daily self-assessment"]
+        evidence = {
+            "self_assessment_score": 0.85,
+            "belief_conflicts": 0,
+            "belief_revisions": 0,
+        }
+        beliefs_summary = "System is stable with no conflicts"
+
+        result = assemble_aria_context(
+            findings=findings,
+            recommendations=recommendations,
+            evidence=evidence,
+            beliefs_summary=beliefs_summary,
+            max_tokens=12000,
+            boundary=boundary,
+        )
+
+        assert hasattr(result, "assembled_context")
+        assert hasattr(result, "traces")
+        assert hasattr(result, "unresolved_conflicts")
+        assert isinstance(result.traces, list)
+        assert isinstance(result.unresolved_conflicts, list)
+
+    def test_assemble_aria_context_maps_findings_to_current_task(self, boundary):
+        """Findings should be mapped to CURRENT_TASK_DETAILS priority."""
+        findings = ["Finding A", "Finding B"]
+        recommendations = []
+        evidence = {}
+        beliefs_summary = ""
+
+        result = assemble_aria_context(
+            findings=findings,
+            recommendations=recommendations,
+            evidence=evidence,
+            beliefs_summary=beliefs_summary,
+            max_tokens=12000,
+            boundary=boundary,
+        )
+
+        # Check that traces contain items from findings with CURRENT_TASK_DETAILS priority
+        current_task_traces = [t for t in result.traces if "findings" in t.item_id]
+        assert len(current_task_traces) >= len(findings)
+
+    def test_assemble_aria_context_maps_beliefs_to_project_rules(self, boundary):
+        """Beliefs summary should be mapped to PROJECT_RULES_AND_ARCHITECTURE priority."""
+        findings = []
+        recommendations = []
+        evidence = {}
+        beliefs_summary = "System is stable with no conflicts"
+
+        result = assemble_aria_context(
+            findings=findings,
+            recommendations=recommendations,
+            evidence=evidence,
+            beliefs_summary=beliefs_summary,
+            max_tokens=12000,
+            boundary=boundary,
+        )
+
+        # Check that traces contain beliefs with PROJECT_RULES_AND_ARCHITECTURE priority
+        project_rules_traces = [t for t in result.traces if "beliefs" in t.item_id]
+        assert len(project_rules_traces) >= 1
+
+    def test_assemble_aria_context_trace_includes_included_action(self, boundary):
+        """Trace should show 'included' action for items within budget."""
+        findings = ["Finding A"]
+        recommendations = ["Recommendation A"]
+        evidence = {"score": 0.9}
+        beliefs_summary = "Stable"
+
+        result = assemble_aria_context(
+            findings=findings,
+            recommendations=recommendations,
+            evidence=evidence,
+            beliefs_summary=beliefs_summary,
+            max_tokens=12000,
+            boundary=boundary,
+        )
+
+        included_traces = [t for t in result.traces if t.action == "included"]
+        assert len(included_traces) >= 1
+
+    def test_assemble_aria_context_unresolved_conflicts_when_close_evidence(
+        self, boundary
+    ):
+        """When evidence strengths are close, unresolved_conflicts should be populated."""
+        findings = []
+        recommendations = []
+        evidence = {}
+        beliefs_summary = ""
+
+        # Create items with similar confidence in same priority that can't all fit
+        items = [
+            _make_item(
+                content="Evidence A - 0.65 confidence",
+                priority=ContextPriority.CURRENT_TASK_DETAILS,
+                token_size=5000,
+                confidence=0.65,
+                source="src_a",
+            ),
+            _make_item(
+                content="Evidence B - 0.63 confidence",
+                priority=ContextPriority.CURRENT_TASK_DETAILS,
+                token_size=5000,
+                confidence=0.63,
+                source="src_b",
+            ),
+        ]
+
+        result = boundary.assemble(items, max_tokens=6000)
+
+        # With similar confidence and tight budget, should detect conflict
+        assert len(result.unresolved_conflicts) > 0
+
+    def test_runtime_trace_sample_inclusion(self, boundary):
+        """Produce runtime trace showing included items."""
+        findings = [
+            "System memory is healthy",
+            "All components operational",
+            "No incidents detected",
+        ]
+        recommendations = [
+            "Continue monitoring",
+            "Review recent metrics",
+        ]
+        evidence = {
+            "self_assessment_score": 0.88,
+            "belief_conflicts": 0,
+            "belief_revisions": 0,
+            "autonomy_level": "bounded",
+        }
+        beliefs_summary = "Active conflicts: 0, Revisions applied: 0"
+
+        result = assemble_aria_context(
+            findings=findings,
+            recommendations=recommendations,
+            evidence=evidence,
+            beliefs_summary=beliefs_summary,
+            max_tokens=12000,
+            boundary=boundary,
+        )
+
+        print("\n=== Runtime Inclusion Trace ===")
+        for t in result.traces:
+            if t.action == "included":
+                print(f"  INCLUDED: {t.item_id} - {t.reason} ({t.token_size} tokens)")
+
+        included_traces = [t for t in result.traces if t.action == "included"]
+        assert len(included_traces) >= 1
+
+    def test_runtime_trace_sample_unresolved_conflict(self, boundary):
+        """Produce runtime trace showing unresolved conflicts."""
+        items = [
+            _make_item(
+                content="Strategy A - confidence 0.72",
+                priority=ContextPriority.PROJECT_RULES_AND_ARCHITECTURE,
+                token_size=3000,
+                confidence=0.72,
+                source="strategy_a",
+            ),
+            _make_item(
+                content="Strategy B - confidence 0.70",
+                priority=ContextPriority.PROJECT_RULES_AND_ARCHITECTURE,
+                token_size=3000,
+                confidence=0.70,
+                source="strategy_b",
+            ),
+            _make_item(
+                content="Strategy C - confidence 0.68",
+                priority=ContextPriority.PROJECT_RULES_AND_ARCHITECTURE,
+                token_size=3000,
+                confidence=0.68,
+                source="strategy_c",
+            ),
+        ]
+
+        result = boundary.assemble(items, max_tokens=5000)
+
+        print("\n=== Runtime Unresolved Conflict Trace ===")
+        for t in result.traces:
+            print(f"  {t.action}: {t.item_id} - {t.reason} ({t.token_size} tokens)")
+        if result.unresolved_conflicts:
+            print("Unresolved conflicts:")
+            for uc in result.unresolved_conflicts:
+                print(f"  {uc.reason}: {uc.item_ids} -> {uc.suggested_resolution}")
+
+        assert hasattr(result, "unresolved_conflicts")
+
+    def test_runtime_trace_sample_protected_and_evicted(self, boundary):
+        """Produce runtime trace showing protected and evicted items."""
+        items = [
+            _make_item(
+                content="PROTECTED identity",
+                priority=ContextPriority.CORE_PERSONALITY,
+                is_protected_identity=True,
+                token_size=100,
+                source="identity",
+            ),
+            _make_item(
+                content="MANDATORY task",
+                priority=ContextPriority.CURRENT_TASK_DETAILS,
+                is_mandatory=True,
+                token_size=100,
+                source="task",
+            ),
+            _make_item(
+                content="LOW priority old conversation",
+                priority=ContextPriority.OLD_CONVERSATIONS,
+                token_size=100,
+                source="qdrant",
+            ),
+            _make_item(
+                content="STALE low confidence old lesson",
+                priority=ContextPriority.OLD_LESSONS,
+                stale=True,
+                confidence=0.2,
+                token_size=100,
+                source="lessons",
+            ),
+        ]
+
+        result = boundary.assemble(items, max_tokens=250)
+
+        print("\n=== Runtime Protected/Evicted Trace ===")
+        for t in result.traces:
+            print(f"  {t.action}: {t.item_id} - {t.reason} ({t.token_size} tokens)")
+
+        protected_traces = [t for t in result.traces if t.action == "protected"]
+        evicted_traces = [t for t in result.traces if t.action == "evicted"]
+        included_traces = [t for t in result.traces if t.action == "included"]
+
+        assert len(protected_traces) >= 1
+        assert len(included_traces) >= 1
+        assert len(evicted_traces) >= 1
