@@ -35,6 +35,9 @@ RUN pip install --no-cache-dir \
 COPY src/ /app/src/
 COPY scripts/ /app/scripts/
 
+# Copy Aria governance config
+COPY config/ /app/config/
+
 # Set proper permissions
 RUN chown -R app:app /app
 USER app

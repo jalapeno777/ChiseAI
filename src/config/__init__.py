@@ -3,6 +3,16 @@
 Provides centralized configuration loading and environment variable management.
 """
 
+from src.config.aria_config import (
+    AriaConfig,
+    ContextBudgetPolicy,
+    GovernancePolicy,
+    IdentityContract,
+    NotificationPolicy,
+    get_aria_config,
+    reset_aria_config,
+    set_aria_config,
+)
 from src.config.bootstrap import get_bootstrap_state
 from src.config.env_loader import (
     EnvLoader,
@@ -33,7 +43,13 @@ from src.config.trading_mode import (
 )
 
 __all__ = [
+    "AriaConfig",
+    "ContextBudgetPolicy",
+    "GovernancePolicy",
+    "IdentityContract",
+    "NotificationPolicy",
     "bootstrap_environment",
+    "get_aria_config",
     "get_bootstrap_state",
     "EnvLoader",
     "discord_loader",
@@ -43,7 +59,9 @@ __all__ = [
     "load_kimi_config",
     "FeatureFlags",
     "get_feature_flags",
+    "reset_aria_config",
     "reset_feature_flags",
+    "set_aria_config",
     "set_feature_flags",
     "ICTFeatureFlags",
     "get_ict_feature_flags",
