@@ -15,8 +15,10 @@ from typing import Any
 
 from autonomous_cognition.action_executor import ActionExecutor  # noqa: F401
 from autonomous_cognition.autonomy_tuner import AutonomyTuner
-from autonomous_cognition.beliefs.audit_writer import BeliefMutationAuditWriter
-from autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+from autonomous_cognition.beliefs.audit_writer import (
+    BeliefMutationAuditWriter,
+    BeliefMutationEvent,
+)
 from autonomous_cognition.beliefs.consistency_checker import BeliefConsistencyChecker
 from autonomous_cognition.beliefs.explanation import explain_conflict, explain_revision
 from autonomous_cognition.beliefs.models import Belief, EvidenceRecord
@@ -2069,10 +2071,8 @@ class AutonomousCognitionFullCycle:
                     version_id
                 )  # noqa: SLF001
                 if promoted_version is not None:
-                    rollback_target = (
-                        self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
-                            model_type=promoted_version.model_type
-                        )
+                    rollback_target = self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
+                        model_type=promoted_version.model_type
                     )
                     if rollback_target is not None:
                         self._champion_engine._registry.promote_to_champion(  # noqa: SLF001
