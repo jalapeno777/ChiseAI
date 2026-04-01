@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 from dataclasses import dataclass, field
@@ -11,6 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationAuditWriter
 
 
 # Dataclass matching schema for testing
@@ -63,10 +65,16 @@ class TestBeliefMutationAuditWriter:
     def mock_redis_client(self):
         """Create a mock Redis client."""
         mock_client = MagicMock()
-        mock_client.get.return_value = None  # Default: key not set
         mock_client.lpush.return_value = 1
-        mock_client.setex.return_value = True
+        mock_client.expire.return_value = True
         return mock_client
+
+    @pytest.fixture
+    def mock_feature_flags(self):
+        """Create a mock FeatureFlags instance."""
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True  # Default: enabled
+        return mock_flags
 
     @pytest.fixture
     def governance_policy_yaml(self):
@@ -112,68 +120,54 @@ class TestBeliefMutationAuditWriter:
             notified=False,
         )
 
-    def test_audit_writer_is_enabled_returns_bool(self, mock_redis_client):
+    def test_audit_writer_is_enabled_returns_bool(self, mock_feature_flags):
         """Test is_enabled returns a boolean."""
         with patch(
-            "src.autonomous_cognition.beliefs.audit_writer.get_redis_client"
-        ) as mock_get_redis:
-            mock_get_redis.return_value = mock_redis_client
-            from src.autonomous_cognition.beliefs.audit_writer import (
-                BeliefMutationAuditWriter,
-            )
-
-            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_feature_flags,
+        ):
+            writer = BeliefMutationAuditWriter()
             result = writer.is_enabled()
             assert isinstance(result, bool)
 
     def test_audit_writer_is_enabled_respects_feature_flag(self, mock_redis_client):
         """Test is_enabled returns False when feature flag is disabled."""
-        # Mock Redis to return "false" for the feature flag
-        mock_redis_client.get.return_value = "false"
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False  # Feature flag disabled
 
         with patch(
-            "src.autonomous_cognition.beliefs.audit_writer.get_redis_client"
-        ) as mock_get_redis:
-            mock_get_redis.return_value = mock_redis_client
-            from src.autonomous_cognition.beliefs.audit_writer import (
-                BeliefMutationAuditWriter,
-            )
-
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
             writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
             result = writer.is_enabled()
             assert result is False
 
     def test_audit_writer_is_enabled_true_when_flag_set(self, mock_redis_client):
         """Test is_enabled returns True when feature flag is enabled."""
-        # Mock Redis to return "true" for the feature flag
-        mock_redis_client.get.return_value = "true"
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True  # Feature flag enabled
 
         with patch(
-            "src.autonomous_cognition.beliefs.audit_writer.get_redis_client"
-        ) as mock_get_redis:
-            mock_get_redis.return_value = mock_redis_client
-            from src.autonomous_cognition.beliefs.audit_writer import (
-                BeliefMutationAuditWriter,
-            )
-
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
             writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
             result = writer.is_enabled()
             assert result is True
 
     def test_audit_writer_write_mutation_event_success(
-        self, mock_redis_client, governance_policy_yaml, sample_event
+        self,
+        mock_redis_client,
+        mock_feature_flags,
+        governance_policy_yaml,
+        sample_event,
     ):
         """Test write_mutation_event successfully writes to Redis."""
-        mock_redis_client.get.return_value = "true"  # Feature flag enabled
-
         with patch(
-            "src.autonomous_cognition.beliefs.audit_writer.get_redis_client"
-        ) as mock_get_redis:
-            mock_get_redis.return_value = mock_redis_client
-            from src.autonomous_cognition.beliefs.audit_writer import (
-                BeliefMutationAuditWriter,
-            )
-
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_feature_flags,
+        ):
             writer = BeliefMutationAuditWriter(
                 redis_client=mock_redis_client,
                 governance_policy_path=governance_policy_yaml,
@@ -187,16 +181,13 @@ class TestBeliefMutationAuditWriter:
         self, mock_redis_client, governance_policy_yaml, sample_event
     ):
         """Test write_mutation_event returns False when disabled."""
-        mock_redis_client.get.return_value = "false"  # Feature flag disabled
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False  # Feature flag disabled
 
         with patch(
-            "src.autonomous_cognition.beliefs.audit_writer.get_redis_client"
-        ) as mock_get_redis:
-            mock_get_redis.return_value = mock_redis_client
-            from src.autonomous_cognition.beliefs.audit_writer import (
-                BeliefMutationAuditWriter,
-            )
-
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
             writer = BeliefMutationAuditWriter(
                 redis_client=mock_redis_client,
                 governance_policy_path=governance_policy_yaml,
@@ -208,10 +199,6 @@ class TestBeliefMutationAuditWriter:
 
     def test_audit_writer_derives_notification_mode_immediate(self):
         """Test notification_mode derivation for immediate (critical/high + approval)."""
-        from src.autonomous_cognition.beliefs.audit_writer import (
-            BeliefMutationAuditWriter,
-        )
-
         writer = BeliefMutationAuditWriter()
 
         # critical/high + approval_required=True => immediate
@@ -223,10 +210,6 @@ class TestBeliefMutationAuditWriter:
 
     def test_audit_writer_derives_notification_mode_digest(self):
         """Test notification_mode derivation for digest (medium/low or no approval)."""
-        from src.autonomous_cognition.beliefs.audit_writer import (
-            BeliefMutationAuditWriter,
-        )
-
         writer = BeliefMutationAuditWriter()
 
         # medium/low + approval_required=True => digest
@@ -247,10 +230,6 @@ class TestBeliefMutationAuditWriter:
         self,
     ):
         """Test notification_mode derivation for critical/high without approval."""
-        from src.autonomous_cognition.beliefs.audit_writer import (
-            BeliefMutationAuditWriter,
-        )
-
         writer = BeliefMutationAuditWriter()
 
         # critical/high + approval_required=False => immediate
@@ -264,10 +243,6 @@ class TestBeliefMutationAuditWriter:
         self, governance_policy_yaml
     ):
         """Test _determine_approval_required reads from governance policy."""
-        from src.autonomous_cognition.beliefs.audit_writer import (
-            BeliefMutationAuditWriter,
-        )
-
         writer = BeliefMutationAuditWriter(
             governance_policy_path=governance_policy_yaml
         )
@@ -282,47 +257,29 @@ class TestBeliefMutationAuditWriter:
         assert writer._determine_approval_required("user_preference_updates") is False
         assert writer._determine_approval_required("tool_preference_updates") is False
 
-    def test_audit_writer_graceful_fallback_when_redis_unavailable(self):
-        """Test graceful fallback when Redis is unavailable."""
-        with patch(
-            "src.autonomous_cognition.beliefs.audit_writer.get_redis_client"
-        ) as mock_get_redis:
-            mock_get_redis.return_value = None  # Redis unavailable
-            from src.autonomous_cognition.beliefs.audit_writer import (
-                BeliefMutationAuditWriter,
-            )
+    def test_audit_writer_graceful_fallback_when_feature_flag_raises(self):
+        """Test graceful fallback when get_feature_flags raises an exception."""
+        mock_redis_client = MagicMock()
+        mock_redis_client.lpush.return_value = 1
+        mock_redis_client.expire.return_value = True
 
-            writer = BeliefMutationAuditWriter()
-            # Should return False when Redis is unavailable
-            result = writer.write_mutation_event(
-                BeliefMutationEvent(
-                    event_id="evt-002",
-                    timestamp=datetime.now(UTC).isoformat(),
-                    actor="test",
-                    belief_key="test.key",
-                    mutation_type="update",
-                    severity="low",
-                    old_value="old",
-                    new_value="new",
-                )
-            )
-            assert result is False
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            side_effect=Exception("Redis connection failed"),
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+            # Should return True (fail-safe) when get_feature_flags fails
+            result = writer.is_enabled()
+            assert result is True
 
     def test_audit_writer_sets_ttl_on_lpush(
-        self, mock_redis_client, governance_policy_yaml
+        self, mock_redis_client, mock_feature_flags, governance_policy_yaml
     ):
         """Test that LPUSH uses TTL for Redis entries."""
-        mock_redis_client.get.return_value = "true"
-        mock_redis_client.lpush.return_value = 1
-
         with patch(
-            "src.autonomous_cognition.beliefs.audit_writer.get_redis_client"
-        ) as mock_get_redis:
-            mock_get_redis.return_value = mock_redis_client
-            from src.autonomous_cognition.beliefs.audit_writer import (
-                BeliefMutationAuditWriter,
-            )
-
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_feature_flags,
+        ):
             writer = BeliefMutationAuditWriter(
                 redis_client=mock_redis_client,
                 governance_policy_path=governance_policy_yaml,
@@ -343,21 +300,72 @@ class TestBeliefMutationAuditWriter:
             # Verify lpush was called with correct key
             call_args = mock_redis_client.lpush.call_args
             assert "bmad:chiseai:autocog:audit:belief_mutations" in str(call_args)
+            # Verify TTL was set
+            mock_redis_client.expire.assert_called_once_with(
+                "bmad:chiseai:autocog:audit:belief_mutations",
+                30 * 24 * 60 * 60,
+            )
 
     def test_audit_writer_loads_governance_policy(self, governance_policy_yaml):
         """Test _load_governance_policy loads YAML correctly."""
-        with patch("src.autonomous_cognition.beliefs.audit_writer.get_redis_client"):
-            from src.autonomous_cognition.beliefs.audit_writer import (
-                BeliefMutationAuditWriter,
-            )
+        writer = BeliefMutationAuditWriter(
+            governance_policy_path=governance_policy_yaml
+        )
+        policy = writer._load_governance_policy()
 
+        assert policy is not None
+        assert policy["version"] == 1
+        assert policy["policy_id"] == "aria-governance-policy-v1"
+        assert "belief_mutation" in policy
+        assert "approval_required" in policy["belief_mutation"]
+
+    def test_governance_prefix_is_correct(self):
+        """Test that GOVERNANCE_PREFIX is used for feature flag key."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            FEATURE_FLAG_KEY,
+            GOVERNANCE_PREFIX,
+        )
+
+        # Verify the key pattern matches the required pattern
+        assert GOVERNANCE_PREFIX == "chise:feature_flags:governance"
+        assert (
+            FEATURE_FLAG_KEY
+            == "chise:feature_flags:governance:belief_mutation_audit_enabled"
+        )
+
+    def test_write_mutation_event_serializes_event_correctly(
+        self, mock_redis_client, mock_feature_flags, governance_policy_yaml
+    ):
+        """Test that write_mutation_event serializes the event to JSON correctly."""
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_feature_flags,
+        ):
             writer = BeliefMutationAuditWriter(
-                governance_policy_path=governance_policy_yaml
+                redis_client=mock_redis_client,
+                governance_policy_path=governance_policy_yaml,
             )
-            policy = writer._load_governance_policy()
 
-            assert policy is not None
-            assert policy["version"] == 1
-            assert policy["policy_id"] == "aria-governance-policy-v1"
-            assert "belief_mutation" in policy
-            assert "approval_required" in policy["belief_mutation"]
+            event = BeliefMutationEvent(
+                event_id="evt-004",
+                timestamp="2026-03-31T12:00:00+00:00",
+                actor="test-actor",
+                belief_key="test.belief.004",
+                mutation_type="update",
+                severity="high",
+                old_value={"statement": "Old"},
+                new_value={"statement": "New"},
+                evidence=[{"source_type": "test", "summary": "Test evidence"}],
+            )
+            writer.write_mutation_event(event)
+
+            # Verify the JSON that was passed to lpush
+            call_args = mock_redis_client.lpush.call_args
+            json_event = json.loads(call_args[0][1])
+            assert json_event["event_id"] == "evt-004"
+            assert json_event["belief_key"] == "test.belief.004"
+            assert json_event["mutation_type"] == "update"
+            assert json_event["severity"] == "high"
+            assert json_event["old_value"] == {"statement": "Old"}
+            assert json_event["new_value"] == {"statement": "New"}
+            assert len(json_event["evidence"]) == 1

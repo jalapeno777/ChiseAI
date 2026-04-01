@@ -34,6 +34,7 @@ import hashlib
 import json
 import logging
 import os
+import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -41,6 +42,10 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+from autonomous_cognition.beliefs.audit_writer import (
+    BeliefMutationAuditWriter,
+    BeliefMutationEvent,
+)
 
 # Constants
 ITERLOG_PREFIX = "bmad:chiseai:iterlog"
@@ -48,6 +53,58 @@ STORY_PREFIX = f"{ITERLOG_PREFIX}:story"
 DEFAULT_TTL_SECONDS = 432000  # 5 days
 VALID_PHASES = {"analysis", "planning", "solutioning", "implementation", "testing"}
 VALID_STATUSES = {"planned", "in_progress", "blocked", "completed", "deprecated"}
+
+
+def _emit_belief_mutation_audit_event(
+    mutation_type: str,
+    severity: str,
+    belief_key: str,
+    new_value: dict[str, Any],
+    summary: str,
+    old_value: dict[str, Any] | None = None,
+) -> None:
+    """Emit a belief mutation audit event for iteration operations.
+
+    Args:
+        mutation_type: Type of mutation (create, update)
+        severity: Event severity (low, medium, high, critical)
+        belief_key: The belief key being mutated
+        new_value: The new value for the belief
+        summary: Human-readable summary of the event
+        old_value: Optional old value for updates
+    """
+    audit_writer = BeliefMutationAuditWriter()
+    if not audit_writer.is_enabled():
+        return
+
+    event = BeliefMutationEvent(
+        event_id=str(uuid.uuid4()),
+        timestamp=datetime.now(UTC).isoformat(),
+        actor="operations",
+        belief_key=belief_key,
+        mutation_type=mutation_type,
+        severity=severity,
+        old_value=old_value,
+        new_value=new_value,
+        evidence=[
+            {
+                "source_type": "system",
+                "summary": summary,
+                "evidence_refs": [],
+            }
+        ],
+        conflict_resolution=None,
+        approval_required=audit_writer._determine_approval_required("iteration"),
+        approval_reason=None,
+        applied=True,
+        notified=False,
+        notification_mode=audit_writer._derive_notification_mode(
+            severity,
+            audit_writer._determine_approval_required("iteration"),
+        ),
+        notes=None,
+    )
+    audit_writer.write_mutation_event(event)
 
 
 @dataclass
@@ -229,6 +286,21 @@ def log_iteration_start(
         "data": data,
     }
 
+    # Emit belief mutation audit event for iteration start
+    _emit_belief_mutation_audit_event(
+        mutation_type="create",
+        severity="low",
+        belief_key=f"iteration.{story_id}",
+        new_value={
+            "story_id": story_id,
+            "story_title": story_title,
+            "phase": phase,
+            "status": status,
+            "acceptance_criteria": list(acceptance_criteria),
+        },
+        summary=f"Iteration started for story {story_id}: {story_title}",
+    )
+
     return result
 
 
@@ -326,11 +398,22 @@ def log_completion(
         _validate_phase(final_phase)
         completion_data["phase"] = final_phase
 
-    return {
+    result = {
         "key": _get_redis_key(story_id),
         "data": completion_data,
         "ttl_seconds": DEFAULT_TTL_SECONDS,
     }
+
+    # Emit belief mutation audit event for iteration completion
+    _emit_belief_mutation_audit_event(
+        mutation_type="update",
+        severity="medium",
+        belief_key=f"iteration.{story_id}",
+        new_value=completion_data,
+        summary=f"Iteration completed for story {story_id}: {status}",
+    )
+
+    return result
 
 
 def close_iteration(

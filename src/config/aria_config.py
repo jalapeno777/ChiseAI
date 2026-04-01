@@ -278,3 +278,38 @@ def reset_aria_config() -> None:
     """Reset global AriaConfig to None (mainly for testing)."""
     global _aria_config
     _aria_config = None
+
+
+def _get_repo_root() -> Path:
+    """Return the repository root directory.
+
+    Resolution order:
+    1. CHISEAI_REPO_ROOT environment variable (if set)
+    2. Walk up from this file's location looking for pyproject.toml marker
+    """
+    env_root = os.environ.get("CHISEAI_REPO_ROOT")
+    if env_root:
+        root = Path(env_root).resolve()
+        if root.exists():
+            return root
+
+    current = Path(__file__).resolve()
+    for _ in range(6):
+        current = current.parent
+        if (current / "pyproject.toml").exists():
+            return current
+
+    # Ultimate fallback
+    return Path(__file__).resolve().parent.parent.parent
+
+
+def load_aria_governance_policy() -> dict[str, Any]:
+    """Load Aria governance policy from config/aria/governance-policy.yaml.
+
+    Returns:
+        Governance policy dictionary.
+    """
+    repo_root = _get_repo_root()
+    policy_path = repo_root / "config" / "aria" / "governance-policy.yaml"
+    with open(policy_path) as f:
+        return yaml.safe_load(f)
