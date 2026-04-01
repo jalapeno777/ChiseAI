@@ -175,6 +175,7 @@ completed:
       total: 0
       notes: Assessment only - no tests required
     title: CVD Data Availability Assessment
+in_progress:
   - acceptance_criteria:
       - Notification routing uses the shared severity matrix
       - High and critical events route to immediate alerts
@@ -183,7 +184,6 @@ completed:
       - Digest scheduling uses America/Toronto timezone
       - Router and severity mapper are covered by unit tests
     branch: feature/ST-03-notification-routing
-    completion_date: "2026-04-01"
     description:
       Add policy-driven notification routing and severity mapping for governance
       and belief mutation events.
@@ -204,13 +204,12 @@ completed:
     related_story: ST-NS-009
     priority: P0-CRITICAL
     sprint_id: q2-2
-    status: completed
+    status: in_progress
     story_points: 5
     test_results:
       passed: 34
       total_tests: 1405
     title: Notification Routing and Severity Matrix
-    validation_status: validated
   - acceptance_criteria:
       - Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)
       - Phase B:

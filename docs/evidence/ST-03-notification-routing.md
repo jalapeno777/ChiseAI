@@ -32,5 +32,4 @@ and severity matrix work behind PR #891.
 
 - 34 tests passed
 - Local pre-push gate passed
-- Story registered in `docs/bmm-workflow-status.yaml` as `ST-03`
-
+- Story registered in `docs/bmm-workflow-status.yaml` as `ST-03` with `status: in_progress`
