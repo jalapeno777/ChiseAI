@@ -6,10 +6,10 @@ import json
 import logging
 import os
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import yaml
+from src.config.aria_config import load_aria_governance_policy
+from src.config.feature_flags import get_feature_flags
 
 if TYPE_CHECKING:
     import redis
@@ -17,63 +17,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Redis key constants
-REDIS_PREFIX = "chise:feature_flags:config"
+GOVERNANCE_PREFIX = "chise:feature_flags:governance"
 AUDIT_KEY = "bmad:chiseai:autocog:audit:belief_mutations"
-FEATURE_FLAG_KEY = f"{REDIS_PREFIX}:governance:belief_mutation_audit_enabled"
+FEATURE_FLAG_KEY = f"{GOVERNANCE_PREFIX}:belief_mutation_audit_enabled"
 
 # TTL for Redis entries (30 days in seconds)
 AUDIT_TTL_SECONDS = 30 * 24 * 60 * 60
-
-
-def get_redis_client() -> redis.Redis | None:
-    """Get Redis client from environment or return None.
-
-    Returns:
-        Redis client instance or None if connection fails.
-    """
-    try:
-        import redis
-
-        redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
-        redis_port = int(os.getenv("REDIS_PORT", "6380"))
-        redis_db = int(os.getenv("REDIS_DB", "0"))
-        redis_password = os.getenv("REDIS_PASSWORD", None)
-
-        return redis.Redis(
-            host=redis_host,
-            port=redis_port,
-            db=redis_db,
-            password=redis_password,
-            decode_responses=True,
-            socket_connect_timeout=5,
-            socket_timeout=5,
-        )
-    except Exception as e:
-        logger.debug(f"Could not connect to Redis: {e}")
-        return None
-
-
-def get_redis_value(client: redis.Redis | None, key: str, default: bool) -> bool:
-    """Get boolean value from Redis with fallback to default.
-
-    Args:
-        client: Redis client instance
-        key: Redis key to retrieve
-        default: Default value if not found or error
-
-    Returns:
-        Boolean value from Redis or default
-    """
-    if client is None:
-        return default
-    try:
-        value = client.get(key)
-        if value is None:
-            return default
-        return value.lower() in ("true", "1", "yes", "on")
-    except Exception as e:
-        logger.warning(f"Redis error reading {key}: {e}")
-        return default
 
 
 @dataclass
@@ -180,8 +129,36 @@ class BeliefMutationAuditWriter:
     def redis_client(self) -> redis.Redis | None:
         """Get Redis client, lazily initialized if needed."""
         if self._redis_client is None:
-            self._redis_client = get_redis_client()
+            self._redis_client = self._get_redis_client()
         return self._redis_client
+
+    @staticmethod
+    def _get_redis_client() -> redis.Redis | None:
+        """Get Redis client from environment or return None.
+
+        Returns:
+            Redis client instance or None if connection fails.
+        """
+        try:
+            import redis
+
+            redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
+            redis_port = int(os.getenv("REDIS_PORT", "6380"))
+            redis_db = int(os.getenv("REDIS_DB", "0"))
+            redis_password = os.getenv("REDIS_PASSWORD", None)
+
+            return redis.Redis(
+                host=redis_host,
+                port=redis_port,
+                db=redis_db,
+                password=redis_password,
+                decode_responses=True,
+                socket_connect_timeout=5,
+                socket_timeout=5,
+            )
+        except Exception as e:
+            logger.debug(f"Could not connect to Redis: {e}")
+            return None
 
     def is_enabled(self) -> bool:
         """Check if belief mutation audit is enabled via feature flag.
@@ -189,16 +166,12 @@ class BeliefMutationAuditWriter:
         Returns:
             True if feature flag is enabled, False otherwise.
         """
-        client = self.redis_client
-        if client is None:
-            return False
         try:
-            value = client.get(FEATURE_FLAG_KEY)
-            if value is None:
-                return True  # Default to enabled for safety
-            return value.lower() in ("true", "1", "yes", "on")
+            flags = get_feature_flags()
+            # Use the existing FeatureFlags pattern - defaults to True for safety
+            return flags.get_redis_value(FEATURE_FLAG_KEY, default=True)
         except Exception as e:
-            logger.warning(f"Redis error reading {FEATURE_FLAG_KEY}: {e}")
+            logger.warning(f"Error checking feature flag {FEATURE_FLAG_KEY}: {e}")
             return True  # Default to enabled for safety
 
     def write_mutation_event(self, event: BeliefMutationEvent) -> bool:
@@ -246,25 +219,8 @@ class BeliefMutationAuditWriter:
 
         Returns:
             Governance policy dictionary.
-
-        Raises:
-            FileNotFoundError: If governance policy file doesn't exist.
-            yaml.YAMLError: If YAML parsing fails.
         """
-        if self._governance_policy is not None:
-            return self._governance_policy
-
-        if self._governance_policy_path is None:
-            # Default path: config/aria/governance-policy.yaml in repo root
-            repo_root = Path(__file__).parent.parent.parent.parent.parent
-            self._governance_policy_path = str(
-                repo_root / "config" / "aria" / "governance-policy.yaml"
-            )
-
-        with open(self._governance_policy_path) as f:
-            self._governance_policy = yaml.safe_load(f)
-
-        return self._governance_policy
+        return load_aria_governance_policy()
 
     def _determine_approval_required(self, belief_category: str) -> bool:
         """Determine if a belief category requires approval based on governance policy.

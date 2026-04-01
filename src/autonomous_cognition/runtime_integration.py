@@ -22,6 +22,11 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
+from autonomous_cognition.beliefs.audit_writer import (
+    BeliefMutationAuditWriter,
+    BeliefMutationEvent,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -1546,6 +1551,56 @@ class NeuroSymbolicRuntimeIntegrator:
             logger.warning("[RUNTIME_INTEGRATION] Failed to emit Discord event: %s", e)
             return False
 
+    def _emit_belief_mutation_audit_event(
+        self,
+        mutation_type: str,
+        severity: str,
+        summary: str,
+        influenced_by: dict[str, Any],
+    ) -> None:
+        """Emit a belief mutation audit event for mode transitions.
+
+        Args:
+            mutation_type: Type of mutation (promote, demote, merge)
+            severity: Event severity (low, medium, high, critical)
+            summary: Human-readable summary of the event
+            influenced_by: Factors that influenced the decision
+        """
+        audit_writer = BeliefMutationAuditWriter()
+        if not audit_writer.is_enabled():
+            return
+
+        event = BeliefMutationEvent(
+            event_id=str(uuid.uuid4()),
+            timestamp=datetime.now(UTC).isoformat(),
+            actor="autonomous_cognition",
+            belief_key="runtime_integration.mode_transition",
+            mutation_type=mutation_type,
+            severity=severity,
+            old_value={"mode": influenced_by.get("old_mode", "unknown")},
+            new_value={"mode": influenced_by.get("new_mode", "unknown")},
+            evidence=[
+                {
+                    "source_type": "system",
+                    "summary": summary,
+                    "evidence_refs": [],
+                }
+            ],
+            conflict_resolution=None,
+            approval_required=audit_writer._determine_approval_required(
+                "mode_transition"
+            ),
+            approval_reason=None,
+            applied=True,
+            notified=False,
+            notification_mode=audit_writer._derive_notification_mode(
+                severity,
+                audit_writer._determine_approval_required("mode_transition"),
+            ),
+            notes=None,
+        )
+        audit_writer.write_mutation_event(event)
+
     def get_audit_trail_report(self) -> dict[str, Any]:
         """Generate a report of all audit trail entries.
 
@@ -1675,6 +1730,19 @@ class NeuroSymbolicRuntimeIntegrator:
             explanation=explanation,
         )
 
+        # Emit belief mutation audit event for mode promotion
+        self._emit_belief_mutation_audit_event(
+            mutation_type="promote",
+            severity="medium",
+            summary=f"Mode promoted from {old_mode} to FULL",
+            influenced_by={
+                "old_mode": old_mode,
+                "new_mode": "full",
+                "consecutive_checks": self._consecutive_non_regression_count,
+                "divergence_score": recent_score,
+            },
+        )
+
         return True, "promotion_succeeded"
 
     def check_auto_demotion(
@@ -1716,6 +1784,20 @@ class NeuroSymbolicRuntimeIntegrator:
                 score_to_check,
                 self.DEMOTE_THRESHOLD,
             )
+
+            # Emit belief mutation audit event for mode demotion
+            self._emit_belief_mutation_audit_event(
+                mutation_type="demote",
+                severity="high",
+                summary="Mode auto-demoted from FULL to CANARY due to drift",
+                influenced_by={
+                    "old_mode": "full",
+                    "new_mode": "canary",
+                    "divergence_score": score_to_check,
+                    "demote_threshold": self.DEMOTE_THRESHOLD,
+                },
+            )
+
             return True, f"drift_detected_{score_to_check:.3f}"
 
         return False, "drift_within_tolerance"
