@@ -139,8 +139,8 @@ class TestBeliefMutationAuditInstrumentation:
     def test_is_enabled_uses_feature_flags_pattern(self):
         """Test that is_enabled uses get_feature_flags().get_redis_value()."""
         from src.autonomous_cognition.beliefs.audit_writer import (
-            BeliefMutationAuditWriter,
             FEATURE_FLAG_KEY,
+            BeliefMutationAuditWriter,
         )
 
         mock_flags = MagicMock()

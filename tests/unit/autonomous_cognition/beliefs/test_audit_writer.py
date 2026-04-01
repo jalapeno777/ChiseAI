@@ -12,11 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
-
-from src.autonomous_cognition.beliefs.audit_writer import (
-    BeliefMutationAuditWriter,
-    BeliefMutationEvent,
-)
+from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationAuditWriter
 
 
 # Dataclass matching schema for testing
@@ -326,8 +322,8 @@ class TestBeliefMutationAuditWriter:
     def test_governance_prefix_is_correct(self):
         """Test that GOVERNANCE_PREFIX is used for feature flag key."""
         from src.autonomous_cognition.beliefs.audit_writer import (
-            GOVERNANCE_PREFIX,
             FEATURE_FLAG_KEY,
+            GOVERNANCE_PREFIX,
         )
 
         # Verify the key pattern matches the required pattern
