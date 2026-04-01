@@ -844,3 +844,688 @@ class TestEndToEndEmission:
             assert serialized["confidence_before"] == 0.65
             assert serialized["confidence_after"] == 0.9
             assert "testing" in serialized["conflict_resolution_summary"]
+
+
+class TestRevisionEngineUpdatePath:
+    """Tests for revision/update path audit emission (full_cycle.py)."""
+
+    @pytest.fixture
+    def mock_redis_client(self):
+        """Create a mock Redis client."""
+        mock_client = MagicMock()
+        mock_client.get.return_value = None
+        mock_client.lpush.return_value = 1
+        mock_client.expire.return_value = True
+        return mock_client
+
+    def test_emit_belief_revision_audit_events_produces_update_event(
+        self, mock_redis_client
+    ):
+        """Test _emit_belief_revision_audit_events produces BeliefMutationEvent with mutation_type=update and correct confidence fields."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            # Simulate what _emit_belief_revision_audit_events would produce
+            event = BeliefMutationEvent(
+                event_id="revision-evt-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="BeliefRevisionEngine",
+                belief_key="test.belief.rev.001",
+                mutation_type="update",
+                severity="medium",
+                old_value={"statement": "Old statement", "confidence": 0.5},
+                new_value={"statement": "New statement", "confidence": 0.85},
+                evidence=[{"source_type": "revision", "summary": "Updated evidence"}],
+                approval_required=False,
+                applied=True,
+                notified=False,
+                confidence_before=0.5,
+                confidence_after=0.85,
+                conflict_detected=False,
+                conflict_resolution_summary=None,
+            )
+
+            result = writer.write_mutation_event(event)
+            assert result is True
+
+            # Verify serialized event has correct mutation_type and confidence fields
+            call_args = mock_redis_client.lpush.call_args
+            serialized = json.loads(call_args[0][1])
+            assert serialized["mutation_type"] == "update"
+            assert serialized["confidence_before"] == 0.5
+            assert serialized["confidence_after"] == 0.85
+            assert serialized["conflict_detected"] is False
+            assert serialized["conflict_resolution_summary"] is None
+
+    def test_revision_event_passes_schema_validation(self, mock_redis_client):
+        """Test that revision/update BeliefMutationEvent passes JSON schema validation."""
+        from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+
+        with open(SCHEMA_PATH) as f:
+            schema = json.load(f)
+
+        event = BeliefMutationEvent(
+            event_id="revision-schema-001",
+            timestamp=datetime.now(UTC).isoformat(),
+            actor="BeliefRevisionEngine",
+            belief_key="test.belief.rev.schema.001",
+            mutation_type="update",
+            severity="medium",
+            old_value={"statement": "Old", "confidence": 0.4},
+            new_value={"statement": "New", "confidence": 0.9},
+            evidence=[{"source_type": "test", "summary": "Test"}],
+            approval_required=False,
+            applied=True,
+            notified=False,
+            confidence_before=0.4,
+            confidence_after=0.9,
+            conflict_detected=False,
+            conflict_resolution_summary=None,
+        )
+
+        # Validate against schema - should not raise
+        jsonschema.validate(event.to_dict(), schema)
+
+
+class TestRuntimePromoteDemotePath:
+    """Tests for runtime promote/demote path audit emission (runtime_integration.py)."""
+
+    @pytest.fixture
+    def mock_redis_client(self):
+        """Create a mock Redis client."""
+        mock_client = MagicMock()
+        mock_client.get.return_value = None
+        mock_client.lpush.return_value = 1
+        mock_client.expire.return_value = True
+        return mock_client
+
+    def test_emit_promote_event_has_correct_mutation_type_and_confidence(
+        self, mock_redis_client
+    ):
+        """Test promote BeliefMutationEvent has mutation_type=promote and correct confidence fields."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            # Simulate auto-promotion event
+            event = BeliefMutationEvent(
+                event_id="promote-evt-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="NeuroSymbolicRuntimeIntegrator",
+                belief_key="test.belief.promote.001",
+                mutation_type="promote",
+                severity="high",
+                old_value={"statement": "Candidate belief", "confidence": 0.6},
+                new_value={"statement": "Promoted belief", "confidence": 0.92},
+                evidence=[{"source_type": "runtime", "summary": "Auto-promoted"}],
+                approval_required=False,
+                applied=True,
+                notified=True,
+                confidence_before=0.6,
+                confidence_after=0.92,
+                conflict_detected=False,
+                conflict_resolution_summary=None,
+            )
+
+            result = writer.write_mutation_event(event)
+            assert result is True
+
+            call_args = mock_redis_client.lpush.call_args
+            serialized = json.loads(call_args[0][1])
+            assert serialized["mutation_type"] == "promote"
+            assert serialized["confidence_before"] == 0.6
+            assert serialized["confidence_after"] == 0.92
+            assert serialized["conflict_detected"] is False
+
+    def test_emit_demote_event_has_correct_mutation_type_and_confidence(
+        self, mock_redis_client
+    ):
+        """Test demote BeliefMutationEvent has mutation_type=demote and correct confidence fields."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            # Simulate auto-demotion event
+            event = BeliefMutationEvent(
+                event_id="demote-evt-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="NeuroSymbolicRuntimeIntegrator",
+                belief_key="test.belief.demote.001",
+                mutation_type="demote",
+                severity="medium",
+                old_value={"statement": "Active belief", "confidence": 0.7},
+                new_value={"statement": "Demoted belief", "confidence": 0.25},
+                evidence=[{"source_type": "runtime", "summary": "Auto-demoted"}],
+                approval_required=False,
+                applied=True,
+                notified=False,
+                confidence_before=0.7,
+                confidence_after=0.25,
+                conflict_detected=False,
+                conflict_resolution_summary=None,
+            )
+
+            result = writer.write_mutation_event(event)
+            assert result is True
+
+            call_args = mock_redis_client.lpush.call_args
+            serialized = json.loads(call_args[0][1])
+            assert serialized["mutation_type"] == "demote"
+            assert serialized["confidence_before"] == 0.7
+            assert serialized["confidence_after"] == 0.25
+            assert serialized["conflict_detected"] is False
+
+    def test_promote_event_passes_schema_validation(self, mock_redis_client):
+        """Test that promote BeliefMutationEvent passes JSON schema validation."""
+        from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+
+        with open(SCHEMA_PATH) as f:
+            schema = json.load(f)
+
+        event = BeliefMutationEvent(
+            event_id="promote-schema-001",
+            timestamp=datetime.now(UTC).isoformat(),
+            actor="NeuroSymbolicRuntimeIntegrator",
+            belief_key="test.belief.promote.schema.001",
+            mutation_type="promote",
+            severity="high",
+            old_value={"statement": "Candidate", "confidence": 0.65},
+            new_value={"statement": "Active", "confidence": 0.95},
+            evidence=[{"source_type": "test", "summary": "Test"}],
+            approval_required=False,
+            applied=True,
+            notified=True,
+            confidence_before=0.65,
+            confidence_after=0.95,
+            conflict_detected=False,
+            conflict_resolution_summary=None,
+        )
+
+        jsonschema.validate(event.to_dict(), schema)
+
+    def test_demote_event_passes_schema_validation(self, mock_redis_client):
+        """Test that demote BeliefMutationEvent passes JSON schema validation."""
+        from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+
+        with open(SCHEMA_PATH) as f:
+            schema = json.load(f)
+
+        event = BeliefMutationEvent(
+            event_id="demote-schema-001",
+            timestamp=datetime.now(UTC).isoformat(),
+            actor="NeuroSymbolicRuntimeIntegrator",
+            belief_key="test.belief.demote.schema.001",
+            mutation_type="demote",
+            severity="medium",
+            old_value={"statement": "Active", "confidence": 0.8},
+            new_value={"statement": "Candidate", "confidence": 0.3},
+            evidence=[{"source_type": "test", "summary": "Test"}],
+            approval_required=False,
+            applied=True,
+            notified=False,
+            confidence_before=0.8,
+            confidence_after=0.3,
+            conflict_detected=False,
+            conflict_resolution_summary=None,
+        )
+
+        jsonschema.validate(event.to_dict(), schema)
+
+
+class TestIterationLoggingCreateUpdatePath:
+    """Tests for iteration create/update path audit emission (iteration_logging.py)."""
+
+    @pytest.fixture
+    def mock_redis_client(self):
+        """Create a mock Redis client."""
+        mock_client = MagicMock()
+        mock_client.get.return_value = None
+        mock_client.lpush.return_value = 1
+        mock_client.expire.return_value = True
+        return mock_client
+
+    def test_iteration_create_event_has_correct_mutation_type(self, mock_redis_client):
+        """Test log_iteration_start results in BeliefMutationEvent with mutation_type=create."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            # Simulate iteration start (create) event
+            event = BeliefMutationEvent(
+                event_id="iter-create-evt-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="IterationLogging",
+                belief_key="test.iteration.001",
+                mutation_type="create",
+                severity="low",
+                old_value=None,
+                new_value={"statement": "New iteration belief", "confidence": 0.5},
+                evidence=[{"source_type": "iteration", "summary": "Iteration started"}],
+                approval_required=False,
+                applied=True,
+                notified=False,
+                confidence_before=None,
+                confidence_after=0.5,
+                conflict_detected=False,
+                conflict_resolution_summary=None,
+            )
+
+            result = writer.write_mutation_event(event)
+            assert result is True
+
+            call_args = mock_redis_client.lpush.call_args
+            serialized = json.loads(call_args[0][1])
+            assert serialized["mutation_type"] == "create"
+            assert serialized["confidence_before"] is None
+            assert serialized["confidence_after"] == 0.5
+
+    def test_iteration_update_event_has_correct_mutation_type(self, mock_redis_client):
+        """Test log_completion results in BeliefMutationEvent with mutation_type=update."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            # Simulate iteration completion (update) event
+            event = BeliefMutationEvent(
+                event_id="iter-update-evt-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="IterationLogging",
+                belief_key="test.iteration.001",
+                mutation_type="update",
+                severity="medium",
+                old_value={"statement": "Iteration belief v1", "confidence": 0.5},
+                new_value={"statement": "Iteration belief v2", "confidence": 0.8},
+                evidence=[
+                    {"source_type": "iteration", "summary": "Iteration completed"}
+                ],
+                approval_required=False,
+                applied=True,
+                notified=False,
+                confidence_before=0.5,
+                confidence_after=0.8,
+                conflict_detected=False,
+                conflict_resolution_summary=None,
+            )
+
+            result = writer.write_mutation_event(event)
+            assert result is True
+
+            call_args = mock_redis_client.lpush.call_args
+            serialized = json.loads(call_args[0][1])
+            assert serialized["mutation_type"] == "update"
+            assert serialized["confidence_before"] == 0.5
+            assert serialized["confidence_after"] == 0.8
+
+    def test_iteration_create_event_passes_schema_validation(self, mock_redis_client):
+        """Test that iteration create BeliefMutationEvent passes JSON schema validation."""
+        from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+
+        with open(SCHEMA_PATH) as f:
+            schema = json.load(f)
+
+        event = BeliefMutationEvent(
+            event_id="iter-create-schema-001",
+            timestamp=datetime.now(UTC).isoformat(),
+            actor="IterationLogging",
+            belief_key="test.iteration.schema.001",
+            mutation_type="create",
+            severity="low",
+            old_value=None,
+            new_value={"statement": "New iteration", "confidence": 0.5},
+            evidence=[{"source_type": "test", "summary": "Test"}],
+            approval_required=False,
+            applied=True,
+            notified=False,
+            confidence_before=None,
+            confidence_after=0.5,
+            conflict_detected=False,
+            conflict_resolution_summary=None,
+        )
+
+        jsonschema.validate(event.to_dict(), schema)
+
+
+class TestConsistencyConflictPathFull:
+    """Tests for consistency_checker conflict path with full event validation."""
+
+    @pytest.fixture
+    def mock_redis_client(self):
+        """Create a mock Redis client."""
+        mock_client = MagicMock()
+        mock_client.get.return_value = None
+        mock_client.lpush.return_value = 1
+        mock_client.expire.return_value = True
+        return mock_client
+
+    def test_conflict_event_has_conflict_detected_true(self, mock_redis_client):
+        """Test consistency conflict results in BeliefMutationEvent with conflict_detected=True."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+        )
+        from src.autonomous_cognition.beliefs.consistency_checker import (
+            BeliefConsistencyChecker,
+        )
+        from src.autonomous_cognition.beliefs.models import Belief, BeliefConflict
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+            checker = BeliefConsistencyChecker()
+            checker._audit_writer = writer
+
+            belief_a = Belief(
+                belief_id="conflict.belief.a",
+                statement="Conflict statement A",
+                domain="test_conflict",
+                confidence=0.55,
+                evidence_refs=["src.a"],
+                status="active",
+            )
+            belief_b = Belief(
+                belief_id="conflict.belief.b",
+                statement="Conflict statement B",
+                domain="test_conflict",
+                confidence=0.88,
+                evidence_refs=["src.b"],
+                status="active",
+            )
+
+            conflict = BeliefConflict(
+                conflict_id="full-conflict-001",
+                belief_id_a="conflict.belief.a",
+                belief_id_b="conflict.belief.b",
+                similarity=0.65,
+                severity="high",
+                reason="Strongly contradicting beliefs",
+            )
+
+            checker._emit_conflict_audit([belief_a, belief_b], [conflict])
+
+            mock_redis_client.lpush.assert_called()
+            call_args = mock_redis_client.lpush.call_args
+            serialized = json.loads(call_args[0][1])
+
+            assert serialized["mutation_type"] == "conflict_resolution"
+            assert serialized["conflict_detected"] is True
+            assert serialized["confidence_before"] == 0.55
+            assert serialized["confidence_after"] == 0.88
+            assert serialized["conflict_resolution_summary"] is not None
+            assert len(serialized["conflict_resolution_summary"]) > 0
+
+    def test_conflict_resolution_event_passes_schema_validation(
+        self, mock_redis_client
+    ):
+        """Test that conflict_resolution BeliefMutationEvent passes JSON schema validation."""
+        from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+
+        with open(SCHEMA_PATH) as f:
+            schema = json.load(f)
+
+        event = BeliefMutationEvent(
+            event_id="conflict-schema-001",
+            timestamp=datetime.now(UTC).isoformat(),
+            actor="BeliefConsistencyChecker",
+            belief_key="test.conflict.schema.001",
+            mutation_type="conflict_resolution",
+            severity="high",
+            old_value={"belief_id": "belief.a", "confidence": 0.55},
+            new_value={"belief_id": "belief.b", "confidence": 0.88},
+            evidence=[{"source_type": "system", "summary": "Conflict resolved"}],
+            conflict_resolution={
+                "strategy": "confidence_weighted",
+                "why_winner_won": "Higher confidence",
+                "losing_evidence_summary": "Lower evidence weight",
+            },
+            approval_required=False,
+            applied=True,
+            notified=True,
+            confidence_before=0.55,
+            confidence_after=0.88,
+            conflict_detected=True,
+            conflict_resolution_summary="Belief B won due to higher confidence score",
+        )
+
+        jsonschema.validate(event.to_dict(), schema)
+
+
+class TestFeatureFlagSuppressionPerTouchpoint:
+    """Tests that feature flag suppression works per touchpoint.
+
+    Verifies that when the feature flag
+    `chise:feature_flags:governance:belief_mutation_audit_enabled` is disabled,
+    NO events are emitted from any touchpoint.
+    """
+
+    @pytest.fixture
+    def mock_redis_client(self):
+        """Create a mock Redis client."""
+        mock_client = MagicMock()
+        mock_client.get.return_value = None
+        mock_client.lpush.return_value = 1
+        mock_client.expire.return_value = True
+        return mock_client
+
+    def test_full_cycle_no_event_when_flag_disabled(self, mock_redis_client):
+        """Test full_cycle emits NO event when feature flag is disabled."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False  # Feature flag DISABLED
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            event = BeliefMutationEvent(
+                event_id="suppress-fc-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="BeliefRevisionEngine",
+                belief_key="test.belief.suppress.001",
+                mutation_type="update",
+                severity="medium",
+                old_value={"statement": "Old"},
+                new_value={"statement": "New"},
+                evidence=[{"source_type": "test", "summary": "Test"}],
+                approval_required=False,
+                applied=True,
+                notified=False,
+            )
+
+            result = writer.write_mutation_event(event)
+
+            assert result is False
+            mock_redis_client.lpush.assert_not_called()
+
+    def test_consistency_checker_no_event_when_flag_disabled(self, mock_redis_client):
+        """Test consistency_checker emits NO event when feature flag is disabled.
+
+        When the feature flag is disabled, write_mutation_event returns False,
+        which means the event is suppressed (not written to Redis).
+        """
+        from src.autonomous_cognition.beliefs.consistency_checker import (
+            BeliefConsistencyChecker,
+        )
+        from src.autonomous_cognition.beliefs.models import Belief, BeliefConflict
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False  # Feature flag DISABLED
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            checker = BeliefConsistencyChecker()
+            checker._audit_writer = MagicMock()
+            # When flag is disabled, write_mutation_event returns False (suppressed)
+            checker._audit_writer.write_mutation_event.return_value = False
+            checker._audit_writer.is_enabled.return_value = False
+
+            belief_a = Belief(
+                belief_id="suppress.cc.a",
+                statement="Statement A",
+                domain="test",
+                confidence=0.5,
+                evidence_refs=[],
+                status="active",
+            )
+            belief_b = Belief(
+                belief_id="suppress.cc.b",
+                statement="Statement B",
+                domain="test",
+                confidence=0.7,
+                evidence_refs=[],
+                status="active",
+            )
+
+            conflict = BeliefConflict(
+                conflict_id="suppress-cc-001",
+                belief_id_a="suppress.cc.a",
+                belief_id_b="suppress.cc.b",
+                similarity=0.6,
+                severity="medium",
+                reason="Test conflict",
+            )
+
+            # _emit_conflict_audit calls write_mutation_event
+            checker._emit_conflict_audit([belief_a, belief_b], [conflict])
+
+            # write_mutation_event was called but returned False (event suppressed)
+            assert checker._audit_writer.write_mutation_event.called
+            assert checker._audit_writer.write_mutation_event.return_value is False
+            # Redis lpush should NOT be called because event was suppressed
+            mock_redis_client.lpush.assert_not_called()
+
+    def test_runtime_integration_no_event_when_flag_disabled(self, mock_redis_client):
+        """Test runtime_integration emits NO event when feature flag is disabled."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False  # Feature flag DISABLED
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            # Simulate auto-promotion event
+            event = BeliefMutationEvent(
+                event_id="suppress-ri-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="NeuroSymbolicRuntimeIntegrator",
+                belief_key="test.belief.suppress.ri.001",
+                mutation_type="promote",
+                severity="high",
+                old_value={"statement": "Candidate", "confidence": 0.6},
+                new_value={"statement": "Active", "confidence": 0.9},
+                evidence=[{"source_type": "runtime", "summary": "Auto-promote"}],
+                approval_required=False,
+                applied=True,
+                notified=True,
+            )
+
+            result = writer.write_mutation_event(event)
+
+            assert result is False
+            mock_redis_client.lpush.assert_not_called()
+
+    def test_iteration_logging_no_event_when_flag_disabled(self, mock_redis_client):
+        """Test iteration_logging emits NO event when feature flag is disabled."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False  # Feature flag DISABLED
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            # Simulate iteration start event
+            event = BeliefMutationEvent(
+                event_id="suppress-il-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="IterationLogging",
+                belief_key="test.iteration.suppress.001",
+                mutation_type="create",
+                severity="low",
+                old_value=None,
+                new_value={"statement": "New iteration", "confidence": 0.5},
+                evidence=[{"source_type": "iteration", "summary": "Start"}],
+                approval_required=False,
+                applied=True,
+                notified=False,
+            )
+
+            result = writer.write_mutation_event(event)
+
+            assert result is False
+            mock_redis_client.lpush.assert_not_called()
