@@ -6,11 +6,9 @@ import json
 import logging
 import os
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import yaml
-
+from src.config.aria_config import load_aria_governance_policy
 from src.config.feature_flags import get_feature_flags
 
 if TYPE_CHECKING:
@@ -221,45 +219,8 @@ class BeliefMutationAuditWriter:
 
         Returns:
             Governance policy dictionary.
-
-        Raises:
-            FileNotFoundError: If governance policy file doesn't exist.
-            yaml.YAMLError: If YAML parsing fails.
         """
-        if self._governance_policy is not None:
-            return self._governance_policy
-
-        if self._governance_policy_path is None:
-            # Use CHISEAI_REPO_ROOT env var if set, else walk up from file location
-            env_root = os.environ.get("CHISEAI_REPO_ROOT")
-            if env_root:
-                repo_root = Path(env_root).resolve()
-                if repo_root.exists():
-                    self._governance_policy_path = str(
-                        repo_root / "config" / "aria" / "governance-policy.yaml"
-                    )
-            else:
-                # Walk up from audit_writer.py:
-                # beliefs -> autonomous_cognition -> src -> <repo_root>
-                current = Path(__file__).resolve()
-                for _ in range(6):
-                    current = current.parent
-                    if (current / "pyproject.toml").exists():
-                        self._governance_policy_path = str(
-                            current / "config" / "aria" / "governance-policy.yaml"
-                        )
-                        break
-                else:
-                    # Fallback: use original relative path calculation
-                    repo_root = Path(__file__).parent.parent.parent.parent
-                    self._governance_policy_path = str(
-                        repo_root / "config" / "aria" / "governance-policy.yaml"
-                    )
-
-        with open(self._governance_policy_path) as f:
-            self._governance_policy = yaml.safe_load(f)
-
-        return self._governance_policy
+        return load_aria_governance_policy()
 
     def _determine_approval_required(self, belief_category: str) -> bool:
         """Determine if a belief category requires approval based on governance policy.
