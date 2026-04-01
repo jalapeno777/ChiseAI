@@ -767,6 +767,21 @@ validations:
     test_method: automated
     owner: backend-team
 
+  - id: V-NS-019A
+    title: Notification Routing and Severity Matrix
+    epic_id: EP-NS-002
+    story_id: ST-03
+    status: validated
+    description: Validate policy-driven notification routing and severity mapping for governance and belief mutation events
+    acceptance_criteria:
+      - High and critical events route to immediate alerts
+      - Approval requests route to immediate alerts
+      - Medium and low severity events route to the daily digest
+      - Digest scheduling uses America/Toronto timezone
+      - Router and severity mapper are covered by unit tests
+    test_method: automated
+    owner: backend-team
+
   - id: V-NS-020
     title: Signal Detail Breakdown
     epic_id: EP-NS-002

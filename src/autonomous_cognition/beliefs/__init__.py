@@ -1,5 +1,6 @@
 """Belief graph components for autonomous cognition."""
 
+from .audit_writer import BeliefMutationAuditWriter, BeliefMutationEvent
 from .consistency_checker import BeliefConsistencyChecker
 from .models import (
     Belief,
@@ -20,4 +21,6 @@ __all__ = [
     "BeliefConsistencyChecker",
     "BeliefRevisionEngine",
     "BeliefType",
+    "BeliefMutationAuditWriter",
+    "BeliefMutationEvent",
 ]
