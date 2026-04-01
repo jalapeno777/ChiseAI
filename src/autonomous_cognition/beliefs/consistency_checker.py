@@ -7,6 +7,10 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
+from autonomous_cognition.beliefs.audit_writer import (
+    BeliefMutationAuditWriter,
+    BeliefMutationEvent,
+)
 from autonomous_cognition.beliefs.models import Belief, BeliefConflict
 from governance.memory.contradiction import ContradictionDetector
 
@@ -28,6 +32,7 @@ class BeliefConsistencyChecker:
         self._detector = contradiction_detector or ContradictionDetector()
         self._confidence_threshold = confidence_threshold
         self._freshness_days = freshness_days
+        self._audit_writer = BeliefMutationAuditWriter()
 
     def check_consistency(self, beliefs: list[Belief]) -> list[BeliefConflict]:
         """Full consistency check returning all detected conflicts.
@@ -89,7 +94,71 @@ class BeliefConsistencyChecker:
             "[CONSISTENCY_CHECKER] Consistency check complete: %d total conflicts",
             len(conflicts),
         )
+
+        # Emit audit events for detected conflicts
+        self._emit_conflict_audit(beliefs, conflicts)
+
         return conflicts
+
+    def _emit_conflict_audit(
+        self, beliefs: list[Belief], conflicts: list[BeliefConflict]
+    ) -> None:
+        """Emit audit events for detected belief conflicts.
+
+        Maps conflict detections to BeliefMutationEvent entries via the canonical
+        audit writer pipeline (LPUSH + TTL Redis storage). Respects the existing
+        feature flag gating in BeliefMutationAuditWriter.is_enabled().
+
+        confidence_before / confidence_after are set to the involved beliefs'
+        current confidence values.  No mutation has occurred at detection time,
+        so these represent the pre-conflict confidence state for downstream
+        analysis.  If a belief_id cannot be resolved (e.g. synthetic IDs like
+        "domain:*" or "evidence_system"), the confidence is set to None.
+        """
+        logger = logging.getLogger(__name__)
+
+        if not conflicts:
+            return
+
+        belief_map: dict[str, Belief] = {b.belief_id: b for b in beliefs}
+
+        for conflict in conflicts:
+            belief_a = belief_map.get(conflict.belief_id_a)
+            belief_b = belief_map.get(conflict.belief_id_b)
+
+            event = BeliefMutationEvent(
+                event_id=f"conflict-{conflict.conflict_id}",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="BeliefConsistencyChecker",
+                belief_key=conflict.belief_id_a,
+                mutation_type="conflict_resolution",
+                severity=conflict.severity,
+                old_value={
+                    "belief_id": conflict.belief_id_a,
+                    "confidence": belief_a.confidence if belief_a else None,
+                },
+                new_value={
+                    "belief_id": conflict.belief_id_b,
+                    "confidence": belief_b.confidence if belief_b else None,
+                },
+                conflict_resolution={
+                    "similarity": conflict.similarity,
+                    "belief_id_a": conflict.belief_id_a,
+                    "belief_id_b": conflict.belief_id_b,
+                },
+                applied=False,
+                confidence_before=belief_a.confidence if belief_a else None,
+                confidence_after=belief_b.confidence if belief_b else None,
+                conflict_detected=True,
+                conflict_resolution_summary=conflict.reason,
+            )
+
+            written = self._audit_writer.write_mutation_event(event)
+            if not written:
+                logger.debug(
+                    "[CONSISTENCY_CHECKER] Could not emit audit event for conflict %s",
+                    conflict.conflict_id,
+                )
 
     def _check_confidence_thresholds(
         self, beliefs: list[Belief]
