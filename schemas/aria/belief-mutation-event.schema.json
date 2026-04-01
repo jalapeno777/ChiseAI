@@ -38,69 +38,53 @@
         "update",
         "deprecate",
         "promote",
+        "demote",
         "merge",
         "conflict_resolution"
       ]
     },
     "severity": {
       "type": "string",
-      "enum": [
-        "low",
-        "medium",
-        "high",
-        "critical"
-      ]
+      "enum": ["low", "medium", "high", "critical"]
     },
     "old_value": {},
     "new_value": {},
     "confidence_before": {
-      "type": [
-        "number",
-        "null"
-      ]
+      "type": ["number", "null"]
     },
     "confidence_after": {
-      "type": [
-        "number",
-        "null"
-      ]
+      "type": ["number", "null"]
+    },
+    "conflict_detected": {
+      "type": ["boolean", "null"]
+    },
+    "conflict_resolution_summary": {
+      "type": ["string", "null"]
     },
     "evidence": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": [
-          "source_type",
-          "summary"
-        ],
+        "required": ["source_type", "summary"],
         "properties": {
           "source_type": {
             "type": "string"
           },
           "source_ref": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "summary": {
             "type": "string"
           },
           "weight": {
-            "type": [
-              "number",
-              "null"
-            ]
+            "type": ["number", "null"]
           }
         },
         "additionalProperties": true
       }
     },
     "conflict_resolution": {
-      "type": [
-        "object",
-        "null"
-      ],
+      "type": ["object", "null"],
       "properties": {
         "strategy": {
           "type": "string"
@@ -109,10 +93,7 @@
           "type": "string"
         },
         "losing_evidence_summary": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         }
       },
       "additionalProperties": true
@@ -121,10 +102,7 @@
       "type": "boolean"
     },
     "approval_reason": {
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "applied": {
       "type": "boolean"
@@ -133,21 +111,11 @@
       "type": "boolean"
     },
     "notification_mode": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "enum": [
-        "immediate",
-        "digest",
-        null
-      ]
+      "type": ["string", "null"],
+      "enum": ["immediate", "digest", null]
     },
     "notes": {
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     }
   },
   "additionalProperties": true
