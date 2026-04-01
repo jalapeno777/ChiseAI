@@ -46,6 +46,10 @@ class BeliefMutationEvent:
         notified: Whether notification was sent
         notification_mode: Notification mode (immediate, digest, None)
         notes: Optional notes
+        confidence_before: Confidence value before mutation
+        confidence_after: Confidence value after mutation
+        conflict_detected: Whether a conflict was detected
+        conflict_resolution_summary: Summary of conflict resolution if applicable
     """
 
     event_id: str
@@ -64,6 +68,10 @@ class BeliefMutationEvent:
     notified: bool = False
     notification_mode: str | None = None
     notes: str | None = None
+    confidence_before: float | None = None
+    confidence_after: float | None = None
+    conflict_detected: bool = False
+    conflict_resolution_summary: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary for serialization."""
@@ -84,6 +92,10 @@ class BeliefMutationEvent:
             "notified": self.notified,
             "notification_mode": self.notification_mode,
             "notes": self.notes,
+            "confidence_before": self.confidence_before,
+            "confidence_after": self.confidence_after,
+            "conflict_detected": self.conflict_detected,
+            "conflict_resolution_summary": self.conflict_resolution_summary,
         }
 
 
