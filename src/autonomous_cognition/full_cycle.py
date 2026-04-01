@@ -1336,12 +1336,26 @@ class AutonomousCognitionFullCycle:
             }
 
             # Assemble context using the boundary
-            findings = getattr(assessment, "findings", []) if assessment else []
-            recommendations = [
-                f"Promotions: {result.promotions}, Rejections: {result.rejections}",
-                f"Belief revisions: {result.belief_revisions}",
-                f"Constitution violations: {result.constitution_violations}",
-            ]
+            findings = (
+                [
+                    f.description if hasattr(f, "description") else str(f)
+                    for f in assessment.findings
+                ]
+                if assessment and hasattr(assessment, "findings")
+                else []
+            )
+            recommendations = (
+                [
+                    r.description if hasattr(r, "description") else str(r)
+                    for r in assessment.recommendations
+                ]
+                if assessment and hasattr(assessment, "recommendations")
+                else [
+                    f"Promotions: {result.promotions}, Rejections: {result.rejections}",
+                    f"Belief revisions: {result.belief_revisions}",
+                    f"Constitution violations: {result.constitution_violations}",
+                ]
+            )
             evidence = {
                 "self_assessment_score": briefing["self_assessment_score"] or "unknown",
                 "belief_conflicts": result.belief_conflicts,
