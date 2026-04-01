@@ -649,3 +649,210 @@ class TestRuntimeIntegration:
         assert len(protected_traces) >= 1
         assert len(included_traces) >= 1
         assert len(evicted_traces) >= 1
+
+    def test_store_aria_briefing_calls_boundary(self, aria_config):
+        """Prove _store_aria_briefing invokes assemble_aria_context with correct payload.
+
+        This test exercises the REAL runtime call chain:
+        AutonomousCognitionFullCycle._store_aria_briefing()
+            -> assemble_aria_context()
+            -> ContextAssemblyBoundary.assemble()
+        """
+        from unittest.mock import MagicMock, patch
+
+        from src.autonomous_cognition.contracts import CycleResult
+        from src.autonomous_cognition.full_cycle import (
+            AutonomousCognitionFullCycle,
+        )
+
+        # Create a real boundary to use in the call chain
+        boundary = ContextAssemblyBoundary(aria_config=aria_config)
+
+        # Create mock redis client
+        mock_redis = MagicMock()
+        stored_briefing = {}
+
+        def capture_set(key, value, ex=None):
+            stored_briefing["key"] = key
+            stored_briefing["value"] = value  # JSON string
+
+        mock_redis.set = capture_set
+
+        # Create realistic cycle result
+        result = CycleResult.create(run_id="test-run-001")
+        result.status = "completed"
+        result.self_assessment_status = "ok"
+        result.belief_conflicts = 0
+        result.belief_revisions = 0
+        result.experiments_run = 1
+        result.promotions = 0
+        result.rejections = 1
+        result.constitution_violations = 0
+        result.autonomy_level_after = "bounded"
+        result.completed_at = "2026-04-01T12:00:00+00:00"
+
+        # Create mock assessment with findings that have .description attributes
+        mock_assessment = MagicMock()
+        mock_assessment.overall_score = 0.85
+        mock_assessment.status = "ok"
+
+        # Create finding objects with .description attribute
+        finding1 = MagicMock()
+        finding1.description = "System memory is healthy"
+
+        finding2 = MagicMock()
+        finding2.description = "Runtime stability is good"
+
+        mock_assessment.findings = [finding1, finding2]
+
+        # Create recommendation objects with .description attribute
+        rec1 = MagicMock()
+        rec1.description = "Continue monitoring"
+
+        rec2 = MagicMock()
+        rec2.description = "Run daily self-assessment"
+
+        mock_assessment.recommendations = [rec1, rec2]
+
+        governance_state = {
+            "belief_registry": {
+                "__global__": {"next_check_after": "2026-04-02T12:00:00+00:00"}
+            }
+        }
+
+        # Patch boundary creation so we use our real boundary
+        with patch(
+            "src.governance.context_assembly.ContextAssemblyBoundary",
+            return_value=boundary,
+        ):
+            cycle = AutonomousCognitionFullCycle()
+
+            # Call the actual _store_aria_briefing method
+            cycle._store_aria_briefing(
+                redis_client=mock_redis,
+                result=result,
+                mode="full",
+                shadow_mode=True,
+                actions=["daily self assessment", "belief consistency check"],
+                assessment=mock_assessment,
+                governance_state=governance_state,
+            )
+
+        # Verify the briefing was stored in Redis
+        assert "key" in stored_briefing
+        assert stored_briefing["key"] == "autocog:aria_briefing:current"
+
+        # Parse the stored briefing
+        import json
+
+        briefing = json.loads(stored_briefing["value"])
+
+        # Verify context_assembly keys exist
+        assert (
+            "context_assembly" in briefing
+        ), f"Briefing must contain 'context_assembly' key. Keys: {list(briefing.keys())}"
+        assert (
+            "context_assembly_traces" in briefing
+        ), f"Briefing must contain 'context_assembly_traces' key. Keys: {list(briefing.keys())}"
+
+        # Verify context_assembly structure
+        ca = briefing["context_assembly"]
+        assert "assembled_context" in ca
+        assert "total_tokens" in ca
+        assert "max_tokens" in ca
+        assert "unresolved_conflicts" in ca
+
+        # Verify context_assembly_traces has entries with action values
+        traces = briefing["context_assembly_traces"]
+        assert len(traces) > 0, "context_assembly_traces must not be empty"
+
+        # Check that traces have the expected structure
+        actions = {t["action"] for t in traces}
+        assert (
+            "included" in actions or "protected" in actions
+        ), f"Traces must include 'included' or 'protected' actions. Found: {actions}"
+
+        # Verify trace entries have expected fields
+        for trace in traces:
+            assert "action" in trace
+            assert "item_id" in trace
+            assert "reason" in trace
+            assert "priority" in trace
+            assert "token_size" in trace
+
+    def test_store_aria_briefing_handles_none_description(self, aria_config):
+        """Prove findings with None description are handled gracefully.
+
+        When a finding's .description is None, it should fall back to str(f).
+        """
+        from unittest.mock import MagicMock, patch
+
+        from src.autonomous_cognition.contracts import CycleResult
+        from src.autonomous_cognition.full_cycle import (
+            AutonomousCognitionFullCycle,
+        )
+
+        boundary = ContextAssemblyBoundary(aria_config=aria_config)
+
+        mock_redis = MagicMock()
+        stored_briefing = {}
+
+        def capture_set(key, value, ex=None):
+            stored_briefing["key"] = key
+            stored_briefing["value"] = value
+
+        mock_redis.set = capture_set
+
+        result = CycleResult.create(run_id="test-run-002")
+        result.status = "completed"
+        result.self_assessment_status = "ok"
+        result.belief_conflicts = 0
+        result.belief_revisions = 0
+        result.experiments_run = 0
+        result.promotions = 0
+        result.rejections = 0
+        result.constitution_violations = 0
+        result.autonomy_level_after = "bounded"
+        result.completed_at = "2026-04-01T12:00:00+00:00"
+
+        # Create finding with None description
+        mock_assessment = MagicMock()
+        mock_assessment.overall_score = 0.80
+        mock_assessment.status = "ok"
+
+        finding_none_desc = MagicMock()
+        finding_none_desc.description = None
+
+        finding_normal = MagicMock()
+        finding_normal.description = "Normal finding"
+
+        mock_assessment.findings = [finding_none_desc, finding_normal]
+        mock_assessment.recommendations = []
+
+        governance_state = {}
+
+        with patch(
+            "src.governance.context_assembly.ContextAssemblyBoundary",
+            return_value=boundary,
+        ):
+            cycle = AutonomousCognitionFullCycle()
+
+            # Should not raise - None description should be handled
+            cycle._store_aria_briefing(
+                redis_client=mock_redis,
+                result=result,
+                mode="full",
+                shadow_mode=True,
+                actions=["test"],
+                assessment=mock_assessment,
+                governance_state=governance_state,
+            )
+
+        # Verify the briefing was stored successfully
+        assert "key" in stored_briefing
+
+        import json
+
+        briefing = json.loads(stored_briefing["value"])
+        assert "context_assembly" in briefing
+        assert "context_assembly_traces" in briefing

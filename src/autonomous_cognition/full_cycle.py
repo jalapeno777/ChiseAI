@@ -1336,9 +1336,14 @@ class AutonomousCognitionFullCycle:
             }
 
             # Assemble context using the boundary
+            # Normalize findings: extract .description if available and not None, else use str()
             findings = (
                 [
-                    f.description if hasattr(f, "description") else str(f)
+                    (
+                        f.description
+                        if hasattr(f, "description") and f.description is not None
+                        else str(f)
+                    )
                     for f in assessment.findings
                 ]
                 if assessment and hasattr(assessment, "findings")
@@ -1346,7 +1351,11 @@ class AutonomousCognitionFullCycle:
             )
             recommendations = (
                 [
-                    r.description if hasattr(r, "description") else str(r)
+                    (
+                        r.description
+                        if hasattr(r, "description") and r.description is not None
+                        else str(r)
+                    )
                     for r in assessment.recommendations
                 ]
                 if assessment and hasattr(assessment, "recommendations")
