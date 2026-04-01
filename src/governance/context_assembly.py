@@ -8,12 +8,12 @@ Provides tracing/debug output.
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
 from src.config.aria_config import AriaConfig, get_aria_config
+from src.config.feature_flags import get_feature_flags
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +66,21 @@ class ContextItem:
 class AssemblyTrace:
     """Trace record for debugging context assembly decisions."""
 
-    action: str  # "included", "evicted", "protected", "budget_exceeded"
+    action: str  # "included", "evicted", "protected", "budget_exceeded", "conflict_unresolved"
     item_id: str
     reason: str
     priority: str
     token_size: int
+
+
+@dataclass
+class UnresolvedConflict:
+    """Records when strongest evidence cannot safely resolve a conflict."""
+
+    item_ids: list[str]  # Conflicting item identifiers
+    evidence_strengths: list[float]  # Respective evidence strengths
+    reason: str  # Why unresolved: "insufficient_evidence", "contradictory_signals", "budget_exceeded_all_options"
+    suggested_resolution: str  # "escalate_to_craig", "gather_more_evidence"
 
 
 @dataclass
@@ -84,6 +94,7 @@ class AssemblyResult:
     traces: list[AssemblyTrace]
     budget_allocation: dict[str, int]
     category_tokens: dict[str, int]
+    unresolved_conflicts: list[UnresolvedConflict] = field(default_factory=list)
 
 
 class ContextAssemblyBoundary:
@@ -123,15 +134,17 @@ class ContextAssemblyBoundary:
             self._priority_reserve[name] = {"pct": pct, "mandatory": mandatory}
 
     def _is_enabled(self) -> bool:
-        """Check if the feature flag is enabled.
+        """Check if the feature flag is enabled via Redis.
 
-        Checks the environment variable CHISEAI_CONTEXT_ASSEMBLY_ENABLED.
+        Uses the get_feature_flags().get_redis_value() pattern.
         Defaults to enabled for safe rollout.
         """
-        return (
-            os.environ.get("CHISEAI_CONTEXT_ASSEMBLY_ENABLED", "true").lower()
-            != "false"
-        )
+        try:
+            flags = get_feature_flags()
+            return flags.get_redis_value(self._feature_flag_key, default=True)
+        except Exception as e:
+            logger.warning(f"Error checking feature flag {self._feature_flag_key}: {e}")
+            return True  # Default to enabled for safety
 
     @property
     def enabled(self) -> bool:
@@ -157,6 +170,93 @@ class ContextAssemblyBoundary:
             pct = entry.get("reserve_pct", 0)
             allocation[name] = int(max_tokens * pct / 100)
         return allocation
+
+    def _detect_conflicts(
+        self,
+        items: list[ContextItem],
+        max_tokens: int,
+    ) -> list[UnresolvedConflict]:
+        """Detect conflicts between items that cannot be resolved.
+
+        Conflicts are detected when:
+        1. Multiple items of same priority have similar confidence (within 0.1)
+           AND contradictory signals (different sources)
+        2. Budget is too tight to fit even the highest-confidence item
+           alongside mandatory/protected items
+
+        Args:
+            items: Items to check for conflicts
+            max_tokens: Available budget
+
+        Returns:
+            List of UnresolvedConflict objects
+        """
+        conflicts: list[UnresolvedConflict] = []
+        sorted_items = sorted(items, key=lambda x: (x.priority_index, -x.confidence))
+
+        # Calculate mandatory/protected tokens upfront
+        reserved_tokens = sum(
+            item.token_size
+            for item in items
+            if item.is_protected_identity or item.is_mandatory
+        )
+        available_for_optional = max_tokens - reserved_tokens
+
+        # Group items by priority
+        by_priority: dict[ContextPriority, list[ContextItem]] = {}
+        for item in sorted_items:
+            if not item.is_protected_identity and not item.is_mandatory:
+                by_priority.setdefault(item.priority, []).append(item)
+
+        for priority, priority_items in by_priority.items():
+            if len(priority_items) < 2:
+                continue
+
+            # Check for similar confidence items (within 0.1)
+            for i in range(len(priority_items)):
+                for j in range(i + 1, len(priority_items)):
+                    item_a = priority_items[i]
+                    item_b = priority_items[j]
+                    confidence_diff = abs(item_a.confidence - item_b.confidence)
+
+                    # Similar confidence threshold: 0.1
+                    if confidence_diff <= 0.1:
+                        total_tokens_needed = (
+                            item_a.token_size
+                            + item_b.token_size
+                            + sum(
+                                x.token_size
+                                for x in priority_items
+                                if x is not item_a and x is not item_b
+                            )
+                        )
+
+                        # If both can't fit and confidences are too close to decide
+                        if total_tokens_needed > available_for_optional:
+                            # Check if evidence is too close to call a winner
+                            if confidence_diff <= 0.1:
+                                conflict = UnresolvedConflict(
+                                    item_ids=[
+                                        f"{item_a.source}:{item_a.priority.value}",
+                                        f"{item_b.source}:{item_b.priority.value}",
+                                    ],
+                                    evidence_strengths=[
+                                        item_a.confidence,
+                                        item_b.confidence,
+                                    ],
+                                    reason="contradictory_signals",
+                                    suggested_resolution="escalate_to_craig",
+                                )
+                                conflicts.append(conflict)
+                                break
+                if (
+                    conflicts
+                    and conflicts[-1].item_ids[0]
+                    == f"{priority_items[i].source}:{priority_items[i].priority.value}"
+                ):
+                    break
+
+        return conflicts
 
     def assemble(
         self,
@@ -208,6 +308,14 @@ class ContextAssemblyBoundary:
 
         # Sort items by priority (lower index = higher priority)
         sorted_items = sorted(items, key=lambda x: x.priority_index)
+
+        # Detect conflicts before assembly
+        unresolved_conflicts = self._detect_conflicts(sorted_items, max_tokens)
+
+        # Build set of conflicting item IDs for tracing
+        conflicting_ids: set[str] = set()
+        for conflict in unresolved_conflicts:
+            conflicting_ids.update(conflict.item_ids)
 
         # Calculate budget per category
         budget_allocation = self.calculate_budget_allocation(max_tokens)
@@ -276,6 +384,26 @@ class ContextAssemblyBoundary:
                 )
                 continue
 
+            # Check if item is part of an unresolved conflict
+            if item_id in conflicting_ids:
+                # Find the specific conflict reason
+                conflict_reason = "contradictory_signals"
+                for conflict in unresolved_conflicts:
+                    if item_id in conflict.item_ids:
+                        conflict_reason = conflict.reason
+                        break
+                traces.append(
+                    AssemblyTrace(
+                        action="conflict_unresolved",
+                        item_id=item_id,
+                        reason=f"unresolved_conflict_{conflict_reason}",
+                        priority=item.priority.value,
+                        token_size=item.token_size,
+                    )
+                )
+                # Don't add to assembled - conflict prevents resolution
+                continue
+
             # Check if within total budget
             if total_tokens + item.token_size <= max_tokens:
                 traces.append(
@@ -313,4 +441,5 @@ class ContextAssemblyBoundary:
             traces=traces,
             budget_allocation=budget_allocation,
             category_tokens=category_tokens,
+            unresolved_conflicts=unresolved_conflicts,
         )
