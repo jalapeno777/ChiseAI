@@ -208,7 +208,7 @@ class ContextAssemblyBoundary:
             if not item.is_protected_identity and not item.is_mandatory:
                 by_priority.setdefault(item.priority, []).append(item)
 
-        for priority, priority_items in by_priority.items():
+        for _priority, priority_items in by_priority.items():
             if len(priority_items) < 2:
                 continue
 

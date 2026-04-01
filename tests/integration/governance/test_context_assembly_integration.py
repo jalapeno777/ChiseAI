@@ -16,7 +16,6 @@ from src.config.aria_config import (
 )
 from src.config.feature_flags import FeatureFlags
 from src.governance.context_assembly import (
-    AssemblyResult,
     ContextAssemblyBoundary,
     ContextItem,
     ContextPriority,
