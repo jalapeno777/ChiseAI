@@ -176,6 +176,42 @@ completed:
       notes: Assessment only - no tests required
     title: CVD Data Availability Assessment
   - acceptance_criteria:
+      - Notification routing uses the shared severity matrix
+      - High and critical events route to immediate alerts
+      - Approval requests route to immediate alerts
+      - Medium and low severity events route to the daily digest
+      - Digest scheduling uses America/Toronto timezone
+      - Router and severity mapper are covered by unit tests
+    branch: feature/ST-03-notification-routing
+    completion_date: "2026-04-01"
+    description:
+      Add policy-driven notification routing and severity mapping for governance
+      and belief mutation events.
+    epic_id: EP-NS-002
+    evidence_files:
+      - docs/evidence/ST-03-notification-routing.md
+    files_changed:
+      - src/autonomous_cognition/beliefs/__init__.py
+      - src/autonomous_cognition/beliefs/audit_writer.py
+      - src/governance/notifications/__init__.py
+      - src/governance/notifications/event_router.py
+      - src/governance/notifications/severity_mapper.py
+      - tests/unit/autonomous_cognition/beliefs/test_audit_writer.py
+      - tests/unit/governance/notifications/test_event_router.py
+      - tests/unit/governance/notifications/test_severity_mapper.py
+    id: ST-03
+    pr_number: 891
+    related_story: ST-NS-009
+    priority: P0-CRITICAL
+    sprint_id: q2-2
+    status: completed
+    story_points: 5
+    test_results:
+      passed: 34
+      total_tests: 1405
+    title: Notification Routing and Severity Matrix
+    validation_status: validated
+  - acceptance_criteria:
       - Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)
       - Phase B:
           Smoke matrix completed (0/4 at test time 2026-03-06), resolved via
@@ -6846,6 +6882,41 @@ stories:
     status: completed
     story_points: 5
     title: Discord Alert Integration
+    validation_status: validated
+  - acceptance_criteria:
+      - Notification routing uses the shared severity matrix
+      - High and critical events route to immediate alerts
+      - Approval requests route to immediate alerts
+      - Medium and low severity events route to the daily digest
+      - Digest scheduling uses America/Toronto timezone
+      - Router and severity mapper are covered by unit tests
+    branch: feature/ST-03-notification-routing
+    description:
+      Add policy-driven notification routing and severity mapping for governance
+      and belief mutation events.
+    epic_id: EP-NS-002
+    evidence_files:
+      - docs/evidence/ST-03-notification-routing.md
+    files_changed:
+      - src/autonomous_cognition/beliefs/__init__.py
+      - src/autonomous_cognition/beliefs/audit_writer.py
+      - src/governance/notifications/__init__.py
+      - src/governance/notifications/event_router.py
+      - src/governance/notifications/severity_mapper.py
+      - tests/unit/autonomous_cognition/beliefs/test_audit_writer.py
+      - tests/unit/governance/notifications/test_event_router.py
+      - tests/unit/governance/notifications/test_severity_mapper.py
+    id: ST-03
+    pr_number: 891
+    related_story: ST-NS-009
+    priority: P0-CRITICAL
+    sprint_id: q2-2
+    status: completed
+    story_points: 5
+    test_results:
+      passed: 34
+      total_tests: 1405
+    title: Notification Routing and Severity Matrix
     validation_status: validated
   - acceptance_criteria:
       - Confluence score components are displayed (each indicator contribution)
