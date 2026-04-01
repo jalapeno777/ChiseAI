@@ -15,6 +15,8 @@ from typing import Any
 
 from autonomous_cognition.action_executor import ActionExecutor  # noqa: F401
 from autonomous_cognition.autonomy_tuner import AutonomyTuner
+from autonomous_cognition.beliefs.audit_writer import BeliefMutationAuditWriter
+from autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
 from autonomous_cognition.beliefs.consistency_checker import BeliefConsistencyChecker
 from autonomous_cognition.beliefs.explanation import explain_conflict, explain_revision
 from autonomous_cognition.beliefs.models import Belief, EvidenceRecord
@@ -464,6 +466,8 @@ class AutonomousCognitionFullCycle:
                     result.metrics["belief_revision_blocks"] = (
                         self._revision_engine.last_blocked_revisions[:10]
                     )
+                # Emit audit events for belief revisions
+                self._emit_belief_revision_audit_events(revisions, belief_map)
                 revision_artifact_path: Path | None = None
                 revision_decision_packet: dict[str, Any] | None = None
                 if revisions:
@@ -1758,6 +1762,70 @@ class AutonomousCognitionFullCycle:
                 "updated_at": belief.updated_at,
             }
 
+    def _emit_belief_revision_audit_events(
+        self,
+        revisions: list[Any],
+        belief_map: dict[str, Belief],
+    ) -> None:
+        """Emit audit events for belief revisions.
+
+        Args:
+            revisions: List of revision objects from apply_revisions
+            belief_map: Map of belief_id to Belief objects
+        """
+        audit_writer = BeliefMutationAuditWriter()
+        if not audit_writer.is_enabled():
+            return
+
+        for revision in revisions:
+            old_belief = belief_map.get(revision.old_belief_id)
+            new_belief = belief_map.get(revision.new_belief_id)
+
+            # Determine severity based on confidence delta
+            confidence_delta = abs(
+                revision.confidence_after - revision.confidence_before
+            )
+            if confidence_delta >= 0.3:
+                severity = "high"
+            elif confidence_delta >= 0.15:
+                severity = "medium"
+            else:
+                severity = "low"
+
+            # Determine belief category for approval requirement
+            belief_category = new_belief.domain if new_belief else "unknown"
+
+            event = BeliefMutationEvent(
+                event_id=str(uuid.uuid4()),
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="autonomous_cognition",
+                belief_key=revision.new_belief_id,
+                mutation_type="update",
+                severity=severity,
+                old_value=old_belief.to_dict() if old_belief else None,
+                new_value=new_belief.to_dict() if new_belief else None,
+                evidence=[
+                    {
+                        "source_type": "system",
+                        "summary": revision.reason,
+                        "evidence_refs": list(revision.evidence_refs),
+                    }
+                ],
+                conflict_resolution=None,
+                approval_required=audit_writer._determine_approval_required(
+                    belief_category
+                ),
+                approval_reason=None,
+                applied=True,
+                notified=False,
+                notification_mode=audit_writer._derive_notification_mode(
+                    severity,
+                    audit_writer._determine_approval_required(belief_category),
+                ),
+                notes=None,
+            )
+            audit_writer.write_mutation_event(event)
+
     @staticmethod
     def _build_candidate_evidence_signature(
         *,
@@ -2001,8 +2069,10 @@ class AutonomousCognitionFullCycle:
                     version_id
                 )  # noqa: SLF001
                 if promoted_version is not None:
-                    rollback_target = self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
-                        model_type=promoted_version.model_type
+                    rollback_target = (
+                        self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
+                            model_type=promoted_version.model_type
+                        )
                     )
                     if rollback_target is not None:
                         self._champion_engine._registry.promote_to_champion(  # noqa: SLF001
