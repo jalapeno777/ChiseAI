@@ -612,6 +612,14 @@ steps:
         set +e
         (
           set -euo pipefail
+          REF="$${CI_COMMIT_REF:-}"
+          CHANGED_FILES="$(printf '%s' "$${CI_PIPELINE_FILES:-[]}" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$$//' || true)"
+          if [ "$${CI_FORCE_FULL:-0}" != "1" ] && printf '%s' "$${REF}" | grep -q '^refs/pull/' && ! printf '%s\n' "$$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "truth-gate: workflow status file unchanged on PR; skipping"
+            echo '{"passed": true, "skipped": true, "reason": "workflow status file unchanged on PR"}' > "$${CI_STATUS_DIR}/truth-gate.json"
+            exit 0
+          fi
+
           echo "truth-gate: Starting truth gate validation for strong-system stories"
 
           # Extract story ID from PR title or branch name
