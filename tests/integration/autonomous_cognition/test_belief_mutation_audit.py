@@ -6,6 +6,7 @@ across the autonomous cognition system.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
@@ -16,17 +17,13 @@ class TestBeliefMutationAuditInstrumentation:
     """Tests for audit event emission at mutation touchpoints."""
 
     @pytest.fixture
-    def mock_audit_writer(self):
-        """Mock BeliefMutationAuditWriter for testing."""
-        with patch(
-            "autonomous_cognition.beliefs.audit_writer.BeliefMutationAuditWriter"
-        ) as mock:
-            instance = MagicMock()
-            instance.is_enabled.return_value = True
-            instance.write_mutation_event.return_value = True
-            instance._derive_notification_mode.return_value = "digest"
-            mock.return_value = instance
-            yield instance
+    def mock_redis_client(self):
+        """Create a mock Redis client at the connection level."""
+        mock_client = MagicMock()
+        mock_client.get.return_value = None  # Feature flag not set - defaults to True
+        mock_client.lpush.return_value = 1
+        mock_client.expire.return_value = True
+        return mock_client
 
     @pytest.fixture
     def sample_belief_event(self):
@@ -50,38 +47,151 @@ class TestBeliefMutationAuditInstrumentation:
             "notes": None,
         }
 
-    def test_full_cycle_emits_audit_events(
-        self, mock_audit_writer, sample_belief_event
+    def test_write_mutation_event_calls_redis_lpush_with_correct_key(
+        self, mock_redis_client, sample_belief_event
     ):
-        """Test that full_cycle.py emits audit events during belief revisions."""
-        # Import after mocking to avoid import errors
-        from autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
-
-        # Create a minimal test scenario
-        mock_audit_writer.is_enabled.return_value = True
-
-        # Verify the audit writer is being used when beliefs are revised
-        # by checking that write_mutation_event would be called
-
-        # Test that we can construct valid BeliefMutationEvent objects
-        event = BeliefMutationEvent(
-            event_id="test-001",
-            timestamp=datetime.now(UTC).isoformat(),
-            actor="autonomous_cognition",
-            belief_key="test.belief.001",
-            mutation_type="update",
-            severity="medium",
-            old_value={"statement": "Old"},
-            new_value={"statement": "New"},
+        """Test that write_mutation_event actually calls Redis lpush with correct key."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
         )
 
-        assert event.event_id == "test-001"
-        assert event.mutation_type == "update"
-        assert event.severity == "medium"
+        # Patch get_feature_flags to return a mock with known behavior
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True  # Feature flag enabled
 
-    def test_consistency_checker_audit_interface(self, mock_audit_writer):
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            event = BeliefMutationEvent(**sample_belief_event)
+            result = writer.write_mutation_event(event)
+
+            assert result is True
+            # Verify lpush was called with the correct AUDIT_KEY
+            mock_redis_client.lpush.assert_called_once()
+            call_args = mock_redis_client.lpush.call_args
+            # First arg is the key, second is the JSON value
+            assert call_args[0][0] == "bmad:chiseai:autocog:audit:belief_mutations"
+            # Verify the JSON contains all required fields
+            serialized_event = json.loads(call_args[0][1])
+            assert serialized_event["event_id"] == sample_belief_event["event_id"]
+            assert serialized_event["belief_key"] == sample_belief_event["belief_key"]
+            assert (
+                serialized_event["mutation_type"]
+                == sample_belief_event["mutation_type"]
+            )
+
+    def test_write_mutation_event_sets_ttl_on_audit_key(
+        self, mock_redis_client, sample_belief_event
+    ):
+        """Test that write_mutation_event sets TTL on the audit key."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            event = BeliefMutationEvent(**sample_belief_event)
+            writer.write_mutation_event(event)
+
+            # Verify expire was called with correct TTL
+            mock_redis_client.expire.assert_called_once_with(
+                "bmad:chiseai:autocog:audit:belief_mutations",
+                30 * 24 * 60 * 60,  # 30 days in seconds
+            )
+
+    def test_write_mutation_event_respects_feature_flag_disabled(
+        self, mock_redis_client, sample_belief_event
+    ):
+        """Test that write_mutation_event does NOT write when feature flag is disabled."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            BeliefMutationEvent,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False  # Feature flag disabled
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter(redis_client=mock_redis_client)
+
+            event = BeliefMutationEvent(**sample_belief_event)
+            result = writer.write_mutation_event(event)
+
+            assert result is False
+            # lpush should NOT be called when feature flag is disabled
+            mock_redis_client.lpush.assert_not_called()
+
+    def test_is_enabled_uses_feature_flags_pattern(self):
+        """Test that is_enabled uses get_feature_flags().get_redis_value()."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+            FEATURE_FLAG_KEY,
+        )
+
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            writer = BeliefMutationAuditWriter()
+            result = writer.is_enabled()
+
+            assert result is True
+            # Verify the correct key was used
+            mock_flags.get_redis_value.assert_called_once_with(
+                FEATURE_FLAG_KEY, default=True
+            )
+
+    def test_full_cycle_emits_audit_events(
+        self, mock_redis_client, sample_belief_event
+    ):
+        """Test that full_cycle.py emits audit events during belief revisions."""
+        from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+
+        # Create a minimal test scenario
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = True
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
+            # Test that we can construct valid BeliefMutationEvent objects
+            event = BeliefMutationEvent(
+                event_id="test-001",
+                timestamp=datetime.now(UTC).isoformat(),
+                actor="autonomous_cognition",
+                belief_key="test.belief.001",
+                mutation_type="update",
+                severity="medium",
+                old_value={"statement": "Old"},
+                new_value={"statement": "New"},
+            )
+
+            assert event.event_id == "test-001"
+            assert event.mutation_type == "update"
+            assert event.severity == "medium"
+
+    def test_consistency_checker_audit_interface(self):
         """Test that consistency_checker has the correct interface for audit."""
-        from autonomous_cognition.beliefs.consistency_checker import (
+        from src.autonomous_cognition.beliefs.consistency_checker import (
             BeliefConsistencyChecker,
         )
 
@@ -92,9 +202,9 @@ class TestBeliefMutationAuditInstrumentation:
         assert hasattr(checker, "detect_conflicts")
         assert callable(checker.detect_conflicts)
 
-    def test_runtime_integration_audit_interface(self, mock_audit_writer):
+    def test_runtime_integration_audit_interface(self):
         """Test that runtime_integration has correct interface for audit."""
-        from autonomous_cognition.runtime_integration import (
+        from src.autonomous_cognition.runtime_integration import (
             NeuroSymbolicRuntimeIntegrator,
         )
 
@@ -104,7 +214,7 @@ class TestBeliefMutationAuditInstrumentation:
         assert hasattr(integrator, "run")
         assert callable(integrator.run)
 
-    def test_iteration_logging_audit_interface(self, mock_audit_writer):
+    def test_iteration_logging_audit_interface(self):
         """Test that iteration_logging has correct interface for audit."""
         from operations.iteration_logging import (
             close_iteration,
@@ -120,18 +230,28 @@ class TestBeliefMutationAuditInstrumentation:
         assert callable(close_iteration)
 
     def test_audit_writer_feature_flag_gating(self):
-        """Test that audit writer respects feature flag."""
-        from autonomous_cognition.beliefs.audit_writer import (
+        """Test that audit writer respects feature flag via get_feature_flags."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
             BeliefMutationAuditWriter,
         )
 
         # Test with disabled feature flag
-        with patch.object(BeliefMutationAuditWriter, "is_enabled", return_value=False):
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False
+
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
             writer = BeliefMutationAuditWriter()
             assert writer.is_enabled() is False
 
-        # Test with enabled feature flag (default when Redis unavailable)
-        with patch.object(BeliefMutationAuditWriter, "is_enabled", return_value=True):
+        # Test with enabled feature flag
+        mock_flags.get_redis_value.return_value = True
+        with patch(
+            "src.autonomous_cognition.beliefs.audit_writer.get_feature_flags",
+            return_value=mock_flags,
+        ):
             writer = BeliefMutationAuditWriter()
             assert writer.is_enabled() is True
 
@@ -141,7 +261,7 @@ class TestBeliefMutationEventConstruction:
 
     def test_event_to_dict(self):
         """Test BeliefMutationEvent serialization."""
-        from autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+        from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
 
         event = BeliefMutationEvent(
             event_id="evt-001",
@@ -166,7 +286,7 @@ class TestBeliefMutationEventConstruction:
 
     def test_event_with_conflict_resolution(self):
         """Test BeliefMutationEvent with conflict resolution data."""
-        from autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
+        from src.autonomous_cognition.beliefs.audit_writer import BeliefMutationEvent
 
         event = BeliefMutationEvent(
             event_id="evt-002",
@@ -195,7 +315,7 @@ class TestAuditWriterGovernanceIntegration:
 
     def test_determine_approval_required(self):
         """Test approval requirement determination from governance policy."""
-        from autonomous_cognition.beliefs.audit_writer import (
+        from src.autonomous_cognition.beliefs.audit_writer import (
             BeliefMutationAuditWriter,
         )
 
@@ -218,7 +338,7 @@ class TestAuditWriterGovernanceIntegration:
 
     def test_derive_notification_mode(self):
         """Test notification mode derivation based on severity."""
-        from autonomous_cognition.beliefs.audit_writer import (
+        from src.autonomous_cognition.beliefs.audit_writer import (
             BeliefMutationAuditWriter,
         )
 
@@ -231,3 +351,24 @@ class TestAuditWriterGovernanceIntegration:
         # Medium/low gets digest
         assert writer._derive_notification_mode("medium", False) == "digest"
         assert writer._derive_notification_mode("low", True) == "digest"
+
+    def test_governance_policy_path_resolution_with_env_var(self, tmp_path):
+        """Test governance policy path resolution uses CHISEAI_REPO_ROOT when set."""
+        from src.autonomous_cognition.beliefs.audit_writer import (
+            BeliefMutationAuditWriter,
+        )
+
+        # Create a temp governance policy file
+        policy = {"belief_mutation": {"approval_required": ["test_category"]}}
+        import yaml
+
+        policy_file = tmp_path / "config" / "aria" / "governance-policy.yaml"
+        policy_file.parent.mkdir(parents=True, exist_ok=True)
+        policy_file.write_text(yaml.dump(policy))
+
+        # Set env var
+        with patch.dict("os.environ", {"CHISEAI_REPO_ROOT": str(tmp_path)}):
+            writer = BeliefMutationAuditWriter()
+            loaded = writer._load_governance_policy()
+
+            assert loaded["belief_mutation"]["approval_required"] == ["test_category"]
