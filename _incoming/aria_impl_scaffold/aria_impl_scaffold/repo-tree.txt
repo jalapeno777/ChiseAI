@@ -1,0 +1,39 @@
+.
+├── config/
+│   └── aria/
+│       ├── identity-contract.yaml
+│       ├── governance-policy.yaml
+│       ├── notification-policy.yaml
+│       └── context-budget-policy.yaml
+├── docs/
+│   └── aria/
+│       ├── architecture.md
+│       ├── governance-charter.md
+│       ├── implementation-notes.md
+│       ├── persona-benchmark-cases.md
+│       ├── consolidation-rollout.md
+│       └── notification-matrix.md
+├── prompts/
+│   └── aria/
+│       ├── 01-gap-review.md
+│       ├── 02-phase1-implementation-plan.md
+│       ├── 03-phase1-execution.md
+│       ├── 04-persona-test-build.md
+│       └── 05-consolidation-rollout.md
+├── schemas/
+│   └── aria/
+│       ├── belief-mutation-event.schema.json
+│       ├── digest-event.schema.json
+│       └── persona-case.schema.json
+├── tests/
+│   └── persona/
+│       ├── golden_cases.yaml
+│       └── rubric.md
+└── tickets/
+    └── aria-phase1/
+        ├── 01-create-core-contract-and-policies.md
+        ├── 02-add-belief-mutation-audit-log.md
+        ├── 03-add-notification-routing-and-severity-matrix.md
+        ├── 04-build-final-context-assembly-boundary.md
+        ├── 05-enable-consolidation-dry-run.md
+        └── 06-add-persona-regression-harness.md
