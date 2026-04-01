@@ -7,6 +7,7 @@ stale/low-confidence handling, tracing, and feature flag behavior.
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from src.config.aria_config import (
@@ -131,9 +132,14 @@ class TestBoundaryInit:
         """Boundary should be enabled by default."""
         assert boundary.enabled is True
 
-    def test_disabled_via_env(self, aria_config, monkeypatch):
-        """Setting env var to 'false' should disable the boundary."""
-        monkeypatch.setenv("CHISEAI_CONTEXT_ASSEMBLY_ENABLED", "false")
+    def test_disabled_via_redis(self, aria_config, monkeypatch):
+        """Setting Redis flag to False should disable the boundary."""
+        mock_flags = MagicMock()
+        mock_flags.get_redis_value.return_value = False
+        monkeypatch.setattr(
+            "src.governance.context_assembly.get_feature_flags",
+            lambda: mock_flags,
+        )
         b = ContextAssemblyBoundary(aria_config=aria_config)
         assert b.enabled is False
 
@@ -536,10 +542,9 @@ class TestAssemblyTracing:
 class TestFeatureFlag:
     """Tests that the feature flag disables filtering safely."""
 
-    def test_disabled_passthrough_includes_all(self, aria_config, monkeypatch):
+    def test_disabled_passthrough_includes_all(self, boundary):
         """When disabled, all items should pass through without filtering."""
-        monkeypatch.setenv("CHISEAI_CONTEXT_ASSEMBLY_ENABLED", "false")
-        b = ContextAssemblyBoundary(aria_config=aria_config)
+        boundary._enabled = False
         items = [
             _make_item(
                 priority=ContextPriority.OLD_CONVERSATIONS,
@@ -551,22 +556,20 @@ class TestFeatureFlag:
             ),
         ]
         # With flag disabled, even though budget is small, all items included
-        result = b.assemble(items, max_tokens=100)
+        result = boundary.assemble(items, max_tokens=100)
         assert len(result.assembled_items) == 2
 
-    def test_disabled_passthrough_trace_reason(self, aria_config, monkeypatch):
+    def test_disabled_passthrough_trace_reason(self, boundary):
         """When disabled, traces should indicate passthrough."""
-        monkeypatch.setenv("CHISEAI_CONTEXT_ASSEMBLY_ENABLED", "false")
-        b = ContextAssemblyBoundary(aria_config=aria_config)
+        boundary._enabled = False
         item = _make_item(token_size=100)
-        result = b.assemble([item], max_tokens=1000)
+        result = boundary.assemble([item], max_tokens=1000)
         assert result.traces[0].reason == "feature_flag_disabled_passthrough"
 
-    def test_disabled_empty_budget_allocation(self, aria_config, monkeypatch):
+    def test_disabled_empty_budget_allocation(self, boundary):
         """When disabled, budget_allocation should be empty dict."""
-        monkeypatch.setenv("CHISEAI_CONTEXT_ASSEMBLY_ENABLED", "false")
-        b = ContextAssemblyBoundary(aria_config=aria_config)
-        result = b.assemble([], max_tokens=1000)
+        boundary._enabled = False
+        result = boundary.assemble([], max_tokens=1000)
         assert result.budget_allocation == {}
 
 
