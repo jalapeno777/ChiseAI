@@ -684,8 +684,6 @@ class TestDryRunNoDestructiveWrites:
         scheduler.run_now(dry_run=True)
 
         # LAST_RUN_KEY must NOT be written during dry-run
-        from src.governance.consolidation.config import LAST_RUN_KEY
-
         mock_redis.set.assert_not_called()
         # Also verify audit confirms the op was blocked
         assert (
