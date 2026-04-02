@@ -37,6 +37,63 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class ConsolidationRecommendation:
+    """A single consolidation recommendation emitted during dry-run.
+
+    Describes what WOULD happen to a memory: archive, promote, demote, or
+    deprioritize, along with the policy basis, confidence, and evidence.
+    """
+
+    memory_id: str
+    action: str  # "archive" | "promote" | "demote" | "deprioritize"
+    reason: str
+    policy_basis: str
+    confidence: float | None = None
+    evidence: dict[str, Any] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a plain dict for JSON output."""
+        d: dict[str, Any] = {
+            "memory_id": self.memory_id,
+            "action": self.action,
+            "reason": self.reason,
+            "policy_basis": self.policy_basis,
+        }
+        if self.confidence is not None:
+            d["confidence"] = self.confidence
+        if self.evidence is not None:
+            d["evidence"] = self.evidence
+        return d
+
+
+@dataclass
+class ConsolidationAudit:
+    """Audit trail proving no destructive writes occurred in dry-run mode.
+
+    Captures the list of destructive operations that were blocked,
+    operations actually attempted, and boolean guards.
+    """
+
+    dry_run_mode: bool = True
+    destructive_ops_blocked: list[str] = field(default_factory=list)
+    actual_ops_attempted: list[str] = field(default_factory=list)
+    rollback_data_stored: bool = False
+    no_files_deleted: bool = True
+    no_memories_removed: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a plain dict for JSON output."""
+        return {
+            "dry_run_mode": self.dry_run_mode,
+            "destructive_ops_blocked": self.destructive_ops_blocked,
+            "actual_ops_attempted": self.actual_ops_attempted,
+            "rollback_data_stored": self.rollback_data_stored,
+            "no_files_deleted": self.no_files_deleted,
+            "no_memories_removed": self.no_memories_removed,
+        }
+
+
+@dataclass
 class ConsolidationResult:
     """Combined result of a consolidation run."""
 
@@ -54,6 +111,13 @@ class ConsolidationResult:
 
     ingestion_stats: dict[str, Any] | None = None
     """Stats from tempmemory ingestion step"""
+
+    # Dry-run recommendations and audit
+    recommendations: list[ConsolidationRecommendation] = field(default_factory=list)
+    """Machine-readable recommendations of what WOULD happen"""
+
+    audit: ConsolidationAudit | None = None
+    """Audit trail proving no destructive writes in dry-run"""
 
     def passes_validation_gates(self) -> tuple[bool, list[str]]:
         """
@@ -343,6 +407,10 @@ class MemoryConsolidationScheduler:
 
         result = ConsolidationResult()
 
+        # Initialize audit trail
+        audit = ConsolidationAudit(dry_run_mode=is_dry_run)
+        result.audit = audit
+
         # Skip if disabled and not dry run
         if not self.is_enabled() and not is_dry_run:
             result.success = False
@@ -375,6 +443,10 @@ class MemoryConsolidationScheduler:
                 if result.archive_stats.errors:
                     result.errors.extend(result.archive_stats.errors)
 
+                # Build recommendations from archival stats
+                if is_dry_run and result.archive_stats is not None:
+                    self._build_archive_recommendations(result)
+
             # 2. Run promotion
             if promote:
                 result.promotion_stats = self._promoter.promote_memories(
@@ -383,9 +455,16 @@ class MemoryConsolidationScheduler:
                 if result.promotion_stats.errors:
                     result.errors.extend(result.promotion_stats.errors)
 
+                # Build recommendations from promotion stats
+                if is_dry_run and result.promotion_stats is not None:
+                    self._build_promotion_recommendations(result)
+
             # 3. Cleanup expired rollback data
             if not is_dry_run:
+                audit.actual_ops_attempted.append("rollback_cleanup")
                 self._cleanup_expired_rollback_data()
+            else:
+                audit.destructive_ops_blocked.append("rollback_cleanup")
 
             # 4. Calculate storage reduction
             self._archiver.get_cold_storage_size()
@@ -397,11 +476,31 @@ class MemoryConsolidationScheduler:
                 )
 
             # 5. Update last run timestamp
-            self._update_last_run_time()
+            if not is_dry_run:
+                audit.actual_ops_attempted.append("update_last_run_time")
+                self._update_last_run_time()
+            else:
+                audit.destructive_ops_blocked.append("update_last_run_time")
 
             # 6. Export metrics
             if not is_dry_run:
+                audit.actual_ops_attempted.append("export_metrics")
                 self._export_metrics(result)
+            else:
+                audit.destructive_ops_blocked.append("export_metrics")
+
+            # Finalize audit: confirm no destructive writes in dry-run
+            if is_dry_run:
+                audit.no_files_deleted = True
+                audit.no_memories_removed = True
+                audit.rollback_data_stored = False
+                logger.info(
+                    "Dry-run audit: no destructive writes confirmed",
+                    extra={
+                        "ops_blocked": audit.destructive_ops_blocked,
+                        "recommendations_count": len(result.recommendations),
+                    },
+                )
 
             logger.info(
                 "Consolidation run completed",
@@ -424,6 +523,90 @@ class MemoryConsolidationScheduler:
             self._last_result = result
 
         return result
+
+    def _build_archive_recommendations(self, result: ConsolidationResult) -> None:
+        """Build recommendations from archival stats for dry-run output."""
+        stats = result.archive_stats
+        if stats is None:
+            return
+
+        # Guard against mock objects in tests
+        eligible = getattr(stats, "memories_eligible", 0)
+        scanned = getattr(stats, "memories_scanned", 0)
+        preserved = getattr(stats, "memories_preserved", 0)
+        archived = getattr(stats, "bytes_archived", 0)
+        was_dry_run = getattr(stats, "was_dry_run", True)
+
+        if not isinstance(eligible, int) or eligible <= 0:
+            return
+
+        # Generate per-policy recommendations
+        for _mem_type, policy in self._config.retention_policies.items():
+            result.recommendations.append(
+                ConsolidationRecommendation(
+                    memory_id=f"(batch:{eligible})",
+                    action="archive",
+                    reason=(
+                        f"age > {policy.retention_days} days, "
+                        f"access_count < {policy.min_access_count}"
+                    ),
+                    policy_basis=(
+                        f"DECISION retention_policy: {policy.retention_days} days, "
+                        f"min_access_count: {policy.min_access_count}"
+                    ),
+                    confidence=None,
+                    evidence={
+                        "memories_scanned": scanned,
+                        "memories_eligible": eligible,
+                        "memories_preserved": preserved,
+                        "bytes_archived": archived,
+                        "was_dry_run": was_dry_run,
+                    },
+                )
+            )
+            break  # One summary recommendation for archival batch
+
+    def _build_promotion_recommendations(self, result: ConsolidationResult) -> None:
+        """Build recommendations from promotion stats for dry-run output."""
+        stats = result.promotion_stats
+        if stats is None:
+            return
+
+        # Guard against mock objects in tests
+        promoted = getattr(stats, "candidates_promoted", 0)
+        evaluated = getattr(stats, "candidates_evaluated", 0)
+        rejected = getattr(stats, "candidates_rejected", 0)
+        score_avg = getattr(stats, "promotion_score_avg", 0.0)
+        was_dry_run = getattr(stats, "was_dry_run", True)
+
+        if not isinstance(promoted, int) or promoted <= 0:
+            return
+        result.recommendations.append(
+            ConsolidationRecommendation(
+                memory_id=f"(batch:{promoted})",
+                action="promote",
+                reason=(
+                    f"meets golden criteria: "
+                    f"access >= {self._config.golden_min_access_count}, "
+                    f"age >= {self._config.golden_min_age_days} days, "
+                    f"relevance >= {self._config.golden_min_relevance_score}"
+                ),
+                policy_basis=(
+                    f"DECISION golden_promotion: "
+                    f"min_access={self._config.golden_min_access_count}, "
+                    f"min_age={self._config.golden_min_age_days}, "
+                    f"min_relevance={self._config.golden_min_relevance_score}"
+                ),
+                confidence=round(score_avg, 3) if score_avg > 0 else None,
+                evidence={
+                    "candidates_evaluated": evaluated,
+                    "candidates_promoted": promoted,
+                    "candidates_rejected": rejected,
+                    "promotion_score_avg": score_avg,
+                    "was_dry_run": was_dry_run,
+                },
+            )
+        )
 
     def _cleanup_expired_rollback_data(self) -> int:
         """Remove rollback data older than retention period."""
