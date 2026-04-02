@@ -9,6 +9,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from src.governance.consolidation.config import ConsolidationConfig
 from src.governance.consolidation.scheduler import (
+    ConsolidationAudit,
+    ConsolidationRecommendation,
     ConsolidationResult,
     MemoryConsolidationScheduler,
 )
@@ -377,3 +379,411 @@ class TestConsolidationValidationGates:
         result = ConsolidationResult(storage_reduction_percent=19.9)
         passes, _ = result.passes_validation_gates()
         assert result.storage_reduction_percent < min_percent
+
+
+# ---------------------------------------------------------------------------
+# Ticket 05: Consolidation Dry-Run Tests
+# ---------------------------------------------------------------------------
+
+
+class TestConsolidationRecommendation:
+    """Tests for ConsolidationRecommendation dataclass."""
+
+    def test_to_dict_basic_fields(self):
+        """Test serialization includes required fields."""
+        rec = ConsolidationRecommendation(
+            memory_id="mem_123",
+            action="archive",
+            reason="age > 90 days",
+            policy_basis="DECISION retention_policy: 90 days",
+        )
+        d = rec.to_dict()
+
+        assert d["memory_id"] == "mem_123"
+        assert d["action"] == "archive"
+        assert d["reason"] == "age > 90 days"
+        assert d["policy_basis"] == "DECISION retention_policy: 90 days"
+        assert "confidence" not in d
+        assert "evidence" not in d
+
+    def test_to_dict_optional_fields(self):
+        """Test serialization includes optional fields when set."""
+        rec = ConsolidationRecommendation(
+            memory_id="mem_456",
+            action="promote",
+            reason="high access frequency",
+            policy_basis="DECISION golden_promotion",
+            confidence=0.92,
+            evidence={"access_count": 15},
+        )
+        d = rec.to_dict()
+
+        assert d["confidence"] == 0.92
+        assert d["evidence"] == {"access_count": 15}
+
+    def test_required_fields_present(self):
+        """Test that memory_id, action, reason, policy_basis are required."""
+        rec = ConsolidationRecommendation(
+            memory_id="mem_789",
+            action="demote",
+            reason="low relevance",
+            policy_basis="DECISION retention_policy",
+        )
+
+        assert rec.memory_id == "mem_789"
+        assert rec.action in ("archive", "promote", "demote", "deprioritize")
+
+
+class TestConsolidationAudit:
+    """Tests for ConsolidationAudit dataclass."""
+
+    def test_defaults_dry_run_safe(self):
+        """Test defaults indicate safe dry-run mode."""
+        audit = ConsolidationAudit()
+
+        assert audit.dry_run_mode is True
+        assert audit.destructive_ops_blocked == []
+        assert audit.actual_ops_attempted == []
+        assert audit.rollback_data_stored is False
+        assert audit.no_files_deleted is True
+        assert audit.no_memories_removed is True
+
+    def test_to_dict(self):
+        """Test serialization."""
+        audit = ConsolidationAudit(
+            dry_run_mode=True,
+            destructive_ops_blocked=["rollback_cleanup", "export_metrics"],
+            actual_ops_attempted=[],
+            no_files_deleted=True,
+            no_memories_removed=True,
+        )
+        d = audit.to_dict()
+
+        assert d["dry_run_mode"] is True
+        assert len(d["destructive_ops_blocked"]) == 2
+        assert d["no_files_deleted"] is True
+
+
+class TestDryRunProducesRecommendations:
+    """Test that dry-run mode produces recommendations."""
+
+    @patch("src.governance.consolidation.scheduler.MemoryArchiver")
+    @patch("src.governance.consolidation.scheduler.GoldenMemoryPromoter")
+    def test_dry_run_produces_recommendations_with_eligible(
+        self, mock_promoter_class, mock_archiver_class
+    ):
+        """Dry-run with eligible memories should produce recommendations."""
+        config = ConsolidationConfig(dry_run=True, enabled=True)
+        config.run_tempmemory_ingestion = False
+
+        # Mock archiver returning eligible memories
+        mock_archiver = MagicMock()
+        mock_stats = MagicMock()
+        mock_stats.memories_scanned = 100
+        mock_stats.memories_eligible = 5
+        mock_stats.memories_archived = 0  # dry-run: 0 actual
+        mock_stats.memories_preserved = 10
+        mock_stats.bytes_archived = 5120
+        mock_stats.errors = []
+        mock_stats.was_dry_run = True
+        mock_archiver.archive_memories.return_value = mock_stats
+        mock_archiver.get_cold_storage_size.return_value = 0
+        mock_archiver_class.return_value = mock_archiver
+
+        # Mock promoter
+        mock_promoter = MagicMock()
+        mock_promoter.promote_memories.return_value = MagicMock(
+            candidates_evaluated=20,
+            candidates_promoted=0,
+            candidates_rejected=20,
+            promotion_score_avg=0.0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_promoter_class.return_value = mock_promoter
+
+        scheduler = MemoryConsolidationScheduler(config=config)
+        result = scheduler.run_now(dry_run=True)
+
+        # Verify recommendations were generated
+        assert len(result.recommendations) > 0
+
+        # Verify recommendation has required fields
+        rec = result.recommendations[0]
+        assert rec.memory_id is not None
+        assert rec.action is not None
+        assert rec.reason is not None
+        assert rec.policy_basis is not None
+
+    @patch("src.governance.consolidation.scheduler.MemoryArchiver")
+    @patch("src.governance.consolidation.scheduler.GoldenMemoryPromoter")
+    def test_dry_run_no_eligible_no_recommendations(
+        self, mock_promoter_class, mock_archiver_class
+    ):
+        """Dry-run with no eligible memories should produce no archive recs."""
+        config = ConsolidationConfig(dry_run=True, enabled=True)
+        config.run_tempmemory_ingestion = False
+
+        mock_archiver = MagicMock()
+        mock_stats = MagicMock()
+        mock_stats.memories_scanned = 10
+        mock_stats.memories_eligible = 0
+        mock_stats.memories_archived = 0
+        mock_stats.memories_preserved = 0
+        mock_stats.bytes_archived = 0
+        mock_stats.errors = []
+        mock_stats.was_dry_run = True
+        mock_archiver.archive_memories.return_value = mock_stats
+        mock_archiver.get_cold_storage_size.return_value = 0
+        mock_archiver_class.return_value = mock_archiver
+
+        mock_promoter = MagicMock()
+        mock_promoter.promote_memories.return_value = MagicMock(
+            candidates_evaluated=0,
+            candidates_promoted=0,
+            candidates_rejected=0,
+            promotion_score_avg=0.0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_promoter_class.return_value = mock_promoter
+
+        scheduler = MemoryConsolidationScheduler(config=config)
+        result = scheduler.run_now(dry_run=True)
+
+        # No archive recommendations when nothing is eligible
+        archive_recs = [r for r in result.recommendations if r.action == "archive"]
+        assert len(archive_recs) == 0
+
+
+class TestDryRunNoDestructiveWrites:
+    """Test that dry-run mode blocks all destructive writes."""
+
+    @patch("src.governance.consolidation.scheduler.MemoryArchiver")
+    @patch("src.governance.consolidation.scheduler.GoldenMemoryPromoter")
+    def test_dry_run_no_destructive_writes(
+        self, mock_promoter_class, mock_archiver_class
+    ):
+        """Dry-run must block all destructive operations."""
+        config = ConsolidationConfig(dry_run=True, enabled=True)
+        config.run_tempmemory_ingestion = False
+
+        mock_archiver = MagicMock()
+        mock_archiver.archive_memories.return_value = MagicMock(
+            memories_scanned=10,
+            memories_eligible=0,
+            memories_archived=0,
+            memories_preserved=0,
+            bytes_archived=0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_archiver.get_cold_storage_size.return_value = 0
+        mock_archiver_class.return_value = mock_archiver
+
+        mock_promoter = MagicMock()
+        mock_promoter.promote_memories.return_value = MagicMock(
+            candidates_evaluated=0,
+            candidates_promoted=0,
+            candidates_rejected=0,
+            promotion_score_avg=0.0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_promoter_class.return_value = mock_promoter
+
+        scheduler = MemoryConsolidationScheduler(config=config)
+        result = scheduler.run_now(dry_run=True)
+
+        # Verify audit exists and confirms safety
+        assert result.audit is not None
+        assert result.audit.dry_run_mode is True
+        assert result.audit.no_files_deleted is True
+        assert result.audit.no_memories_removed is True
+        assert result.audit.rollback_data_stored is False
+
+        # Verify destructive ops were blocked, not attempted
+        assert "rollback_cleanup" in result.audit.destructive_ops_blocked
+        assert "export_metrics" in result.audit.destructive_ops_blocked
+        assert "rollback_cleanup" not in result.audit.actual_ops_attempted
+
+    @patch("src.governance.consolidation.scheduler.MemoryArchiver")
+    @patch("src.governance.consolidation.scheduler.GoldenMemoryPromoter")
+    def test_dry_run_archiver_called_with_dry_run_true(
+        self, mock_promoter_class, mock_archiver_class
+    ):
+        """Archiver must be called with dry_run=True."""
+        config = ConsolidationConfig(dry_run=True, enabled=True)
+        config.run_tempmemory_ingestion = False
+
+        mock_archiver = MagicMock()
+        mock_archiver.archive_memories.return_value = MagicMock(
+            memories_scanned=0,
+            memories_eligible=0,
+            memories_archived=0,
+            memories_preserved=0,
+            bytes_archived=0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_archiver.get_cold_storage_size.return_value = 0
+        mock_archiver_class.return_value = mock_archiver
+
+        mock_promoter = MagicMock()
+        mock_promoter.promote_memories.return_value = MagicMock(
+            candidates_evaluated=0,
+            candidates_promoted=0,
+            candidates_rejected=0,
+            promotion_score_avg=0.0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_promoter_class.return_value = mock_promoter
+
+        scheduler = MemoryConsolidationScheduler(config=config)
+        scheduler.run_now(dry_run=True)
+
+        mock_archiver.archive_memories.assert_called_once_with(dry_run=True)
+        mock_promoter.promote_memories.assert_called_once_with(dry_run=True)
+
+    @patch("src.governance.consolidation.scheduler.MemoryArchiver")
+    @patch("src.governance.consolidation.scheduler.GoldenMemoryPromoter")
+    def test_dry_run_does_not_update_last_run_time(
+        self, mock_promoter_class, mock_archiver_class
+    ):
+        """Dry-run must NOT call _update_last_run_time (no Redis writes)."""
+        config = ConsolidationConfig(dry_run=True, enabled=True)
+        config.run_tempmemory_ingestion = False
+
+        mock_redis = MagicMock()
+        mock_archiver = MagicMock()
+        mock_archiver.archive_memories.return_value = MagicMock(
+            memories_scanned=0,
+            memories_eligible=0,
+            memories_archived=0,
+            memories_preserved=0,
+            bytes_archived=0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_archiver.get_cold_storage_size.return_value = 0
+        mock_archiver_class.return_value = mock_archiver
+
+        mock_promoter = MagicMock()
+        mock_promoter.promote_memories.return_value = MagicMock(
+            candidates_evaluated=0,
+            candidates_promoted=0,
+            candidates_rejected=0,
+            promotion_score_avg=0.0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_promoter_class.return_value = mock_promoter
+
+        scheduler = MemoryConsolidationScheduler(config=config, redis_client=mock_redis)
+        scheduler.run_now(dry_run=True)
+
+        # LAST_RUN_KEY must NOT be written during dry-run
+        mock_redis.set.assert_not_called()
+        # Also verify audit confirms the op was blocked
+        assert (
+            "update_last_run_time"
+            in scheduler.get_last_result().audit.destructive_ops_blocked
+        )  # noqa: E501
+
+
+class TestDisabledFeatureFlagSafe:
+    """Test that disabled feature flag is safe."""
+
+    @patch("src.governance.consolidation.scheduler.MemoryArchiver")
+    @patch("src.governance.consolidation.scheduler.GoldenMemoryPromoter")
+    def test_disabled_feature_flag_dry_run_safe(
+        self, mock_promoter_class, mock_archiver_class
+    ):
+        """Disabled feature flag + dry-run should still be safe."""
+        config = ConsolidationConfig(dry_run=True, enabled=False)
+        config.run_tempmemory_ingestion = False
+
+        mock_archiver = MagicMock()
+        mock_archiver.archive_memories.return_value = MagicMock(
+            memories_scanned=0,
+            memories_eligible=0,
+            memories_archived=0,
+            memories_preserved=0,
+            bytes_archived=0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_archiver.get_cold_storage_size.return_value = 0
+        mock_archiver_class.return_value = mock_archiver
+
+        mock_promoter = MagicMock()
+        mock_promoter.promote_memories.return_value = MagicMock(
+            candidates_evaluated=0,
+            candidates_promoted=0,
+            candidates_rejected=0,
+            promotion_score_avg=0.0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_promoter_class.return_value = mock_promoter
+
+        scheduler = MemoryConsolidationScheduler(config=config)
+        result = scheduler.run_now(dry_run=True)
+
+        # Should succeed (dry-run runs even when disabled)
+        assert result.success is True
+        # Should have audit
+        assert result.audit is not None
+        assert result.audit.no_files_deleted is True
+        assert result.audit.no_memories_removed is True
+
+    def test_disabled_feature_flag_no_dry_run_fails(self):
+        """Disabled feature flag + no dry-run should fail safely."""
+        config = ConsolidationConfig(dry_run=False, enabled=False)
+        config.run_tempmemory_ingestion = False
+
+        scheduler = MemoryConsolidationScheduler(config=config)
+        result = scheduler.run_now(dry_run=False)
+
+        assert result.success is False
+        assert any("disabled" in e.lower() for e in result.errors)
+
+
+class TestConsolidationResultHasNewFields:
+    """Test ConsolidationResult has new dry-run fields."""
+
+    def test_result_has_recommendations_field(self):
+        """ConsolidationResult should have recommendations field."""
+        result = ConsolidationResult()
+        assert hasattr(result, "recommendations")
+        assert result.recommendations == []
+
+    def test_result_has_audit_field(self):
+        """ConsolidationResult should have audit field."""
+        result = ConsolidationResult()
+        assert hasattr(result, "audit")
+        assert result.audit is None
+
+    def test_result_can_store_recommendations(self):
+        """ConsolidationResult can store recommendations."""
+        result = ConsolidationResult()
+        rec = ConsolidationRecommendation(
+            memory_id="mem_1",
+            action="archive",
+            reason="test",
+            policy_basis="test_policy",
+        )
+        result.recommendations.append(rec)
+
+        assert len(result.recommendations) == 1
+        assert result.recommendations[0].memory_id == "mem_1"
+
+    def test_result_can_store_audit(self):
+        """ConsolidationResult can store audit."""
+        result = ConsolidationResult()
+        audit = ConsolidationAudit(dry_run_mode=True)
+        result.audit = audit
+
+        assert result.audit is not None
+        assert result.audit.dry_run_mode is True

@@ -56,7 +56,13 @@ def cmd_run(args: argparse.Namespace) -> int:
         promote=not args.skip_promote,
     )
 
-    # Print results
+    # JSON output mode
+    if getattr(args, "output_format", "text") == "json":
+        output = _build_json_output(result, args.dry_run)
+        print(json.dumps(output, indent=2, default=str))
+        return 0 if result.success else 1
+
+    # Human-readable output
     print(f"\nTimestamp: {result.timestamp.isoformat()}")
     print(f"Success: {result.success}")
     print(f"Total time: {result.total_processing_time_seconds:.2f}s")
@@ -75,12 +81,71 @@ def cmd_run(args: argparse.Namespace) -> int:
             f"  Avg promotion score: {result.promotion_stats.promotion_score_avg:.3f}"
         )
 
+    # Recommendations (dry-run)
+    if result.recommendations:
+        print(f"\nRecommendations ({len(result.recommendations)}):")
+        for rec in result.recommendations:
+            print(f"  [{rec.action.upper()}] {rec.memory_id}")
+            print(f"    Reason: {rec.reason}")
+            print(f"    Policy: {rec.policy_basis}")
+            if rec.confidence is not None:
+                print(f"    Confidence: {rec.confidence}")
+
+    # Audit trail (dry-run)
+    if result.audit:
+        print("\nAudit Trail:")
+        print(f"  Dry-run mode: {result.audit.dry_run_mode}")
+        print(f"  Destructive ops blocked: {result.audit.destructive_ops_blocked}")
+        print(f"  Actual ops attempted: {result.audit.actual_ops_attempted}")
+        print(f"  No files deleted: {result.audit.no_files_deleted}")
+        print(f"  No memories removed: {result.audit.no_memories_removed}")
+
     if result.errors:
         print("\nErrors:")
         for error in result.errors:
             print(f"  - {error}")
 
     return 0 if result.success else 1
+
+
+def _build_json_output(result, dry_run: bool) -> dict:
+    """Build machine-readable JSON output from consolidation result."""
+    output: dict = {
+        "timestamp": result.timestamp.isoformat(),
+        "success": result.success,
+        "dry_run": dry_run,
+        "total_processing_time_seconds": result.total_processing_time_seconds,
+    }
+
+    if result.archive_stats:
+        output["archive_stats"] = {
+            "memories_scanned": result.archive_stats.memories_scanned,
+            "memories_archived": result.archive_stats.memories_archived,
+            "memories_eligible": result.archive_stats.memories_eligible,
+            "memories_preserved": result.archive_stats.memories_preserved,
+            "bytes_archived": result.archive_stats.bytes_archived,
+        }
+
+    if result.promotion_stats:
+        output["promotion_stats"] = {
+            "candidates_evaluated": result.promotion_stats.candidates_evaluated,
+            "candidates_promoted": result.promotion_stats.candidates_promoted,
+            "candidates_rejected": result.promotion_stats.candidates_rejected,
+            "promotion_score_avg": result.promotion_stats.promotion_score_avg,
+        }
+
+    if result.recommendations:
+        output["recommendations"] = [rec.to_dict() for rec in result.recommendations]
+    else:
+        output["recommendations"] = []
+
+    if result.audit:
+        output["audit"] = result.audit.to_dict()
+
+    if result.errors:
+        output["errors"] = result.errors
+
+    return output
 
 
 def cmd_rollback(args: argparse.Namespace) -> int:
@@ -92,6 +157,13 @@ def cmd_rollback(args: argparse.Namespace) -> int:
     print(f"\nChecking rollback eligibility for {memory_id}...")
 
     if not scheduler.can_rollback(memory_id):
+        # Provide explicit guidance when Redis is missing
+        if scheduler._redis_client is None:
+            print(
+                "ERROR: Rollback requires a Redis connection. "
+                "Ensure Redis is running and accessible."
+            )
+            return 1
         print(f"ERROR: Memory {memory_id} cannot be rolled back")
         print("  - May not exist in rollback data")
         print("  - May be outside 7-day rollback window")
@@ -309,6 +381,12 @@ def main() -> int:
         "--skip-promote",
         action="store_true",
         help="Skip promotion phase",
+    )
+    run_parser.add_argument(
+        "--output-format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text)",
     )
     run_parser.set_defaults(func=cmd_run)
 
