@@ -11,6 +11,8 @@ from typing import Any
 from discord_alerts.config import DiscordConfig
 from discord_alerts.discord_client import DiscordClient
 
+from .digest_store import DigestStore
+
 logger = logging.getLogger(__name__)
 
 # Required severity levels for routing configuration
@@ -201,6 +203,10 @@ class DiscordNotifier:
         self._digest_max_items = digest_max_items
         self._low_severity_buffer: list[dict[str, Any]] = []
         self._digest_last_flush: datetime | None = None
+        # Durable digest store (Redis-backed)
+        self._digest_store = DigestStore()
+        # Reload any events that survived restart
+        self._digest_store.reload()
 
         # Case 1: Client is injected - use it directly
         if client is not None:
@@ -564,6 +570,11 @@ class DiscordNotifier:
         if severity in ("high", "critical"):
             return False
 
+        # Persist to Redis first if enabled
+        if self._digest_store.is_enabled():
+            self._digest_store.enqueue(event)
+
+        # Also keep in-memory as fallback
         self._low_severity_buffer.append(event)
         logger.debug(
             "Buffered low-severity event (buffer=%d/%d): %s",
@@ -594,6 +605,20 @@ class DiscordNotifier:
         Returns:
             True if a digest was sent, False if buffer was empty or send failed.
         """
+        # Get events from Redis first, then fall back to memory
+        if self._digest_store.is_enabled():
+            redis_events = self._digest_store.dequeue_all()
+            if redis_events:
+                # Process Redis events
+                for event in redis_events:
+                    event_id = event.get("event_id")
+                    if event_id and self._digest_store.is_sent(event_id):
+                        logger.debug(f"Skipping already-sent event: {event_id}")
+                        continue
+                    self._low_severity_buffer.append(event)
+                    if event_id:
+                        self._digest_store.mark_sent(event_id)
+
         if not self._low_severity_buffer:
             return False
 
@@ -603,6 +628,7 @@ class DiscordNotifier:
 
         items = list(self._low_severity_buffer)
         self._low_severity_buffer.clear()
+        self._digest_store.clear_memory()  # Clear memory after successful dequeue
         self._digest_last_flush = datetime.now(UTC)
 
         try:
