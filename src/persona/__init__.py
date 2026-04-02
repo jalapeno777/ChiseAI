@@ -5,6 +5,7 @@ Craig-mode, subagent-mode, approval-gated, and uncertainty scenarios.
 """
 
 from src.persona.evaluator import (
+    DriftStatus,
     PersonaCase,
     PersonaEvaluationResult,
     PersonaEvaluator,
@@ -12,6 +13,7 @@ from src.persona.evaluator import (
 )
 
 __all__ = [
+    "DriftStatus",
     "PersonaCase",
     "PersonaEvaluator",
     "PersonaEvaluationResult",

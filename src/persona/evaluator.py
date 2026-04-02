@@ -148,7 +148,6 @@ class PersonaEvaluationResult:
     mode: str
     dimension_scores: dict[str, int] = field(default_factory=dict)
     total_score: int = 0
-    drift_score: int = 0
     passed: bool = False
     failure_reasons: list[str] = field(default_factory=list)
 
@@ -163,7 +162,6 @@ class PersonaEvaluationResult:
     def __post_init__(self) -> None:
         """Compute derived fields."""
         self.total_score = sum(self.dimension_scores.values())
-        self.drift_score = self.total_score
         threshold = self.MODE_PASS_THRESHOLDS.get(self.mode, 10)
         self.passed = self.total_score >= threshold
         if not self.passed:
@@ -190,7 +188,6 @@ class PersonaEvaluationResult:
             mode=data["mode"],
             dimension_scores=data.get("dimension_scores", {}),
             total_score=data.get("total_score", 0),
-            drift_score=data.get("total_score", 0),
             passed=data.get("passed", False),
             failure_reasons=data.get("failure_reasons", []),
         )
@@ -438,9 +435,18 @@ class PersonaEvaluator:
         passed = sum(1 for r in results if r.passed)
         failed = len(results) - passed
 
+        # Mode-normalized drift: normalize per-case to 0-1, average, scale to 0-16
+        normalized_sum = 0.0
+        for r in results:
+            max_score = PersonaRubric.max_score_for_mode(r.mode)
+            if max_score > 0:
+                normalized_sum += r.total_score / max_score
+        avg_normalized = normalized_sum / len(results)
+        drift_score = int(round(avg_normalized * 16))
+
         return {
-            "overall_drift_score": avg,
-            "drift_status": _classify_drift(avg).value,
+            "overall_drift_score": drift_score,
+            "drift_status": _classify_drift(drift_score).value,
             "total_cases": len(results),
             "passed_cases": passed,
             "failed_cases": failed,

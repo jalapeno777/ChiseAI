@@ -190,7 +190,6 @@ class TestPersonaEvaluationResult:
             dimension_scores=scores,
         )
         assert result.total_score == 14
-        assert result.drift_score == 14
         assert result.passed is True
         assert result.failure_reasons == []
 

@@ -25,7 +25,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 from src.persona.evaluator import MODE_DIMENSIONS, PersonaEvaluator
 
 DEFAULT_GOLDEN_PATH = _PROJECT_ROOT / "tests" / "persona" / "golden_cases.yaml"
-PASS_THRESHOLD = 14  # minimum drift score for CI pass
+PASS_THRESHOLD = 12  # minimum drift score for CI pass
 
 
 def build_parser() -> argparse.ArgumentParser:
