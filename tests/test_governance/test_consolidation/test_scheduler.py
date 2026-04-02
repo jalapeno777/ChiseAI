@@ -909,3 +909,193 @@ class TestConsolidationResultHasNewFields:
 
         assert result.audit is not None
         assert result.audit.dry_run_mode is True
+
+
+class TestDigestFlushOneShotMode:
+    """Tests for the one-shot digest flush mode."""
+
+    @pytest.fixture
+    def config(self):
+        """Create a test configuration."""
+        return ConsolidationConfig(dry_run=True, enabled=True)
+
+    def test_digest_flush_invokes_script_with_run_once_flag(self, config):
+        """_run_digest_flush must pass --run-once to the script."""
+        scheduler = MemoryConsolidationScheduler(config)
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            scheduler._run_digest_flush()
+
+            # Verify --run-once flag was passed
+            call_args = mock_run.call_args
+            script_arg = call_args[0][0]  # First positional arg is the command list
+            assert "--run-once" in script_arg, f"Expected --run-once in {script_arg}"
+
+    @patch("subprocess.run")
+    def test_digest_flush_one_shot_success(self, mock_run, config):
+        """Exit code 0 (flush sent) should return True."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="Digest sent",
+            stderr="",
+        )
+
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is True
+        mock_run.assert_called_once()
+
+    @patch("subprocess.run")
+    def test_digest_flush_one_shot_nothing_to_send(self, mock_run, config):
+        """Non-zero exit code (nothing to send) should return False."""
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="",
+        )
+
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is False
+        mock_run.assert_called_once()
+
+    @patch("subprocess.run")
+    def test_digest_flush_one_shot_timeout(self, mock_run, config):
+        """TimeoutExpired should return False (non-fatal)."""
+        import subprocess
+
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="script", timeout=60)
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is False
+
+    @patch("subprocess.run")
+    def test_digest_flush_one_shot_exception(self, mock_run, config):
+        """Exceptions during digest flush must be caught, not raised."""
+        mock_run.side_effect = Exception("script not found")
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is False
+
+
+class TestDigestFlushScriptModes:
+    """Tests for the digest_flush.py script itself."""
+
+    def test_script_has_run_once_arg(self):
+        """digest_flush.py must accept --run-once argument."""
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        # Path: tests/test_governance/test_consolidation/test_scheduler.py
+        #       parent: test_consolidation
+        #       parent: test_governance
+        #       parent: tests
+        #       parent: P2-T02E-dev (worktree root)
+        repo_root = Path(__file__).parent.parent.parent.parent
+        script_path = repo_root / "scripts" / "scheduler" / "digest_flush.py"
+
+        # Test that --run-once runs without hanging (daemon mode would hang)
+        # This is a better test than --help since --help imports discord_alerts
+        result = subprocess.run(
+            [sys.executable, str(script_path), "--run-once"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        # Should exit (not hang), exit code 0 or 1 is fine
+        assert result.returncode in (0, 1), f"Script failed: {result.stderr}"
+
+    def test_script_run_once_exits_within_timeout(self):
+        """Script with --run-once must exit within 60 seconds even with empty queue."""
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        # Path: tests/test_governance/test_consolidation/test_scheduler.py
+        repo_root = Path(__file__).parent.parent.parent.parent
+        script_path = repo_root / "scripts" / "scheduler" / "digest_flush.py"
+
+        # Run with --run-once and a timeout
+        result = subprocess.run(
+            [sys.executable, str(script_path), "--run-once"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        # Should complete (exit code 0 or 1 is fine - 0 = sent, 1 = nothing to send)
+        assert result.returncode in (0, 1)
+
+    def test_script_flush_now_alias(self):
+        """--flush-now must be an alias for --run-once."""
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        # Path: tests/test_governance/test_consolidation/test_scheduler.py
+        repo_root = Path(__file__).parent.parent.parent.parent
+        script_path = repo_root / "scripts" / "scheduler" / "digest_flush.py"
+
+        # --flush-now should work the same as --run-once (both exit quickly)
+        result_flush_now = subprocess.run(
+            [sys.executable, str(script_path), "--flush-now"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        # Both should exit (not hang in daemon loop)
+        assert result_flush_now.returncode in (0, 1)
+
+
+class TestDigestFlushSchedulerCronTrigger:
+    """Tests confirming the scheduler CronTrigger configuration is correct."""
+
+    @pytest.fixture
+    def config(self):
+        """Create a test configuration."""
+        return ConsolidationConfig(dry_run=True, enabled=True)
+
+    def test_digest_flush_trigger_hour_is_20(self, config):
+        """The digest flush CronTrigger must fire at hour 20."""
+        scheduler = MemoryConsolidationScheduler(config)
+        with patch(
+            "apscheduler.schedulers.background.BackgroundScheduler"
+        ) as mock_scheduler_cls:
+            mock_scheduler = MagicMock()
+            mock_scheduler_cls.return_value = mock_scheduler
+
+            scheduler.start()
+
+            # Find the digest flush job call
+            for call in mock_scheduler.add_job.call_args_list:
+                if call.kwargs.get("id") == "daily_digest_flush":
+                    trigger = call.kwargs["trigger"]
+                    # Verify hour=20 via string representation
+                    assert "20" in str(trigger)
+                    return
+            pytest.fail("daily_digest_flush job not found")
+
+    def test_digest_flush_trigger_timezone_is_toronto(self, config):
+        """The digest flush CronTrigger must use America/Toronto timezone."""
+        scheduler = MemoryConsolidationScheduler(config)
+        with patch(
+            "apscheduler.schedulers.background.BackgroundScheduler"
+        ) as mock_scheduler_cls:
+            mock_scheduler = MagicMock()
+            mock_scheduler_cls.return_value = mock_scheduler
+
+            scheduler.start()
+
+            # Find the digest flush job call
+            for call in mock_scheduler.add_job.call_args_list:
+                if call.kwargs.get("id") == "daily_digest_flush":
+                    trigger = call.kwargs["trigger"]
+                    from zoneinfo import ZoneInfo
+
+                    assert trigger.timezone == ZoneInfo("America/Toronto")
+                    return
+            pytest.fail("daily_digest_flush job not found")
