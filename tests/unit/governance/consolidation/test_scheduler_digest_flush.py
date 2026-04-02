@@ -16,10 +16,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
 
-import pytest
-
 from src.governance.consolidation.scheduler import MemoryConsolidationScheduler
-
 
 # ---------------------------------------------------------------------------
 # Helpers
