@@ -117,7 +117,7 @@ class DigestStore:
                 raw_events = redis_state_lrange(REDIS_QUEUE_KEY, 0, -1)
                 for raw in raw_events:
                     try:
-                        events.append(json.loads(raw))
+                        events.append(raw)
                     except (json.JSONDecodeError, TypeError):
                         logger.warning(f"Failed to decode event: {raw}")
 
@@ -213,7 +213,7 @@ class DigestStore:
             recovered = []
             for raw in raw_events:
                 try:
-                    event = json.loads(raw)
+                    event = raw
                     recovered.append(event)
                     self._memory_buffer.append(event)
                 except (json.JSONDecodeError, TypeError):
