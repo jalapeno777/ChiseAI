@@ -640,7 +640,7 @@ class MemoryConsolidationScheduler:
         import sys
 
         try:
-            repo_root = Path(__file__).parent.parent.parent
+            repo_root = Path(__file__).parent.parent.parent.parent
             script_path = repo_root / "scripts" / "scheduler" / "digest_flush.py"
 
             result = subprocess.run(

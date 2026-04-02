@@ -1,176 +1,232 @@
 #!/usr/bin/env python3
-"""
-Daily Digest Flush Script.
+"""Scheduled Digest Flush.
 
-Runs as a daemon by default, waiting until 20:00 America/Toronto before
-flushing the digest queue. Can also run in one-shot mode for testing
-or manual invocation via the --run-once flag.
+Wakes at 8:00 PM America/Toronto (DST-safe) and triggers DiscordNotifier.send_digest()
+to flush buffered low/medium severity events from Redis digest queue.
 
 Usage:
-    python digest_flush.py           # Daemon mode (default)
-    python digest_flush.py --run-once  # One-shot mode, flush and exit
-    python digest_flush.py --flush-now # Alias for --run-once
+    python scripts/scheduler/digest_flush.py
+    python scripts/scheduler/digest_flush.py --run-once
+    python scripts/scheduler/digest_flush.py --flush-now
+    python scripts/scheduler/digest_flush.py --dry-run
 """
+
+from __future__ import annotations
 
 import argparse
 import asyncio
 import logging
-import signal
+import os
 import sys
-from datetime import UTC, datetime
+import time
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-# Add project root to path for imports
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+import yaml
 
-from src.governance.notifications.discord_notifier import DiscordNotifier
+# Add src to path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root / "src"))
 
-# Configure logging
+# Load .env file for environment variables
+env_path = project_root / ".env"
+if env_path.exists():
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key, value)
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-# Constants
+# Redis key patterns (same as digest_store.py)
+REDIS_QUEUE_KEY = "chise:governance:notifications:digest_queue"
+DIGEST_SCHEDULER_HEARTBEAT_KEY = "bmad:chiseai:scheduler:digest_flush:heartbeat"
+DIGEST_SCHEDULER_LAST_RUN_KEY = "bmad:chiseai:scheduler:digest_flush:last_run"
+
+# Feature flag key (same as digest_store.py)
+FEATURE_FLAG_KEY = "chise:feature_flags:governance:durable_digest_enabled"
+FEATURE_FLAG_FIELD = "durable_digest_enabled"
+
+# Timezone
 TORONTO_TZ = ZoneInfo("America/Toronto")
-DIGEST_HOUR = 20
-DIGEST_MINUTE = 0
 
 
-def sleep_until_20_et() -> None:
-    """Sleep until 20:00 ET today (or tomorrow if already past)."""
-    now_et = datetime.now(TORONTO_TZ)
-    target_today = now_et.replace(
-        hour=DIGEST_HOUR, minute=DIGEST_MINUTE, second=0, microsecond=0
-    )
+def get_next_flush_time() -> datetime:
+    """Get next configured flush time in policy timezone (DST-safe).
 
-    if now_et >= target_today:
-        # Already past 20:00 ET today, sleep until tomorrow
-        target = target_today.replace(day=target_today.day + 1)
-    else:
-        target = target_today
+    Reads timezone and delivery_time_local from notification-policy.yaml.
+    Falls back to America/Toronto / 20:00 if policy is missing.
 
-    seconds_until = (target - now_et).total_seconds()
-    logger.info(
-        "Digest flush daemon sleeping until %s ET (%d seconds)", target, seconds_until
-    )
+    Returns:
+        datetime in the policy timezone, next flush time.
+    """
+    policy_path = project_root / "config" / "aria" / "notification-policy.yaml"
+    policy = {}
+    if policy_path.exists():
+        with open(policy_path) as f:
+            policy = yaml.safe_load(f) or {}
 
-    # Use a simple sleep with wake-up check every minute to handle signal interrupts
-    import time
+    # Get timezone from policy, default to America/Toronto
+    tz_name = policy.get("timezone", "America/Toronto")
+    tz = ZoneInfo(tz_name)
 
-    while True:
-        time.sleep(60)  # Sleep in 1-minute increments
-        now = datetime.now(TORONTO_TZ)
-        if now >= target:
-            break
+    # Get delivery time from policy, default to 20:00
+    delivery_time = policy.get("digest", {}).get("delivery_time_local", "20:00")
+    hour, minute = map(int, delivery_time.split(":"))
+
+    now = datetime.now(tz)
+    next_flush = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    # If past target time today, schedule for tomorrow
+    if now >= next_flush:
+        next_flush += timedelta(days=1)
+
+    return next_flush
+
+
+def is_feature_enabled() -> bool:
+    """Check if durable digest feature flag is enabled.
+
+    Returns:
+        True if the feature flag is enabled or not set (default-on).
+    """
+    try:
+        from tools.redis_state import redis_state_hget
+
+        flag = redis_state_hget(FEATURE_FLAG_KEY, FEATURE_FLAG_FIELD)
+        if flag is None:
+            return True  # Default enabled
+        return flag.lower() not in ("false", "0", "no", "off")
+    except Exception as e:
+        logger.warning(f"Failed to read feature flag: {e}")
+        return True  # Fail-open
 
 
 async def flush_digest() -> bool:
-    """Flush the digest queue and send to Discord.
+    """Invoke DiscordNotifier.send_digest() to flush buffered events.
+
+    Idempotent: safe to call when queue is empty (no-op).
 
     Returns:
-        True if digest was sent, False if queue was empty or send failed.
+        True if digest was sent, False if skipped or no events.
     """
-    logger.info("Starting digest flush")
-
-    notifier = DiscordNotifier()
-
-    try:
-        success = await notifier.send_digest()
-        if success:
-            logger.info("Digest sent successfully")
-        else:
-            logger.info("Digest flush: nothing to send or send failed")
-        return success
-    except Exception as e:
-        logger.error("Digest flush failed: %s", e)
+    if not is_feature_enabled():
+        logger.info("Digest flush skipped: durable_digest_enabled=false")
         return False
 
+    from governance.notifications.discord_notifier import DiscordNotifier
 
-def run_daemon() -> None:
-    """Run in daemon mode: loop forever, flush at 20:00 ET daily."""
-    logger.info("Digest flush daemon starting (PID=%d)", sys.pid)
+    notifier = DiscordNotifier()
+    result = await notifier.send_digest()
 
-    # Set up signal handlers for graceful shutdown
-    shutdown_requested = False
+    # Update last-run timestamp (non-critical)
+    try:
+        from datetime import UTC
 
-    def signal_handler(signum, frame):
-        nonlocal shutdown_requested
-        sig_name = signal.Signals(signum).name
-        logger.info("Received %s, shutting down gracefully...", sig_name)
-        shutdown_requested = True
+        from tools.redis_state import redis_state_expire, redis_state_set
 
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
+        redis_state_set(DIGEST_SCHEDULER_LAST_RUN_KEY, datetime.now(UTC).isoformat())
+        redis_state_expire(DIGEST_SCHEDULER_LAST_RUN_KEY, 86400 * 2)
+    except Exception:
+        pass  # Non-critical
 
-    while not shutdown_requested:
-        sleep_until_20_et()
+    return result
 
-        if shutdown_requested:
-            break
 
-        # Flush digest
-        try:
-            success = asyncio.run(flush_digest())
-            if not success:
-                logger.info("No digest to send, will retry tomorrow")
-        except Exception as e:
-            logger.error("Error during digest flush: %s", e)
+def sleep_until(target_time: datetime) -> None:
+    """Sleep until target datetime (blocking).
 
-        # Sleep a bit to avoid tight loop if flush fails immediately
-        if not shutdown_requested:
-            import time
-
-            time.sleep(60)
-
-    logger.info("Digest flush daemon stopped")
+    Args:
+        target_time: The datetime to sleep until.
+    """
+    now = datetime.now(target_time.tzinfo)
+    wait_seconds = (target_time - now).total_seconds()
+    if wait_seconds > 0:
+        logger.info(f"Sleeping {wait_seconds:.0f}s until {target_time.isoformat()}")
+        time.sleep(wait_seconds)
 
 
 def run_once() -> int:
-    """Run in one-shot mode: flush once and exit.
+    """Run one flush attempt and exit.
 
     Returns:
-        0 if digest was sent, 1 if nothing to send or error.
+        0 when a digest is sent, 1 when skipped/empty/error.
     """
-    logger.info("Digest flush running in one-shot mode")
-    success = asyncio.run(flush_digest())
-    return 0 if success else 1
+    logger.info("Digest Flush Scheduler running in one-shot mode")
+    try:
+        result = asyncio.run(flush_digest())
+        return 0 if result else 1
+    except Exception as e:
+        logger.error("One-shot digest flush failed: %s", e, exc_info=True)
+        return 1
+
+
+def run_daemon(dry_run: bool = False) -> int:
+    """Main scheduler loop: sleep until configured flush time, flush, repeat."""
+    logger.info("Digest Flush Scheduler starting (daemon mode)")
+
+    if dry_run:
+        next_time = get_next_flush_time()
+        logger.info(
+            "[DRY-RUN] Next flush would be scheduled for %s (%s)",
+            next_time.isoformat(),
+            next_time.tzinfo,
+        )
+        return 0
+
+    while True:
+        next_time = get_next_flush_time()
+        logger.info(
+            "Next flush scheduled for %s (%s)", next_time.isoformat(), next_time.tzinfo
+        )
+
+        sleep_until(next_time)
+
+        logger.info("Triggering scheduled digest flush")
+        try:
+            result = asyncio.run(flush_digest())
+            if result:
+                logger.info("Digest sent successfully")
+            else:
+                logger.info("Digest flush completed (no events to send)")
+        except Exception as e:
+            logger.error("Digest flush failed: %s", e, exc_info=True)
+
+    return 0
 
 
 def main() -> int:
-    """Main entry point.
-
-    Returns:
-        0 for success (daemon stays running, or one-shot sent digest),
-        1 for no content or error.
-    """
-    parser = argparse.ArgumentParser(
-        description="Daily digest flush script for governance notifications."
-    )
+    """CLI entrypoint."""
+    parser = argparse.ArgumentParser(description="Digest Flush Scheduler")
     parser.add_argument(
         "--run-once",
         action="store_true",
-        help="Run once and exit (skip the daemon loop). "
-        "Useful for testing or manual invocation.",
+        help="Flush digest once and exit.",
     )
     parser.add_argument(
         "--flush-now",
         action="store_true",
-        help="Alias for --run-once. Flush now and exit.",
+        help="Alias for --run-once.",
     )
-
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print scheduling decision and exit.",
+    )
     args = parser.parse_args()
 
     if args.run_once or args.flush_now:
         return run_once()
-    else:
-        run_daemon()
-        return 0  # Never reached in daemon mode
+
+    return run_daemon(dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
