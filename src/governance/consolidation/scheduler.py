@@ -8,10 +8,10 @@ Story: ST-GOV-005
 Governance Feature: GF-005
 """
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -627,32 +627,41 @@ class MemoryConsolidationScheduler:
         )
 
     def _run_digest_flush(self) -> bool:
-        """Execute the daily digest flush via DiscordNotifier.
+        """Invoke the canonical digest flush script.
 
-        Instantiates a DiscordNotifier and calls ``send_digest()`` inside a
-        fresh event loop so the async method can be used from APScheduler's
-        synchronous job callback.
+        Runs scripts/scheduler/digest_flush.py as a subprocess, capturing
+        the exit code. Non-zero exit means flush failed/skipped.
 
         Returns:
-            True if a digest was sent, False if skipped or send failed.
+            True if script exited with 0 (flush sent), False otherwise.
         """
+        import subprocess
+        import sys
+
         try:
-            from src.governance.notifications.discord_notifier import (
-                DiscordNotifier,
+            repo_root = Path(__file__).parent.parent.parent
+            script_path = repo_root / "scripts" / "scheduler" / "digest_flush.py"
+
+            result = subprocess.run(
+                [sys.executable, str(script_path)],
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
 
-            notifier = DiscordNotifier()
-            # send_digest checks _is_enabled() and empty buffer internally
-            result = asyncio.run(notifier.send_digest())
-            if result:
-                logger.info("Daily digest flush completed successfully")
+            if result.returncode == 0:
+                logger.info("Digest flush completed successfully")
+                return True
             else:
-                logger.info("Daily digest flush: nothing to send or disabled")
-            return result
+                logger.info("Digest flush: nothing to send or disabled")
+                return False
 
+        except subprocess.TimeoutExpired:
+            logger.warning("Digest flush script timed out after 60s")
+            return False
         except Exception as e:
             logger.warning(
-                "Daily digest flush failed (non-fatal)",
+                "Digest flush failed (non-fatal)",
                 extra={"error": str(e)},
             )
             return False

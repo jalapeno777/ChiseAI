@@ -4,7 +4,8 @@ Tests for Memory Consolidation Scheduler.
 Story: ST-GOV-005
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+import subprocess
+from unittest.mock import MagicMock, patch
 
 import pytest
 from src.governance.consolidation.config import ConsolidationConfig
@@ -750,36 +751,50 @@ class TestDigestFlushScheduler:
             assert "20" in str(trigger)  # hour=20
             assert "0" in str(trigger)  # minute=0
 
-    @patch("src.governance.notifications.discord_notifier.DiscordNotifier")
-    def test_digest_flush_empty_queue_returns_false(self, mock_notifier_cls, config):
-        """Empty buffer should cause send_digest to return False gracefully."""
-        mock_notifier = MagicMock()
-        mock_notifier.send_digest = AsyncMock(return_value=False)
-        mock_notifier_cls.return_value = mock_notifier
+    @patch("subprocess.run")
+    def test_digest_flush_empty_queue_returns_false(self, mock_run, config):
+        """Non-zero exit code (nothing to send) should return False."""
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="",
+        )
 
         scheduler = MemoryConsolidationScheduler(config)
         result = scheduler._run_digest_flush()
 
         assert result is False
+        mock_run.assert_called_once()
 
-    @patch("src.governance.notifications.discord_notifier.DiscordNotifier")
-    def test_digest_flush_success_returns_true(self, mock_notifier_cls, config):
-        """Successful send_digest returns True."""
-        mock_notifier = MagicMock()
-        mock_notifier.send_digest = AsyncMock(return_value=True)
-        mock_notifier_cls.return_value = mock_notifier
+    @patch("subprocess.run")
+    def test_digest_flush_success_returns_true(self, mock_run, config):
+        """Exit code 0 (flush sent) should return True."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="Digest sent",
+            stderr="",
+        )
 
         scheduler = MemoryConsolidationScheduler(config)
         result = scheduler._run_digest_flush()
 
         assert result is True
+        mock_run.assert_called_once()
+
+    @patch("subprocess.run", side_effect=Exception("script not found"))
+    def test_digest_flush_exception_returns_false(self, mock_run, config):
+        """Exceptions during digest flush must be caught, not raised."""
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is False
 
     @patch(
-        "src.governance.notifications.discord_notifier.DiscordNotifier",
-        side_effect=Exception("feature flag disabled"),
+        "subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd="script", timeout=60),
     )
-    def test_digest_flush_exception_returns_false(self, mock_notifier_cls, config):
-        """Exceptions during digest flush must be caught, not raised."""
+    def test_digest_flush_timeout_returns_false(self, mock_run, config):
+        """TimeoutExpired should return False (non-fatal)."""
         scheduler = MemoryConsolidationScheduler(config)
         result = scheduler._run_digest_flush()
 
