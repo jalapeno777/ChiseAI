@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from src.governance.notifications.discord_notifier import DiscordNotifier
 from src.governance.notifications.digest_store import DigestStore
+from src.governance.notifications.discord_notifier import DiscordNotifier
 
 
 class TestDigestStore:
