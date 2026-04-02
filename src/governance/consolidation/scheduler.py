@@ -8,10 +8,12 @@ Story: ST-GOV-005
 Governance Feature: GF-005
 """
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from src.governance.consolidation.archiver import (
     ArchiveStats,
@@ -285,6 +287,21 @@ class MemoryConsolidationScheduler:
                 replace_existing=True,
             )
 
+            # Schedule daily digest flush at 8 PM America/Toronto
+            trigger_digest = CronTrigger(
+                hour=20,
+                minute=0,
+                timezone=ZoneInfo("America/Toronto"),
+            )
+
+            self._scheduler.add_job(
+                self._run_digest_flush,
+                trigger=trigger_digest,
+                id="daily_digest_flush",
+                name="Daily Digest Flush",
+                replace_existing=True,
+            )
+
             self._scheduler.start()
             self._is_running = True
 
@@ -292,6 +309,7 @@ class MemoryConsolidationScheduler:
                 "Scheduler started",
                 extra={
                     "schedule": f"Daily at {self._config.schedule_time.isoformat()} UTC",
+                    "digest_schedule": "Daily at 20:00 America/Toronto",
                     "enabled": self.is_enabled(),
                 },
             )
@@ -608,7 +626,36 @@ class MemoryConsolidationScheduler:
             )
         )
 
-    def _cleanup_expired_rollback_data(self) -> int:
+    def _run_digest_flush(self) -> bool:
+        """Execute the daily digest flush via DiscordNotifier.
+
+        Instantiates a DiscordNotifier and calls ``send_digest()`` inside a
+        fresh event loop so the async method can be used from APScheduler's
+        synchronous job callback.
+
+        Returns:
+            True if a digest was sent, False if skipped or send failed.
+        """
+        try:
+            from src.governance.notifications.discord_notifier import (
+                DiscordNotifier,
+            )
+
+            notifier = DiscordNotifier()
+            # send_digest checks _is_enabled() and empty buffer internally
+            result = asyncio.run(notifier.send_digest())
+            if result:
+                logger.info("Daily digest flush completed successfully")
+            else:
+                logger.info("Daily digest flush: nothing to send or disabled")
+            return result
+
+        except Exception as e:
+            logger.warning(
+                "Daily digest flush failed (non-fatal)",
+                extra={"error": str(e)},
+            )
+            return False
         """Remove rollback data older than retention period."""
         if self._redis_client is None:
             return 0
