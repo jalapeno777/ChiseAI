@@ -41,6 +41,8 @@ from src.governance.consolidation.rollback import (
     RollbackWindow,
 )
 from src.governance.consolidation.scheduler import (
+    ConsolidationAudit,
+    ConsolidationRecommendation,
     ConsolidationResult,
     MemoryConsolidationScheduler,
 )
@@ -49,6 +51,8 @@ __all__ = [
     # Scheduler
     "MemoryConsolidationScheduler",
     "ConsolidationResult",
+    "ConsolidationRecommendation",
+    "ConsolidationAudit",
     # Config
     "ConsolidationConfig",
     "MemoryType",
