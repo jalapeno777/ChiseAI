@@ -6,6 +6,8 @@ to flush buffered low/medium severity events from Redis digest queue.
 
 Usage:
     python scripts/scheduler/digest_flush.py
+    python scripts/scheduler/digest_flush.py --run-once
+    python scripts/scheduler/digest_flush.py --flush-now
     python scripts/scheduler/digest_flush.py --dry-run
 """
 
@@ -151,27 +153,39 @@ def sleep_until(target_time: datetime) -> None:
         time.sleep(wait_seconds)
 
 
-def main() -> None:
-    """Main scheduler loop: sleep until configured flush time, flush, repeat."""
-    parser = argparse.ArgumentParser(description="Digest Flush Scheduler")
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Run once without sleeping (log what would happen)",
-    )
-    args = parser.parse_args()
+def run_once() -> int:
+    """Run one flush attempt and exit.
 
-    logger.info("Digest Flush Scheduler starting")
+    Returns:
+        0 when a digest is sent, 1 when skipped/empty/error.
+    """
+    logger.info("Digest Flush Scheduler running in one-shot mode")
+    try:
+        result = asyncio.run(flush_digest())
+        return 0 if result else 1
+    except Exception as e:
+        logger.error("One-shot digest flush failed: %s", e, exc_info=True)
+        return 1
+
+
+def run_daemon(dry_run: bool = False) -> int:
+    """Main scheduler loop: sleep until configured flush time, flush, repeat."""
+    logger.info("Digest Flush Scheduler starting (daemon mode)")
+
+    if dry_run:
+        next_time = get_next_flush_time()
+        logger.info(
+            "[DRY-RUN] Next flush would be scheduled for %s (%s)",
+            next_time.isoformat(),
+            next_time.tzinfo,
+        )
+        return 0
 
     while True:
         next_time = get_next_flush_time()
         logger.info(
-            f"Next flush scheduled for {next_time.isoformat()} ({next_time.tzinfo})"
+            "Next flush scheduled for %s (%s)", next_time.isoformat(), next_time.tzinfo
         )
-
-        if args.dry_run:
-            logger.info("[DRY-RUN] Would flush digest now")
-            return
 
         sleep_until(next_time)
 
@@ -183,10 +197,36 @@ def main() -> None:
             else:
                 logger.info("Digest flush completed (no events to send)")
         except Exception as e:
-            logger.error(f"Digest flush failed: {e}", exc_info=True)
+            logger.error("Digest flush failed: %s", e, exc_info=True)
 
-        # Loop continues to next day
+    return 0
+
+
+def main() -> int:
+    """CLI entrypoint."""
+    parser = argparse.ArgumentParser(description="Digest Flush Scheduler")
+    parser.add_argument(
+        "--run-once",
+        action="store_true",
+        help="Flush digest once and exit.",
+    )
+    parser.add_argument(
+        "--flush-now",
+        action="store_true",
+        help="Alias for --run-once.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print scheduling decision and exit.",
+    )
+    args = parser.parse_args()
+
+    if args.run_once or args.flush_now:
+        return run_once()
+
+    return run_daemon(dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

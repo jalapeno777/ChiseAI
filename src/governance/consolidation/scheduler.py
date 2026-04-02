@@ -629,8 +629,9 @@ class MemoryConsolidationScheduler:
     def _run_digest_flush(self) -> bool:
         """Invoke the canonical digest flush script.
 
-        Runs scripts/scheduler/digest_flush.py as a subprocess, capturing
-        the exit code. Non-zero exit means flush failed/skipped.
+        Runs scripts/scheduler/digest_flush.py as a subprocess in one-shot mode,
+        capturing the exit code. APScheduler handles the 20:00 ET timing via
+        CronTrigger, so this runs once and exits.
 
         Returns:
             True if script exited with 0 (flush sent), False otherwise.
@@ -643,7 +644,7 @@ class MemoryConsolidationScheduler:
             script_path = repo_root / "scripts" / "scheduler" / "digest_flush.py"
 
             result = subprocess.run(
-                [sys.executable, str(script_path)],
+                [sys.executable, str(script_path), "--run-once"],
                 capture_output=True,
                 text=True,
                 timeout=60,
