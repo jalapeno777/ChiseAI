@@ -4,6 +4,7 @@ Tests for Memory Consolidation Scheduler.
 Story: ST-GOV-005
 """
 
+import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -694,6 +695,127 @@ class TestDryRunNoDestructiveWrites:
 
 class TestDisabledFeatureFlagSafe:
     """Test that disabled feature flag is safe."""
+
+
+class TestDigestFlushScheduler:
+    """Tests for the 8 PM America/Toronto daily digest flush job."""
+
+    @pytest.fixture
+    def config(self):
+        """Create a test configuration."""
+        return ConsolidationConfig(dry_run=True, enabled=True)
+
+    def test_digest_flush_job_added_on_start(self, config):
+        """Start must register a 'daily_digest_flush' APScheduler job."""
+        scheduler = MemoryConsolidationScheduler(config)
+        with patch(
+            "apscheduler.schedulers.background.BackgroundScheduler"
+        ) as mock_scheduler_cls:
+            mock_scheduler = MagicMock()
+            mock_scheduler_cls.return_value = mock_scheduler
+
+            scheduler.start()
+
+            # Collect all add_job calls
+            add_job_calls = mock_scheduler.add_job.call_args_list
+            job_ids = [call.kwargs.get("id") for call in add_job_calls]
+
+            assert "daily_digest_flush" in job_ids
+
+    def test_digest_flush_trigger_uses_toronto_timezone(self, config):
+        """The digest flush CronTrigger must use America/Toronto timezone."""
+        scheduler = MemoryConsolidationScheduler(config)
+        with patch(
+            "apscheduler.schedulers.background.BackgroundScheduler"
+        ) as mock_scheduler_cls:
+            mock_scheduler = MagicMock()
+            mock_scheduler_cls.return_value = mock_scheduler
+
+            scheduler.start()
+
+            # Find the digest flush job call
+            digest_call = None
+            for call in mock_scheduler.add_job.call_args_list:
+                if call.kwargs.get("id") == "daily_digest_flush":
+                    digest_call = call
+                    break
+
+            assert digest_call is not None, "daily_digest_flush job not found"
+
+            trigger = digest_call.kwargs["trigger"]
+            from zoneinfo import ZoneInfo
+
+            # CronTrigger stores params in _fields; verify via dict repr
+            assert trigger.timezone == ZoneInfo("America/Toronto")
+            # Verify hour=20 and minute=0 via the trigger's __repr__ or fields
+            assert "20" in str(trigger)  # hour=20
+            assert "0" in str(trigger)  # minute=0
+
+    @patch("subprocess.run")
+    def test_digest_flush_empty_queue_returns_false(self, mock_run, config):
+        """Non-zero exit code (nothing to send) should return False."""
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="",
+        )
+
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is False
+        mock_run.assert_called_once()
+
+    @patch("subprocess.run")
+    def test_digest_flush_success_returns_true(self, mock_run, config):
+        """Exit code 0 (flush sent) should return True."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="Digest sent",
+            stderr="",
+        )
+
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is True
+        mock_run.assert_called_once()
+
+    @patch("subprocess.run", side_effect=Exception("script not found"))
+    def test_digest_flush_exception_returns_false(self, mock_run, config):
+        """Exceptions during digest flush must be caught, not raised."""
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is False
+
+    @patch(
+        "subprocess.run",
+        side_effect=subprocess.TimeoutExpired(cmd="script", timeout=60),
+    )
+    def test_digest_flush_timeout_returns_false(self, mock_run, config):
+        """TimeoutExpired should return False (non-fatal)."""
+        scheduler = MemoryConsolidationScheduler(config)
+        result = scheduler._run_digest_flush()
+
+        assert result is False
+
+    def test_digest_flush_replace_existing_true(self, config):
+        """The digest flush job must use replace_existing=True."""
+        scheduler = MemoryConsolidationScheduler(config)
+        with patch(
+            "apscheduler.schedulers.background.BackgroundScheduler"
+        ) as mock_scheduler_cls:
+            mock_scheduler = MagicMock()
+            mock_scheduler_cls.return_value = mock_scheduler
+
+            scheduler.start()
+
+            for call in mock_scheduler.add_job.call_args_list:
+                if call.kwargs.get("id") == "daily_digest_flush":
+                    assert call.kwargs["replace_existing"] is True
+                    return
+            pytest.fail("daily_digest_flush job not found")
 
     @patch("src.governance.consolidation.scheduler.MemoryArchiver")
     @patch("src.governance.consolidation.scheduler.GoldenMemoryPromoter")
