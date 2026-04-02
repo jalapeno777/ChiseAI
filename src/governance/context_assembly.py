@@ -97,6 +97,106 @@ class AssemblyResult:
     unresolved_conflicts: list[UnresolvedConflict] = field(default_factory=list)
 
 
+def assemble_aria_context(
+    findings: list[str],
+    recommendations: list[str],
+    evidence: dict[str, Any],
+    beliefs_summary: str,
+    max_tokens: int = 12000,
+    boundary: ContextAssemblyBoundary | None = None,
+) -> AssemblyResult:
+    """Convert autonomous cognition outputs to ContextItems and assemble.
+
+    Maps cycle outputs to ContextPriority categories:
+    - CORE_PERSONALITY: stable identity items
+    - PERSONAL_PREFERENCES: communication preferences
+    - PROJECT_RULES_AND_ARCHITECTURE: constitution, governance state
+    - CURRENT_TASK_DETAILS: current cycle findings, recommendations
+    - OLD_LESSONS: historical lessons
+    - OLD_CONVERSATIONS: old conversation context
+
+    Args:
+        findings: List of current cycle findings
+        recommendations: List of current cycle recommendations
+        evidence: Evidence dict from the cycle (scores, metrics, etc.)
+        beliefs_summary: Summary of current belief state
+        max_tokens: Maximum tokens for assembled context
+        boundary: Optional boundary instance (creates one if not provided)
+
+    Returns:
+        AssemblyResult with assembled context and traces
+    """
+    if boundary is None:
+        boundary = ContextAssemblyBoundary()
+    items: list[ContextItem] = []
+
+    # CURRENT_TASK_DETAILS: Current cycle findings and recommendations
+    for finding in findings:
+        items.append(
+            ContextItem(
+                content=f"Finding: {finding}",
+                priority=ContextPriority.CURRENT_TASK_DETAILS,
+                token_size=_estimate_tokens(f"Finding: {finding}"),
+                source="autonomous_cognition/findings",
+                confidence=0.85,
+                is_mandatory=False,
+                is_protected_identity=False,
+            )
+        )
+
+    for rec in recommendations:
+        items.append(
+            ContextItem(
+                content=f"Recommendation: {rec}",
+                priority=ContextPriority.CURRENT_TASK_DETAILS,
+                token_size=_estimate_tokens(f"Recommendation: {rec}"),
+                source="autonomous_cognition/recommendations",
+                confidence=0.80,
+                is_mandatory=False,
+                is_protected_identity=False,
+            )
+        )
+
+    # PROJECT_RULES_AND_ARCHITECTURE: Beliefs summary (constitution/governance state)
+    if beliefs_summary:
+        items.append(
+            ContextItem(
+                content=f"Beliefs summary: {beliefs_summary}",
+                priority=ContextPriority.PROJECT_RULES_AND_ARCHITECTURE,
+                token_size=_estimate_tokens(f"Beliefs summary: {beliefs_summary}"),
+                source="autonomous_cognition/beliefs",
+                confidence=0.90,
+                is_mandatory=True,
+                is_protected_identity=False,
+            )
+        )
+
+    # Add evidence as context items
+    for key, value in evidence.items():
+        content = f"Evidence/{key}: {value}"
+        items.append(
+            ContextItem(
+                content=content,
+                priority=ContextPriority.CURRENT_TASK_DETAILS,
+                token_size=_estimate_tokens(content),
+                source=f"autonomous_cognition/evidence/{key}",
+                confidence=0.75,
+                is_mandatory=False,
+                is_protected_identity=False,
+            )
+        )
+
+    return boundary.assemble(items, max_tokens=max_tokens)
+
+
+def _estimate_tokens(text: str) -> int:
+    """Estimate token count from text.
+
+    Uses a rough approximation: ~4 characters per token for typical English text.
+    """
+    return max(1, len(text) // 4)
+
+
 class ContextAssemblyBoundary:
     """Final boundary for context assembly with priority-based eviction.
 

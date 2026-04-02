@@ -35,6 +35,7 @@ from autonomous_cognition.experiments.portfolio_policy_lab import PortfolioPolic
 from autonomous_cognition.metrics.skip_rate_monitor import SkipRateMonitor
 from autonomous_cognition.runtime_integration import NeuroSymbolicRuntimeIntegrator
 from autonomous_cognition.state_machine import AutonomousCycleStateMachine, CycleState
+from governance.context_assembly import assemble_aria_context
 from governance.notifications.discord_notifier import DiscordNotifier
 
 logger = logging.getLogger(__name__)
@@ -1333,6 +1334,79 @@ class AutonomousCognitionFullCycle:
                 "belief_revisions": result.belief_revisions,
                 "autonomy_level_after": result.autonomy_level_after,
             }
+
+            # Assemble context using the boundary
+            # Normalize findings: extract .description if available and not None, else use str()
+            findings = (
+                [
+                    (
+                        f.description
+                        if hasattr(f, "description") and f.description is not None
+                        else str(f)
+                    )
+                    for f in assessment.findings
+                ]
+                if assessment and hasattr(assessment, "findings")
+                else []
+            )
+            recommendations = (
+                [
+                    (
+                        r.description
+                        if hasattr(r, "description") and r.description is not None
+                        else str(r)
+                    )
+                    for r in assessment.recommendations
+                ]
+                if assessment and hasattr(assessment, "recommendations")
+                else [
+                    f"Promotions: {result.promotions}, Rejections: {result.rejections}",
+                    f"Belief revisions: {result.belief_revisions}",
+                    f"Constitution violations: {result.constitution_violations}",
+                ]
+            )
+            evidence = {
+                "self_assessment_score": briefing["self_assessment_score"] or "unknown",
+                "belief_conflicts": result.belief_conflicts,
+                "belief_revisions": result.belief_revisions,
+                "autonomy_level": result.autonomy_level_after or "unknown",
+                "experiments_run": result.experiments_run,
+            }
+            beliefs_summary = f"Active conflicts: {result.belief_conflicts}, Revisions applied: {result.belief_revisions}"
+
+            try:
+                assembly_result = assemble_aria_context(
+                    findings=findings,
+                    recommendations=recommendations,
+                    evidence=evidence,
+                    beliefs_summary=beliefs_summary,
+                    max_tokens=12000,
+                )
+                briefing["context_assembly"] = {
+                    "assembled_context": assembly_result.assembled_context,
+                    "total_tokens": assembly_result.total_tokens,
+                    "max_tokens": assembly_result.max_tokens,
+                    "unresolved_conflicts": [
+                        {
+                            "item_ids": uc.item_ids,
+                            "reason": uc.reason,
+                            "suggested_resolution": uc.suggested_resolution,
+                        }
+                        for uc in assembly_result.unresolved_conflicts
+                    ],
+                }
+                briefing["context_assembly_traces"] = [
+                    {
+                        "action": t.action,
+                        "item_id": t.item_id,
+                        "reason": t.reason,
+                        "priority": t.priority,
+                        "token_size": t.token_size,
+                    }
+                    for t in assembly_result.traces
+                ]
+            except Exception as e:
+                logger.warning("[ARIA_BRIEFING] Context assembly failed: %s", e)
 
             # Store in Redis with 24-hour TTL
             briefing_json = json.dumps(briefing)
