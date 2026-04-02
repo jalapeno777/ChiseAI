@@ -646,6 +646,53 @@ class TestDryRunNoDestructiveWrites:
         mock_archiver.archive_memories.assert_called_once_with(dry_run=True)
         mock_promoter.promote_memories.assert_called_once_with(dry_run=True)
 
+    @patch("src.governance.consolidation.scheduler.MemoryArchiver")
+    @patch("src.governance.consolidation.scheduler.GoldenMemoryPromoter")
+    def test_dry_run_does_not_update_last_run_time(
+        self, mock_promoter_class, mock_archiver_class
+    ):
+        """Dry-run must NOT call _update_last_run_time (no Redis writes)."""
+        config = ConsolidationConfig(dry_run=True, enabled=True)
+        config.run_tempmemory_ingestion = False
+
+        mock_redis = MagicMock()
+        mock_archiver = MagicMock()
+        mock_archiver.archive_memories.return_value = MagicMock(
+            memories_scanned=0,
+            memories_eligible=0,
+            memories_archived=0,
+            memories_preserved=0,
+            bytes_archived=0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_archiver.get_cold_storage_size.return_value = 0
+        mock_archiver_class.return_value = mock_archiver
+
+        mock_promoter = MagicMock()
+        mock_promoter.promote_memories.return_value = MagicMock(
+            candidates_evaluated=0,
+            candidates_promoted=0,
+            candidates_rejected=0,
+            promotion_score_avg=0.0,
+            errors=[],
+            was_dry_run=True,
+        )
+        mock_promoter_class.return_value = mock_promoter
+
+        scheduler = MemoryConsolidationScheduler(config=config, redis_client=mock_redis)
+        scheduler.run_now(dry_run=True)
+
+        # LAST_RUN_KEY must NOT be written during dry-run
+        from src.governance.consolidation.config import LAST_RUN_KEY
+
+        mock_redis.set.assert_not_called()
+        # Also verify audit confirms the op was blocked
+        assert (
+            "update_last_run_time"
+            in scheduler.get_last_result().audit.destructive_ops_blocked
+        )  # noqa: E501
+
 
 class TestDisabledFeatureFlagSafe:
     """Test that disabled feature flag is safe."""

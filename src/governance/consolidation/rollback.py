@@ -34,6 +34,7 @@ class RollbackOperation:
     target_collection: str
     success: bool = True
     error: str | None = None
+    simulated: bool = False  # True when this was a dry-run simulation
 
 
 @dataclass
@@ -223,6 +224,7 @@ class RollbackManager:
                     stats.operations_failed = 1
                     stats.errors.append(f"Failed to restore {memory_id}")
             else:
+                # dry_run path - simulate only, do not claim verified success
                 stats.operations_succeeded = 1
                 stats.operations.append(
                     RollbackOperation(
@@ -231,6 +233,7 @@ class RollbackManager:
                         restored_from=rollback_info.get("archive_file", ""),
                         target_collection=archived.original_collection,
                         success=True,
+                        simulated=True,  # indicate this was dry-run simulation
                     )
                 )
 
@@ -551,6 +554,7 @@ class RollbackManager:
 
                 logger.info(f"Rolled back {archived_path} to {restore_path}")
             else:
+                # dry_run path - simulate only, do not claim verified success
                 stats.operations_succeeded = 1
                 stats.operations.append(
                     RollbackOperation(
@@ -559,6 +563,7 @@ class RollbackManager:
                         restored_from=str(archived_path),
                         target_collection="tempmemories",
                         success=True,
+                        simulated=True,  # indicate this was dry-run simulation
                     )
                 )
 

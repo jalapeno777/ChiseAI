@@ -157,6 +157,13 @@ def cmd_rollback(args: argparse.Namespace) -> int:
     print(f"\nChecking rollback eligibility for {memory_id}...")
 
     if not scheduler.can_rollback(memory_id):
+        # Provide explicit guidance when Redis is missing
+        if scheduler._redis_client is None:
+            print(
+                "ERROR: Rollback requires a Redis connection. "
+                "Ensure Redis is running and accessible."
+            )
+            return 1
         print(f"ERROR: Memory {memory_id} cannot be rolled back")
         print("  - May not exist in rollback data")
         print("  - May be outside 7-day rollback window")
