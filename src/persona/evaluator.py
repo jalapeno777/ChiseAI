@@ -430,8 +430,6 @@ class PersonaEvaluator:
                 "failed_cases": 0,
             }
 
-        total = sum(r.total_score for r in results)
-        avg = total // len(results)
         passed = sum(1 for r in results if r.passed)
         failed = len(results) - passed
 
