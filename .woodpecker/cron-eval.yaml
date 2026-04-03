@@ -331,16 +331,33 @@ steps:
         pip install --no-cache-dir requests
 
         # Check status files and fail if any non-zero
+        # Supports both numeric codes (0/1) and tier strings (PASS/WARN/SKIP/FAIL/ERROR)
         FAILED=0
         for status_file in _bmad-output/ci/*.status; do
           if [ -f "$status_file" ]; then
-            code=$(cat "$status_file")
+            raw=$(cat "$status_file")
             name=$(basename "$status_file" .status)
+            # Convert tier string to numeric: PASS/WARN/SKIP=0, FAIL/ERROR=1, unknown=99
+            case "$raw" in
+              PASS|WARN|SKIP)
+                code=0
+                ;;
+              FAIL|ERROR)
+                code=1
+                ;;
+              *)
+                # Try numeric interpretation for legacy status files
+                case "$raw" in
+                  0) code=0 ;;
+                  *) code=99 ;;
+                esac
+                ;;
+            esac
             if [ "$code" != "0" ]; then
-              echo "FAIL: $name exited with code $code"
+              echo "FAIL: $name tier=$raw (code=$code)"
               FAILED=1
             else
-              echo "PASS: $name"
+              echo "PASS: $name tier=$raw"
             fi
           fi
         done
