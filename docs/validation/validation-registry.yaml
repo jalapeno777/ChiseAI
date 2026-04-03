@@ -4041,6 +4041,21 @@ validations:
       - real ICT pipeline operational
     test_method: automated
     owner: dev
+  - id: V-P2-T03
+    title: Context Assembly Boundary Runtime Adoption Audit
+    epic_id: EP-GOV-001
+    story_id: P2-T03
+    status: validated
+    description: |
+      Validate runtime context-entry and briefing assembly paths are audited for
+      ContextAssemblyBoundary adoption scope.
+    acceptance_criteria:
+      - Runtime context-entry and prompt/briefing assembly paths are identified
+      - Each path is classified as already_covered, should_adopt_now, should_defer, or not_applicable
+      - Evidence is recorded in docs/evidence/P2-T03-context-assembly-audit.md
+      - No additional runtime paths require immediate ContextAssemblyBoundary adoption
+    test_method: manual
+    owner: jarvis
 # ============================================================
 # Global validation thresholds
 # ============================================================
