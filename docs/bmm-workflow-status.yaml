@@ -64,6 +64,28 @@ completed:
     story_points: 9
     title: Batch 1 Local CI Improvements
   - acceptance_criteria:
+      - Runtime context-entry/prompt-assembly/briefing-assembly paths identified
+      - Each path classified: already_covered | should_adopt_now | should_defer | not_applicable
+      - Evidence document created at docs/evidence/P2-T03-context-assembly-audit.md
+      - No additional paths required ContextAssemblyBoundary adoption
+    completion_date: "2026-04-02"
+    description:
+      Broader ContextAssemblyBoundary Runtime Adoption Audit - confirms boundary is
+      correctly scoped to sole Aria briefing path. No additional paths qualify
+      for immediate adoption.
+    evidence_files:
+      - docs/evidence/P2-T03-context-assembly-audit.md
+    id: P2-T03
+    notes:
+      - "Audit found 1 path (already covered by ST-04/ST-04A/ST-04B)"
+      - "0 additional paths require boundary adoption"
+      - "opencode_autodispatch.render_prompt() flagged for future consideration"
+    owner: jarvis
+    priority: P2
+    status: completed
+    story_points: 2
+    title: ContextAssemblyBoundary Runtime Adoption Audit
+  - acceptance_criteria:
       - black --check src/ tests/ exits 0
       - ruff check src/ tests/ exits 0
       - All modified modules pass regression tests
