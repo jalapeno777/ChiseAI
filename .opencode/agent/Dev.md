@@ -2,7 +2,7 @@
 name: "dev"
 description: "Development subagent. Implements features, runs tests, performs git/deploy steps when explicitly tasked by Aria or Jarvis."
 mode: all
-model: "minimax-coding-plan/MiniMax-M2.7" # fallback: "zai-coding-plan/glm-5.0-fast"
+model: "zai-coding-plan/glm-5.0-fast" # fallback: "zai-coding-plan/glm-5.0-fast"
 temperature: 0.2
 tools:
   task: true
