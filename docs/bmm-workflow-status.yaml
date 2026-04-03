@@ -1141,6 +1141,7 @@ backlog:
       - OHLCV data fixed
       - Classifier still not firing: 23% accuracy vs 60% target
       - Need to debug _is_level_broken() logic
+      - "2026-04-03: Aria decision AD-ST-ICT-S9-001-20260403T120100Z-aria — CHoCH logic architecturally broken (trivially true comparison). Honest baseline 42.3%. Deferred to EP-ICT-007 Phase 2. See docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md"
     owner: ml-signal-engineering
     priority: P2
     related_epic: EP-ICT-004
