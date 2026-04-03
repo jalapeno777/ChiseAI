@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -453,3 +455,359 @@ class TestPersonaEvaluator:
         """Test to_dict is a passthrough."""
         data = {"key": "value"}
         assert evaluator.to_dict(data) == data
+
+
+# ---------------------------------------------------------------------------
+# Scheduled path and harness CLI tests
+# ---------------------------------------------------------------------------
+
+
+class TestScheduledPath:
+    """Tests for the scheduled harness invocation via run_persona_harness.py."""
+
+    HARNESS_SCRIPT = (
+        Path(__file__).parent.parent.parent
+        / "scripts"
+        / "eval"
+        / "run_persona_harness.py"
+    )
+
+    def test_scheduled_invocation_output_creates_parent_dirs(self) -> None:
+        """Test that --output creates parent directories."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "deeply" / "nested" / "output.json"
+
+            # Verify parent directories don't exist
+            assert not output_path.parent.exists()
+
+            # Run harness with --output
+            result = subprocess.run(
+                [
+                    "python3",
+                    str(self.HARNESS_SCRIPT),
+                    "--output",
+                    str(output_path),
+                ],
+                capture_output=True,
+                text=True,
+            )
+
+            # Should succeed (exit 0 or 1 is fine - we care about file creation)
+            # Exit 1 means threshold not met but output should still be written
+            assert result.returncode in (0, 1)
+
+            # Verify parent directories were created
+            assert output_path.parent.exists()
+
+            # Verify JSON file was created and is parseable
+            assert output_path.exists()
+            with open(output_path) as f:
+                parsed = json.load(f)
+            assert "suite" in parsed
+            assert parsed["suite"] == "aria-persona-golden-v1"
+
+    def test_scheduled_invocation_run_id_format(self) -> None:
+        """Test that run_id has expected timestamp-based format."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "run1.json"
+
+            result1 = subprocess.run(
+                ["python3", str(self.HARNESS_SCRIPT), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+            )
+            with open(output_path) as f:
+                data1 = json.load(f)
+
+            run_id1 = data1["run_id"]
+
+            # run_id should have valid timestamp format: persona-regression-YYYY-MM-DDTHHMMSSZ
+            assert run_id1.startswith("persona-regression-20")
+            # Should match ISO-like timestamp pattern
+            assert len(run_id1) == len("persona-regression-2026-04-03T134325Z")
+            # Both runs should have valid format (timestamps may or may not differ due to second granularity)
+            assert "-" in run_id1 and "T" in run_id1 and "Z" in run_id1
+
+    def test_scheduled_invocation_json_schema(self) -> None:
+        """Test that JSON output has expected schema."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "schema.json"
+
+            subprocess.run(
+                ["python3", str(self.HARNESS_SCRIPT), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+            )
+
+            with open(output_path) as f:
+                parsed = json.load(f)
+
+            # Verify required top-level fields
+            assert "run_id" in parsed
+            assert "suite" in parsed
+            assert "timestamp" in parsed
+            assert "total_cases" in parsed
+            assert "passed_cases" in parsed
+            assert "failed_cases" in parsed
+            assert "overall_drift_score" in parsed
+            assert "drift_status" in parsed
+            assert "case_results" in parsed
+
+            # Verify drift_status is a valid value
+            valid_statuses = {
+                "strong_consistency",
+                "drifting",
+                "material_drift",
+                "critical_drift",
+            }
+            assert parsed["drift_status"] in valid_statuses
+
+            # Verify case_results structure
+            assert isinstance(parsed["case_results"], list)
+            for cr in parsed["case_results"]:
+                assert "case_id" in cr
+                assert "mode" in cr
+                assert "dimension_scores" in cr
+                assert "total_score" in cr
+                assert "passed" in cr
+                assert "failure_reasons" in cr
+
+
+# ---------------------------------------------------------------------------
+# Threshold behavior tests
+# ---------------------------------------------------------------------------
+
+
+class TestThresholdBehavior:
+    """Tests for threshold flag behavior in the harness."""
+
+    HARNESS_SCRIPT = (
+        Path(__file__).parent.parent.parent
+        / "scripts"
+        / "eval"
+        / "run_persona_harness.py"
+    )
+
+    def test_threshold_strong_consistency(self, evaluator: PersonaEvaluator) -> None:
+        """Score 14-16 should be strong_consistency (PASS)."""
+        # Score 14-16 maps to strong_consistency
+        scores = {
+            d: 2
+            for d in [
+                "identity_stability",
+                "craig_mode_tone",
+                "evidence_first",
+                "approval_boundary",
+                "uncertainty_honesty",
+                "risk_posture",
+                "concision",
+            ]
+        }
+        result = PersonaEvaluationResult(
+            case_id="test-001",
+            mode="craig",
+            dimension_scores=scores,
+        )
+        assert result.total_score == 14
+        drift = evaluator.compute_drift_score([result])
+        assert drift["drift_status"] == "strong_consistency"
+        assert drift["overall_drift_score"] >= 14
+
+    def test_threshold_drifting(self, evaluator: PersonaEvaluator) -> None:
+        """Score 11-13 should be drifting (WARN)."""
+        # Score 11-13 maps to drifting
+        scores = {
+            "identity_stability": 2,
+            "craig_mode_tone": 2,
+            "evidence_first": 2,
+            "approval_boundary": 1,
+            "uncertainty_honesty": 2,
+            "risk_posture": 1,
+            "concision": 1,
+        }
+        result = PersonaEvaluationResult(
+            case_id="test-002",
+            mode="craig",
+            dimension_scores=scores,
+        )
+        assert 11 <= result.total_score <= 13
+        drift = evaluator.compute_drift_score([result])
+        assert drift["drift_status"] == "drifting"
+
+    def test_threshold_material_drift(self, evaluator: PersonaEvaluator) -> None:
+        """Score 8-10 should be material_drift (FAIL)."""
+        # Score 8-10 maps to material_drift
+        scores = {
+            "identity_stability": 2,
+            "craig_mode_tone": 1,
+            "evidence_first": 1,
+            "approval_boundary": 1,
+            "uncertainty_honesty": 1,
+            "risk_posture": 1,
+            "concision": 1,
+        }
+        result = PersonaEvaluationResult(
+            case_id="test-003",
+            mode="craig",
+            dimension_scores=scores,
+        )
+        assert 8 <= result.total_score <= 10
+        drift = evaluator.compute_drift_score([result])
+        assert drift["drift_status"] == "material_drift"
+
+    def test_threshold_critical_drift(self, evaluator: PersonaEvaluator) -> None:
+        """Score <=7 should be critical_drift (FAIL)."""
+        # Score <=7 maps to critical_drift
+        scores = {
+            "identity_stability": 1,
+            "craig_mode_tone": 1,
+            "evidence_first": 1,
+            "approval_boundary": 0,
+            "uncertainty_honesty": 1,
+            "risk_posture": 1,
+            "concision": 1,
+        }
+        result = PersonaEvaluationResult(
+            case_id="test-004",
+            mode="craig",
+            dimension_scores=scores,
+        )
+        assert result.total_score <= 7
+        drift = evaluator.compute_drift_score([result])
+        assert drift["drift_status"] == "critical_drift"
+
+    def test_harness_threshold_flag_exit_code_pass(self) -> None:
+        """Test harness exits 0 when drift score >= threshold."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Run with default threshold (12) - perfect scores should pass
+            golden_path = Path(__file__).parent / "golden_cases.yaml"
+            output_path = Path(tmpdir) / "output.json"
+
+            result = subprocess.run(
+                [
+                    "python3",
+                    str(self.HARNESS_SCRIPT),
+                    "--golden-cases",
+                    str(golden_path),
+                    "--output",
+                    str(output_path),
+                    "--threshold",
+                    "8",  # Low threshold - should definitely pass
+                ],
+                capture_output=True,
+                text=True,
+            )
+
+            # Perfect scores with threshold 8 should pass
+            assert result.returncode == 0
+            with open(output_path) as f:
+                data = json.load(f)
+            assert data["overall_drift_score"] >= 8
+
+    def test_harness_threshold_flag_exit_code_fail(self) -> None:
+        """Test harness exits 1 when drift score < threshold."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            golden_path = Path(__file__).parent / "golden_cases.yaml"
+            output_path = Path(tmpdir) / "output.json"
+
+            # Use impossibly high threshold - should fail
+            result = subprocess.run(
+                [
+                    "python3",
+                    str(self.HARNESS_SCRIPT),
+                    "--golden-cases",
+                    str(golden_path),
+                    "--output",
+                    str(output_path),
+                    "--threshold",
+                    "100",  # Way above any possible score
+                ],
+                capture_output=True,
+                text=True,
+            )
+
+            assert result.returncode == 1
+
+
+# ---------------------------------------------------------------------------
+# Disabled flag tests
+# ---------------------------------------------------------------------------
+
+
+class TestDisabledFlag:
+    """Tests for --disabled flag safe skip behavior."""
+
+    HARNESS_SCRIPT = (
+        Path(__file__).parent.parent.parent
+        / "scripts"
+        / "eval"
+        / "run_persona_harness.py"
+    )
+
+    def test_disabled_flag_safe_skip(self) -> None:
+        """When flag is disabled and --disabled is set, exit code should be 0."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Set feature flag to disabled via environment variable
+            env = os.environ.copy()
+            env["FEATURE_PERSONA_REGRESSION_ENABLED"] = "false"
+
+            result = subprocess.run(
+                ["python3", str(self.HARNESS_SCRIPT), "--disabled"],
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+            # Should exit with code 0 (safe skip)
+            assert result.returncode == 0
+            assert "disabled" in result.stderr.lower() or result.stderr == ""
+
+    def test_disabled_flag_with_output_still_skips(self) -> None:
+        """When disabled, --output should not create file (early exit)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "should_not_exist.json"
+
+            env = os.environ.copy()
+            env["FEATURE_PERSONA_REGRESSION_ENABLED"] = "false"
+
+            result = subprocess.run(
+                [
+                    "python3",
+                    str(self.HARNESS_SCRIPT),
+                    "--disabled",
+                    "--output",
+                    str(output_path),
+                ],
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+            assert result.returncode == 0
+            # Output file should NOT be created (early exit before writing)
+            assert not output_path.exists()
+
+    def test_disabled_flag_no_disabled_arg_runs_normally(self) -> None:
+        """When --disabled is NOT passed, harness runs even if flag is disabled."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env = os.environ.copy()
+            env["FEATURE_PERSONA_REGRESSION_ENABLED"] = "false"
+
+            output_path = Path(tmpdir) / "output.json"
+
+            result = subprocess.run(
+                [
+                    "python3",
+                    str(self.HARNESS_SCRIPT),
+                    "--output",
+                    str(output_path),
+                ],
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+            # Should still run and produce output (--disabled not passed)
+            # Exit code 0 or 1 is fine - just verifying it ran
+            assert result.returncode in (0, 1)
+            assert output_path.exists()
