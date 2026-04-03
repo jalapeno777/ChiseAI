@@ -16,6 +16,15 @@ class BeliefType(Enum):
     HYPOTHESIS = "hypothesis"  # Proposed explanation, not yet confirmed
 
 
+class RelationshipType(Enum):
+    """Classification of relationships between beliefs."""
+
+    SUPPORTS = "supports"
+    CONTRADICTS = "contradicts"
+    SUPERSEDES = "supersedes"
+    RELATED = "related"
+
+
 @dataclass
 class EvidenceRecord:
     """Canonical evidence item used for belief support scoring."""
