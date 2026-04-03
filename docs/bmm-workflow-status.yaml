@@ -88,6 +88,33 @@ completed:
     story_points: 2
     title: ContextAssemblyBoundary Runtime Adoption Audit
   - acceptance_criteria:
+      - Feature flag persona_regression_enabled added to FeatureFlags with Redis persistence
+      - --disabled flag added to run_persona_harness.py with feature flag check
+      - persona-weekly cron step wired to existing .woodpecker/cron-eval.yaml pipeline
+      - JSON artifact output with deterministic schema and run_id
+      - Threshold behavior: exit 0 if drift_score >= threshold, exit 1 otherwise
+      - Comprehensive tests: 34 tests covering scheduled path, threshold, and disabled flag
+    completion_date: "2026-04-03"
+    description:
+      Persona/Memory Hardening Gate - wire scheduled persona regression execution
+      into existing Woodpecker cron pipeline with feature flag gate and threshold behavior.
+    evidence_files:
+      - docs/evidence/P2-T05-persona-regression-gate.md
+    id: P2-T05
+    merge_commit: 7bc3e02642b6aac5829309485324e14adc06519c
+    pr_number: "907"
+    notes:
+      - "Feature: persona_regression_enabled flag with Redis persistence"
+      - "Harness: --disabled flag with 3-tier check (env, Redis, default True)"
+      - "Cron: persona-weekly trigger + persona-regression-weekly step"
+      - "Tests: 34 passed (TestScheduledPath, TestThresholdBehavior, TestDisabledFlag)"
+      - "PR: Merged via PR #907"
+    owner: jarvis
+    priority: P2
+    status: merged
+    story_points: 3
+    title: Persona/Memory Hardening Gate
+  - acceptance_criteria:
       - black --check src/ tests/ exits 0
       - ruff check src/ tests/ exits 0
       - All modified modules pass regression tests
