@@ -239,6 +239,32 @@ steps:
         echo "$code" > _bmad-output/ci/skill-autonomy-weekly.status
         exit 0
 
+  persona-regression-weekly:
+    image: python:3.11
+    when:
+      cron:
+        - persona-weekly
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        mkdir -p _bmad-output/persona
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml redis requests
+          
+          # Check feature flag (respects --disabled flag)
+          python3 scripts/eval/run_persona_harness.py \
+            --output _bmad-output/persona/persona-regression-$(date +%Y-%m-%d).json \
+            --disabled \
+            || true  # Don't fail pipeline if disabled
+        ) > _bmad-output/ci/persona-regression-weekly.log 2>&1
+        code=$?
+        cat _bmad-output/ci/persona-regression-weekly.log
+        echo "$code" > _bmad-output/ci/persona-regression-weekly.status
+        exit 0
+
   # Fallback: auto-detect cycle from commit message pattern
   kpi-scheduler-auto:
     image: python:3.11
