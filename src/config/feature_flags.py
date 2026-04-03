@@ -59,6 +59,7 @@ class FeatureFlags:
     KEY_LAUNCH_PIPELINE: ClassVar[str] = (
         f"{REDIS_PREFIX}:launch_training_pipeline_enabled"
     )
+    KEY_PERSONA_REGRESSION: ClassVar[str] = f"{REDIS_PREFIX}:persona_regression_enabled"
 
     # TTL for Redis flag storage (seconds) - 24 hours
     FLAG_TTL: ClassVar[int] = 86400
@@ -73,6 +74,9 @@ class FeatureFlags:
 
     # Training pipeline integration (ST-LAUNCH-012)
     launch_training_pipeline_enabled: bool = True
+
+    # Persona regression scheduling gate (SAFETY)
+    persona_regression_enabled: bool = True
 
     # Redis client reference (not frozen, but accessed via property)
     _redis_client: Any = field(default=None, repr=False, compare=False)
@@ -201,6 +205,12 @@ class FeatureFlags:
             self.KEY_LAUNCH_PIPELINE, self.launch_training_pipeline_enabled
         )
 
+    def is_persona_regression_enabled(self) -> bool:
+        """Check if persona regression scheduling is enabled (Redis or default)."""
+        return self.get_redis_value(
+            self.KEY_PERSONA_REGRESSION, self.persona_regression_enabled
+        )
+
     # Runtime flag setters (write to Redis)
 
     def set_retraining_ece_trigger_enabled(self, enabled: bool) -> bool:
@@ -230,6 +240,10 @@ class FeatureFlags:
     def set_launch_training_pipeline_enabled(self, enabled: bool) -> bool:
         """Enable or disable training pipeline launch."""
         return self.set_redis_value(self.KEY_LAUNCH_PIPELINE, enabled)
+
+    def set_persona_regression_enabled(self, enabled: bool) -> bool:
+        """Enable or disable persona regression scheduling."""
+        return self.set_redis_value(self.KEY_PERSONA_REGRESSION, enabled)
 
     @classmethod
     def from_env(cls) -> FeatureFlags:

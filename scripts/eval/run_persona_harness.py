@@ -8,13 +8,16 @@ Usage:
     python3 scripts/eval/run_persona_harness.py
     python3 scripts/eval/run_persona_harness.py --verbose
     python3 scripts/eval/run_persona_harness.py --output results.json
+    python3 scripts/eval/run_persona_harness.py --disabled
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+from datetime import date
 from pathlib import Path
 
 # Ensure project root is on sys.path for imports
@@ -25,6 +28,12 @@ if str(_PROJECT_ROOT) not in sys.path:
 from src.persona.evaluator import MODE_DIMENSIONS, PersonaEvaluator
 
 DEFAULT_GOLDEN_PATH = _PROJECT_ROOT / "tests" / "persona" / "golden_cases.yaml"
+DEFAULT_OUTPUT_PATH = (
+    _PROJECT_ROOT
+    / "_bmad-output"
+    / "ci"
+    / f"persona-regression-{date.today().isoformat()}.json"
+)
 PASS_THRESHOLD = 12  # minimum drift score for CI pass
 
 
@@ -44,7 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         default=None,
-        help="Write JSON results to this file (default: stdout)",
+        help="Write JSON results to this file (default: _bmad-output/ci/persona-regression-YYYY-MM-DD.json for scheduled runs)",
     )
     parser.add_argument(
         "--verbose",
@@ -58,17 +67,78 @@ def build_parser() -> argparse.ArgumentParser:
         default=PASS_THRESHOLD,
         help=f"Minimum drift score for pass (default: {PASS_THRESHOLD})",
     )
+    parser.add_argument(
+        "--disabled",
+        action="store_true",
+        default=False,
+        help="Check feature flag and exit early if persona regression is disabled",
+    )
     return parser
+
+
+def _parse_bool_env(value: str) -> bool | None:
+    """Parse boolean from environment variable string.
+
+    Args:
+        value: Environment variable value
+
+    Returns:
+        True if true-ish, False if false-ish, None if unset/invalid
+    """
+    value_lower = value.lower().strip()
+    if value_lower in ("false", "0", "no", "off"):
+        return False
+    if value_lower in ("true", "1", "yes", "on"):
+        return True
+    return None
+
+
+def is_persona_regression_enabled() -> bool:
+    """Check if persona regression is enabled via feature flag.
+
+    Checks in order:
+    1. Environment variable FEATURE_PERSONA_REGRESSION_ENABLED (if explicitly set)
+    2. Redis feature flag (via FeatureFlags.is_persona_regression_enabled())
+    3. Default: True
+
+    Returns:
+        True if enabled, False if disabled
+    """
+    # Check env var first - explicit env var takes priority
+    env_val = os.getenv("FEATURE_PERSONA_REGRESSION_ENABLED")
+    if env_val is not None:
+        parsed = _parse_bool_env(env_val)
+        if parsed is not None:
+            return parsed
+        # Invalid env val - fall through to other checks
+
+    # Try FeatureFlags (checks Redis with fallback to default True)
+    try:
+        from src.config.feature_flags import get_feature_flags
+
+        flags = get_feature_flags()
+        return flags.is_persona_regression_enabled()
+    except Exception:
+        # Redis unavailable or other error - default to True (safe)
+        return True
 
 
 def main() -> int:
     """Run the persona regression harness.
 
     Returns:
-        Exit code: 0 if drift score >= threshold, 1 otherwise.
+        Exit code: 0 if drift score >= threshold or disabled skip, 1 otherwise.
+        Exit code 2: Error (file not found, etc.)
     """
     parser = build_parser()
     args = parser.parse_args()
+
+    # Check --disabled flag and feature flag
+    if args.disabled:
+        enabled = is_persona_regression_enabled()
+        if not enabled:
+            print("Persona regression disabled, exiting", file=sys.stderr)
+            return 0  # Safe skip - exit code 0
 
     # Load golden cases
     evaluator = PersonaEvaluator()
@@ -76,14 +146,14 @@ def main() -> int:
         cases = evaluator.load_cases_from_yaml(args.golden_cases)
     except FileNotFoundError as e:
         print(f"ERROR: {e}", file=sys.stderr)
-        return 1
+        return 2
     except ValueError as e:
         print(f"ERROR: Invalid golden cases file: {e}", file=sys.stderr)
-        return 1
+        return 2
 
     if not cases:
         print("ERROR: No valid cases found in golden cases file.", file=sys.stderr)
-        return 1
+        return 2
 
     # Run suite with perfect explicit scores (baseline evaluation)
     # In production, this would call an LLM and evaluate actual responses.
@@ -95,16 +165,17 @@ def main() -> int:
 
     suite_result = evaluator.run_suite(cases, explicit_scores=explicit_scores)
 
-    # Output JSON
+    # Output JSON - determine output path
     json_output = evaluator.to_json(suite_result)
+    output_path = args.output if args.output else DEFAULT_OUTPUT_PATH
 
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        with open(args.output, "w") as f:
+    if output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w") as f:
             f.write(json_output)
             f.write("\n")
         if args.verbose:
-            print(f"Results written to {args.output}", file=sys.stderr)
+            print(f"Results written to {output_path}", file=sys.stderr)
     else:
         print(json_output)
 
