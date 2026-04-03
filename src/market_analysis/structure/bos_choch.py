@@ -181,6 +181,10 @@ class BOSCHoCHClassifier:
         current_low: StructureLevel | None = None
         last_bos_dir: str | None = None
 
+        # Track detected break pairs to avoid duplicates
+        # Key: (current_swing_index, broken_level_pivot_index)
+        detected_breaks: set[tuple[int, int]] = set()
+
         # Get swings in order
         swings = pivot_result.pivots
 
@@ -196,22 +200,26 @@ class BOSCHoCHClassifier:
                     break_result = self._check_bullish_break(current, prev_swings, data)
                     if break_result is not None:
                         event, is_bos = break_result
-                        events.append(event)
-                        if event.event_type == BOSCHoCHType.BULLISH_BOS:
-                            bullish_bos.append(event)
-                            last_bos_dir = "bullish"
-                            # Update structure high
-                            current_high = StructureLevel(
-                                pivot=current,
-                                price=current.price,
-                            )
-                        else:
-                            bullish_choch.append(event)
-                            # CHoCH updates structure in opposite direction
-                            current_low = StructureLevel(
-                                pivot=current,
-                                price=current.price,
-                            )
+                        # Check for duplicate
+                        pair = (current.index, event.broken_level.pivot.index)
+                        if pair not in detected_breaks:
+                            detected_breaks.add(pair)
+                            events.append(event)
+                            if event.event_type == BOSCHoCHType.BULLISH_BOS:
+                                bullish_bos.append(event)
+                                last_bos_dir = "bullish"
+                                # Update structure high
+                                current_high = StructureLevel(
+                                    pivot=current,
+                                    price=current.price,
+                                )
+                            else:
+                                bullish_choch.append(event)
+                                # CHoCH updates structure in opposite direction
+                                current_low = StructureLevel(
+                                    pivot=current,
+                                    price=current.price,
+                                )
 
                 elif current.pivot_type.value == "swing_low":
                     # Check if this breaks a previous swing low (BOS in downtrend)
@@ -219,22 +227,26 @@ class BOSCHoCHClassifier:
                     break_result = self._check_bearish_break(current, prev_swings, data)
                     if break_result is not None:
                         event, is_bos = break_result
-                        events.append(event)
-                        if event.event_type == BOSCHoCHType.BEARISH_BOS:
-                            bearish_bos.append(event)
-                            last_bos_dir = "bearish"
-                            # Update structure low
-                            current_low = StructureLevel(
-                                pivot=current,
-                                price=current.price,
-                            )
-                        else:
-                            bearish_choch.append(event)
-                            # CHoCH updates structure in opposite direction
-                            current_high = StructureLevel(
-                                pivot=current,
-                                price=current.price,
-                            )
+                        # Check for duplicate
+                        pair = (current.index, event.broken_level.pivot.index)
+                        if pair not in detected_breaks:
+                            detected_breaks.add(pair)
+                            events.append(event)
+                            if event.event_type == BOSCHoCHType.BEARISH_BOS:
+                                bearish_bos.append(event)
+                                last_bos_dir = "bearish"
+                                # Update structure low
+                                current_low = StructureLevel(
+                                    pivot=current,
+                                    price=current.price,
+                                )
+                            else:
+                                bearish_choch.append(event)
+                                # CHoCH updates structure in opposite direction
+                                current_high = StructureLevel(
+                                    pivot=current,
+                                    price=current.price,
+                                )
 
         return BOSCHoCHClassificationResult(
             events=events,
@@ -255,48 +267,68 @@ class BOSCHoCHClassifier:
     ) -> tuple[BOSCHoCH, bool] | None:
         """Check if a bullish break (BOS or CHoCH) occurred.
 
+        BOS takes priority over CHoCH - if both are detected, BOS is returned.
+        This ensures the trend direction is preserved when structure breaks.
+
         Returns:
             Tuple of (event, is_bos) or None if no break
         """
-        # Look for broken structure levels
+        # Collect all candidates to prioritize BOS over CHoCH
+        bos_candidates: list[tuple[SwingPivot, float]] = []
+        choch_candidates: list[tuple[SwingPivot, float]] = []
+
         for prev in prev_swings:
             if prev.pivot_type.value == "swing_high":
-                # This is a bullish break of a previous high = BOS
+                # BOS: swing_high breaks a previous swing_high level
                 if self._is_level_broken(swing, prev, data, is_bullish=True):
                     strength = self._calculate_strength(
                         swing.price, prev.price, is_bullish=True
                     )
                     if strength >= self.min_strength_ratio:
-                        event = BOSCHoCH(
-                            event_type=BOSCHoCHType.BULLISH_BOS,
-                            broken_level=StructureLevel(pivot=prev, price=prev.price),
-                            break_index=swing.index,
-                            break_price=swing.price,
-                            timestamp=swing.timestamp,
-                            confirmation_index=swing.index + self.confirmation_bars,
-                            is_bos=True,
-                            strength=strength,
-                        )
-                        return (event, True)
+                        bos_candidates.append((prev, strength))
 
             elif prev.pivot_type.value == "swing_low":
-                # This is a bullish break of a previous low = CHoCH
+                # CHoCH: swing_high breaks a previous swing_low level
                 if self._is_level_broken(swing, prev, data, is_bullish=True):
                     strength = self._calculate_strength(
                         swing.price, prev.price, is_bullish=True
                     )
                     if strength >= self.min_strength_ratio:
-                        event = BOSCHoCH(
-                            event_type=BOSCHoCHType.BULLISH_CHOCH,
-                            broken_level=StructureLevel(pivot=prev, price=prev.price),
-                            break_index=swing.index,
-                            break_price=swing.price,
-                            timestamp=swing.timestamp,
-                            confirmation_index=swing.index + self.confirmation_bars,
-                            is_bos=False,
-                            strength=strength,
-                        )
-                        return (event, False)
+                        choch_candidates.append((prev, strength))
+
+        # Return most recent BOS candidate if available (BOS has priority)
+        if bos_candidates:
+            # bos_candidates are already in chronological order (prev_swings order)
+            # The last one added is the most recent
+            most_recent = bos_candidates[-1]
+            prev, strength = most_recent
+            event = BOSCHoCH(
+                event_type=BOSCHoCHType.BULLISH_BOS,
+                broken_level=StructureLevel(pivot=prev, price=prev.price),
+                break_index=swing.index,
+                break_price=swing.price,
+                timestamp=swing.timestamp,
+                confirmation_index=swing.index + self.confirmation_bars,
+                is_bos=True,
+                strength=strength,
+            )
+            return (event, True)
+
+        # Return most recent CHoCH candidate
+        if choch_candidates:
+            most_recent = choch_candidates[-1]
+            prev, strength = most_recent
+            event = BOSCHoCH(
+                event_type=BOSCHoCHType.BULLISH_CHOCH,
+                broken_level=StructureLevel(pivot=prev, price=prev.price),
+                break_index=swing.index,
+                break_price=swing.price,
+                timestamp=swing.timestamp,
+                confirmation_index=swing.index + self.confirmation_bars,
+                is_bos=False,
+                strength=strength,
+            )
+            return (event, False)
 
         return None
 
@@ -308,47 +340,141 @@ class BOSCHoCHClassifier:
     ) -> tuple[BOSCHoCH, bool] | None:
         """Check if a bearish break (BOS or CHoCH) occurred.
 
+        BOS takes priority over CHoCH - if both are detected, BOS is returned.
+        This ensures the trend direction is preserved when structure breaks.
+
         Returns:
             Tuple of (event, is_bos) or None if no break
         """
+        # Collect all candidates to prioritize BOS over CHoCH
+        bos_candidates: list[tuple[SwingPivot, float]] = []
+        choch_candidates: list[tuple[SwingPivot, float]] = []
+
         for prev in prev_swings:
             if prev.pivot_type.value == "swing_low":
-                # This is a bearish break of a previous low = BOS
+                # BOS: swing_low breaks a previous swing_low level
                 if self._is_level_broken(swing, prev, data, is_bullish=False):
                     strength = self._calculate_strength(
                         swing.price, prev.price, is_bullish=False
                     )
                     if strength >= self.min_strength_ratio:
-                        event = BOSCHoCH(
-                            event_type=BOSCHoCHType.BEARISH_BOS,
-                            broken_level=StructureLevel(pivot=prev, price=prev.price),
-                            break_index=swing.index,
-                            break_price=swing.price,
-                            timestamp=swing.timestamp,
-                            confirmation_index=swing.index + self.confirmation_bars,
-                            is_bos=True,
-                            strength=strength,
-                        )
-                        return (event, True)
+                        bos_candidates.append((prev, strength))
 
             elif prev.pivot_type.value == "swing_high":
-                # This is a bearish break of a previous high = CHoCH
+                # CHoCH: swing_low breaks a previous swing_high level
                 if self._is_level_broken(swing, prev, data, is_bullish=False):
                     strength = self._calculate_strength(
                         swing.price, prev.price, is_bullish=False
                     )
                     if strength >= self.min_strength_ratio:
-                        event = BOSCHoCH(
-                            event_type=BOSCHoCHType.BEARISH_CHOCH,
-                            broken_level=StructureLevel(pivot=prev, price=prev.price),
-                            break_index=swing.index,
-                            break_price=swing.price,
-                            timestamp=swing.timestamp,
-                            confirmation_index=swing.index + self.confirmation_bars,
-                            is_bos=False,
-                            strength=strength,
-                        )
-                        return (event, False)
+                        choch_candidates.append((prev, strength))
+
+        # Return most recent BOS candidate if available (BOS has priority)
+        if bos_candidates:
+            most_recent = bos_candidates[-1]
+            prev, strength = most_recent
+            event = BOSCHoCH(
+                event_type=BOSCHoCHType.BEARISH_BOS,
+                broken_level=StructureLevel(pivot=prev, price=prev.price),
+                break_index=swing.index,
+                break_price=swing.price,
+                timestamp=swing.timestamp,
+                confirmation_index=swing.index + self.confirmation_bars,
+                is_bos=True,
+                strength=strength,
+            )
+            return (event, True)
+
+        # Return most recent CHoCH candidate
+        if choch_candidates:
+            most_recent = choch_candidates[-1]
+            prev, strength = most_recent
+            event = BOSCHoCH(
+                event_type=BOSCHoCHType.BEARISH_CHOCH,
+                broken_level=StructureLevel(pivot=prev, price=prev.price),
+                break_index=swing.index,
+                break_price=swing.price,
+                timestamp=swing.timestamp,
+                confirmation_index=swing.index + self.confirmation_bars,
+                is_bos=False,
+                strength=strength,
+            )
+            return (event, False)
+
+        return None
+
+    def _check_bearish_break(
+        self,
+        swing: SwingPivot,
+        prev_swings: list[SwingPivot],
+        data: list[OHLCVData],
+    ) -> tuple[BOSCHoCH, bool] | None:
+        """Check if a bearish break (BOS or CHoCH) occurred.
+
+        BOS (Break of Structure) takes priority over CHoCH.
+        BOS = bearish break of previous swing_low
+        CHoCH = bearish break of previous swing_high
+
+        Returns:
+            Tuple of (event, is_bos) or None if no break
+        """
+        # Find the most recent swing_low and swing_high in prev_swings
+        most_recent_swing_low: SwingPivot | None = None
+        most_recent_swing_high: SwingPivot | None = None
+
+        for prev in prev_swings:
+            if prev.pivot_type.value == "swing_low":
+                most_recent_swing_low = prev
+            elif prev.pivot_type.value == "swing_high":
+                most_recent_swing_high = prev
+
+        # Check for bearish BOS first (breaks most recent swing_low)
+        if most_recent_swing_low is not None:
+            if self._is_level_broken(
+                swing, most_recent_swing_low, data, is_bullish=False
+            ):
+                strength = self._calculate_strength(
+                    swing.price, most_recent_swing_low.price, is_bullish=False
+                )
+                if strength >= self.min_strength_ratio:
+                    event = BOSCHoCH(
+                        event_type=BOSCHoCHType.BEARISH_BOS,
+                        broken_level=StructureLevel(
+                            pivot=most_recent_swing_low,
+                            price=most_recent_swing_low.price,
+                        ),
+                        break_index=swing.index,
+                        break_price=swing.price,
+                        timestamp=swing.timestamp,
+                        confirmation_index=swing.index + self.confirmation_bars,
+                        is_bos=True,
+                        strength=strength,
+                    )
+                    return (event, True)
+
+        # Check for bearish CHoCH (breaks most recent swing_high)
+        if most_recent_swing_high is not None:
+            if self._is_level_broken(
+                swing, most_recent_swing_high, data, is_bullish=False
+            ):
+                strength = self._calculate_strength(
+                    swing.price, most_recent_swing_high.price, is_bullish=False
+                )
+                if strength >= self.min_strength_ratio:
+                    event = BOSCHoCH(
+                        event_type=BOSCHoCHType.BEARISH_CHOCH,
+                        broken_level=StructureLevel(
+                            pivot=most_recent_swing_high,
+                            price=most_recent_swing_high.price,
+                        ),
+                        break_index=swing.index,
+                        break_price=swing.price,
+                        timestamp=swing.timestamp,
+                        confirmation_index=swing.index + self.confirmation_bars,
+                        is_bos=False,
+                        strength=strength,
+                    )
+                    return (event, False)
 
         return None
 
@@ -361,6 +487,14 @@ class BOSCHoCHClassifier:
     ) -> bool:
         """Check if a structure level was broken by a swing.
 
+        A level is considered broken if:
+        1. The swing candle's price (high for swing_high, low for swing_low)
+           is beyond the level price, AND
+        2. The swing candle's close is also beyond the level price
+
+        This dual confirmation prevents false breaks where only the wick
+        penetrates the level.
+
         Args:
             swing: The swing that potentially breaks the level
             level: The structure level (swing high or low)
@@ -368,24 +502,37 @@ class BOSCHoCHClassifier:
             is_bullish: True for bullish break, False for bearish
 
         Returns:
-            True if level was broken
+            True if level was broken with candle close confirmation
         """
-        # NOTE: Type checking is done by caller (_check_bullish_break or
-        # _check_bearish_break). This method only checks price relationship.
-        #
-        # For bullish break (BOS: break of resistance high):
-        #   - A swing_high breaks above a previous swing_high level
-        #   - Price must be ABOVE the level
-        # For bearish break (BOS: break of support low):
-        #   - A swing_low breaks below a previous swing_low level
-        #   - Price must be BELOW the level
+        # Validate indices are within bounds
+        if level.index < 0 or level.index >= len(data):
+            return False
+        if swing.index < level.index or swing.index >= len(data):
+            return False
 
+        # Get the level price to break
+        level_price = level.price
+
+        # Get the swing candle
+        swing_candle = data[swing.index]
+
+        # Check if swing candle price and close are beyond the level
         if is_bullish:
-            # Bullish break: swing_high price > previous swing_high level price
-            return swing.price > level.price
+            # For bullish break: swing high and close must be ABOVE the level
+            if (
+                swing_candle.high_price > level_price
+                and swing_candle.close_price > level_price
+            ):
+                return True
         else:
-            # Bearish break: swing_low price < previous swing_low level price
-            return swing.price < level.price
+            # For bearish break: swing low and close must be BELOW the level
+            if (
+                swing_candle.low_price < level_price
+                and swing_candle.close_price < level_price
+            ):
+                return True
+
+        return False
 
     def _calculate_strength(
         self,
