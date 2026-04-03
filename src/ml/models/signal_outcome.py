@@ -89,6 +89,10 @@ class SignalOutcome:
         execution_mode: Mode of execution (e.g., "demo", "testnet", "production")
         execution_source: Source component that executed the trade (e.g., "bybit_demo_connector", "paper_trading")
         venue_metadata: Additional venue-specific metadata
+
+        # ST-PIPELINE-Q2: Signal-to-outcome correlation fields
+        confidence_score: Signal confidence at trade open time (0.0-1.0)
+        signal_type: Type of signal that triggered this trade (e.g., "OPEN", "CLOSE")
     """
 
     outcome_id: UUID = field(default_factory=uuid4)
@@ -125,6 +129,10 @@ class SignalOutcome:
     execution_mode: str = ""
     execution_source: str = ""
     venue_metadata: dict[str, Any] = field(default_factory=dict)
+
+    # ST-PIPELINE-Q2: Signal-to-outcome correlation fields
+    confidence_score: float = 0.0
+    signal_type: str = ""
 
     def __post_init__(self) -> None:
         """Validate and normalize values after initialization."""
@@ -341,6 +349,9 @@ class SignalOutcome:
             "execution_mode": self.execution_mode,
             "execution_source": self.execution_source,
             "venue_metadata": self.venue_metadata,
+            # ST-PIPELINE-Q2: Signal-to-outcome correlation fields
+            "confidence_score": self.confidence_score,
+            "signal_type": self.signal_type,
         }
 
     @classmethod
@@ -416,6 +427,9 @@ class SignalOutcome:
             execution_mode=data.get("execution_mode", ""),
             execution_source=data.get("execution_source", ""),
             venue_metadata=data.get("venue_metadata", {}),
+            # ST-PIPELINE-Q2: Signal-to-outcome correlation fields
+            confidence_score=float(data.get("confidence_score", 0.0)),
+            signal_type=data.get("signal_type", ""),
         )
 
     def to_db_dict(self) -> dict[str, Any]:
@@ -458,6 +472,9 @@ class SignalOutcome:
             "execution_mode": self.execution_mode,
             "execution_source": self.execution_source,
             "venue_metadata": self.venue_metadata,
+            # ST-PIPELINE-Q2: Signal-to-outcome correlation fields
+            "confidence_score": self.confidence_score,
+            "signal_type": self.signal_type,
         }
 
     def to_notification_dict(self) -> dict[str, Any]:
@@ -491,6 +508,9 @@ class SignalOutcome:
             "execution_venue": self.execution_venue,
             "execution_mode": self.execution_mode,
             "execution_source": self.execution_source,
+            # ST-PIPELINE-Q2: Signal-to-outcome correlation fields
+            "confidence_score": self.confidence_score,
+            "signal_type": self.signal_type,
         }
 
 
