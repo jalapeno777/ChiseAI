@@ -1033,6 +1033,7 @@ class PaperTradingOrchestrator:
                 await self._record_trade(position, signal, correlation_id)
 
                 # Q2: Emit SignalOutcome at OPEN - track trade opening with PENDING status
+                # ST-PIPELINE-Q2: Wire confidence_score and signal_type as top-level fields
                 open_outcome = SignalOutcome(
                     signal_id=signal.signal_id if signal.signal_id else None,
                     order_id=filled_order.order_id,
@@ -1054,15 +1055,19 @@ class PaperTradingOrchestrator:
                     ),
                     position_size=filled_order.filled_quantity,
                     status=SignalOutcomeStatus.PENDING,
+                    # ST-PIPELINE-Q2: Signal-to-outcome correlation fields
+                    confidence_score=signal.confidence,
+                    signal_type="OPEN",
                     metadata={
                         **self._connector_provenance,
-                        "signal_type": "OPEN",
                         "correlation_id": correlation_id,
                     },
                 )
                 logger.debug(
                     f"SignalOutcome emitted at OPEN: outcome_id={open_outcome.outcome_id} "
                     f"symbol={open_outcome.symbol} status={open_outcome.status.value} "
+                    f"confidence={open_outcome.confidence_score} "
+                    f"signal_type={open_outcome.signal_type} "
                     f"(correlation_id={correlation_id})"
                 )
 
