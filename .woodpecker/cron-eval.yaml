@@ -249,21 +249,24 @@ steps:
         set -euo pipefail
         mkdir -p _bmad-output/ci
         mkdir -p _bmad-output/persona
+
+        # Run harness - output TIER:line to stdout
         set +e
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml redis requests
-          
-          # Check feature flag (respects --disabled flag)
           python3 scripts/eval/run_persona_harness.py \
             --output _bmad-output/persona/persona-regression-$(date +%Y-%m-%d).json \
-            --disabled \
-            || true  # Don't fail pipeline if disabled
+            --disabled
         ) > _bmad-output/ci/persona-regression-weekly.log 2>&1
         code=$?
         cat _bmad-output/ci/persona-regression-weekly.log
-        echo "$code" > _bmad-output/ci/persona-regression-weekly.status
-        exit 0
+
+        # Extract tier from TIER: line in log
+        tier=$(grep "^TIER:" _bmad-output/ci/persona-regression-weekly.log | sed 's/TIER://' || echo "ERROR")
+        echo "$tier" > _bmad-output/ci/persona-regression-weekly.status
+        echo "Persona tier: $tier (code: $code)"
+        exit 0  # Don't fail pipeline on WARN/FAIL
 
   # Fallback: auto-detect cycle from commit message pattern
   kpi-scheduler-auto:

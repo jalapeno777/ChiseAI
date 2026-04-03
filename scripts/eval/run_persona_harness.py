@@ -28,13 +28,9 @@ if str(_PROJECT_ROOT) not in sys.path:
 from src.persona.evaluator import MODE_DIMENSIONS, PersonaEvaluator
 
 DEFAULT_GOLDEN_PATH = _PROJECT_ROOT / "tests" / "persona" / "golden_cases.yaml"
-DEFAULT_OUTPUT_PATH = (
-    _PROJECT_ROOT
-    / "_bmad-output"
-    / "ci"
-    / f"persona-regression-{date.today().isoformat()}.json"
-)
+DEFAULT_OUTPUT_PATH = "_bmad-output/persona/persona-regression-{date}.json"
 PASS_THRESHOLD = 12  # minimum drift score for CI pass
+WARN_THRESHOLD = 10  # Score < 10 = FAIL, 10-11 = WARN, >= 12 = PASS
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -53,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         default=None,
-        help="Write JSON results to this file (default: _bmad-output/ci/persona-regression-YYYY-MM-DD.json for scheduled runs)",
+        help="Write JSON results to this file (default: _bmad-output/persona/persona-regression-YYYY-MM-DD.json for scheduled runs)",
     )
     parser.add_argument(
         "--verbose",
@@ -66,6 +62,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=PASS_THRESHOLD,
         help=f"Minimum drift score for pass (default: {PASS_THRESHOLD})",
+    )
+    parser.add_argument(
+        "--warn-threshold",
+        type=int,
+        default=WARN_THRESHOLD,
+        help=f"Warn threshold for drift score (default: {WARN_THRESHOLD})",
     )
     parser.add_argument(
         "--disabled",
@@ -123,6 +125,19 @@ def is_persona_regression_enabled() -> bool:
         return True
 
 
+def _classify_tier(score: int, pass_threshold: int, warn_threshold: int) -> str:
+    """Classify result into a tier string.
+
+    Returns: PASS if score >= pass_threshold, WARN if score >= warn_threshold, FAIL otherwise.
+    """
+    if score >= pass_threshold:
+        return "PASS"
+    elif score >= warn_threshold:
+        return "WARN"
+    else:
+        return "FAIL"
+
+
 def main() -> int:
     """Run the persona regression harness.
 
@@ -166,8 +181,20 @@ def main() -> int:
     suite_result = evaluator.run_suite(cases, explicit_scores=explicit_scores)
 
     # Output JSON - determine output path
+    output_path = (
+        args.output
+        if args.output
+        else Path(DEFAULT_OUTPUT_PATH.format(date=date.today().isoformat()))
+    )
+
+    # Add CI tier metadata to result
+    suite_result["ci_tier"] = _classify_tier(
+        suite_result["overall_drift_score"], args.threshold, args.warn_threshold
+    )
+    suite_result["pass_threshold"] = args.threshold
+    suite_result["warn_threshold"] = args.warn_threshold
+
     json_output = evaluator.to_json(suite_result)
-    output_path = args.output if args.output else DEFAULT_OUTPUT_PATH
 
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -206,10 +233,19 @@ def main() -> int:
                 for reason in cr["failure_reasons"]:
                     print(f"        - {reason}", file=sys.stderr)
 
+    # Emit TIER line to stdout
+    tier = _classify_tier(
+        suite_result["overall_drift_score"], args.threshold, args.warn_threshold
+    )
+    print(f"TIER:{tier}")
+
     # Exit code
     if suite_result["overall_drift_score"] >= args.threshold:
-        return 0
-    return 1
+        return 0  # PASS
+    elif suite_result["overall_drift_score"] >= args.warn_threshold:
+        return 0  # WARN (still exit 0, but tier is WARN)
+    else:
+        return 1  # FAIL
 
 
 if __name__ == "__main__":

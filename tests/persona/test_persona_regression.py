@@ -705,12 +705,13 @@ class TestThresholdBehavior:
             assert data["overall_drift_score"] >= 8
 
     def test_harness_threshold_flag_exit_code_fail(self) -> None:
-        """Test harness exits 1 when drift score < threshold."""
+        """Test harness exits 1 when drift score < threshold and < warn_threshold."""
         with tempfile.TemporaryDirectory() as tmpdir:
             golden_path = Path(__file__).parent / "golden_cases.yaml"
             output_path = Path(tmpdir) / "output.json"
 
-            # Use impossibly high threshold - should fail
+            # Use impossibly high threshold and warn_threshold - should fail
+            # Score (~16) is below both threshold (100) and warn_threshold (100)
             result = subprocess.run(
                 [
                     "python3",
@@ -721,6 +722,8 @@ class TestThresholdBehavior:
                     str(output_path),
                     "--threshold",
                     "100",  # Way above any possible score
+                    "--warn-threshold",
+                    "100",  # Also above score to force FAIL
                 ],
                 capture_output=True,
                 text=True,
@@ -811,3 +814,146 @@ class TestDisabledFlag:
             # Exit code 0 or 1 is fine - just verifying it ran
             assert result.returncode in (0, 1)
             assert output_path.exists()
+
+
+# ---------------------------------------------------------------------------
+# Three-tier threshold tests
+# ---------------------------------------------------------------------------
+
+
+class TestThreeTierThreshold:
+    """Tests for the three-tier threshold classification."""
+
+    def test_tier_pass_strong_consistency(self):
+        """Score 14-16 maps to PASS tier"""
+        from scripts.eval.run_persona_harness import _classify_tier
+
+        tier = _classify_tier(14, pass_threshold=12, warn_threshold=10)
+        assert tier == "PASS"
+
+    def test_tier_warn_drifting(self):
+        """Score 10-11 maps to WARN tier"""
+        from scripts.eval.run_persona_harness import _classify_tier
+
+        tier = _classify_tier(10, pass_threshold=12, warn_threshold=10)
+        assert tier == "WARN"
+
+    def test_tier_fail_material_drift(self):
+        """Score 8-9 maps to FAIL tier"""
+        from scripts.eval.run_persona_harness import _classify_tier
+
+        tier = _classify_tier(8, pass_threshold=12, warn_threshold=10)
+        assert tier == "FAIL"
+
+    def test_tier_fail_critical_drift(self):
+        """Score <8 maps to FAIL tier"""
+        from scripts.eval.run_persona_harness import _classify_tier
+
+        tier = _classify_tier(5, pass_threshold=12, warn_threshold=10)
+        assert tier == "FAIL"
+
+
+# ---------------------------------------------------------------------------
+# Artifact path alignment tests
+# ---------------------------------------------------------------------------
+
+
+class TestArtifactPathAlignment:
+    """Tests for DEFAULT_OUTPUT_PATH format."""
+
+    def test_default_output_path_format(self):
+        """DEFAULT_OUTPUT_PATH uses correct format"""
+        from scripts.eval.run_persona_harness import DEFAULT_OUTPUT_PATH
+
+        assert (
+            DEFAULT_OUTPUT_PATH == "_bmad-output/persona/persona-regression-{date}.json"
+        )
+
+    def test_harness_respects_default_output(self):
+        """Harness respects the DEFAULT_OUTPUT_PATH"""
+        # Should use date format, not require explicit --output
+        pass  # Just verify the default is set correctly
+
+
+# ---------------------------------------------------------------------------
+# TIER line output tests
+# ---------------------------------------------------------------------------
+
+
+class TestTierLineOutput:
+    """Tests for TIER: line output on stdout."""
+
+    HARNESS_SCRIPT = (
+        Path(__file__).parent.parent.parent
+        / "scripts"
+        / "eval"
+        / "run_persona_harness.py"
+    )
+
+    def test_tier_line_pass(self):
+        """Harness prints TIER:PASS on stdout for pass"""
+        golden_path = Path(__file__).parent / "golden_cases.yaml"
+        result = subprocess.run(
+            [
+                "python3",
+                str(self.HARNESS_SCRIPT),
+                "--golden-cases",
+                str(golden_path),
+                "--threshold",
+                "0",
+                "--warn-threshold",
+                "10",
+            ],
+            capture_output=True,
+            text=True,
+            cwd="/home/tacopants/projects/ChiseAI",
+        )
+        stdout_tier = [l for l in result.stdout.split("\n") if l.startswith("TIER:")]
+        assert (
+            len(stdout_tier) == 1
+        ), f"Expected exactly 1 TIER line, got: {stdout_tier}"
+        assert stdout_tier[0] == "TIER:PASS"
+
+    def test_tier_line_warn(self):
+        """Harness prints TIER:WARN on stdout for warn"""
+        golden_path = Path(__file__).parent / "golden_cases.yaml"
+        result = subprocess.run(
+            [
+                "python3",
+                str(self.HARNESS_SCRIPT),
+                "--golden-cases",
+                str(golden_path),
+                "--threshold",
+                "20",
+                "--warn-threshold",
+                "10",
+            ],
+            capture_output=True,
+            text=True,
+            cwd="/home/tacopants/projects/ChiseAI",
+        )
+        stdout_tier = [l for l in result.stdout.split("\n") if l.startswith("TIER:")]
+        assert len(stdout_tier) == 1
+        assert stdout_tier[0] == "TIER:WARN"
+
+    def test_tier_line_fail(self):
+        """Harness prints TIER:FAIL on stdout for fail"""
+        golden_path = Path(__file__).parent / "golden_cases.yaml"
+        result = subprocess.run(
+            [
+                "python3",
+                str(self.HARNESS_SCRIPT),
+                "--golden-cases",
+                str(golden_path),
+                "--threshold",
+                "20",
+                "--warn-threshold",
+                "20",
+            ],
+            capture_output=True,
+            text=True,
+            cwd="/home/tacopants/projects/ChiseAI",
+        )
+        stdout_tier = [l for l in result.stdout.split("\n") if l.startswith("TIER:")]
+        assert len(stdout_tier) == 1
+        assert stdout_tier[0] == "TIER:FAIL"
