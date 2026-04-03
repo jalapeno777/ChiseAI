@@ -49,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         default=None,
-        help="Write JSON results to this file (default: _bmad-output/ci/persona-regression-YYYY-MM-DD.json for scheduled runs)",
+        help="Write JSON results to this file (default: _bmad-output/persona/persona-regression-YYYY-MM-DD.json for scheduled runs)",
     )
     parser.add_argument(
         "--verbose",
