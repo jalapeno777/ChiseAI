@@ -2,6 +2,8 @@
 
 description: Audits infrastructure, workflow friction, repeated mistakes, and optimization opportunities
 
+model: "zai-coding-plan/glm-5.0-thinking"
+
 mode: subagent
 
 temperature: 0.1
@@ -165,4 +167,6 @@ Rules:
 \- Avoid generic advice. Tie recommendations to the actual repo and signals.
 
 \- Recommend prevention mechanisms, not just one-off fixes.
+
+
 
