@@ -266,12 +266,12 @@ class TestNotifySelfAssessmentNoiseReduction:
         n = _make_notifier()
         n._is_enabled = lambda: True  # type: ignore[method-assign]
         n._is_duplicate = lambda eid: False  # type: ignore[method-assign]
-        n._send_with_retry = AsyncMock(return_value=(True, "m1"))  # type: ignore[method-assign]
+        n._send_embed_with_retry = AsyncMock(return_value=(True, "m1"))  # type: ignore[method-assign]
 
         artifact = self._make_artifact(score=0.85)
         result = await n.notify_self_assessment(artifact, previous_score=None)
         assert result is True
-        n._send_with_retry.assert_called_once()
+        n._send_embed_with_retry.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_unchanged_score_suppressed(self) -> None:
@@ -297,12 +297,12 @@ class TestNotifySelfAssessmentNoiseReduction:
         n = _make_notifier()
         n._is_enabled = lambda: True  # type: ignore[method-assign]
         n._is_duplicate = lambda eid: False  # type: ignore[method-assign]
-        n._send_with_retry = AsyncMock(return_value=(True, "m2"))  # type: ignore[method-assign]
+        n._send_embed_with_retry = AsyncMock(return_value=(True, "m2"))  # type: ignore[method-assign]
 
         artifact = self._make_artifact(score=0.90)
         result = await n.notify_self_assessment(artifact, previous_score=0.85)
         assert result is True
-        n._send_with_retry.assert_called_once()
+        n._send_embed_with_retry.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_decline_triggers_notification(self) -> None:
@@ -310,12 +310,12 @@ class TestNotifySelfAssessmentNoiseReduction:
         n = _make_notifier()
         n._is_enabled = lambda: True  # type: ignore[method-assign]
         n._is_duplicate = lambda eid: False  # type: ignore[method-assign]
-        n._send_with_retry = AsyncMock(return_value=(True, "m3"))  # type: ignore[method-assign]
+        n._send_embed_with_retry = AsyncMock(return_value=(True, "m3"))  # type: ignore[method-assign]
 
         artifact = self._make_artifact(score=0.70)
         result = await n.notify_self_assessment(artifact, previous_score=0.85)
         assert result is True
-        n._send_with_retry.assert_called_once()
+        n._send_embed_with_retry.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_duplicate_still_suppressed_after_score_change(self) -> None:
