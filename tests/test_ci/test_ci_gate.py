@@ -204,3 +204,72 @@ def test_ac3_ci_gate_allows_fallback_when_not_in_ci(
     result = ci_gate.main()
 
     assert result == 0
+
+
+class TestReadStatusTierCompatibility:
+    """Tests for _read_status() tier-string compatibility."""
+
+    def test_read_status_numeric_zero(self, tmp_path):
+        """Legacy: numeric 0 is read as 0."""
+        f = tmp_path / "pass.status"
+        f.write_text("0")
+        assert ci_gate._read_status(f) == 0
+
+    def test_read_status_numeric_one(self, tmp_path):
+        """Legacy: numeric 1 is read as 1."""
+        f = tmp_path / "fail.status"
+        f.write_text("1")
+        assert ci_gate._read_status(f) == 1
+
+    def test_read_status_pass_tier(self, tmp_path):
+        """PASS tier maps to 0 (success)."""
+        f = tmp_path / "pass.status"
+        f.write_text("PASS")
+        assert ci_gate._read_status(f) == 0
+
+    def test_read_status_warn_tier(self, tmp_path):
+        """WARN tier maps to 0 (non-blocking warning, still success for gate)."""
+        f = tmp_path / "warn.status"
+        f.write_text("WARN")
+        assert ci_gate._read_status(f) == 0
+
+    def test_read_status_skip_tier(self, tmp_path):
+        """SKIP tier maps to 0 (non-blocking skip, still success for gate)."""
+        f = tmp_path / "skip.status"
+        f.write_text("SKIP")
+        assert ci_gate._read_status(f) == 0
+
+    def test_read_status_fail_tier(self, tmp_path):
+        """FAIL tier maps to 1 (gate failure)."""
+        f = tmp_path / "fail.status"
+        f.write_text("FAIL")
+        assert ci_gate._read_status(f) == 1
+
+    def test_read_status_error_tier(self, tmp_path):
+        """ERROR tier maps to 1 (gate failure)."""
+        f = tmp_path / "error.status"
+        f.write_text("ERROR")
+        assert ci_gate._read_status(f) == 1
+
+    def test_read_status_whitespace(self, tmp_path):
+        """Tier string with whitespace is stripped."""
+        f = tmp_path / "whitespace.status"
+        f.write_text("  PASS  \n")
+        assert ci_gate._read_status(f) == 0
+
+    def test_read_status_unknown_string(self, tmp_path):
+        """Unknown non-numeric string returns 99 (failure sentinel)."""
+        f = tmp_path / "unknown.status"
+        f.write_text("UNKNOWN")
+        assert ci_gate._read_status(f) == 99
+
+    def test_read_status_missing_file(self, tmp_path):
+        """Missing file returns 99 via exception path."""
+        f = tmp_path / "missing.status"
+        assert ci_gate._read_status(f) == 99
+
+    def test_read_status_empty_file(self, tmp_path):
+        """Empty file returns 99 via exception path."""
+        f = tmp_path / "empty.status"
+        f.write_text("")
+        assert ci_gate._read_status(f) == 99

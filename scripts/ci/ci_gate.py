@@ -74,8 +74,27 @@ CRON_REQUIRED: list[str] = []
 
 
 def _read_status(path: Path) -> int:
+    """Read and parse a .status file, supporting both numeric and tier-string formats.
+
+    Numeric values: 0 = pass, 1-98 = fail, 99 = unreadable/missing
+    Tier strings:  PASS/WARN/SKIP = 0 (success), FAIL/ERROR = 1 (failure)
+    Unknown strings: treated as 99 (failure sentinel)
+
+    Returns:
+        Exit code as integer suitable for ci-gate logic.
+    """
+    TIER_MAP: dict[str, int] = {
+        "PASS": 0,
+        "WARN": 0,  # non-blocking warning - still success for gate
+        "SKIP": 0,  # non-blocking skip - still success for gate
+        "FAIL": 1,  # gate failure
+        "ERROR": 1,  # gate failure
+    }
     try:
-        return int(path.read_text(encoding="utf-8").strip())
+        value = path.read_text(encoding="utf-8").strip()
+        if value in TIER_MAP:
+            return TIER_MAP[value]
+        return int(value)
     except Exception:  # noqa: BLE001
         return 99
 
