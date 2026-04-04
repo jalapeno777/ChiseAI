@@ -348,7 +348,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260319-001
+- id: LESSON-20260319-evidence-validation-hardening
 - context: SWARM-HARDEN-001 evidence-validation hardening
 - trigger: Workers claimed test results for nonexistent files (phantom completion claims)
 - actionable_rule: Use evidence_validator.py with machine-checkable proof (git show --name-only, git branch --contains) before accepting any completion claim
@@ -364,7 +364,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260319-002
+- id: LESSON-20260319-ci-step-naming-accuracy
 - context: SWARM-HARDEN-001 CI pipeline naming
 - trigger: CI step named 'evidence-validation' only checked file existence, misleading name
 - actionable_rule: CI step names must match actual intent; rename misleading steps (e.g., 'evidence-validation' -> 'file-existence-check' when only checking file presence)
@@ -379,7 +379,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260319-003
+- id: LESSON-20260319-atomic-lease-operations
 - context: SWARM-HARDEN-001 lease management
 - trigger: Non-atomic lease renewal allowed concurrent lease holders (TOCTOU race condition)
 - actionable_rule: Use Lua atomic EVAL for lease operations; never check-then-set for distributed locks
@@ -394,7 +394,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260319-004
+- id: LESSON-20260319-fresh-sessions-per-scope
 - context: SWARM-HARDEN-001 session management
 - trigger: Long-running Jarvis sessions accumulate context debt across scope transitions
 - actionable_rule: Start fresh sessions per scope transition; close old session before starting new scope work
@@ -410,7 +410,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260319-005
+- id: LESSON-20260319-prettier-ignore-complex-yaml
 - context: SWARM-HARDEN-001 formatter issues
 - trigger: Prettier SyntaxError on complex YAML (bmm-workflow-status.yaml)
 - actionable_rule: Add complex YAML files to .prettierignore; use yamllint instead of prettier for YAML validation
@@ -426,7 +426,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260319-006
+- id: LESSON-20260319-critic-review-actual-changes
 - context: SWARM-HARDEN-001 critic review quality
 - trigger: Initial critic reviews found issues in nonexistent files rather than actual changed files
 - actionable_rule: Critic must review actual changed files from the diff, not assumed files; verify file existence before review
@@ -440,7 +440,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260320-001
+- id: LESSON-20260320-truth-check-before-completion
 - context: Critic compliance audit revealed contradictory completion claims
 - trigger: Workers claiming completion without deterministic verification
 - actionable_rule: Always resolve contradictory completion claims with deterministic read-only truth checks (git branch --contains, git show --name-only) before closure
@@ -455,7 +455,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260320-002
+- id: LESSON-20260320-verify-local-main-matches-origin
 - context: Session close claimed release hygiene complete without verification
 - trigger: Declaring session complete without verifying local main matches origin
 - actionable_rule: Always verify local main equals origin main (git fetch origin --prune && git rev-parse main == git rev-parse origin/main) before declaring release hygiene complete
@@ -469,7 +469,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260322-001
+- id: LESSON-20260322-git-rebase-quit-before-handoff
 - context: SAFETY-CI-gate-hardening-2 session close - prior agent left mid-rebase state on feature branch
 - trigger: Feature branch showed "currently editing a commit while rebasing" state when new agent tried to work on it
 - actionable_rule: Agents must always run `git rebase --quit` to complete or abort any in-progress rebases before ending sessions or handing off work
@@ -485,7 +485,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-001
+- id: LESSON-20260323-ci-crossref-dockerfile-wiring
 - context: LAUNCH-TRAINING-001 CI optimization - prebuilt Docker images existed but were never wired into ci.yaml
 - trigger: CI steps using raw python:3.11 with pip install when Dockerfile.ci-risk-invariants and Dockerfile.ci-brain-regression already existed
 - actionable_rule: When auditing CI slowness, always cross-reference ci.yaml image references against available Dockerfiles in infrastructure/docker/. Missing wiring is a common cause of slow CI.
@@ -500,7 +500,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-002
+- id: LESSON-20260323-verify-source-before-test-write
 - context: LAUNCH-TRAINING-001 test rewrite for ST-LAUNCH-021 - tests written against spec/documentation rather than actual implementation
 - trigger: Worker rewrote 26 tests claiming to match actual script but still referenced wrong method names (validate_safety vs _validate_sla_requirements)
 - actionable_rule: Always read the actual source file before writing tests. Never rely on documentation/spec for method names. Verify each assertion against the actual implementation.
@@ -515,7 +515,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-003
+- id: LESSON-20260323-no-swallow-pip-install-failures
 - context: LAUNCH-TRAINING-001 brain-eval CI failure due to missing src/__init__.py
 - trigger: pip install -e . silently failed (swallowed by || true) causing ModuleNotFoundError
 - actionable_rule: Never use || true to swallow pip install failures in CI. If pip install -e . is needed, it must succeed or the step must fail visibly.
@@ -530,7 +530,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-004
+- id: LESSON-20260323-performance-gate-image-verification
 - context: PR 592 CI recovery - performance-gate image existed only after a manual host-side build
 - trigger: chiseai-ci-performance-gate:py311-20260322 pull denied in Woodpecker because the tag was not present in the active Docker daemon
 - actionable_rule: For any new prebuilt CI image, verify the exact image tag exists in the runner daemon before re-running dependent gates. If absent, run the matching host-side build script or document the prebuild hook that loads it on the CI host.
@@ -545,7 +545,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-005
+- id: LESSON-20260323-validate-ci-env-vars
 - context: Pipeline 2236 failure - CI_PIPELINE_FILES env var empty/null on push-to-main
 - trigger: Lint step called black --check without source files because CI_PIPELINE_FILES was [] or null
 - actionable_rule: Always validate CI-provided env vars (especially JSON arrays) at step entry with explicit empty/null/[] checks before passing to tools that expect non-empty input
@@ -561,7 +561,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-006
+- id: LESSON-20260323-no-direct-merge-api-bypass
 - context: PR #598 merged despite CI failure - merge_when_checks_succeed bypassed merge authority
 - trigger: auto_pr_merge.py included Do:merge in payload, allowing chise-bot to directly merge via Gitea API
 - actionable_rule: Never include Do:merge in automerge payloads. Only set merge_when_checks_succeed flag. chise-bot must NEVER execute a direct merge API call.
@@ -579,7 +579,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-007
+- id: LESSON-20260323-use-when-conditions-not-exit-zero
 - context: cross-branch-verify step skipped on PR builds via exit 0 - chicken-and-egg problem
 - trigger: Step verified commit was on main, but PR builds haven't merged yet
 - actionable_rule: Use step-level when conditions (branch: main) not runtime exit 0 skips for post-merge verification steps
@@ -594,7 +594,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-008
+- id: LESSON-20260323-no-direct-craig-questions
 - context: Workers using opencode question tool to prompt Craig directly, hanging orchestration
 - trigger: Jarvis delegated to workers without explicit no-questions-to-Craig instruction
 - actionable_rule: Every TASK-MODE OVERRIDES must include explicit instruction that agents must NOT ask Craig questions. When blocked, agents return completed work + BLOCKER_PACKET + close session. Orchestrators terminate workers that hang waiting for human input.
@@ -608,7 +608,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260323-009
+- id: LESSON-20260323-force-flag-justification-required
 - context: When adding --force-* override flags, no audit trail for why override was used
 - trigger: --allow-dirty and --force-unlock flags could be used without justification
 - actionable_rule: When adding --force-* override flags, always require --justification as mandatory companion argument. Log justification to Redis iterlog for audit trail.
@@ -623,7 +623,7 @@ LESSON
 
 ```text
 LESSON
-- id: LESSON-20260324-001
+- id: LESSON-20260324-gitea-mcp-owner-is-craig
 - context: ST-GITEA-OWNER-001 - Gitea MCP owner parameter must be "craig" not "tacopants"
 - trigger: Agents using Gitea MCP tools with owner="tacopants" (filesystem username) instead of owner="craig" (Gitea username)
 - actionable_rule: Always use owner="craig" for Gitea MCP tool calls. The filesystem username (tacopants) is NOT the Gitea username. These are separate systems. GITEA_OWNER env var should default to "craig".
