@@ -164,6 +164,13 @@ steps:
         # lint.status and fails the pipeline if non-zero. This design ensures
         # all validation feedback is collected before failing.
         exit 0
+  test-skip-audit:
+    pull: false
+    image: chiseai-ci-dependency-audit:py311-20260324
+    environment:
+      CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
+    commands:
+      - python3 scripts/ci/count_test_skips.py
   security-scan:
     pull: false
     image: chiseai-ci-tools:py311-20260329
