@@ -1171,7 +1171,7 @@ backlog:
     story_points: 5
     sprint_id: ICT-S9
     target_sprint: ICT-S9
-    completed_date: "2026-04-03"
+    deferred_date: "2026-04-03"
     title: BOS/CHoCH Validation Remediation
 current_phase:
   note:
@@ -2420,7 +2420,6 @@ epics:
     sprint_id: PIPELINE-TRANSPARENCY
     status: in_progress
     story_count: 15
-    completion_date: "2026-04-03"
     completed_stories:
       - id: ST-PIPELINE-Q2
         status: completed
