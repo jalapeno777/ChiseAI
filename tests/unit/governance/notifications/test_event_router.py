@@ -1,6 +1,6 @@
 """Tests for NotificationEventRouter."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from src.governance.notifications.event_router import (
     DigestBuilder,
@@ -126,6 +126,49 @@ class TestNotificationEventRouter:
         }
         decision = router.route_event(event)
         assert decision.mode == "digest"
+
+    def test_severity_mapper_derives_severity_when_no_explicit_severity(self):
+        """Test that SeverityMapper is used to derive severity when no explicit severity provided.
+
+        AC #1 Fix verification: When event has no explicit severity but SeverityMapper
+        maps event_type to a high-severity level, the event should route to immediate.
+        """
+        # Create mock SeverityMapper that maps "policy_drift" -> "high"
+        mock_mapper = MagicMock()
+        mock_mapper.get_severity.return_value = "high"
+
+        router = NotificationEventRouter(severity_mapper=mock_mapper)
+        event = {
+            "event_type": "policy_drift",  # No explicit "severity" key
+            "event_id": "evt-011",
+        }
+
+        decision = router.route_event(event)
+
+        # Should route to immediate because SeverityMapper derived "high"
+        assert decision.mode == "immediate"
+        assert "severity 'high'" in decision.reason
+        # Verify SeverityMapper was called
+        mock_mapper.get_severity.assert_called_once_with("policy_drift")
+
+    def test_explicit_severity_bypasses_severity_mapper(self):
+        """Test that explicit severity in event is used, not SeverityMapper."""
+        mock_mapper = MagicMock()
+        mock_mapper.get_severity.return_value = "high"
+
+        router = NotificationEventRouter(severity_mapper=mock_mapper)
+        event = {
+            "event_type": "policy_drift",
+            "severity": "low",  # Explicit severity
+            "event_id": "evt-012",
+        }
+
+        decision = router.route_event(event)
+
+        # Should route to digest because explicit severity is "low"
+        assert decision.mode == "digest"
+        # SeverityMapper should NOT be called when explicit severity present
+        mock_mapper.get_severity.assert_not_called()
 
 
 class TestDigestBuilder:

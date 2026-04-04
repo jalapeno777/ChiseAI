@@ -205,7 +205,13 @@ class NotificationEventRouter:
             )
 
         event_type = event.get("event_type", "unknown")
-        severity = event.get("severity", "low")
+        # If explicit severity provided, use it; otherwise derive via SeverityMapper
+        if "severity" in event:
+            severity = event["severity"]
+        elif self.severity_mapper is not None:
+            severity = self.severity_mapper.get_severity(event_type)
+        else:
+            severity = "low"
 
         # Check always_send_for list first
         always_send_for = self.get_always_send_for_types()
@@ -257,24 +263,36 @@ class NotificationEventRouter:
         try:
             import asyncio
 
-            return asyncio.get_event_loop().run_until_complete(
-                self.notifier.notify_autocog_event(
-                    event_type=event.get("event_type", "unknown"),
-                    severity=event.get("severity", "low"),
-                    summary=event.get("summary", ""),
-                    impact=event.get("impact", ""),
-                    top_metrics=event.get("top_metrics"),
-                    artifact_path=event.get("artifact_path"),
-                    run_id=event.get("run_id", event.get("event_id", "unknown")),
-                    title=event.get("title"),
-                    issue=event.get("issue"),
-                    intended_resolution=event.get("intended_resolution"),
-                    expected_improvement=event.get("expected_improvement"),
-                    outcome_status=event.get("outcome_status"),
-                    evidence_reasoning=event.get("evidence_reasoning"),
-                    decision_packet=event.get("decision_packet"),
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                # No running event loop, create new one
+                loop = asyncio.new_event_loop()
+                close_loop = True
+            else:
+                close_loop = False
+            try:
+                return loop.run_until_complete(
+                    self.notifier.notify_autocog_event(
+                        event_type=event.get("event_type", "unknown"),
+                        severity=event.get("severity", "low"),
+                        summary=event.get("summary", ""),
+                        impact=event.get("impact", ""),
+                        top_metrics=event.get("top_metrics"),
+                        artifact_path=event.get("artifact_path"),
+                        run_id=event.get("run_id", event.get("event_id", "unknown")),
+                        title=event.get("title"),
+                        issue=event.get("issue"),
+                        intended_resolution=event.get("intended_resolution"),
+                        expected_improvement=event.get("expected_improvement"),
+                        outcome_status=event.get("outcome_status"),
+                        evidence_reasoning=event.get("evidence_reasoning"),
+                        decision_packet=event.get("decision_packet"),
+                    )
                 )
-            )
+            finally:
+                if close_loop:
+                    loop.close()
         except Exception as e:
             logger.error(f"Failed to send immediate notification: {e}")
             return False
