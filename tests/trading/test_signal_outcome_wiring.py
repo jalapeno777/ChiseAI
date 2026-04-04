@@ -428,3 +428,308 @@ class TestOutcomeCaptureIntegrationWiring:
         result = await integration.on_trade_open(outcome)
         assert result["captured"] is False
         assert result["reason"] == "disabled"
+
+
+# ---------------------------------------------------------------------------
+# ST-ICT-Q3: Null handling for order_fill events
+# ---------------------------------------------------------------------------
+
+
+class TestBybitFillEventNullHandling:
+    """Verify BybitFillEvent.to_signal_outcome() sets proper defaults."""
+
+    def test_fill_event_has_confidence_score(self) -> None:
+        """BybitFillEvent.to_signal_outcome() should set confidence_score=1.0."""
+        from ml.models.signal_outcome import BybitFillEvent
+
+        fill = BybitFillEvent(
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            price=Decimal("50000.0"),
+            qty=Decimal("0.01"),
+            exec_time=1704067200000,  # 2024-01-01 00:00:00 UTC
+        )
+        outcome = fill.to_signal_outcome()
+
+        # Fill events should have high confidence (1.0) since we have actual execution data
+        assert outcome.confidence_score == 1.0
+
+    def test_fill_event_has_signal_type_fill(self) -> None:
+        """BybitFillEvent.to_signal_outcome() should set signal_type='FILL'."""
+        from ml.models.signal_outcome import BybitFillEvent
+
+        fill = BybitFillEvent(
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            price=Decimal("50000.0"),
+            qty=Decimal("0.01"),
+            exec_time=1704067200000,
+        )
+        outcome = fill.to_signal_outcome()
+
+        # signal_type='FILL' indicates fill event without signal context
+        assert outcome.signal_type == "FILL"
+
+    def test_fill_event_status_is_filled(self) -> None:
+        """BybitFillEvent.to_signal_outcome() should set status=FILLED."""
+        from ml.models.signal_outcome import BybitFillEvent
+
+        fill = BybitFillEvent(
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            price=Decimal("50000.0"),
+            qty=Decimal("0.01"),
+            exec_time=1704067200000,
+        )
+        outcome = fill.to_signal_outcome()
+
+        assert outcome.status == SignalOutcomeStatus.FILLED
+
+    def test_fill_event_no_signal_id(self) -> None:
+        """BybitFillEvent.to_signal_outcome() should have signal_id=None."""
+        from ml.models.signal_outcome import BybitFillEvent
+
+        fill = BybitFillEvent(
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            price=Decimal("50000.0"),
+            qty=Decimal("0.01"),
+            exec_time=1704067200000,
+        )
+        outcome = fill.to_signal_outcome()
+
+        # Fill events don't have signal context
+        assert outcome.signal_id is None
+
+    def test_fill_event_to_dict_includes_new_fields(self) -> None:
+        """BybitFillEvent.to_signal_outcome() to_dict() should include new fields."""
+        from ml.models.signal_outcome import BybitFillEvent
+
+        fill = BybitFillEvent(
+            order_id="test-order-1",
+            symbol="ETHUSDT",
+            side="Sell",
+            price=Decimal("3000.0"),
+            qty=Decimal("0.5"),
+            exec_time=1704067200000,
+        )
+        outcome = fill.to_signal_outcome()
+        d = outcome.to_dict()
+
+        assert "confidence_score" in d
+        assert "signal_type" in d
+        assert d["confidence_score"] == 1.0
+        assert d["signal_type"] == "FILL"
+
+    def test_fill_event_serialization_roundtrip(self) -> None:
+        """BybitFillEvent.to_signal_outcome() should survive serialization."""
+        from ml.models.signal_outcome import BybitFillEvent
+
+        fill = BybitFillEvent(
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            price=Decimal("50000.0"),
+            qty=Decimal("0.01"),
+            exec_time=1704067200000,
+        )
+        original = fill.to_signal_outcome()
+        data = original.to_dict()
+        restored = SignalOutcome.from_dict(data)
+
+        assert restored.confidence_score == original.confidence_score
+        assert restored.signal_type == original.signal_type
+
+
+class TestSignalOutcomeNullHandling:
+    """Verify SignalOutcome handles null/missing fields gracefully."""
+
+    def test_outcome_with_none_signal_id_serializes(self) -> None:
+        """SignalOutcome with signal_id=None should serialize/deserialize correctly."""
+        outcome = SignalOutcome(
+            signal_id=None,
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000.0"),
+            fill_quantity=Decimal("0.01"),
+            entry_price=Decimal("50000.0"),
+            position_size=Decimal("0.01"),
+            status=SignalOutcomeStatus.PENDING,
+            confidence_score=0.85,
+            signal_type="OPEN",
+        )
+        # Should not raise
+        data = outcome.to_dict()
+        assert data["signal_id"] is None
+        restored = SignalOutcome.from_dict(data)
+        assert restored.signal_id is None
+
+    def test_outcome_with_zero_confidence_serializes(self) -> None:
+        """SignalOutcome with confidence_score=0.0 should serialize correctly."""
+        outcome = SignalOutcome(
+            signal_id=None,
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000.0"),
+            fill_quantity=Decimal("0.01"),
+            entry_price=Decimal("50000.0"),
+            position_size=Decimal("0.01"),
+            status=SignalOutcomeStatus.PENDING,
+            confidence_score=0.0,
+            signal_type="OPEN",
+        )
+        data = outcome.to_dict()
+        assert data["confidence_score"] == 0.0
+        restored = SignalOutcome.from_dict(data)
+        assert restored.confidence_score == 0.0
+
+    def test_outcome_with_empty_signal_type_serializes(self) -> None:
+        """SignalOutcome with signal_type='' should serialize correctly."""
+        outcome = SignalOutcome(
+            signal_id=None,
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000.0"),
+            fill_quantity=Decimal("0.01"),
+            entry_price=Decimal("50000.0"),
+            position_size=Decimal("0.01"),
+            status=SignalOutcomeStatus.PENDING,
+            confidence_score=0.5,
+            signal_type="",
+        )
+        data = outcome.to_dict()
+        assert data["signal_type"] == ""
+        restored = SignalOutcome.from_dict(data)
+        assert restored.signal_type == ""
+
+    def test_outcome_to_db_dict_with_null_signal_id(self) -> None:
+        """to_db_dict should handle null signal_id correctly."""
+        outcome = SignalOutcome(
+            signal_id=None,
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000.0"),
+            fill_quantity=Decimal("0.01"),
+            entry_price=Decimal("50000.0"),
+            position_size=Decimal("0.01"),
+            status=SignalOutcomeStatus.PENDING,
+            confidence_score=0.85,
+            signal_type="OPEN",
+        )
+        db = outcome.to_db_dict()
+        # Should not raise and should have proper values
+        assert db["signal_id"] is None
+        assert db["confidence_score"] == 0.85
+        assert db["signal_type"] == "OPEN"
+
+    def test_outcome_notification_dict_with_null_fields(self) -> None:
+        """to_notification_dict should handle null/missing fields gracefully."""
+        outcome = SignalOutcome(
+            signal_id=None,
+            order_id="test-order-1",
+            symbol="BTCUSDT",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000.0"),
+            fill_quantity=Decimal("0.01"),
+            entry_price=Decimal("50000.0"),
+            position_size=Decimal("0.01"),
+            status=SignalOutcomeStatus.PENDING,
+            confidence_score=0.0,
+            signal_type="",
+        )
+        # Should not raise
+        notif = outcome.to_notification_dict()
+        assert "confidence_score" in notif
+        assert "signal_type" in notif
+        assert notif["confidence_score"] == 0.0
+        assert notif["signal_type"] == ""
+
+
+class TestOrderFillNullPropagation:
+    """Verify order_fill events propagate through SignalOutcome pipeline correctly."""
+
+    def test_fill_event_flows_through_persistence(self) -> None:
+        """BybitFillEvent.to_signal_outcome() outcome should be persistable."""
+        from ml.models.signal_outcome import BybitFillEvent
+
+        fill = BybitFillEvent(
+            order_id="persist-test-order",
+            symbol="BTCUSDT",
+            side="Buy",
+            price=Decimal("50000.0"),
+            qty=Decimal("0.01"),
+            exec_time=1704067200000,
+        )
+        outcome = fill.to_signal_outcome()
+
+        # Verify all required fields are set
+        assert outcome.order_id == "persist-test-order"
+        assert outcome.symbol == "BTCUSDT"
+        assert outcome.side == "Buy"
+        assert outcome.fill_price == Decimal("50000.0")
+        assert outcome.fill_quantity == Decimal("0.01")
+        assert outcome.status == SignalOutcomeStatus.FILLED
+        assert outcome.confidence_score == 1.0
+        assert outcome.signal_type == "FILL"
+
+        # Should serialize without error
+        data = outcome.to_dict()
+        assert data["order_id"] == "persist-test-order"
+        assert data["confidence_score"] == 1.0
+        assert data["signal_type"] == "FILL"
+
+    def test_mixed_fill_and_signal_outcomes_have_correct_types(self) -> None:
+        """Fill events (FILL) vs signal-triggered trades (OPEN) have correct signal_type."""
+        # Fill event without signal context
+        fill_outcome = SignalOutcome(
+            signal_id=None,
+            order_id="fill-order",
+            symbol="BTCUSDT",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000.0"),
+            fill_quantity=Decimal("0.01"),
+            entry_price=Decimal("50000.0"),
+            position_size=Decimal("0.01"),
+            status=SignalOutcomeStatus.FILLED,
+            confidence_score=1.0,
+            signal_type="FILL",
+        )
+
+        # Signal-triggered trade
+        signal_outcome = SignalOutcome(
+            signal_id=uuid.uuid4(),
+            order_id="signal-order",
+            symbol="BTCUSDT",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000.0"),
+            fill_quantity=Decimal("0.01"),
+            entry_price=Decimal("50000.0"),
+            position_size=Decimal("0.01"),
+            status=SignalOutcomeStatus.PENDING,
+            confidence_score=0.85,
+            signal_type="OPEN",
+        )
+
+        # Verify distinction between fill events and signal-triggered trades
+        assert fill_outcome.signal_type == "FILL"
+        assert fill_outcome.confidence_score == 1.0
+        assert fill_outcome.signal_id is None
+
+        assert signal_outcome.signal_type == "OPEN"
+        assert signal_outcome.confidence_score == 0.85
+        assert signal_outcome.signal_id is not None

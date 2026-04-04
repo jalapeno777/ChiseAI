@@ -567,6 +567,12 @@ class BybitFillEvent:
 
         Returns:
             SignalOutcome instance from this fill
+
+        Note:
+            confidence_score is set to 1.0 for direct fill events (high confidence
+            because we have actual execution data). signal_type is set to "FILL"
+            to indicate this is a fill event without signal context (vs "OPEN"
+            for signal-triggered trades).
         """
         return SignalOutcome(
             order_id=self.order_id,
@@ -581,6 +587,11 @@ class BybitFillEvent:
             entry_price=self.price,
             entry_time=datetime.fromtimestamp(self.exec_time / 1000, tz=UTC),
             position_size=self.qty,
+            # ST-PIPELINE-Q2: Set defaults for fill events without signal context
+            # confidence_score=1.0 indicates high confidence (actual execution data)
+            # signal_type="FILL" indicates fill event without signal context
+            confidence_score=1.0,
+            signal_type="FILL",
         )
 
 
