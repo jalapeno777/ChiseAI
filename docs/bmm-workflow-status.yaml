@@ -771,6 +771,23 @@ backlog:
     priority: P2
     status: completed
     title: CI Phase 3 Enhancements
+  - id: BL-EP-ICT-007-P2-BOS-CHOCH-REDESIGN
+    title: "BOS/CHoCH Architecture Redesign for EP-ICT-007 Phase 2"
+    description: "Redesign CHoCH detection logic to compare structure level breaks (price closing beyond established swing H/L) instead of trivially true swing price comparisons. Requires architecture review. See docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md for 3 redesign options."
+    status: planned
+    priority: P2
+    story_points: 5
+    depends_on: ["EP-ICT-007"]
+    decision_debt: "DD-BOS-CHOCH-REDESIGN"
+    due: "2026-04-21"
+    owner: ml-signal-engineering
+  - id: BL-CI-PR-AUTOMERGE-FIX
+    title: "Fix pr-automerge Woodpecker step Canceled status"
+    description: "pr-automerge step shows Canceled in Woodpecker CI (likely missing tea CLI in python:3.11-slim image). Merges complete via Gitea server-side automerge but CI status is misleading. Investigate and fix if pattern recurs."
+    status: planned
+    priority: P3
+    story_points: 1
+    owner: ops-team
   - created_date: "2026-03-02"
     current_completion: 76%
     description: Complete remaining governance features to reach 100% epic completion
@@ -1150,10 +1167,11 @@ backlog:
       - BOS/CHoCH excluded from EP-ICT-005 (Phase 2 integration)
       - 3/4 ICT signals operational (CVD, FVG, Order Block)
       - Feature flag prevents accidental BOS/CHoCH activation
-    status: in_progress
+    status: deferred
     story_points: 5
-    target_phase: EP-ICT-007
+    sprint_id: ICT-S9
     target_sprint: ICT-S9
+    completed_date: "2026-04-03"
     title: BOS/CHoCH Validation Remediation
 current_phase:
   note:
@@ -2353,6 +2371,10 @@ epics:
     backlog:
       - id: ST-ICT-P3
         title: "Week 1: Add per-gate and per-signal-type PnL metrics (P3)"
+      - id: ST-ICT-S9-001
+        title: "Week 1: BOS/CHoCH Architecture Redesign (S9-001)"
+        status: deferred
+        notes: "CHoCH logic architecturally broken (trivially true comparison). Honest baseline 42.3%. Deferred to EP-ICT-007 Phase 2 per AD-ST-ICT-S9-001-20260403T120100Z-aria. See docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md"
       - id: ST-ICT-S2
         title: "Week 2: ICT quality filter to suppress redundant signals (S2)"
       - id: ST-ICT-S3
@@ -2396,8 +2418,31 @@ epics:
       - "BLOCKER: Q3 blocked on Q2 (sequential)"
       - "BLOCKER: S1A-1 blocked on ST2 design (ST2 is now unblocked)"
     sprint_id: PIPELINE-TRANSPARENCY
-    status: planned
+    status: in_progress
     story_count: 15
+    completion_date: "2026-04-03"
+    completed_stories:
+      - id: ST-PIPELINE-Q2
+        status: completed
+        completion_date: "2026-04-03"
+        evidence: "Merged via PR #911, commit b7fc54698 on main. SignalOutcome wiring at trade OPEN complete."
+      - id: ST-PIPELINE-Q3
+        status: completed
+        completion_date: "2026-04-03"
+        evidence: "Merged to main, commit 9051e334c. order_fill null handling fixed. 13 new tests, 53 tests passing."
+      - id: ST-PIPELINE-Q4
+        status: completed
+        completion_date: "2026-04-03"
+        evidence: "Verification only (no new merge). P3 signal emission verified in paper mode. 289 tests passing."
+      - id: ST-PIPELINE-P3
+        status: completed
+        completion_date: "2026-04-03"
+        evidence: "Verification only. Full wiring verified, no dead code paths. 93 tests passing."
+      - id: ST-ICT-SIGNAL-DASHBOARD
+        status: completed
+        completion_date: "2026-04-03"
+        evidence: "Merged via PR #916, commit f065a4139. 8-panel Grafana dashboard (ict-signal-quality.json)."
+    progress: "5 of ~15 stories completed"
     story_ids:
       - Q2
       - Q3
