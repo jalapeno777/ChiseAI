@@ -56,6 +56,11 @@ permission:
   - `.woodpecker.yml`, `scripts/`, `.opencode/agent/`, `AGENTS.md`
   - make smallest safe change and verify full gate behavior
 
+## Critic review scope
+
+Critic review scope is risk-classified per `.opencode/agent/critic-risk-classifier.md`.
+The classifier determines review scope (diff-only, changed-files+deps, or full) based on file paths in the PR diff — no content analysis required.
+
 ## PR and Git hygiene ownership (required)
 
 When assigned by Jarvis, perform this exact sequence:
