@@ -254,45 +254,28 @@ class NotificationEventRouter:
         else:
             return self._add_to_digest(event)
 
-    def _send_immediate(self, event: dict[str, Any]) -> bool:
+    async def _send_immediate(self, event: dict[str, Any]) -> bool:
         """Send event immediately via DiscordNotifier.notify_autocog_event.
 
-        Note: This is a sync wrapper. The actual DiscordNotifier methods are async.
-        For true async handling, use handle_event() instead.
+        This is an async method that properly awaits the notification.
         """
         try:
-            import asyncio
-
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                # No running event loop, create new one
-                loop = asyncio.new_event_loop()
-                close_loop = True
-            else:
-                close_loop = False
-            try:
-                return loop.run_until_complete(
-                    self.notifier.notify_autocog_event(
-                        event_type=event.get("event_type", "unknown"),
-                        severity=event.get("severity", "low"),
-                        summary=event.get("summary", ""),
-                        impact=event.get("impact", ""),
-                        top_metrics=event.get("top_metrics"),
-                        artifact_path=event.get("artifact_path"),
-                        run_id=event.get("run_id", event.get("event_id", "unknown")),
-                        title=event.get("title"),
-                        issue=event.get("issue"),
-                        intended_resolution=event.get("intended_resolution"),
-                        expected_improvement=event.get("expected_improvement"),
-                        outcome_status=event.get("outcome_status"),
-                        evidence_reasoning=event.get("evidence_reasoning"),
-                        decision_packet=event.get("decision_packet"),
-                    )
-                )
-            finally:
-                if close_loop:
-                    loop.close()
+            return await self.notifier.notify_autocog_event(
+                event_type=event.get("event_type", "unknown"),
+                severity=event.get("severity", "low"),
+                summary=event.get("summary", ""),
+                impact=event.get("impact", ""),
+                top_metrics=event.get("top_metrics"),
+                artifact_path=event.get("artifact_path"),
+                run_id=event.get("run_id", event.get("event_id", "unknown")),
+                title=event.get("title"),
+                issue=event.get("issue"),
+                intended_resolution=event.get("intended_resolution"),
+                expected_improvement=event.get("expected_improvement"),
+                outcome_status=event.get("outcome_status"),
+                evidence_reasoning=event.get("evidence_reasoning"),
+                decision_packet=event.get("decision_packet"),
+            )
         except Exception as e:
             logger.error(f"Failed to send immediate notification: {e}")
             return False
