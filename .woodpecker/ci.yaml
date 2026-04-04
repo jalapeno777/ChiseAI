@@ -1074,7 +1074,7 @@ steps:
       - "set -euo pipefail\npython3 scripts/ci/ci_gate.py\n"
   pr-automerge:
     pull: false
-    image: python:3.11-slim
+    image: chiseai-ci-tools:py311-20260329
     depends_on:
       - ci-gate
     when:
