@@ -10,18 +10,14 @@ Tests cover:
 
 from __future__ import annotations
 
-import math
 from datetime import UTC, datetime
-from unittest.mock import MagicMock
 
-import pytest
-
+from signal_generation.models import Signal, SignalDirection, SignalStatus
 from signal_generation.quality_filter import (
     QualityFilter,
     QualityFilterMetrics,
     QualityFilterResult,
 )
-from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
 class TestQualityFilterInit:
