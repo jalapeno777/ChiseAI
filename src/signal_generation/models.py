@@ -6,10 +6,39 @@ the signal generation module.
 
 from __future__ import annotations
 
+import logging
+import math
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_float(value: float, default: float = 0.0) -> float:
+    """Safely convert a value to float, handling NaN and None.
+
+    Args:
+        value: The value to convert
+        default: Default value if conversion fails or value is NaN
+
+    Returns:
+        Safe float value in range [0.0, 1.0] or default
+    """
+    if value is None:
+        return default
+    try:
+        result = float(value)
+        if math.isnan(result) or math.isinf(result):
+            logger.warning(
+                f"Invalid confidence value {value!r} detected, defaulting to {default}"
+            )
+            return default
+        return result
+    except (TypeError, ValueError):
+        logger.warning(f"Could not convert {value!r} to float, defaulting to {default}")
+        return default
 
 
 class SignalStatus(Enum):
@@ -78,7 +107,12 @@ class Signal:
 
     def __post_init__(self) -> None:
         """Validate and normalize values."""
+        # Safely handle NaN/inf confidence values
+        self.confidence = _safe_float(self.confidence, default=0.0)
         self.confidence = max(0.0, min(1.0, self.confidence))
+
+        # Safely handle NaN/inf base_score values
+        self.base_score = _safe_float(self.base_score, default=0.0)
         self.base_score = max(0.0, min(100.0, self.base_score))
 
         # Generate UUID if not provided
@@ -89,7 +123,16 @@ class Signal:
 
     @property
     def is_actionable(self) -> bool:
-        """Check if signal is actionable (meets 75% threshold)."""
+        """Check if signal is actionable (meets 75% threshold).
+
+        Guards against:
+        - Zero confidence (should never be actionable)
+        - NaN confidence (should never be actionable)
+        - Missing or invalid confidence data
+        """
+        # Re-check confidence is valid (defense in depth after __post_init__)
+        if not isinstance(self.confidence, float) or self.confidence <= 0.0:
+            return False
         return self.status == SignalStatus.ACTIONABLE and self.confidence >= 0.75
 
     @property

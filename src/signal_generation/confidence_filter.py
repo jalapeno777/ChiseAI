@@ -10,6 +10,7 @@ environment variable is set to "true".
 from __future__ import annotations
 
 import logging
+import math
 import os
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -309,6 +310,18 @@ class ConfidenceFilter:
 
         self.metrics.total_processed += 1
 
+        # Guard against NaN/inf in final_confidence (defense in depth)
+        if (
+            not isinstance(final_confidence, float)
+            or math.isnan(final_confidence)
+            or math.isinf(final_confidence)
+        ):
+            logger.warning(
+                f"Invalid final_confidence {final_confidence!r} detected, "
+                f"marking signal as non-actionable"
+            )
+            final_confidence = 0.0
+
         if final_confidence >= self.threshold:
             self.metrics.signals_passed += 1
             self.metrics.last_updated = datetime.now(UTC)
@@ -351,6 +364,9 @@ class ConfidenceFilter:
         Returns:
             True if signal meets actionable threshold
         """
+        # Guard against invalid confidence (defense in depth)
+        if not isinstance(signal.confidence, float) or math.isnan(signal.confidence):
+            return False
         return bool(signal.confidence >= self.threshold)
 
     def log_non_actionable(self, signal: Signal) -> None:
