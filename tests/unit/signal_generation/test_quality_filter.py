@@ -276,6 +276,20 @@ class TestQualityFilterShouldTrade:
 
         assert filter.should_trade(signal) is False
 
+    def test_should_trade_with_nan_quality(self):
+        """should_trade returns False for NaN quality_score."""
+        filter = QualityFilter(threshold=0.5)
+        signal = SignalFactory.create_signal(metadata={"quality_score": float("nan")})
+
+        assert filter.should_trade(signal) is False
+
+    def test_should_trade_with_inf_quality(self):
+        """should_trade returns False for inf quality_score."""
+        filter = QualityFilter(threshold=0.5)
+        signal = SignalFactory.create_signal(metadata={"quality_score": float("inf")})
+
+        assert filter.should_trade(signal) is False
+
 
 class TestQualityFilterMetricsTracking:
     """Tests for metric tracking during filtering."""

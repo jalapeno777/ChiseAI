@@ -243,18 +243,6 @@ class QualityFilter:
                 metadata_preserved=True,
             )
 
-        # Guard against NaN/inf in quality_score (defense in depth)
-        if not isinstance(quality_score, float) or math.isnan(quality_score):
-            self.metrics.signals_filtered += 1
-            self.metrics.last_updated = datetime.now(UTC)
-            return QualityFilterResult(
-                is_qualified=False,
-                threshold=self.threshold,
-                quality_score=None,
-                reason="Invalid quality_score detected - marking as unqualified",
-                metadata_preserved=True,
-            )
-
         # Apply threshold check
         if quality_score >= self.threshold:
             self.metrics.signals_passed += 1
@@ -295,7 +283,12 @@ class QualityFilter:
         quality_score = self._extract_quality_score(signal)
         if quality_score is None:
             return False
-        if not isinstance(quality_score, float) or math.isnan(quality_score):
+        # Explicit inf check for consistency with filter() behavior
+        if (
+            not isinstance(quality_score, float)
+            or math.isnan(quality_score)
+            or math.isinf(quality_score)
+        ):
             return False
         return bool(quality_score >= self.threshold)
 
