@@ -1,0 +1,23 @@
+{
+  "status": "completed",
+  "timestamp": "2026-04-05T01:33:42.479668+00:00",
+  "burnin_days_elapsed": 0,
+  "signals_checked": 0,
+  "outcomes_checked": 0,
+  "breaches_found": 1,
+  "total_breach_count": 1,
+  "breaches": [
+    {
+      "signal_id": "SIGNAL_FREQUENCY_CHECK",
+      "severity": "medium",
+      "reason": "Only 0 signals today (min: 1)"
+    }
+  ],
+  "invariants_checked": [
+    "max_daily_drawdown_pct",
+    "min_signal_confidence",
+    "max_position_size_pct",
+    "min_signals_per_day",
+    "max_concurrent_positions"
+  ]
+}
