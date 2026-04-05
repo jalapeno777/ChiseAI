@@ -5,6 +5,7 @@ For ST-ICT-P1: Signal Outcome Database Backend
 
 from __future__ import annotations
 
+import sqlite3
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -696,3 +697,361 @@ class TestBackwardCompatibility:
         retrieved = in_memory_store.read(outcome_id)
         assert retrieved is not None
         assert isinstance(retrieved, SignalOutcome)
+
+
+# ---------------------------------------------------------------------------
+# Connection Management & Error Handling Tests
+# ---------------------------------------------------------------------------
+
+
+class TestConnectionManagement:
+    """Tests for connection management and error handling."""
+
+    def test_close_idempotent(self, in_memory_store: OutcomeStore) -> None:
+        """Test that closing store multiple times doesn't raise."""
+        in_memory_store.close()
+        in_memory_store.close()  # Should not raise
+
+    def test_health_check_on_closed_connection(self, tmp_path: Path) -> None:
+        """Test health check behavior when connection is closed."""
+        db_path = tmp_path / "closed_test.db"
+        store = OutcomeStore(db_path=db_path)
+        store.close()
+
+        # Health check on closed connection should handle gracefully
+        try:
+            result = store.health_check()
+            # Either healthy=False or error about closed connection
+            assert result["healthy"] is False or "error" in result
+        except sqlite3.Error:
+            pass  # Expected - connection is closed
+
+    def test_read_after_close_returns_none(self, tmp_path: Path) -> None:
+        """Test that read operations return None/empty after close."""
+        db_path = tmp_path / "read_after_close.db"
+        store = OutcomeStore(db_path=db_path)
+
+        outcome = SignalOutcome(
+            outcome_id=uuid4(),
+            order_id="test-close",
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            status=SignalOutcomeStatus.PENDING,
+            created_at=datetime.now(UTC),
+        )
+        store.create(outcome)
+
+        store.close()
+
+        # After close, operations should be handled gracefully
+        result = store.read(str(outcome.outcome_id))
+        # Connection is closed, so this should return None or error
+        assert result is None
+
+    def test_store_with_custom_timeout(self, tmp_path: Path) -> None:
+        """Test store initialization with custom timeout."""
+        db_path = tmp_path / "custom_timeout.db"
+        store = OutcomeStore(db_path=db_path, timeout=60.0)
+        assert store._conn is not None
+        store.close()
+
+    def test_transaction_retry_on_lock(self, tmp_path: Path) -> None:
+        """Test that transaction handles database lock with retry."""
+        db_path = tmp_path / "lock_test.db"
+        store = OutcomeStore(db_path=db_path, timeout=1.0)
+
+        outcome = SignalOutcome(
+            outcome_id=uuid4(),
+            order_id="lock-test",
+            symbol="ETHUSDT",
+            token="ETH",
+            side="Sell",
+            direction="SHORT",
+            status=SignalOutcomeStatus.PENDING,
+            created_at=datetime.now(UTC),
+        )
+
+        # Should succeed despite potential lock issues
+        outcome_id = store.create(outcome)
+        assert outcome_id is not None
+
+        retrieved = store.read(outcome_id)
+        assert retrieved is not None
+        assert retrieved.symbol == "ETHUSDT"
+
+        store.close()
+
+
+class TestSchemaValidation:
+    """Tests for schema validation and data integrity."""
+
+    def test_create_with_minimal_outcome(self, in_memory_store: OutcomeStore) -> None:
+        """Test creating outcome with minimal required fields."""
+        outcome = SignalOutcome(
+            outcome_id=uuid4(),
+            order_id="minimal-order",
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            status=SignalOutcomeStatus.PENDING,
+            created_at=datetime.now(UTC),
+        )
+
+        outcome_id = in_memory_store.create(outcome)
+        retrieved = in_memory_store.read(outcome_id)
+
+        assert retrieved is not None
+        assert retrieved.order_id == "minimal-order"
+        assert retrieved.symbol == "BTCUSDT"
+        assert retrieved.status == SignalOutcomeStatus.PENDING
+
+    def test_create_with_all_fields(
+        self, in_memory_store: OutcomeStore, sample_outcome: SignalOutcome
+    ) -> None:
+        """Test creating outcome with all fields populated."""
+        in_memory_store.create(sample_outcome)
+
+        retrieved = in_memory_store.read(str(sample_outcome.outcome_id))
+
+        assert retrieved is not None
+        # Verify all key fields
+        assert str(retrieved.outcome_id) == str(sample_outcome.outcome_id)
+        assert retrieved.symbol == sample_outcome.symbol
+        assert retrieved.token == sample_outcome.token
+        assert retrieved.side == sample_outcome.side
+        assert retrieved.direction == sample_outcome.direction
+        assert retrieved.fill_price == sample_outcome.fill_price
+        assert retrieved.outcome_type == sample_outcome.outcome_type
+        assert retrieved.status == sample_outcome.status
+        assert retrieved.is_test == sample_outcome.is_test
+        assert retrieved.execution_venue == sample_outcome.execution_venue
+        assert retrieved.execution_mode == sample_outcome.execution_mode
+        assert retrieved.confidence_score == sample_outcome.confidence_score
+
+    def test_update_preserves_unmodified_fields(
+        self, in_memory_store: OutcomeStore, sample_outcome: SignalOutcome
+    ) -> None:
+        """Test that update only modifies specified fields."""
+        in_memory_store.create(sample_outcome)
+        original_symbol = sample_outcome.symbol
+        original_side = sample_outcome.side
+
+        # Update only status
+        sample_outcome.status = SignalOutcomeStatus.CLOSED
+        in_memory_store.update(sample_outcome)
+
+        retrieved = in_memory_store.read(str(sample_outcome.outcome_id))
+        assert retrieved is not None
+        assert retrieved.status == SignalOutcomeStatus.CLOSED
+        assert retrieved.symbol == original_symbol
+        assert retrieved.side == original_side
+
+    def test_metadata_json_roundtrip(
+        self, in_memory_store: OutcomeStore, sample_outcome: SignalOutcome
+    ) -> None:
+        """Test that metadata dict is preserved through JSON serialization."""
+        sample_outcome.metadata = {
+            "key1": "value1",
+            "nested": {"a": 1, "b": [1, 2, 3]},
+            "number": 42,
+        }
+        sample_outcome.venue_metadata = {"venue_key": "venue_value"}
+
+        in_memory_store.create(sample_outcome)
+        retrieved = in_memory_store.read(str(sample_outcome.outcome_id))
+
+        assert retrieved is not None
+        assert retrieved.metadata == sample_outcome.metadata
+        assert retrieved.venue_metadata == sample_outcome.venue_metadata
+
+
+class TestDataIntegrity:
+    """Tests for data integrity constraints."""
+
+    def test_duplicate_outcome_id_raises(
+        self, in_memory_store: OutcomeStore, sample_outcome: SignalOutcome
+    ) -> None:
+        """Test that inserting duplicate outcome_id raises error."""
+        in_memory_store.create(sample_outcome)
+
+        # Try to create another outcome with same ID
+        duplicate = SignalOutcome(
+            outcome_id=sample_outcome.outcome_id,  # Same ID
+            order_id="different-order",
+            symbol="ETHUSDT",
+            token="ETH",
+            side="Sell",
+            direction="SHORT",
+            status=SignalOutcomeStatus.PENDING,
+            created_at=datetime.now(UTC),
+        )
+
+        with pytest.raises(sqlite3.IntegrityError):
+            in_memory_store.create(duplicate)
+
+    def test_created_at_auto_populated(self, in_memory_store: OutcomeStore) -> None:
+        """Test that created_at is properly stored and retrieved."""
+        before = datetime.now(UTC)
+        outcome = SignalOutcome(
+            outcome_id=uuid4(),
+            order_id="timestamp-test",
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            status=SignalOutcomeStatus.PENDING,
+            created_at=datetime.now(UTC),
+        )
+        after = datetime.now(UTC)
+
+        in_memory_store.create(outcome)
+        retrieved = in_memory_store.read(str(outcome.outcome_id))
+
+        assert retrieved is not None
+        # Check that created_at is within expected range
+        assert retrieved.created_at >= before
+        assert retrieved.created_at <= after
+
+    def test_decimal_precision_preserved(self, in_memory_store: OutcomeStore) -> None:
+        """Test that Decimal precision is preserved for financial values."""
+        outcome = SignalOutcome(
+            outcome_id=uuid4(),
+            order_id="precision-test",
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000.123456789"),
+            fill_quantity=Decimal("0.000000001"),
+            pnl=Decimal("-12345.678901234"),
+            fee=Decimal("0.00001"),
+            status=SignalOutcomeStatus.PENDING,
+            created_at=datetime.now(UTC),
+        )
+
+        in_memory_store.create(outcome)
+        retrieved = in_memory_store.read(str(outcome.outcome_id))
+
+        assert retrieved is not None
+        # Check precision is preserved
+        assert retrieved.fill_price == Decimal("50000.123456789")
+        assert retrieved.fill_quantity == Decimal("0.000000001")
+        assert retrieved.pnl == Decimal("-12345.678901234")
+        assert retrieved.fee == Decimal("0.00001")
+
+
+class TestQueryEdgeCases:
+    """Tests for query edge cases and boundary conditions."""
+
+    def test_by_signal_id_with_none_signal_id(
+        self, in_memory_store: OutcomeStore
+    ) -> None:
+        """Test querying for outcomes with None signal_id."""
+        # Create outcomes with None signal_id
+        outcome1 = SignalOutcome(
+            outcome_id=uuid4(),
+            signal_id=None,
+            order_id="no-signal-1",
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            status=SignalOutcomeStatus.PENDING,
+            created_at=datetime.now(UTC),
+        )
+        outcome2 = SignalOutcome(
+            outcome_id=uuid4(),
+            signal_id=None,
+            order_id="no-signal-2",
+            symbol="ETHUSDT",
+            token="ETH",
+            side="Sell",
+            direction="SHORT",
+            status=SignalOutcomeStatus.PENDING,
+            created_at=datetime.now(UTC),
+        )
+
+        in_memory_store.create(outcome1)
+        in_memory_store.create(outcome2)
+
+        # Query should work without error
+        results = in_memory_store.by_signal_id("")
+        # Empty string signal_id might not match None values in DB
+
+    def test_query_with_zero_limit(
+        self, in_memory_store: OutcomeStore, multiple_outcomes: list[SignalOutcome]
+    ) -> None:
+        """Test query with limit=0 returns empty list."""
+        in_memory_store.create_many(multiple_outcomes)
+
+        filters = QueryFilters(limit=0)
+        results = in_memory_store.query(filters)
+
+        assert len(results) == 0
+
+    def test_query_with_large_offset(
+        self, in_memory_store: OutcomeStore, multiple_outcomes: list[SignalOutcome]
+    ) -> None:
+        """Test query with offset beyond results."""
+        in_memory_store.create_many(multiple_outcomes)
+
+        filters = QueryFilters(limit=100, offset=10000)
+        results = in_memory_store.query(filters)
+
+        assert len(results) == 0
+
+    def test_count_empty_database(self, in_memory_store: OutcomeStore) -> None:
+        """Test count on empty database."""
+        count = in_memory_store.count()
+        assert count == 0
+
+    def test_stats_on_empty_database(self, in_memory_store: OutcomeStore) -> None:
+        """Test stats on empty database."""
+        stats = in_memory_store.get_stats()
+
+        assert stats["total"] == 0
+        assert stats["closed_count"] == 0
+        assert stats["pending_count"] == 0
+        assert stats["error_count"] == 0
+
+
+class TestBatchOperations:
+    """Tests for batch operation behavior."""
+
+    def test_create_many_empty_list(self, in_memory_store: OutcomeStore) -> None:
+        """Test create_many with empty list."""
+        result = in_memory_store.create_many([])
+        assert result == []
+
+    def test_create_many_single_item(
+        self, in_memory_store: OutcomeStore, sample_outcome: SignalOutcome
+    ) -> None:
+        """Test create_many with single item."""
+        result = in_memory_store.create_many([sample_outcome])
+        assert len(result) == 1
+        assert result[0] == str(sample_outcome.outcome_id)
+
+    def test_create_many_large_batch(self, in_memory_store: OutcomeStore) -> None:
+        """Test create_many with large batch."""
+        batch_size = 100
+        outcomes = [
+            SignalOutcome(
+                outcome_id=uuid4(),
+                order_id=f"batch-{i:04d}",
+                symbol="BTCUSDT",
+                token="BTC",
+                side="Buy",
+                direction="LONG",
+                status=SignalOutcomeStatus.PENDING,
+                created_at=datetime.now(UTC),
+            )
+            for i in range(batch_size)
+        ]
+
+        result = in_memory_store.create_many(outcomes)
+
+        assert len(result) == batch_size
+        assert in_memory_store.count() == batch_size

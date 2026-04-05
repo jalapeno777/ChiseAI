@@ -11,8 +11,9 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+import time
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -24,6 +25,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Connection configuration
+DEFAULT_TIMEOUT_SECONDS = 30.0  # SQLite connection timeout
+MAX_RETRIES = 3  # Maximum retry attempts for locked database
+RETRY_DELAY_BASE = 0.1  # Base delay between retries (seconds)
 
 
 @dataclass
@@ -58,49 +64,99 @@ class OutcomeStore:
         self,
         db_path: str | Path | None = None,
         in_memory: bool = False,
+        timeout: float = DEFAULT_TIMEOUT_SECONDS,
     ):
         """Initialize OutcomeStore.
 
         Args:
             db_path: Path to SQLite database file. Defaults to ~/.chiseai/outcomes.db
             in_memory: If True, use in-memory SQLite database (for testing)
+            timeout: SQLite connection timeout in seconds (default: 30)
         """
         if in_memory:
             self._db_path = ":memory:"
-            self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
+            self._conn = sqlite3.connect(
+                self._db_path,
+                timeout=timeout,
+                check_same_thread=False,
+                isolation_level=None,  # Autocommit mode for in-memory
+            )
+            self._autocommit = True
         elif db_path:
             self._db_path = str(db_path)
-            self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
+            self._conn = sqlite3.connect(
+                self._db_path,
+                timeout=timeout,
+                check_same_thread=False,
+            )
+            self._autocommit = False
         else:
             # Default location
             home = os.path.expanduser("~")
             db_dir = os.path.join(home, ".chiseai")
             os.makedirs(db_dir, exist_ok=True)
             self._db_path = os.path.join(db_dir, "outcomes.db")
-            self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
+            self._conn = sqlite3.connect(
+                self._db_path,
+                timeout=timeout,
+                check_same_thread=False,
+            )
+            self._autocommit = False
 
         self._conn.row_factory = sqlite3.Row
         init_db(self._conn)
 
         logger.info(
-            f"OutcomeStore initialized: db_path={self._db_path}, in_memory={in_memory}"
+            f"OutcomeStore initialized: db_path={self._db_path}, "
+            f"in_memory={in_memory}, timeout={timeout}s"
         )
 
     @contextmanager
     def _transaction(self) -> Generator[sqlite3.Connection, None, None]:
-        """Context manager for database transactions."""
-        try:
-            yield self._conn
-            self._conn.commit()
-        except Exception:
-            self._conn.rollback()
-            raise
+        """Context manager for database transactions with retry logic.
+
+        Handles database locks with exponential backoff retry.
+        Uses savepoints for nested transaction support.
+        """
+        savepoint_name = f"sp_{int(time.time() * 1000000)}"
+        retries = 0
+
+        while True:
+            try:
+                # Create savepoint
+                self._conn.execute(f"SAVEPOINT {savepoint_name}")
+                yield self._conn
+                # Release savepoint (commit)
+                self._conn.execute(f"RELEASE {savepoint_name}")
+                return
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e) and retries < MAX_RETRIES:
+                    retries += 1
+                    delay = RETRY_DELAY_BASE * (
+                        2 ** (retries - 1)
+                    )  # Exponential backoff
+                    logger.warning(
+                        f"Database locked, retry {retries}/{MAX_RETRIES} after {delay:.2f}s"
+                    )
+                    time.sleep(delay)
+                    # Rollback to savepoint to recover
+                    with suppress(sqlite3.OperationalError):
+                        self._conn.execute(f"ROLLBACK TO SAVEPOINT {savepoint_name}")
+                    continue
+                raise
+            except Exception:
+                # Rollback on any other exception
+                with suppress(sqlite3.OperationalError):
+                    self._conn.execute(f"ROLLBACK TO SAVEPOINT {savepoint_name}")
+                raise
 
     def close(self) -> None:
         """Close the database connection."""
         if self._conn:
-            self._conn.close()
+            with suppress(sqlite3.Error):
+                self._conn.close()
             self._conn = None
+            self._db_path = None
             logger.info("OutcomeStore connection closed")
 
     # -------------------------------------------------------------------------
@@ -196,6 +252,8 @@ class OutcomeStore:
         Returns:
             SignalOutcome if found, None otherwise
         """
+        if self._conn is None:
+            return None
         cursor = self._conn.execute(
             "SELECT * FROM signal_outcomes WHERE outcome_id = ?",
             (outcome_id,),
@@ -297,6 +355,8 @@ class OutcomeStore:
         Returns:
             List of SignalOutcome matching the signal_id
         """
+        if self._conn is None:
+            return []
         cursor = self._conn.execute(
             """
             SELECT * FROM signal_outcomes
@@ -343,6 +403,8 @@ class OutcomeStore:
 
         where_clause = " AND ".join(conditions) if conditions else "1=1"
 
+        if self._conn is None:
+            return []
         cursor = self._conn.execute(
             f"""
             SELECT * FROM signal_outcomes
@@ -394,6 +456,8 @@ class OutcomeStore:
 
         where_clause = " AND ".join(conditions)
 
+        if self._conn is None:
+            return []
         cursor = self._conn.execute(
             f"""
             SELECT * FROM signal_outcomes
@@ -437,6 +501,8 @@ class OutcomeStore:
 
         where_clause = " AND ".join(conditions)
 
+        if self._conn is None:
+            return []
         cursor = self._conn.execute(
             f"""
             SELECT * FROM signal_outcomes
@@ -465,6 +531,8 @@ class OutcomeStore:
         """
         status_value = status.value if hasattr(status, "value") else str(status)
 
+        if self._conn is None:
+            return []
         cursor = self._conn.execute(
             """
             SELECT * FROM signal_outcomes
@@ -535,6 +603,8 @@ class OutcomeStore:
 
         where_clause = " AND ".join(conditions) if conditions else "1=1"
 
+        if self._conn is None:
+            return []
         cursor = self._conn.execute(
             f"""
             SELECT * FROM signal_outcomes
@@ -560,6 +630,8 @@ class OutcomeStore:
         Returns:
             Number of matching outcomes
         """
+        if self._conn is None:
+            return 0
         if filters is None:
             cursor = self._conn.execute("SELECT COUNT(*) as count FROM signal_outcomes")
             return cursor.fetchone()["count"]
@@ -617,6 +689,8 @@ class OutcomeStore:
         Returns:
             Dictionary with outcome statistics
         """
+        if self._conn is None:
+            return {}
         cursor = self._conn.execute("""
             SELECT
                 COUNT(*) as total,
@@ -640,6 +714,12 @@ class OutcomeStore:
         Returns:
             Health status dictionary
         """
+        if self._conn is None:
+            return {
+                "healthy": False,
+                "db_path": self._db_path,
+                "error": "Connection is closed",
+            }
         try:
             cursor = self._conn.execute("SELECT 1")
             cursor.fetchone()
