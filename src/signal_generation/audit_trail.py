@@ -77,7 +77,7 @@ class PipelineAuditEvent:
             Dictionary representation of the audit event
         """
         return {
-            "timestamp": self.timestamp.isoformat(),
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "signal_id": self.signal_id,
             "decision_type": self.decision_type.value,
             "reason": self.reason,
