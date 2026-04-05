@@ -52,6 +52,9 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 2. Push with repo-managed hook enforcement (`git push origin <branch>`)
    - `scripts/swarm/session.py start|verify` ensures `core.hooksPath=.githooks`
    - `.githooks/pre-push` runs `python3 scripts/ci/pre_push_gate.py`
+   - required freshness sync before push:
+     - `git fetch origin --prune`
+     - `git rebase origin/main` (or merge `origin/main` when rebase is not appropriate)
    - do not bypass this hook as a normal worker
 3. Run status sync validation (via command)
 4. Publish completion candidate branch to `origin` (completion publication gate)

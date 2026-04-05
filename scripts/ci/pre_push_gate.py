@@ -48,9 +48,17 @@ def _run(
             check=False,
         )
     except FileNotFoundError as exc:
-        return False, f"{cmd[0]} not found: {exc}", int((time.monotonic() - start) * 1000)
+        return (
+            False,
+            f"{cmd[0]} not found: {exc}",
+            int((time.monotonic() - start) * 1000),
+        )
     except subprocess.TimeoutExpired:
-        return False, f"{title} timed out after {timeout}s", int((time.monotonic() - start) * 1000)
+        return (
+            False,
+            f"{title} timed out after {timeout}s",
+            int((time.monotonic() - start) * 1000),
+        )
 
     output = "\n".join(
         part.strip() for part in (result.stdout, result.stderr) if part.strip()
@@ -101,9 +109,67 @@ def _print_result(title: str, ok: bool, duration_ms: int, output: str) -> None:
             print(f"    ... ({extra} more lines)")
 
 
+def _current_branch() -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip()
+
+
+def _is_feature_branch(branch: str) -> bool:
+    return branch.startswith("feature/")
+
+
+def _branch_is_up_to_date_with_main() -> tuple[bool, str]:
+    fetch = subprocess.run(
+        ["git", "fetch", "origin", "main"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    if fetch.returncode != 0:
+        out = "\n".join(x for x in (fetch.stdout, fetch.stderr) if x.strip())
+        return False, out or "git fetch origin main failed"
+
+    check = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", "origin/main", "HEAD"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    if check.returncode == 0:
+        return True, "branch includes latest origin/main"
+
+    msg = (
+        "branch is behind origin/main. Run "
+        "`git fetch origin --prune && git rebase origin/main` (or merge origin/main) "
+        "before pushing."
+    )
+    return False, msg
+
+
 def run_gate(*, skip_secret_scan: bool) -> int:
     print("ChiseAI pre-push gate")
     print("=" * 48)
+
+    branch = _current_branch()
+    if _is_feature_branch(branch):
+        ok, freshness_output = _branch_is_up_to_date_with_main()
+        _print_result("branch-freshness", ok, 0, freshness_output)
+        if not ok:
+            print("\nPre-push gate failed. Fix issues before pushing.")
+            return 1
 
     if _is_docs_only():
         print("  [PASS] docs-only: changed files are documentation/opencode only")
@@ -125,9 +191,7 @@ def run_gate(*, skip_secret_scan: bool) -> int:
         checks.append(
             ("black", [sys.executable, "-m", "black", "--check", *py_files], 120)
         )
-        checks.append(
-            ("ruff", [sys.executable, "-m", "ruff", "check", *py_files], 120)
-        )
+        checks.append(("ruff", [sys.executable, "-m", "ruff", "check", *py_files], 120))
     else:
         print("  [PASS] black: skipped (no changed Python files)")
         print("  [PASS] ruff: skipped (no changed Python files)")

@@ -4,3 +4,4 @@ redis>=5.0.0
 aiohttp>=3.9.0
 qdrant-client>=1.7.0
 click>=8.0.0
+PyYAML>=6.0

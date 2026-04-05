@@ -8,13 +8,18 @@ LABEL project=chiseai
 LABEL service=signal-supervisor
 LABEL com.docker.compose.service=signal-supervisor
 
+# Copy requirements and install dependencies to /app/local_packages
+COPY requirements.txt /app/requirements.txt
+RUN mkdir -p /app/local_packages && \
+    pip install --no-cache-dir --target /app/local_packages -r /app/requirements.txt
+
 # Copy latest scripts and source code
 COPY scripts/ /app/scripts/
 COPY src/ /app/src/
 
 # Environment defaults for live InfluxDB data path (no mock/simulator)
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app:/app/src
+ENV PYTHONPATH=/app:/app/src:/app/local_packages
 ENV REDIS_HOST=chiseai-redis
 ENV REDIS_PORT=6380
 ENV INFLUXDB_URL=http://chiseai-influxdb:18087

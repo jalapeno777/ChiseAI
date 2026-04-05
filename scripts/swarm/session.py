@@ -509,6 +509,44 @@ def _branch_ahead_count(
         ) from exc
 
 
+def _ensure_branch_up_to_date_with_origin_main(
+    worktree_path: Path, branch: str
+) -> None:
+    if branch == "main":
+        return
+    if not branch.startswith("feature/"):
+        return
+
+    rc, out, err = _run_rc(
+        "git",
+        "-C",
+        str(worktree_path),
+        "fetch",
+        "origin",
+        "main",
+    )
+    if rc != 0:
+        raise SessionError(
+            f"Failed to fetch origin/main for freshness check: {err or out}"
+        )
+
+    rc, out, err = _run_rc(
+        "git",
+        "-C",
+        str(worktree_path),
+        "merge-base",
+        "--is-ancestor",
+        "origin/main",
+        "HEAD",
+    )
+    if rc != 0:
+        raise SessionError(
+            "Branch is behind origin/main. Run "
+            "`git fetch origin --prune && git rebase origin/main` "
+            "(or merge origin/main) before continuing."
+        )
+
+
 def _git_dirty_entries(worktree_path: Path) -> list[str]:
     rc, out, err = _run_rc(
         "git",
@@ -871,6 +909,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
             f"session={session.get('story_id')!r} expected={args.story_id!r}"
         )
 
+    if args.require_up_to_date_main:
+        _ensure_branch_up_to_date_with_origin_main(worktree_path, branch)
+
     ok, cfg = _redis_ping()
     if ok and cfg is not None:
         host, port, db = cfg
@@ -1096,6 +1137,12 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--story-id")
     verify.add_argument("--branch")
     verify.add_argument("--check-canonical", action="store_true")
+    verify.add_argument(
+        "--require-up-to-date-main",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Require feature branch to include latest origin/main (default: true).",
+    )
     verify.add_argument(
         "--force-unlock",
         action="store_true",

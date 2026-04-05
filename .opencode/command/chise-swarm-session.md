@@ -21,11 +21,16 @@ Prereqs:
 
 2. Verify session (before any git action)
    - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --check-canonical`
+   - `verify` now enforces that feature branches include latest `origin/main` by default.
+   - Exceptional bypass only (not normal flow): add `--no-require-up-to-date-main`
    - For any merge-to-main operation, require authority + lock:
      - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --check-canonical --require-main-merge-authority --acquire-main-merge-lock`
    - `verify` also repairs missing/wrong `core.hooksPath` values back to `.githooks`.
 
 3. Push behavior
+   - Sync before push (required for feature branches):
+     - `git fetch origin --prune`
+     - `git rebase origin/main` (or merge `origin/main` if rebase is not appropriate)
    - Standard push: `git push origin "$BRANCH"`
    - The repo-managed `.githooks/pre-push` hook runs `python3 scripts/ci/pre_push_gate.py` automatically.
    - Merlin-only authorized bypass:

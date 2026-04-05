@@ -16,6 +16,10 @@ steps:
       - pip install -e . 2>/dev/null || true
       - cd scripts/pr_lifecycle
       - python3 health_monitor.py scan --stuck-threshold-min 30
+      - |
+        redis-cli -h host.docker.internal -p 6380 -n 0 SET \
+          bmad:chiseai:pr-lifecycle-monitor:last-health-scan \
+          "$(date -Iseconds)" >/dev/null || true
     environment:
       CHISE_REDIS_HOST: host.docker.internal
       CHISE_REDIS_PORT: "6380"
@@ -69,6 +73,27 @@ steps:
       CHISE_PR_MAX_REBASES_PER_WINDOW: "3"
       CHISE_PR_REBASE_WINDOW_SEC: "300"
       CHISE_PR_REBASE_COOLDOWN_MIN: "10"
+      DISCORD_WEBHOOK_URL:
+        from_secret: discord_pr_alerts_webhook
+    when:
+      - event: cron
+    depends_on:
+      - health-scan
+
+  - name: stale-push-kpi
+    image: python:3.11-slim
+    commands:
+      - apt-get update && apt-get install -y redis-tools
+      - python3 scripts/ci/stale_push_kpi.py --limit 50 --threshold 0.30 --write-redis --output-json /tmp/stale-push-kpi.json
+    environment:
+      WOODPECKER_BASE_URL: http://host.docker.internal:8012
+      WOODPECKER_TOKEN:
+        from_secret: woodpecker_token
+      GITEA_OWNER: craig
+      GITEA_REPO: ChiseAI
+      CHISE_REDIS_HOST: host.docker.internal
+      CHISE_REDIS_PORT: "6380"
+      CHISE_REDIS_DB: "0"
       DISCORD_WEBHOOK_URL:
         from_secret: discord_pr_alerts_webhook
     when:

@@ -17,6 +17,10 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 
 2. Local CI checks (best available)
    - Required before any push: `python3 scripts/ci/pre_push_gate.py`
+   - `pre_push_gate.py` now includes a blocking branch freshness check for `feature/*` branches (`origin/main` must be ancestor of `HEAD`).
+   - Expected remediation when stale:
+     - `git fetch origin --prune`
+     - `git rebase origin/main` (or merge `origin/main` if rebase is inappropriate)
    - If `scripts/local-ci-checks.sh` exists, run `./scripts/local-ci-checks.sh --merged-only` for normal feature work.
    - Use `./scripts/local-ci-checks.sh --full` only when the scope/risk requires broader coverage.
    - Otherwise, run the repo's test/lint entry points that exist (for example `pytest`, `ruff`, `black`) and report what you ran.

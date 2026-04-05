@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.error
@@ -92,6 +93,62 @@ def _safe_req_json(
 
 def _repo_path(cfg: Config) -> str:
     return f"/api/v1/repos/{cfg.owner}/{cfg.repo}"
+
+
+def _run_git(*args: str) -> tuple[int, str, str]:
+    proc = subprocess.run(
+        ["git", *args],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
+
+
+def _branch_is_behind_main(base_branch: str = "main") -> tuple[bool, str]:
+    rc, out, err = _run_git("fetch", "origin", base_branch)
+    if rc != 0:
+        return False, f"fetch origin/{base_branch} failed: {err or out}"
+    rc, out, err = _run_git(
+        "merge-base",
+        "--is-ancestor",
+        f"origin/{base_branch}",
+        "HEAD",
+    )
+    if rc == 0:
+        return False, "branch includes latest origin/main"
+    return True, "branch is behind origin/main"
+
+
+def _issue_comments(cfg: Config, number: int) -> list[dict[str, Any]]:
+    out = _safe_req_json(cfg, "GET", f"{_repo_path(cfg)}/issues/{number}/comments")
+    return out if isinstance(out, list) else []
+
+
+def _post_pr_comment(cfg: Config, number: int, body: str) -> bool:
+    payload = {"body": body}
+    if cfg.dry_run:
+        print(f"[dry-run] comment on PR #{number}: {body}")
+        return True
+    result = _safe_req_json(
+        cfg, "POST", f"{_repo_path(cfg)}/issues/{number}/comments", payload
+    )
+    return isinstance(result, dict)
+
+
+def _ensure_stale_comment(cfg: Config, number: int, head: str, reason: str) -> None:
+    marker = "[AUTO-STALE-MAIN]"
+    comments = _issue_comments(cfg, number)
+    for row in comments[-20:]:
+        body = str((row or {}).get("body") or "")
+        if marker in body:
+            return
+    body = (
+        f"{marker} Branch `{head}` is behind `main` and must be rebased/merged with "
+        f"`origin/main` before mergeability checks can pass. ({reason})"
+    )
+    _post_pr_comment(cfg, number, body)
 
 
 def list_branches(cfg: Config) -> list[dict[str, Any]]:
@@ -203,8 +260,16 @@ def ensure_prs(cfg: Config) -> int:
                     continue
             except ValueError:
                 pass
+        is_stale = False
+        stale_reason = ""
+        if cfg.source_branch and name == cfg.source_branch:
+            is_stale, stale_reason = _branch_is_behind_main(cfg.default_base)
         open_pr = _open_pr_for_head(cfg, name)
         if open_pr:
+            if is_stale:
+                number = int(open_pr.get("number") or 0)
+                if number:
+                    _ensure_stale_comment(cfg, number, name, stale_reason)
             if cfg.enable_server_automerge:
                 _enable_merge_check(cfg, open_pr, name)
             continue
@@ -221,6 +286,13 @@ def ensure_prs(cfg: Config) -> int:
         result = _safe_req_json(cfg, "POST", f"{_repo_path(cfg)}/pulls", payload)
         if result and result.get("number"):
             print(f"created PR #{result['number']} for branch {name}")
+            if is_stale:
+                _ensure_stale_comment(
+                    cfg,
+                    int(result["number"]),
+                    name,
+                    stale_reason,
+                )
             if cfg.enable_server_automerge:
                 _enable_merge_check(cfg, result, name)
             created += 1

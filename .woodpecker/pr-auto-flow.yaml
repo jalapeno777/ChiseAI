@@ -25,9 +25,10 @@ steps:
           echo "pre-pr-merge-check: Branch is up-to-date with main"
           exit 0
         else
-          echo "pre-pr-merge-check: FAIL - Branch is behind main"
+          echo "pre-pr-merge-check: WARN - Branch is behind main"
           echo "NOT_MERGEABLE: branch is behind main"
-          exit 1
+          # Non-blocking: still create/update PR so recovery tooling can act.
+          exit 0
         fi
 
   - name: auto-pr
