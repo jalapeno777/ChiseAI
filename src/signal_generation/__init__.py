@@ -13,10 +13,14 @@ Exports:
     SignalStatus: Enum for signal status
     AsyncSignalProcessor: Async signal processing with concurrency control
     SignalPipeline: Async signal processing pipeline
+    SignalDeduper: Redis-backed signal deduplication
+    DedupResult: Deduplication check result
+    filter_duplicates: Helper to filter duplicate signals
 """
 
 from signal_generation.confidence_filter import ConfidenceFilter, FilterResult
 from signal_generation.data_freshness_check import DataFreshnessChecker, FreshnessResult
+from signal_generation.dedup import DedupResult, SignalDeduper, filter_duplicates
 from signal_generation.ict_signal_emitter import (
     ICTEmissionConfig,
     ICTEmissionCycle,
@@ -99,4 +103,8 @@ __all__ = [
     "QualityFilter",
     "QualityFilterMetrics",
     "QualityFilterResult",
+    # Signal Dedup (ST-ICT-P4)
+    "SignalDeduper",
+    "DedupResult",
+    "filter_duplicates",
 ]

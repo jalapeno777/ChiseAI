@@ -23,6 +23,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from signal_generation.dedup import SignalDeduper
     from signal_generation.models import Signal
     from signal_generation.signal_emitter import SignalEmitter
 
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 class ProcessingStage(Enum):
     """Processing stages for a signal."""
 
+    DEDUP = "dedup"
     VALIDATION = "validation"
     ENRICHMENT = "enrichment"
     STORAGE = "storage"
@@ -204,6 +206,7 @@ class AsyncSignalProcessor:
         max_retries: int = 3,
         retry_delay: float = 0.1,
         emitters: list[SignalEmitter] | None = None,
+        deduper: SignalDeduper | None = None,
     ):
         """Initialize async signal processor.
 
@@ -212,11 +215,13 @@ class AsyncSignalProcessor:
             max_retries: Maximum retry attempts for failed operations
             retry_delay: Delay between retries (seconds)
             emitters: List of signal emitters for delivery
+            deduper: Signal deduplicator for duplicate detection
         """
         self.max_concurrent = max_concurrent
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.emitters = emitters or []
+        self._deduper = deduper
 
         # Concurrency control
         self._semaphore = asyncio.Semaphore(max_concurrent)
@@ -278,6 +283,26 @@ class AsyncSignalProcessor:
             delivery_results: list[dict[str, Any]] = []
 
             try:
+                # Stage 0: Deduplication (target: 5ms)
+                if self._deduper is not None:
+                    stage_start = time.perf_counter()
+                    dedup_result = self._deduper.is_duplicate(signal)
+                    metrics.stage_latencies["dedup"] = (
+                        time.perf_counter() - stage_start
+                    ) * 1000
+
+                    if dedup_result.is_duplicate:
+                        logger.debug(
+                            f"Signal {signal.signal_id} deduplicated "
+                            f"(window={dedup_result.window_end - dedup_result.window_start:.1f}s)"
+                        )
+                        return SignalResult(
+                            signal=signal,
+                            success=True,
+                            stage=ProcessingStage.DEDUP,
+                            metrics=metrics,
+                        )
+
                 # Stage 1: Validation (target: 50ms)
                 stage_start = time.perf_counter()
                 validation_result = await self.validate_signal(signal)
