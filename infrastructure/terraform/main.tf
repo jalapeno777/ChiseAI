@@ -832,3 +832,59 @@ resource "docker_container" "kimi_adapter" {
     retries  = 3
   }
 }
+
+# Signal Supervisor Container - EP-PAPER-RUN-001
+# Polls Redis for actionable signals and submits them to the paper trading orchestrator
+# Uses live InfluxDB data only (ALLOW_SIMULATOR_FALLBACK=false)
+resource "docker_container" "chiseai_signal_supervisor" {
+  name  = "chiseai-signal-supervisor"
+  image = "chiseai-signals:latest"
+
+  command = [
+    "python3",
+    "scripts/run_signal_consumer.py",
+    "--poll-interval",
+    "30.0",
+  ]
+
+  env = [
+    "REDIS_HOST=chiseai-redis",
+    "REDIS_PORT=6380",
+    "INFLUXDB_URL=http://chiseai-influxdb:18087",
+    "INFLUXDB_ORG=${var.influxdb_org}",
+    "INFLUXDB_TOKEN=${var.influxdb_token}",
+    "INFLUXDB_BUCKET=chiseai",
+    "ALLOW_SIMULATOR_FALLBACK=false",
+    "TRADING_SYMBOLS=BTC/USDT,ETH/USDT",
+    "PYTHONUNBUFFERED=1",
+    "PYTHONPATH=/app:/app/src",
+  ]
+
+  restart = "always"
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "signal-supervisor"
+  }
+
+  healthcheck {
+    test     = ["CMD-SHELL", "pgrep -f 'run_signal_consumer.py' || exit 1"]
+    interval = "60s"
+    timeout  = "10s"
+    retries  = 3
+  }
+}
