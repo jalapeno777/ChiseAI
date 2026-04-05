@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Continuous signal generator for proof loop testing.
+"""Continuous signal generator for live runtime.
 
-This script continuously generates signals and stores them in Redis
-using the correct key pattern that the forensic harness expects.
+This script continuously generates signals from live InfluxDB data
+and stores them in Redis using the correct key pattern that the
+forensic harness expects. No mock data is used.
 """
 
 import asyncio
@@ -30,37 +31,96 @@ logger = logging.getLogger(__name__)
 import redis
 
 from data_ingestion.ohlcv_fetcher import OHLCVData
+from data_ingestion.storage import InfluxDBStorage, StorageConfig
 from data_ingestion.timeframe_config import Timeframe
 from signal_generation.models import SignalStatus
 from signal_generation.signal_generator import SignalGenerationConfig, SignalGenerator
 
+# Enforce live InfluxDB only - no mock fallback allowed
+ALLOW_SIMULATOR_FALLBACK = False
 
-def create_mock_ohlcv(base_price: float, trend: str = "up"):
-    """Create mock OHLCV data."""
-    now = int(datetime.now(UTC).timestamp() * 1000)
-    data = []
+# Supported symbols for live runtime
+LIVE_SYMBOLS = [
+    "BTC/USDT",
+    "ETH/USDT",
+]
 
-    for i in range(50):
-        if trend == "up":
-            price = base_price + i * 10
-        elif trend == "down":
-            price = base_price - i * 10
-        else:
-            price = base_price + (i % 10) * 5
+# Supported timeframes for live runtime
+LIVE_TIMEFRAMES = [
+    Timeframe.MINUTE_15,
+    Timeframe.HOUR_1,
+]
 
-        data.append(
-            OHLCVData(
-                timestamp=now - (i * 60000),
-                open_price=price - 50,
-                high_price=price + 50,
-                low_price=price - 100,
-                close_price=price,
-                volume=100.0 + i * 10,
-            )
-        )
 
+def get_influxdb_config() -> StorageConfig:
+    """Build InfluxDB config from environment variables."""
+    return StorageConfig(
+        host=os.environ.get("INFLUXDB_URL", "localhost")
+        .replace("http://", "")
+        .replace("https://", ""),
+        port=int(os.environ.get("INFLUXDB_PORT", "8086")),
+        database=os.environ.get("INFLUXDB_BUCKET", "ohlcv"),
+        username=os.environ.get("INFLUXDB_ORG", "-"),
+        password=os.environ.get("INFLUXDB_TOKEN", ""),
+        token=os.environ.get("INFLUXDB_TOKEN", ""),
+        ssl=False,
+    )
+
+
+async def fetch_live_ohlcv(
+    storage: InfluxDBStorage,
+    symbol: str,
+    timeframe: Timeframe,
+    limit: int = 50,
+) -> list[OHLCVData]:
+    """Fetch live OHLCV data from InfluxDB.
+
+    Args:
+        storage: InfluxDB storage instance
+        symbol: Trading pair symbol (e.g. "BTC/USDT")
+        timeframe: Timeframe enum
+        limit: Maximum number of candles to fetch
+
+    Returns:
+        List of OHLCVData objects, newest first
+    """
+    data = await storage.fetch(
+        symbol=symbol,
+        timeframe=timeframe,
+        limit=limit,
+    )
+    # Storage returns newest first; reverse for chronological order
     data.reverse()
     return data
+
+
+async def check_influxdb_connectivity() -> bool:
+    """Guardrail check for InfluxDB connectivity at startup.
+
+    Returns:
+        True if InfluxDB is reachable, False otherwise.
+        Logs fatal error and exits with code 1 if unreachable.
+    """
+    logger.info("Checking InfluxDB connectivity...")
+    config = get_influxdb_config()
+
+    storage = InfluxDBStorage(config)
+    try:
+        is_healthy = await storage.health_check()
+        if is_healthy:
+            logger.info("InfluxDB connection successful")
+            return True
+        else:
+            logger.error(
+                "FATAL: InfluxDB health check failed - InfluxDB is not healthy"
+            )
+            return False
+    except Exception as e:
+        logger.error(f"FATAL: InfluxDB connection failed: {e}")
+        logger.error(
+            "Cannot proceed without live InfluxDB data (no mock fallback allowed)"
+        )
+        return False
 
 
 def store_signal_in_redis_paper_mode(
@@ -105,36 +165,48 @@ def store_signal_in_redis_paper_mode(
         return False
 
 
-def generate_signals_batch(r: redis.Redis, generator: SignalGenerator, count: int = 2):
-    """Generate a batch of signals."""
+async def generate_signals_batch(
+    r: redis.Redis,
+    generator: SignalGenerator,
+    storage: InfluxDBStorage,
+    count: int = 2,
+):
+    """Generate a batch of signals from live InfluxDB data."""
     generated = 0
 
-    symbols = [
-        ("BTC/USDT", 50000.0, "up"),
-        ("ETH/USDT", 3000.0, "down"),
-        ("SOL/USDT", 150.0, "up"),
-        ("LINK/USDT", 15.0, "up"),
-        ("BNB/USDT", 600.0, "down"),
-    ]
-
     for _ in range(count):
-        for symbol, base_price, trend in symbols:
-            try:
-                ohlcv_data = create_mock_ohlcv(base_price, trend)
+        for symbol in LIVE_SYMBOLS:
+            for timeframe in LIVE_TIMEFRAMES:
+                try:
+                    ohlcv_data = await fetch_live_ohlcv(
+                        storage=storage,
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        limit=50,
+                    )
 
-                signal = generator.generate_signal(
-                    token=symbol,
-                    timeframe=Timeframe.HOUR_1,
-                    ohlcv_data=ohlcv_data,
-                    current_price=base_price,
-                )
+                    if not ohlcv_data:
+                        logger.warning(
+                            f"No live OHLCV data for {symbol} {timeframe.value}"
+                        )
+                        continue
 
-                if signal.status == SignalStatus.ACTIONABLE:
-                    if store_signal_in_redis_paper_mode(r, signal, mode="paper"):
-                        generated += 1
+                    # Use the latest close price as current price
+                    current_price = ohlcv_data[-1].close_price
 
-            except Exception as e:
-                logger.error(f"Error generating signal for {symbol}: {e}")
+                    signal = generator.generate_signal(
+                        token=symbol,
+                        timeframe=timeframe,
+                        ohlcv_data=ohlcv_data,
+                        current_price=current_price,
+                    )
+
+                    if signal.status == SignalStatus.ACTIONABLE:
+                        if store_signal_in_redis_paper_mode(r, signal, mode="paper"):
+                            generated += 1
+
+                except Exception as e:
+                    logger.error(f"Error generating signal for {symbol}: {e}")
 
     return generated
 
@@ -151,6 +223,13 @@ async def continuous_signal_generation(
     duration_str = f"{duration_minutes} minutes" if duration_minutes > 0 else "forever"
     logger.info(f"Starting continuous signal generation for {duration_str}")
     logger.info(f"Signal interval: every {interval_seconds} seconds")
+    logger.info(f"Live symbols: {LIVE_SYMBOLS}")
+    logger.info(f"Live timeframes: {[tf.value for tf in LIVE_TIMEFRAMES]}")
+
+    # Guardrail: Check InfluxDB connectivity BEFORE entering main loop
+    if not await check_influxdb_connectivity():
+        logger.critical("InfluxDB connectivity check failed - exiting")
+        sys.exit(1)
 
     # Connect to Redis
     r = redis.Redis(
@@ -184,6 +263,11 @@ async def continuous_signal_generation(
     generator = SignalGenerator(config=config)
     logger.info("Signal generator initialized")
 
+    # Create InfluxDB storage for live data fetching
+    influx_config = get_influxdb_config()
+    storage = InfluxDBStorage(influx_config)
+    logger.info("InfluxDB storage initialized for live data")
+
     # Track metrics
     total_generated = 0
     start_time = time.time()
@@ -210,8 +294,8 @@ async def continuous_signal_generation(
             f"[Iteration {iteration}] Elapsed: {elapsed / 60:.1f}min, Remaining: {remaining_str}"
         )
 
-        # Generate signals
-        count = generate_signals_batch(r, generator, count=2)
+        # Generate signals from live data
+        count = await generate_signals_batch(r, generator, storage, count=2)
         total_generated += count
 
         # Record heartbeat with pipeline status
@@ -255,7 +339,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Continuous signal generator for proof loop"
+        description="Continuous signal generator for live runtime"
     )
     parser.add_argument(
         "--duration",
