@@ -42,6 +42,11 @@ from signal_generation.pipeline import (
     SignalResult,
     ValidationResult,
 )
+from signal_generation.quality_filter import (
+    QualityFilter,
+    QualityFilterMetrics,
+    QualityFilterResult,
+)
 from signal_generation.signal_emitter import (
     DashboardEmitter,
     DiscordEmitter,
@@ -90,4 +95,8 @@ __all__ = [
     "ICTSignalResult",
     "ICTEmissionCycle",
     "get_ict_emitter",
+    # Quality Filter (ST-ICT-S2)
+    "QualityFilter",
+    "QualityFilterMetrics",
+    "QualityFilterResult",
 ]
