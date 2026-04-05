@@ -2441,7 +2441,17 @@ epics:
         status: completed
         completion_date: "2026-04-03"
         evidence: "Merged via PR #916, commit f065a4139. 8-panel Grafana dashboard (ict-signal-quality.json)."
-    progress: "5 of ~15 stories completed"
+      - id: ST-PIPELINE-COMPLETE-001
+        status: completed
+        completion_date: "2026-04-05"
+        evidence: >-
+          Merged to main via commit 1d4c4ae88. Covers S2 (quality filter
+          by_signal_type tracking), S4 (signal type metadata propagation),
+          S5 (no mock code found - production ready), P2 (PipelineAuditLogger
+          with Redis streams). New Grafana dashboard (signal-pipeline-dashboard.json)
+          with 5 panel groups. Black PASS, Ruff PASS, pre-push gate PASS.
+          Feature branch deleted.
+    progress: "6 of ~15 stories completed"
     story_ids:
       - Q2
       - Q3
