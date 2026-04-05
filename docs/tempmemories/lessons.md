@@ -1010,4 +1010,66 @@ LESSON
 - added_utc: 2026-03-30T20:45:00Z
 ```
 
+```text
+LESSON
+- id: LESSON-20260405-ci-skip-prevents-ci
+- context: Workers used `[skip ci]` in commit messages to "retrigger" CI
+- trigger: CI never ran — `[skip ci]` literally tells Woodpecker to skip the pipeline
+- actionable_rule: Always use plain commit messages when retriggering CI. NEVER use `[skip ci]` when you want CI to run.
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: CI always runs when triggered; no false skip directives
+- evidence_ref: MVP Proving Ground sprint CI behavior
+- added_utc: 2026-04-05T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260405-branch-behind-main
+- context: Feature branches pushed without rebasing onto latest main
+- trigger: CI pre-pr-merge-check fails with "branch is behind main"
+- actionable_rule: Always `git fetch origin && git rebase origin/main` before push. Verify `git merge-base --is-ancestor origin/main HEAD` exits 0 before any push.
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: No "branch is behind main" CI failures; all branches current before push
+- evidence_ref: MVP Proving Ground sprint branch hygiene issues
+- added_utc: 2026-04-05T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260405-critic-branch-context
+- context: Critic agents reviewed local main branch instead of feature branch
+- trigger: False HIGH/CRITICAL findings, wasted remediation cycles
+- actionable_rule: Always verify branch context with `git branch --contains` and use Gitea API for remote verification before issuing critic findings.
+- applies_to:
+  - critic
+  - jarvis
+- expected_outcome: Critic findings match actual changed files; no false findings from wrong branch context
+- evidence_ref: MVP Proving Ground sprint critic review issues
+- added_utc: 2026-04-05T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260405-dead-code-wiring
+- context: New modules (dedup, quality filter) created but not exported or wired into pipeline
+- trigger: Code ships but has zero effect — false completion claims
+- actionable_rule: Every new module must be exported from __init__.py AND wired into the actual execution path. Critic must verify import-ability and pipeline integration, not just file existence.
+- applies_to:
+  - dev
+  - senior-dev
+  - critic
+  - jarvis
+- expected_outcome: New modules are fully wired and functional when shipped; no dead code in production
+- evidence_ref: ST-ICT-P4 (dedup wiring), ST-ICT-S2 (quality filter exports)
+- added_utc: 2026-04-05T20:00:00Z
+```
+
 (End of file - total 720 lines)

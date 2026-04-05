@@ -597,6 +597,74 @@ in_progress:
       - "REMEDIATION: SKILL.md replaced with approved 371-line V3 design on 2026-03-30
         (original 157-line generic was incorrect)"
     owner: merlin
+  - id: SPRINT-MVP-PROVING-GROUND
+    title: MVP Proving Ground Sprint
+    description: >-
+      MVP Proving Ground sprint — production hardening + observability + launch readiness.
+      All 12 stories merged to main across 4 batches (Batch 1A, 1B, 2A, 2B).
+    completion_date: "2026-04-05"
+    priority: P1
+    status: completed
+    story_points: 25
+    merge_commit: 54760c7f309848b3da5a5d16f2c0b8991a891fee
+    stories:
+      - id: ST-PAPER-BURN-001
+        title: Burn-in Tracking System
+        status: merged
+        merge_commit: 3e8d89e496c5ee56cb43faf2169ce3228b13fc99
+      - id: ST-PAPER-GUARD-001
+        title: Burn-in Bypass Guard
+        status: merged
+        merge_commit: a034e9060a43d6f97a708824c94b3c222895bc39
+      - id: ST-ICT-S3
+        title: Signal Confidence Initialization
+        status: merged
+        merge_commit: c4f401102abbabb7cedadc9bd33d2b06907fa57f
+      - id: ST-PAPER-POS-001
+        title: Position Persistence Fix
+        status: merged
+        merge_commit: c545958ff205d04bbd013b7a17f2a574e07e9080
+      - id: ST-ICT-S2
+        title: Signal Quality Filter
+        status: merged
+        merge_commit: 64c0030f4ec677a28d1ec9ae977d51c731f34d3e
+      - id: ST-ICT-P4
+        title: Signal Dedup Wiring
+        status: merged
+        merge_commit: 5e5ff1cefc8b2cea9bc14740c8ed298803139da6
+      - id: ST-ICT-P1
+        title: Signal Outcome DB Backend
+        status: merged
+        merge_commit: 5756adb4766b3a2815c1a0c2744d219d1650b821
+      - id: ST-LAUNCH-KILL-001
+        title: Kill Switch E2E Tests
+        status: merged
+        merge_commit: 45624141d5a49366ffe190348be0a27fe4895521
+      - id: ST-PAPER-REPORT-001
+        title: Daily Paper Health Report
+        status: merged
+        merge_commit: 0123a173db6ae54b4f2226c0d17482de4d6502f8
+      - id: ST-LAUNCH-VAL-001
+        title: Launch Readiness Validation
+        status: merged
+        merge_commit: 722b244bb13564d9d1d9267ab2a33a286a0a319e
+      - id: ST-CI-OBS-001
+        title: CI Observability Report
+        status: merged
+        merge_commit: d3900ef1ee2a2370e9bf77d32f3549078114fce6
+      - id: ST-PIPELINE-COMPLETE-001
+        title: Pipeline Transparency Completion
+        status: merged
+        merge_commit: 1d4c4ae881d05da5c920d8c128334b549f77bddc
+    notes:
+      - "12 stories completed in 2 days"
+      - "Batch 1A: burn-in + guard + signal confidence"
+      - "Batch 1B: position fix + quality filter + dedup wiring + outcome DB"
+      - "Batch 2A: kill switch E2E + health report + launch validation + CI observability"
+      - "Batch 2B: pipeline transparency completion + workflow status update"
+      - "All commits verified on main via git branch --contains"
+      - "4 new lessons captured in docs/tempmemories/lessons.md"
+    owner: jarvis
 backlog:
   - acceptance_criteria:
       - Docker images use consistent python/python3 PATH across all CI steps
