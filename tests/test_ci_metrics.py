@@ -3,19 +3,16 @@
 from __future__ import annotations
 
 import json
+
+# Import from the actual module
+import sys
 import tempfile
 from dataclasses import asdict
 from pathlib import Path
 
-import pytest
-
-# Import from the actual module
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from scripts.ci.ci_observability_report import (
     CIObservabilityCollector,
-    CIObservabilityReport,
     StepDiagnostics,
     StepTiming,
     format_human_report,
