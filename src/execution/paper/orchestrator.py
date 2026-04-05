@@ -753,14 +753,13 @@ class PaperTradingOrchestrator:
                 ).total_seconds()
 
                 # Close if position is older than 60 seconds (for burn-in testing)
-                # Only active when ENABLE_BURN_IN_TESTING=true env var is set
+                # Only active when POC_MODE=true env var is set
+                # POC_MODE is the ONLY allowed bypass path for burn-in testing
                 if (
-                    os.getenv("ENABLE_BURN_IN_TESTING", "false").lower() == "true"
+                    os.getenv("POC_MODE", "false").lower() == "true"
                     and position_age_seconds > 60
                 ):
-                    logger.debug(
-                        "Burn-in testing is enabled via ENABLE_BURN_IN_TESTING=true"
-                    )
+                    logger.debug("Burn-in testing is enabled via POC_MODE=true")
                     await self.close_position(
                         existing_position.position_id, entry_price, reason="time_limit"
                     )

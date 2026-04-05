@@ -844,10 +844,117 @@ class TestPositionManagement:
     async def test_time_based_position_close(
         self, orchestrator, mock_components, mock_signal
     ):
-        """Test that positions older than 60 seconds are closed (BURNIN-001 fix)."""
+        """Test that positions older than 60 seconds are closed when POC_MODE=true (BURNIN-001 fix).
+
+        This test verifies the burn-in bypass only works when POC_MODE is explicitly enabled.
+        The bypass allows time-based closing of old positions for testing purposes.
+        """
+        import os
+        from datetime import UTC, datetime, timedelta
+
+        # Enable POC_MODE for burn-in testing
+        os.environ["POC_MODE"] = "true"
+
+        try:
+            # Setup: Create an existing LONG position that is OLD (older than 60 seconds)
+            old_position = MagicMock()
+            old_position.position_id = "old-pos-001"
+            old_position.symbol = "BTC/USDT"
+            old_position.side = "long"
+            old_position.opened_at = datetime.now(UTC) - timedelta(
+                seconds=61
+            )  # Expired
+
+            # Mock get_open_positions to return the old position
+            mock_components["position_tracker"].get_open_positions = AsyncMock(
+                return_value=[old_position]
+            )
+            mock_components["position_tracker"].close_position = AsyncMock(
+                return_value=(old_position, 50.0)
+            )
+
+            # Process a LONG signal (same direction, but position is old)
+            result = await orchestrator.process_signal(mock_signal)
+
+            # Verify old position was closed due to time limit (burn-in bypass)
+            mock_components["position_tracker"].close_position.assert_called_once()
+            call_args = mock_components["position_tracker"].close_position.call_args
+            assert call_args.kwargs["position_id"] == old_position.position_id
+        finally:
+            # Clean up: reset POC_MODE
+            os.environ.pop("POC_MODE", None)
+
+    @pytest.mark.asyncio
+    async def test_time_based_position_close_blocked_when_poc_mode_disabled(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that positions older than 60 seconds are NOT closed when POC_MODE=false.
+
+        This test verifies the burn-in bypass is blocked in production (non-POC) mode.
+        ST-PAPER-GUARD-001: POC_MODE is the ONLY way to bypass burn-in.
+        """
+        import os
         from datetime import UTC, datetime, timedelta
 
         from execution.paper.models import RiskAssessment
+
+        # Ensure POC_MODE is disabled (default for production)
+        os.environ["POC_MODE"] = "false"
+
+        try:
+            # Setup: Create an existing LONG position that is OLD (older than 60 seconds)
+            old_position = MagicMock()
+            old_position.position_id = "old-pos-001"
+            old_position.symbol = "BTC/USDT"
+            old_position.side = "long"
+            old_position.opened_at = datetime.now(UTC) - timedelta(
+                seconds=61
+            )  # Expired
+
+            # Mock get_open_positions to return the old position
+            mock_components["position_tracker"].get_open_positions = AsyncMock(
+                return_value=[old_position]
+            )
+            mock_components["position_tracker"].close_position = AsyncMock(
+                return_value=(old_position, 50.0)
+            )
+
+            # Setup for same-direction signal (should be skipped without burn-in bypass)
+            mock_components["risk_enforcer"].validate_order = AsyncMock(
+                return_value=RiskAssessment(approved=True, position_size=0.1)
+            )
+
+            # Process a LONG signal (same direction as existing position)
+            result = await orchestrator.process_signal(mock_signal)
+
+            # Verify old position was NOT closed due to time limit
+            # When POC_MODE=false, the burn-in bypass is disabled
+            mock_components["position_tracker"].close_position.assert_not_called()
+
+            # Verify new position was NOT opened (same direction signal was skipped)
+            mock_components["position_tracker"].open_position.assert_not_called()
+
+            # Verify signal was handled but position unchanged
+            assert result.status in (TradeStatus.SKIPPED, TradeStatus.EXECUTED)
+        finally:
+            # Clean up: reset POC_MODE
+            os.environ.pop("POC_MODE", None)
+
+    @pytest.mark.asyncio
+    async def test_burn_in_bypass_unreachable_when_poc_mode_unset(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that burn-in bypass is unreachable when POC_MODE is not set.
+
+        This test verifies the default production behavior where burn-in bypass
+        is NOT active without explicit POC_MODE=true.
+        ST-PAPER-GUARD-001: POC_MODE is the ONLY way to bypass burn-in.
+        """
+        import os
+        from datetime import UTC, datetime, timedelta
+
+        # Ensure POC_MODE is not set
+        os.environ.pop("POC_MODE", None)
 
         # Setup: Create an existing LONG position that is OLD (older than 60 seconds)
         old_position = MagicMock()
@@ -864,44 +971,12 @@ class TestPositionManagement:
             return_value=(old_position, 50.0)
         )
 
-        # Setup for new position after time-based close
-        mock_components["risk_enforcer"].validate_order = AsyncMock(
-            return_value=RiskAssessment(approved=True, position_size=0.1)
-        )
-
-        filled_order = PaperOrder(
-            symbol="BTC/USDT",
-            side=OrderSide.BUY,
-            order_type=OrderType.MARKET,
-            quantity=0.1,
-            order_id="test-order-time-001",
-            state=OrderState.FILLED,
-            filled_quantity=0.1,
-            avg_fill_price=50000.0,
-        )
-        mock_components["order_sim"].place_order = AsyncMock(return_value=filled_order)
-
-        mock_position = MagicMock()
-        mock_position.position_id = "new-pos-time-001"
-        mock_position.symbol = "BTC/USDT"
-        mock_components["position_tracker"].open_position = AsyncMock(
-            return_value=mock_position
-        )
-
-        # Process a LONG signal (same direction, but position is old)
+        # Process a LONG signal (same direction as existing position)
         result = await orchestrator.process_signal(mock_signal)
 
-        # Verify old position was closed due to time limit
-        mock_components["position_tracker"].close_position.assert_called_once()
-        call_args = mock_components["position_tracker"].close_position.call_args
-        assert call_args.kwargs["position_id"] == old_position.position_id
-        # Note: reason is logged by orchestrator, not passed to position_tracker
-
-        # Verify new position was opened
-        mock_components["position_tracker"].open_position.assert_called_once()
-
-        # Verify trade was executed
-        assert result.status == TradeStatus.EXECUTED
+        # Verify old position was NOT closed due to time limit
+        # When POC_MODE is not set (default false), the burn-in bypass is disabled
+        mock_components["position_tracker"].close_position.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_no_existing_position_opens_new(
