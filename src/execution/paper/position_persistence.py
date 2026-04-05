@@ -57,9 +57,16 @@ class PositionPersistence:
         if position.is_open:
             # Open positions use primary key
             key = f"{self._key_prefix}{position.position_id}"
+            # Clean up any stale closed key if position is reopened
+            closed_key = f"{self._key_prefix}closed:{position.position_id}"
+            await self._redis.delete(closed_key)
         else:
             # Closed positions use separate key to preserve open state for recovery
             key = f"{self._key_prefix}closed:{position.position_id}"
+            # CRITICAL FIX: Delete stale open key when closing a position
+            # This prevents stale open-key resurrection bug
+            open_key = f"{self._key_prefix}{position.position_id}"
+            await self._redis.delete(open_key)
         data = self._serialize_position(position)
         await self._redis.set(key, json.dumps(data))
         logger.debug(
@@ -72,8 +79,11 @@ class PositionPersistence:
         Args:
             position_id: Position ID to remove
         """
-        key = f"{self._key_prefix}{position_id}"
-        await self._redis.delete(key)
+        # Delete both open and closed keys if they exist
+        # This ensures clean removal regardless of position state
+        open_key = f"{self._key_prefix}{position_id}"
+        closed_key = f"{self._key_prefix}closed:{position_id}"
+        await self._redis.delete(open_key, closed_key)
         logger.debug(f"Removed position {position_id} from persistence")
 
     async def load_all_positions(self) -> list[PaperPosition]:
