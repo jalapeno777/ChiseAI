@@ -73,9 +73,10 @@ class TestPositionPersistence:
 
         # Assert
         assert closed_pos.closed_at is not None
-        # Verify in Redis - should have 2 keys: open and closed positions stored separately
+        # Verify in Redis - should have only 1 key (closed position)
+        # The old open key should be deleted to prevent stale open-key resurrection
         keys = await redis_client.keys("paper:position:*")
-        assert len(keys) == 2
+        assert len(keys) == 1
         # The closed position should be stored with "closed:" prefix
         closed_keys = [k for k in keys if ":closed:" in k]
         assert len(closed_keys) == 1
@@ -125,13 +126,13 @@ class TestPositionPersistence:
         # Act
         recovered_count = await tracker2.recover_from_persistence()
 
-        # Assert
-        assert recovered_count == 2
+        # Assert - only 1 position was created and closed, so only 1 key exists
+        # (the old open key is deleted when position is closed to prevent resurrection)
+        assert recovered_count == 1
         open_positions = await tracker2.get_open_positions()
         closed_positions = await tracker2.get_closed_positions()
-        assert len(open_positions) == 1
+        assert len(open_positions) == 0
         assert len(closed_positions) == 1
-        assert open_positions[0].symbol == "BTC/USDT"
         assert closed_positions[0].symbol == "BTC/USDT"
         assert closed_positions[0].closed_at is not None
 
@@ -282,3 +283,55 @@ class TestPositionPersistenceEdgeCases:
         assert restored.symbol == position.symbol
         assert restored.entry_fees == 0.0
         assert restored.exit_fees == 0.0
+
+    @pytest.mark.asyncio
+    async def test_closed_position_does_not_resurrect_on_recovery(self, redis_client):
+        """REGRESSION TEST: Verify closed positions don't resurrect on restart.
+
+        This test verifies the fix for the stale open-key resurrection bug where:
+        1. A position is opened and persisted to Redis
+        2. The position is closed, persisted with 'closed:' prefix
+        3. On restart, the old open key should NOT cause the closed position to resurrect
+
+        Before the fix:
+        - Both open and closed keys existed in Redis
+        - load_all_positions() would load both
+        - The stale open key would incorrectly resurrect the position as open
+
+        After the fix:
+        - Only the closed key exists after closing
+        - Recovery correctly restores position as closed
+        """
+        # Arrange - Create tracker, open and close a position
+        tracker1 = PaperPositionTracker()
+        await tracker1.enable_persistence(redis_client)
+
+        open_pos = await tracker1.open_position("BTC/USDT", "long", 50000.0, 0.1)
+        position_id = open_pos.position_id
+
+        # Close the position
+        closed_pos, pnl = await tracker1.close_position(position_id, exit_price=51000.0)
+        assert closed_pos.is_open is False
+
+        # Verify in Redis - should have only 1 key (closed)
+        keys = await redis_client.keys("paper:position:*")
+        assert len(keys) == 1
+        assert ":closed:" in keys[0]
+
+        # Simulate restart by creating new tracker
+        tracker2 = PaperPositionTracker()
+        await tracker2.enable_persistence(redis_client)
+
+        # Act - Recover from persistence
+        recovered_count = await tracker2.recover_from_persistence()
+
+        # Assert - Only 1 position recovered, and it's correctly closed
+        assert recovered_count == 1
+        open_positions = await tracker2.get_open_positions()
+        closed_positions = await tracker2.get_closed_positions()
+
+        assert len(open_positions) == 0, "Closed position should NOT resurrect as open"
+        assert len(closed_positions) == 1, "Closed position should be recovered"
+        assert closed_positions[0].position_id == position_id
+        assert closed_positions[0].is_open is False
+        assert closed_positions[0].closed_at is not None
