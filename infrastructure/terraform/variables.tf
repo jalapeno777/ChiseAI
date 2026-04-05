@@ -254,7 +254,7 @@ variable "discord_trading_webhook_url" {
 variable "trading_symbols" {
   type        = string
   description = "Comma-separated symbols for live paper trading loop."
-  default     = "BTC/USDT,ETH/USDT,SOL/USDT"
+  default     = "BTC/USDT,ETH/USDT"
 }
 
 variable "trading_timeframe" {
