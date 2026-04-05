@@ -294,3 +294,13 @@
 {"ts":"2026-04-05T15:05:50.057Z","type":"file.edited","file":"/tmp/worktrees/ST-CI-OBS-001-quickdev/tests/test_ci_metrics.py"}
 {"ts":"2026-04-05T15:08:07.039Z","type":"file.edited","file":"/tmp/worktrees/ST-CI-OBS-001-quickdev/scripts/ci/ci_observability_report.py"}
 {"ts":"2026-04-05T15:09:42.241Z","type":"file.edited","file":"/tmp/worktrees/ST-CI-OBS-001-quickdev/tests/test_ci_metrics.py"}
+{"ts":"2026-04-05T16:10:41.031Z","type":"file.edited","file":"/home/tacopants/projects/ChiseAI/scripts/ci/ci_observability_report.py"}
+{"ts":"2026-04-05T16:11:12.842Z","type":"file.edited","file":"/home/tacopants/projects/ChiseAI/scripts/ci/ci_observability_report.py"}
+{"ts":"2026-04-05T16:11:53.192Z","type":"file.edited","file":"/home/tacopants/projects/ChiseAI/scripts/ci/ci_observability_report.py"}
+{"ts":"2026-04-05T16:15:11.243Z","type":"session.idle","sessionID":"ses_2a1a02da9ffeHjNQB8t4xCYKw4","value":"{\"sessionID\":\"ses_2a1a02da9ffeHjNQB8t4xCYKw4\"}"}
+{"ts":"2026-04-05T16:17:04.075Z","type":"session.idle","sessionID":"ses_2a191d2c1ffe76HRgIhRg1JCaI","value":"{\"sessionID\":\"ses_2a191d2c1ffe76HRgIhRg1JCaI\"}"}
+{"ts":"2026-04-05T16:22:24.171Z","type":"session.idle","sessionID":"ses_2a18f6612ffe3w6O3ZKBJYYBkV","value":"{\"sessionID\":\"ses_2a18f6612ffe3w6O3ZKBJYYBkV\"}"}
+{"ts":"2026-04-05T16:26:28.582Z","type":"session.idle","sessionID":"ses_2a18b1289ffeO5LFuZdiWZjNH1","value":"{\"sessionID\":\"ses_2a18b1289ffeO5LFuZdiWZjNH1\"}"}
+{"ts":"2026-04-05T16:28:19.896Z","type":"session.idle","sessionID":"ses_2a1a4293bffeASYnf9pIq9CP19","value":"{\"sessionID\":\"ses_2a1a4293bffeASYnf9pIq9CP19\"}"}
+{"ts":"2026-04-05T16:29:11.359Z","type":"todo.updated","sessionID":"ses_2a4e2df89ffeVN1uvOMWabugbn","todo":"{\"sessionID\":\"ses_2a4e2df89ffeVN1uvOMWabugbn\",\"todos\":[{\"content\":\"Load session context (lessons + TP session health)\",\"priority\":\"high\",\"status\":\"completed\"},{\"content\":\"Execute Batch 1A via fresh Jarvis session\",\"priority\":\"high\",\"status\":\"completed\"},{\"content\":\"Run Aria verification gate for Batch 1A evidence\",\"priority\":\"high\",\"status\":\"completed\"},{\"content\":\"Rotate to fresh Jarvis session for Batch 1B execution\",\"priority\":\"high\",\"status\":\"completed\"},{\"content\":\"Run Aria verification gat …[truncated]"}
+{"ts":"2026-04-05T16:30:04.987Z","type":"session.idle","sessionID":"ses_2a4e2df89ffeVN1uvOMWabugbn","value":"{\"sessionID\":\"ses_2a4e2df89ffeVN1uvOMWabugbn\"}"}
