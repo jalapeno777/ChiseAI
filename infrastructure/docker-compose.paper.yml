@@ -5,6 +5,8 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.paper-trading
     container_name: chiseai-paper-trading-consumer
     restart: unless-stopped
+    env_file:
+      - ../.env
     networks:
       - chiseai
     environment:
