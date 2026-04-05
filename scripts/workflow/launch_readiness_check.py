@@ -33,6 +33,20 @@ TEST_FILE = Path("tests/e2e/test_launch_readiness.py")
 
 LAUNCH_READINESS_VERSION = "1.0.0"
 
+
+# Docker container detection
+def _is_running_in_docker() -> bool:
+    """Check if running inside a Docker container."""
+    return Path("/.dockerenv").exists() or Path("/run/docker.sock").exists()
+
+
+def _get_host_for_container() -> str:
+    """Get the appropriate host for container-to-host communication."""
+    if _is_running_in_docker():
+        return "host.docker.internal"
+    return "localhost"
+
+
 # Checklist item definitions with targets
 CHECKLIST_ITEMS = [
     {
@@ -341,11 +355,12 @@ def check_redis_connectivity() -> dict[str, Any]:
         # Try to use redis client directly
         import redis
 
-        r = redis.Redis(host="localhost", port=6379, socket_connect_timeout=2)
+        redis_host = _get_host_for_container()
+        r = redis.Redis(host=redis_host, port=6379, socket_connect_timeout=2)
         r.ping()
         return {
             "status": "pass",
-            "details": {"connected": True},
+            "details": {"connected": True, "host": redis_host},
         }
     except ImportError:
         # redis library not available - check via subprocess
@@ -386,8 +401,9 @@ def check_influxdb_connectivity() -> dict[str, Any]:
         import influxdb_client
         from influxdb_client.client.ping_api import PingService
 
+        influxdb_host = _get_host_for_container()
         client = influxdb_client.InfluxDBClient(
-            url="http://localhost:8086",
+            url=f"http://{influxdb_host}:8086",
             timeout=5000,
         )
         ping_service = PingService(client)
@@ -549,16 +565,26 @@ def generate_launch_readiness_report(
                 )
                 report.add_checklist_validation(validation)
         else:
-            # Default: assume document is correct (11 passing)
-            report.summary["passing"] = 11
+            # Document couldn't be parsed and run_tests=False: fail-safe - mark as unknown
+            # Do NOT silently assume passing; this is a fail-safe violation (C-1/C-2)
+            report.add_issue(
+                severity="warning",
+                category="document_validation",
+                description="Checklist document could not be parsed; items marked unknown",
+                details={"checklist_path": str(CHECKLIST_PATH)},
+            )
             for item in CHECKLIST_ITEMS:
                 validation = ChecklistValidation(
                     item_id=item["id"],
                     name=item["name"],
-                    status="pass",
-                    details={"source": "checklist_document"},
+                    status="unknown",
+                    details={
+                        "reason": "document_parse_failed",
+                        "source": "checklist_document",
+                    },
                 )
                 report.add_checklist_validation(validation)
+                report.summary["unknown"] += 1
 
     # System checks
     report.add_system_check("Grafana Dashboards", **check_grafana_accessible())
@@ -572,10 +598,14 @@ def generate_launch_readiness_report(
     warnings = report.summary["warnings"]
     unknown = report.summary["unknown"]
 
-    if failing > 0 or unknown > 5:
+    if failing > 3:
+        # Critical: multiple failures
+        report.summary["overall_status"] = "critical"
+    elif failing > 0 or unknown > 5:
         # Multiple failures or too many unknowns
         report.summary["overall_status"] = "not_ready"
-    elif failing > 0 or warnings > 0:
+    elif warnings > 0:
+        # Warnings only - degraded but operational
         report.summary["overall_status"] = "degraded"
     elif passing >= 11:
         # All checklist items passing
