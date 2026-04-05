@@ -67,6 +67,7 @@ class StepTiming:
     end_time: str | None = None
     status: str = "unknown"  # pass, fail, skip, unknown
     has_timing: bool = False
+    exit_code: int | None = None
 
 
 @dataclass
@@ -132,7 +133,12 @@ class CIObservabilityCollector:
         failed_steps = 0
 
         for step_name, timing in sorted(self.steps.items()):
-            steps_data.append(asdict(timing))
+            step_dict = asdict(timing)
+            # Merge diagnostics into step data if available
+            if step_name in self.diagnostics:
+                diag = self.diagnostics[step_name]
+                step_dict["diagnostics"] = asdict(diag)
+            steps_data.append(step_dict)
             if timing.duration_seconds is not None:
                 total_duration += timing.duration_seconds
                 steps_with_timing += 1
@@ -305,6 +311,10 @@ class CIObservabilityCollector:
         for log_file in self.ci_dir.glob("*.log"):
             step_name = log_file.stem
             diag = StepDiagnostics(step_name=step_name)
+
+            # Copy exit_code from StepTiming if available (set by _scan_status_files)
+            if step_name in self.steps and self.steps[step_name].exit_code is not None:
+                diag.exit_code = self.steps[step_name].exit_code
 
             try:
                 content = log_file.read_text(encoding="utf-8", errors="replace")
