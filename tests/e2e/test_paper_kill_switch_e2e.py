@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -32,9 +32,8 @@ from execution.paper.paper_kill_switch import (
     PaperKillSwitchManager,
     PaperKillSwitchStatus,
 )
-from execution.paper.risk_models import RiskAssessment, RiskViolation, RiskSeverity
+from execution.paper.risk_models import RiskAssessment, RiskSeverity, RiskViolation
 from signal_generation.models import Signal, SignalDirection, SignalStatus
-
 
 # ============================================================================
 # Fixtures
@@ -585,9 +584,9 @@ class TestKillSwitchSafetyInvariants:
 
         # Process should succeed (within limits)
         result = await orchestrator.process_signal(mock_signal)
-        assert result.status == TradeStatus.EXECUTED, (
-            f"Expected success, got: {result.reject_reason}"
-        )
+        assert (
+            result.status == TradeStatus.EXECUTED
+        ), f"Expected success, got: {result.reject_reason}"
 
         await kill_switch_manager.close()
 
@@ -789,9 +788,9 @@ class TestOrchestratorWithRealKillSwitch:
 
             # Process signal should succeed when kill switch is inactive
             result_inactive = await orchestrator.process_signal(mock_signal)
-            assert result_inactive.status == TradeStatus.EXECUTED, (
-                f"Expected success, got: {result_inactive.reject_reason}"
-            )
+            assert (
+                result_inactive.status == TradeStatus.EXECUTED
+            ), f"Expected success, got: {result_inactive.reject_reason}"
 
             # Activate kill switch
             await kill_switch_manager.activate(
@@ -808,8 +807,8 @@ class TestOrchestratorWithRealKillSwitch:
             assert await kill_switch_manager.is_active() is False
 
             result_resumed = await orchestrator.process_signal(mock_signal_third)
-            assert result_resumed.status == TradeStatus.EXECUTED, (
-                f"Expected success after deactivation, got: {result_resumed.reject_reason}"
-            )
+            assert (
+                result_resumed.status == TradeStatus.EXECUTED
+            ), f"Expected success after deactivation, got: {result_resumed.reject_reason}"
         finally:
             await kill_switch_manager.close()
