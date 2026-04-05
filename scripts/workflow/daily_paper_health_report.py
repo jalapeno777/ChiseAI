@@ -30,6 +30,21 @@ sys.path.insert(0, "src")
 from reporting.daily_generator import DailyReportGenerator
 from reporting.models import PaperHealthReport
 
+try:
+    import redis.exceptions as redis_exc
+except ImportError:
+    redis_exc = None
+
+# Pre-compute exception tuple to satisfy ruff B030
+_REDIS_EXCEPTIONS: tuple[type, ...] = (ConnectionError, TimeoutError)
+if redis_exc:
+    _REDIS_EXCEPTIONS = (
+        ConnectionError,
+        TimeoutError,
+        redis_exc.ConnectionError,
+        redis_exc.TimeoutError,
+    )
+
 HEALTH_REPORT_VERSION = "1.0.0"
 
 
@@ -159,8 +174,74 @@ def main():
 
     args = parser.parse_args()
 
-    # Generate health report
-    report_output = asyncio.run(generate_health_report())
+    # Generate health report with robust error handling for Redis failures
+    try:
+        report_output = asyncio.run(generate_health_report())
+    except _REDIS_EXCEPTIONS as e:
+        # Return structured error response when Redis is unreachable
+        error_output = {
+            "version": HEALTH_REPORT_VERSION,
+            "timestamp": datetime.now(UTC).isoformat() + "Z",
+            "error": True,
+            "error_type": "redis_unreachable",
+            "error_message": str(e),
+            "health_status": "UNAVAILABLE",
+            "all_checks_pass": False,
+            "health_metrics": None,
+            "portfolio": None,
+            "active_strategies": None,
+            "warnings": [f"Redis connection failed: {type(e).__name__}"],
+        }
+        if args.json:
+            print(json.dumps(error_output, indent=2))
+        else:
+            print("=" * 80)
+            print("PAPER TRADING DAILY HEALTH REPORT - ERROR")
+            print("=" * 80)
+            print(f"Version: {HEALTH_REPORT_VERSION}")
+            print(f"Timestamp: {error_output['timestamp']}")
+            print()
+            print("✗ CRITICAL - Redis connection failed")
+            print(f"  Error: {type(e).__name__}: {e}")
+            print()
+            print(
+                "  The health report cannot be generated because Redis is unreachable."
+            )
+            print("  This may indicate a network issue or Redis server problem.")
+            print("=" * 80)
+            print("STATUS: ✗ UNAVAILABLE - Redis unreachable")
+            print("=" * 80)
+        return 2
+    except Exception as e:
+        # Catch any other unexpected errors
+        error_output = {
+            "version": HEALTH_REPORT_VERSION,
+            "timestamp": datetime.now(UTC).isoformat() + "Z",
+            "error": True,
+            "error_type": "unexpected_error",
+            "error_message": str(e),
+            "health_status": "ERROR",
+            "all_checks_pass": False,
+            "health_metrics": None,
+            "portfolio": None,
+            "active_strategies": None,
+            "warnings": [f"Unexpected error: {type(e).__name__}"],
+        }
+        if args.json:
+            print(json.dumps(error_output, indent=2))
+        else:
+            print("=" * 80)
+            print("PAPER TRADING DAILY HEALTH REPORT - ERROR")
+            print("=" * 80)
+            print(f"Version: {HEALTH_REPORT_VERSION}")
+            print(f"Timestamp: {error_output['timestamp']}")
+            print()
+            print("✗ ERROR - Unexpected failure")
+            print(f"  Error: {type(e).__name__}: {e}")
+            print("=" * 80)
+            print("STATUS: ✗ ERROR - Unexpected failure")
+            print("=" * 80)
+        return 2
 
     # Output report
     if args.json:
