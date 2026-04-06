@@ -4220,6 +4220,35 @@ validations:
       - No additional runtime paths require immediate ContextAssemblyBoundary adoption
     test_method: manual
     owner: jarvis
+
+  # ============================================================
+  # REPO-STORY-LINKAGE-001: Epic/Story Linkage Reconciliation
+  # ============================================================
+
+  - id: V-REPO-LINKAGE-001
+    title: Epic/Story Linkage Consistency and Exceptions Documentation
+    epic_id: EP-GOV-001
+    story_id: REPO-STORY-LINKAGE-001
+    status: validated
+    validation_date: "2026-04-06"
+    description: |
+      Validate epic/story linkage consistency reconciliation including documentation
+      of immutable historical linkage exceptions. EP-LAUNCH-004 status updated to
+      in_progress (1 of 3 stories completed). EP-GOV-001 story_points updated
+      from 68 to 73 (added MINI-001 2pts + MINI-002 3pts). New linkage_exceptions
+      section documents 7 immutable historical exceptions where epic/story linkage
+      is intentionally inconsistent due to legacy naming, sprint shorthand identifiers,
+      or architectural differences.
+    acceptance_criteria:
+      - EP-LAUNCH-004 status reflects accurate completion state (in_progress)
+      - EP-GOV-001 story_points include all tracked stories (73 SP)
+      - linkage_exceptions section documents all known inconsistencies
+      - EP-ICT-006 story_ids preserved to canonical 7 stories (cross-epic conflict avoided)
+      - status_guard.py validate passes
+      - validate_docs_pairing.py passes (workflow-status + validation-registry paired)
+    test_method: automated
+    owner: merlin
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
