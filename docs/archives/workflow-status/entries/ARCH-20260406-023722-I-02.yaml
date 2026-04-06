@@ -1,0 +1,32 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-I-02
+original_story_id: I-02
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834776Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-I-02
+  id: I-02
+  status: archived
+  name: Docker Health Checks
+  title: Docker Health Checks
+  completion_date: '2026-03-25'
+  sprint_id: SP-2026-Q1-03
+archived_fields:
+  merge_commit: 887a274
+  pr_number: 623
+completion_evidence:
+  pr_number: 623
+  merge_commit: 887a274
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-I-02.yaml
+integrity:
+  original_checksum: 8224fccfd4462b16118e47d769c986005281a040f4ae8b9905fd88ca99c6acc0
+  archived_checksum: 521b85beb9cb66352ad99521987b07164276497d269490202a4701eaf3df6f99
+  verification_date: '2026-04-06T02:37:22.834780Z'

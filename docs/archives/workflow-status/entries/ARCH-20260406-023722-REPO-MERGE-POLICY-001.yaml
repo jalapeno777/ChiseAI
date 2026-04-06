@@ -1,0 +1,64 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-REPO-MERGE-POLICY-001
+original_story_id: REPO-MERGE-POLICY-001
+item_type: story
+source_section: backlog
+archived_at: '2026-04-06T02:37:22.834202Z'
+archive_reason: age
+archive_reason_detail: Item completed 30 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-REPO-MERGE-POLICY-001
+  id: REPO-MERGE-POLICY-001
+  status: archived
+  title: Update Merge Policy - Senior Dev Authority
+  priority: P0-CRITICAL
+  merge_commit: 56fb76e
+  pr_number: 408
+  completion_date: '2026-03-07'
+archived_fields:
+  acceptance_criteria:
+  - AGENTS.md updated with new merge policy including senior-dev authority and merge
+    attempt definitions
+  - SKILL.md updated to match AGENTS.md
+  - All agent files (Merlin, Jarvis, Juniordev) updated with consistent merge authority
+    language
+  - Policy is consistent across all 5 files
+  created_date: '2026-03-07'
+  description: Repository merge policy update - senior-dev now allowed to merge to
+    main after green CI and review. Merlin required only after >2 failed merge attempts.
+  files_changed:
+  - AGENTS.md
+  - .opencode/skills/chiseai-git-workflow/SKILL.md
+  - .opencode/agent/Merlin.md
+  - .opencode/agent/Jarvis.md
+  - .opencode/agent/Juniordev.md
+  notes:
+  - 'Policy change: senior-dev may merge to main after green CI and review'
+  - Merlin required only after >2 failed merge attempts by senior-dev
+  - 'Merge attempt defined: sync/rebase + required checks rerun + merge attempt'
+  - 'When Merlin required: 2+ failed attempts, emergency merges, complex conflicts
+    (>3 files), infrastructure changes'
+  - 'CI evidence: Woodpecker CI passed for merge commit 56fb76e (merged via chise-bot
+    per policy requirements)'
+  ci_evidence: &id001
+  - type: woodpecker_ci
+    commit: 56fb76e
+    status: passed
+    evidence: Merge by chise-bot indicates CI passed per merge policy requirements
+  owner: senior-dev
+  policy_change_summary: Updated from "Merlin sole merge authority" to "senior-dev
+    allowed, Merlin mandatory only after >2 failed attempts"
+completion_evidence:
+  pr_number: 408
+  merge_commit: 56fb76e
+  ci_evidence: *id001
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-REPO-MERGE-POLICY-001.yaml
+integrity:
+  original_checksum: f77d9c0a0a41925726677b31c5ebb4de4a14797e1bef58669207bd07a331ef5b
+  archived_checksum: 9cd9af0bf649bba30b48142a03aa85d5fa0677ec48b871ac70baf8e86f4350f1
+  verification_date: '2026-04-06T02:37:22.834213Z'

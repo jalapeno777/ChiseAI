@@ -1,0 +1,70 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-LAUNCH-011
+original_story_id: ST-LAUNCH-011
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.835321Z'
+archive_reason: age
+archive_reason_detail: Item completed 43 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-LAUNCH-011
+  id: ST-LAUNCH-011
+  status: archived
+  title: Model Retraining Trigger
+  completion_date: '2026-02-22'
+  story_points: 5
+  sprint_id: LAUNCH-SPRINT-2
+  name: Model Retraining Trigger
+archived_fields:
+  acceptance_criteria:
+  - ECE-based trigger - Retraining triggered automatically when ECE > 0.15, alert
+    sent to Discord
+  - Performance-based trigger - Retraining triggered when win rate <55% over 20 trades,
+    reason logged
+  - Scheduled trigger - Retraining triggered at scheduled time, starts within 1 hour
+  - Trigger deduplication - New trigger queued if retraining in progress, duplicates
+    within 24h ignored
+  - Pre-training validation - Training data quality validated, proceeds only if quality
+    >90%
+  depends_on:
+  - ST-LAUNCH-009
+  description: Implement automatic model retraining triggers based on ECE degradation,
+    performance thresholds, and schedule
+  epic_id: EP-LAUNCH-003
+  fr_coverage:
+  - FR-018
+  - FR-020
+  live_validation_gates:
+  - check: Set ECE to 0.18, wait for trigger
+    gate: trigger_accuracy
+    threshold: Trigger fires within 5 minutes
+  merge_commit: batch4-final
+  notes:
+  - CRITICAL for launch - model retraining must be automatic
+  pr_number: 257
+  priority: P0-CRITICAL
+  rollback_plan:
+  - action: Disable auto-trigger
+    command: redis-cli SET launch:training:auto_trigger:enabled 0
+  scope_globs:
+  - src/ml/training/retraining_trigger.py
+  - src/ml/training/training_orchestrator.py
+  - tests/test_ml/test_retraining_trigger.py
+  test_strategy:
+    e2e: pytest tests/e2e/test_retraining_flow.py -v
+    integration: pytest tests/test_ml/integration/test_trigger_scheduler.py -v
+    unit: pytest tests/test_ml/test_retraining_trigger.py -v
+  validation_status: validated
+completion_evidence:
+  pr_number: 257
+  merge_commit: batch4-final
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-LAUNCH-011.yaml
+integrity:
+  original_checksum: eebf2ab41299627dbf34effbaf07b8877d2b88dd23db89d8c02c4276b8c687f3
+  archived_checksum: 2dfa98888f620a90b802057ec8416e0b05d22f590e8fca7a05d7a396ca9f175e
+  verification_date: '2026-04-06T02:37:22.835337Z'

@@ -1,0 +1,60 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-EP-NS-008
+original_story_id: EP-NS-008
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834675Z'
+archive_reason: age
+archive_reason_detail: Item completed 40 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-EP-NS-008
+  id: EP-NS-008
+  status: archived
+  name: Autonomous Control Plane
+  completion_date: '2026-02-25'
+  story_count: 6
+  story_points: 42
+  sprint_id: q2-7
+  title: Autonomous Control Plane
+archived_fields:
+  deployment:
+    paper_canary:
+      actual_close_date: '2026-02-25'
+      duration_days: 4
+      expected_completion: '2026-02-28'
+      open_conditions: []
+      promotion_decision: GO
+      start_date: '2026-02-21'
+      status: completed
+  description: Unified autonomous control plane for continuous operation, self-correction,
+    and observability consolidating circuit breakers, retry handling, self-healing,
+    incident management, and rollback coordination
+  notes:
+  - Golden Plan: docs/architecture/autonomous-control-plane-golden-plan.md
+  - Party-mode synthesis with Critic, Dev, SeniorDev, Merlin roles
+  - Consolidates fragmented autonomy from EP-NS-004 completion
+  - Dependencies: ST-NS-017 through ST-NS-020 (completed)
+  - Test Results: 235 tests passing, 0 failures, 3 skipped (P0 infrastructure tests)
+  - Components: Circuit Breaker Registry, Retry Coordinator, Self-Healing Engine,
+      Incident Manager, Rollback Coordinator, Unified Dashboard
+  - EP-NS-008 COMPLETED: Final closeout on 2026-02-25, early close approved
+  pr_number: 223
+  story_ids:
+  - ST-NS-038
+  - ST-NS-039
+  - ST-NS-040
+  - ST-NS-041
+  - ST-NS-042
+  - ST-NS-043
+completion_evidence:
+  pr_number: 223
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-EP-NS-008.yaml
+integrity:
+  original_checksum: e51a8d742f43eb399ee1e70c25460ffa4860f61e89207aa991fdc7616594876f
+  archived_checksum: c747392665c7e81113104164b66f6d945a3d040314afb3cc596e1deb8879b43e
+  verification_date: '2026-04-06T02:37:22.834685Z'

@@ -1,0 +1,51 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-MEMORY-INGEST-003
+original_story_id: ST-MEMORY-INGEST-003
+item_type: story
+source_section: backlog
+archived_at: '2026-04-06T02:37:22.834339Z'
+archive_reason: age
+archive_reason_detail: Item completed 16 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-MEMORY-INGEST-003
+  id: ST-MEMORY-INGEST-003
+  status: archived
+  title: Auto-Archival Feature for Ingested Tempmemories
+  priority: P2
+  completion_date: '2026-03-21'
+  merge_commit: 90f22fb01
+  pr_number: 561
+archived_fields:
+  acceptance_criteria:
+  - Configurable auto-archive modes: immediate, daily, or after N days
+  - Archive location configurable (default: docs/tempmemories/archive/)
+  - Preserve ingestion history (store original path in metadata)
+  - Prevent re-ingestion of archived files (automatic skip)
+  - Rollback capability to restore from archive if needed
+  - Archive report generation (files moved, dates, sizes)
+  created_date: '2026-03-03'
+  description: Implement automatic archival of successfully ingested tempmemory files
+    to prevent manual error and reduce operational burden. Currently requires manual
+    mv commands.
+  estimated_points: 4
+  notes:
+  - Completion report (line 486-489) identified this as Month 1 short-term priority
+  - Current manual process error-prone and time-consuming
+  - Should integrate with existing MemoryArchiver in consolidation system
+  owner: TBD
+  related_story: ST-MEMORY-INGEST-001
+  completion_notes: Auto-archival feature implemented with configurable modes (immediate,
+    daily, after N days), archive location customization, and rollback capability.
+completion_evidence:
+  pr_number: 561
+  merge_commit: 90f22fb01
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-MEMORY-INGEST-003.yaml
+integrity:
+  original_checksum: ab63a56263fe0d5869fd924d18df3d5098b39da2a10af0c0ff73d689338db3a5
+  archived_checksum: cf988f0b8db3544678d3e6025b820f1be8b81e9a9dae55812964d45601e0ab40
+  verification_date: '2026-04-06T02:37:22.834347Z'

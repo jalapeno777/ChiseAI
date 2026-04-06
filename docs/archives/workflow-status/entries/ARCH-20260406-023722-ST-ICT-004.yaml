@@ -1,0 +1,47 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-ICT-004
+original_story_id: ST-ICT-004
+item_type: story
+source_section: completed
+archived_at: '2026-04-06T02:37:22.834134Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-ICT-004
+  id: ST-ICT-004
+  status: archived
+  title: CVD Data Availability Assessment
+  priority: P0
+  completion_date: '2026-03-25'
+  merge_commit: cc63689b
+  pr_number: 633
+archived_fields:
+  acceptance_criteria:
+  - CVD data availability assessed for all required timeframes
+  - Data gaps identified and documented
+  - CVD assessment document created
+  description: CVD Data Availability Assessment - evaluate CVD data availability across
+    timeframes and identify gaps
+  notes:
+  - 'Assessment: CVD data availability complete'
+  - trades_url property added
+  - CVD assessment document created
+  sprint_id: ICT-S1
+  story_points: 0.5
+  test_results:
+    passed: 0
+    total: 0
+    notes: Assessment only - no tests required
+completion_evidence:
+  pr_number: 633
+  merge_commit: cc63689b
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-ICT-004.yaml
+integrity:
+  original_checksum: 7033bf45544fd3808d1ad994e9c289f8c9b723310c93bdc6508d27855702d35b
+  archived_checksum: af6c451c5d5615d4d0eed8acc200af4d2a705aaec7e93aa8f63a443a13f9d69f
+  verification_date: '2026-04-06T02:37:22.834144Z'

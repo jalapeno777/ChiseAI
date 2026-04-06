@@ -1,0 +1,54 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-CI-001
+original_story_id: ST-CI-001
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.835566Z'
+archive_reason: age
+archive_reason_detail: Item completed 34 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-CI-001
+  id: ST-CI-001
+  status: archived
+  title: Full CI Check and Prioritized Remediation Plan
+  completion_date: '2026-03-03'
+  story_points: TBD
+  sprint_id: INFRA-CLEANUP-001
+  name: Full CI Check and Prioritized Remediation Plan
+archived_fields:
+  acceptance_criteria:
+  - Full CI pipeline assessment completed across all stages
+  - All issues identified and categorized by severity (P0-CRITICAL, P1-HIGH, P2-MEDIUM,
+    P3-LOW)
+  - Prioritized remediation plan created with estimated effort per issue
+  - Plan includes dependencies and sequencing recommendations
+  - Top 5 highest priority issues documented with root cause analysis
+  - Remediation plan reviewed and approved by merlin
+  dependency_notes: May require access to CI logs and test infrastructure; plan execution
+    to be scheduled separately
+  description: Run full CI assessment, categorize all issues by severity (P0/P1/P2/P3),
+    and create prioritized remediation plan
+  epic_id: EP-INFRA-CLEANUP-001
+  evidence_note: 'PR #25 orphaned in history rewrite; REPO-* commits represent actual
+    implementation'
+  merge_commit: REPO-000..REPO-011
+  merge_commit_sha: 029b36c3
+  notes: Phase 2 (Pipeline Hardening) completed 2026-03-03. Assessment, consolidation,
+    blocking gates configured. Phase 3 (Remediation Execution) pending merlin review.
+  owner_role: dev
+  pr_number: 25
+  priority: P1-HIGH
+  validation_status: validated
+completion_evidence:
+  pr_number: 25
+  merge_commit: REPO-000..REPO-011
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-CI-001.yaml
+integrity:
+  original_checksum: 1324aebad9b46e513e8db3c3e0c433dcf308451032449af41a59c7209f231b6c
+  archived_checksum: 4e4f3af2242e716904d46ca35a3b98f3f269320a72d90a4aca6975a812d80de6
+  verification_date: '2026-04-06T02:37:22.835573Z'

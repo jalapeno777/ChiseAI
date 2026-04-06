@@ -1,0 +1,32 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-I-04
+original_story_id: I-04
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834816Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-I-04
+  id: I-04
+  status: archived
+  name: InfluxDB 60d Retention
+  title: InfluxDB 60d Retention
+  completion_date: '2026-03-25'
+  sprint_id: SP-2026-Q1-03
+archived_fields:
+  merge_commit: 75f5070
+  pr_number: 625
+completion_evidence:
+  pr_number: 625
+  merge_commit: 75f5070
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-I-04.yaml
+integrity:
+  original_checksum: 2f685fd9a01abfb7c353243c19e35daacce577f136a7025b1e9ccc3d2417949d
+  archived_checksum: acda375c470cae7d8cfda15809ed09b8a7d090a864ebfbf3de8427890d3eba94
+  verification_date: '2026-04-06T02:37:22.834820Z'

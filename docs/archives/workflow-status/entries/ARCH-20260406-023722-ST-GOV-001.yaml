@@ -1,0 +1,77 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-GOV-001
+original_story_id: ST-GOV-001
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.835365Z'
+archive_reason: age
+archive_reason_detail: Item completed 15 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-GOV-001
+  id: ST-GOV-001
+  status: archived
+  title: Memory Deduplication Engine
+  story_points: 5
+  sprint_id: GOV-PHASE1-001
+  name: Memory Deduplication Engine
+  completion_date: '2026-03-22'
+archived_fields:
+  acceptance_criteria:
+  - Detects semantic duplicates with ≥95% accuracy using Qdrant similarity
+  - Deduplication runs automatically before memory writes
+  - Configurable similarity threshold (default: 0.92 cosine similarity)
+  - Conflict resolution for near-duplicates with timestamps
+  - Performance: <100ms per deduplication check
+  description: Detect and resolve semantic duplicate memories using Qdrant similarity
+    with configurable thresholds
+  epic_id: EP-GOV-001
+  fr_coverage:
+  - FR-GOV-001
+  governance_feature: GF-001
+  notes:
+  - 'CI evidence: Woodpecker CI passed for merge commit 0ce77cf (merged via chise-bot)'
+  - 'Test suite: 844 lines in tests/test_governance/test_deduplication.py'
+  ci_evidence: &id001
+  - type: woodpecker_ci
+    commit: 0ce77cf
+    status: passed
+    evidence: Merge by chise-bot indicates CI passed; comprehensive test suite exists
+  merge_commit: 0ce77cf
+  pr_number: 410
+  completed_date: '2026-03-22'
+  completion_notes: Memory Deduplication Engine fully implemented with Qdrant integration,
+    Redis hash caching, and audit trail. See src/governance/deduplication/
+  priority: P0-CRITICAL
+  test_strategy:
+    integration: pytest tests/test_governance/integration/test_similarity_accuracy.py
+      -v
+    unit: pytest tests/test_governance/test_deduplication.py -v
+  validation_gates:
+  - coverage: 85
+  - false_positive_rate: <5%
+  - latency_p99: <100ms
+  validation_status: validated
+  validation_notes:
+  - 'coverage: 88% (PASSED - exceeds 85% gate) - evidence: pytest run 2026-03-21,
+    49 unit tests + 11/12 integration tests passed'
+  - 'false_positive_rate: PASSED (<5%) - evidence: test_false_positive_rate_gate passed,
+    0% FP rate measured'
+  - 'latency_p99: PASSED (<100ms) - evidence: test_latency_p99_gate passed, p99 latency
+    well under threshold'
+  - 'integration test: CREATED - tests/test_governance/integration/test_similarity_accuracy.py
+    with 12 tests'
+  - 'validation_completed: 2026-03-21 - All gates passed, ST-GOV-001 fully validated'
+completion_evidence:
+  pr_number: 410
+  merge_commit: 0ce77cf
+  ci_evidence: *id001
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-001.yaml
+integrity:
+  original_checksum: f4b4d408ed799584f500065eacf2f6acc1980ecc3f16cbe00ed67697923cc4b8
+  archived_checksum: be435c54ccc16fc6f8cbb7ac95dc546e9aea029b71864a48842599cec163d1da
+  verification_date: '2026-04-06T02:37:22.835379Z'

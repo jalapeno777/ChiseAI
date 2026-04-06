@@ -1,0 +1,41 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-FIX-005-T1
+original_story_id: FIX-005-T1
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834896Z'
+archive_reason: age
+archive_reason_detail: Item completed 9 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-FIX-005-T1
+  id: FIX-005-T1
+  status: archived
+  title: BeliefStore.put() Return Value Hardening
+  completion_date: '2026-03-28'
+  story_points: 2
+  sprint_id: AUTOCOG-BACKLOG-FIX
+  name: BeliefStore.put() Return Value Hardening
+archived_fields:
+  acceptance_criteria:
+  - BeliefStore.put() returns proper value on successful write
+  - All callers handle the return value correctly
+  - Unit tests verify return value semantics
+  created_date: '2026-03-28'
+  description: Fix BeliefStore.put() return value to indicate success/failure correctly.
+    Previously returned None on both success and failure.
+  merge_commit: e2ace744a
+  pr_number: 767
+  priority: P1
+completion_evidence:
+  pr_number: 767
+  merge_commit: e2ace744a
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-FIX-005-T1.yaml
+integrity:
+  original_checksum: 8810f24a211174ee4e843543e5c5d3d20018607154c3ddf5f5d2da1c58800a03
+  archived_checksum: 0a6cef1647c5fe5743acbc397ddf2b4a37ed4d426cc8bfd3964b27fe5928e1c4
+  verification_date: '2026-04-06T02:37:22.834903Z'

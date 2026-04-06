@@ -1,0 +1,46 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-ICT-002
+original_story_id: ST-ICT-002
+item_type: story
+source_section: completed
+archived_at: '2026-04-06T02:37:22.834071Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-ICT-002
+  id: ST-ICT-002
+  status: archived
+  title: Fix rate-limited signals marked ACTIONABLE
+  priority: P1
+  completion_date: '2026-03-25'
+  merge_commit: b5375412
+  pr_number: 635
+archived_fields:
+  acceptance_criteria:
+  - RATE_LIMITED signal status properly handled in signal processing
+  - Rate-limited signals not incorrectly marked ACTIONABLE
+  - Proper fallback behavior for rate-limited sources
+  description: Fix rate-limited signals being incorrectly marked ACTIONABLE - add
+    proper RATE_LIMITED status handling
+  notes:
+  - 'Issue: Rate-limited signals marked ACTIONABLE causing incorrect trades'
+  - 'Fix: RATE_LIMITED status added, proper signal filtering'
+  - 206 tests passed
+  sprint_id: ICT-S1
+  story_points: 1
+  test_results:
+    passed: 206
+    total: 206
+completion_evidence:
+  pr_number: 635
+  merge_commit: b5375412
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-ICT-002.yaml
+integrity:
+  original_checksum: 0f2b18c82aace82bad6d2ff8b619133de71005b2e843039fffe620981f9523ac
+  archived_checksum: e0dfe74e415d0dc2d53826a3331d7feae8406ce111533645300729bfc0bcf4b5
+  verification_date: '2026-04-06T02:37:22.834084Z'

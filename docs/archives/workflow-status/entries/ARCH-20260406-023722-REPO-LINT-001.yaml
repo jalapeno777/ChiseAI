@@ -1,0 +1,44 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-REPO-LINT-001
+original_story_id: REPO-LINT-001
+item_type: story
+source_section: completed
+archived_at: '2026-04-06T02:37:22.833996Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-REPO-LINT-001
+  id: REPO-LINT-001
+  status: archived
+  title: Lint Cleanup
+  priority: P2
+  completion_date: '2026-03-25'
+  merge_commit: 4d2b850f
+  pr_number: 649
+archived_fields:
+  acceptance_criteria:
+  - black --check src/ tests/ exits 0
+  - ruff check src/ tests/ exits 0
+  - All modified modules pass regression tests
+  - Branch pushed to origin with matching HEAD SHA
+  description: Batch lint cleanup - fix accumulated black and ruff violations in src/
+    and tests/
+  notes:
+  - 'Baseline: 3 black violations, 62 ruff violations'
+  - 'Fixed: 3 files reformatted, 63 auto-fixes, 1 manual fix (unused variable)'
+  - 623 regression tests passed
+  - 'Merged via PR #649 (merge commit 4d2b850f)'
+  story_points: 2
+completion_evidence:
+  pr_number: 649
+  merge_commit: 4d2b850f
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-REPO-LINT-001.yaml
+integrity:
+  original_checksum: f2d0352ae9bfded34747ad616aacebb4c9cfc6e7a05f49b49464897ecc0f51d1
+  archived_checksum: 9ddc0843d78043e3a6713ec734bba92f1f2996f88702f86d144b2ff7dd2576b0
+  verification_date: '2026-04-06T02:37:22.834008Z'

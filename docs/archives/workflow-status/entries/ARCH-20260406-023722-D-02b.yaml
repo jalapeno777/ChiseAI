@@ -1,0 +1,32 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-D-02b
+original_story_id: D-02b
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834875Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-D-02b
+  id: D-02b
+  status: archived
+  name: Fix Top-20 Test Failures
+  title: Fix Top-20 Test Failures
+  completion_date: '2026-03-25'
+  sprint_id: SP-2026-Q1-03
+archived_fields:
+  merge_commit: 885b3fe
+  pr_number: 628
+completion_evidence:
+  pr_number: 628
+  merge_commit: 885b3fe
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-D-02b.yaml
+integrity:
+  original_checksum: 7a40bc569aa314fb5a52fec12ae88d2b5ae4b893bf543e98ed92df18af879020
+  archived_checksum: 9137fb68d158022aebed70cd319da08597d6c0b4dc314e90914dd79d0950180b
+  verification_date: '2026-04-06T02:37:22.834879Z'

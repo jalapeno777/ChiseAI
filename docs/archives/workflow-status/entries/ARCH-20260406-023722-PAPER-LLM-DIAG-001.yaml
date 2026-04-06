@@ -1,0 +1,54 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-PAPER-LLM-DIAG-001
+original_story_id: PAPER-LLM-DIAG-001
+item_type: story
+source_section: backlog
+archived_at: '2026-04-06T02:37:22.834241Z'
+archive_reason: age
+archive_reason_detail: Item completed 31 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-PAPER-LLM-DIAG-001
+  id: PAPER-LLM-DIAG-001
+  status: archived
+  title: Paper Trading LLM Analysis Path Fix
+  priority: P1
+  merge_commit: 8361c11325eb01b7936b505bab6a2c111c2242af
+  pr_number: 365
+  completion_date: '2026-03-06'
+archived_fields:
+  acceptance_criteria:
+  - LLM provider chain initializes without MiniMax
+  - Unit tests pass (100/100)
+  - Fix summary document created
+  branch: feature/PAPER-LLM-DIAG-001-fix
+  commit_sha: 5a9633e35afb629a5887183f7cbffbc4070b1c7c
+  created_date: '2026-03-06'
+  description: Paper Trading LLM Analysis Path Fix - MiniMax provider causing initialization
+    delays
+  fix_summary: MiniMax temporarily disabled from provider chain
+  minimax_disabled: true
+  notes:
+  - 'Root cause: MiniMax provider causing initialization delays'
+  - 'Fix: MiniMax temporarily disabled from provider chain'
+  - 'Re-enable steps: See src/llm/provider_chain.py:268-274'
+  - 'Tests passed: 100/100 (55/55 trade decision enhancer, 45/45 provider chain)'
+  - 'Fix summary: docs/fixes/PAPER-LLM-DIAG-001-fix-summary.md'
+  owner: quickdev
+  re_enable_steps: See src/llm/provider_chain.py:268-274
+  redis_iterlog_key: bmad:chiseai:iterlog:story:PAPER-LLM-DIAG-001
+  root_cause: MiniMax provider causing initialization delays
+  tests_passed: 100/100
+completion_evidence:
+  pr_number: 365
+  merge_commit: 8361c11325eb01b7936b505bab6a2c111c2242af
+  commit_sha: 5a9633e35afb629a5887183f7cbffbc4070b1c7c
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-PAPER-LLM-DIAG-001.yaml
+integrity:
+  original_checksum: 3e2eb6f6c57d2e6ee3ddc55d99a253c59940e11c3deae29f90b48f668f618c0b
+  archived_checksum: b2446915682e41484c2309232fa5a461c33ae914fbb838cabd0c0f0693e24b42
+  verification_date: '2026-04-06T02:37:22.834250Z'

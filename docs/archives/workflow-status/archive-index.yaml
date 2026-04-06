@@ -1,137 +1,497 @@
----
-# Workflow Status Archive Index
-# Master index for all archived workflow status entries
-# 
-# Generated: 2026-03-02
-# Retention Policy: Keep 7 days in active file, then archive
-
 archive_index:
-  version: "1.0"
-  created_date: "2026-03-02"
+  version: '1.0'
+  created_date: '2026-03-02'
   retention_policy:
     active_file_keep_days: 7
     archive_location: docs/archives/workflow-status/
-  
   entries:
-    # February 26, 2026 entries
-    - story_id: ST-AUTO-CONTROL-003
-      action: st-auto-control-enforcement-final
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-26T23:55:00Z"
-      epic_id: EP-AUTO-GIT-001
-      actor: senior-dev
-      description: "Final fail-closed enforcement for status-write-gate"
-    
-    - story_id: ST-AUTO-CONTROL-001
-      action: st-auto-control-enforcement-wired
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-26T23:45:00Z"
-      epic_id: EP-AUTO-GIT-001
-      actor: jarvis
-      description: "Status write gate enforcement integrated into CI pipeline"
-    
-    - story_id: ST-AUTO-CONTROL-002
-      action: st-auto-control-enforcement-correction
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-26T23:50:00Z"
-      epic_id: EP-AUTO-GIT-001
-      actor: jarvis
-      description: "Corrected status-write-gate enforcement"
-    
-    - story_id: ST-AUTO-TRUTH-SYNC
-      action: ep-auto-git-guardrails-applied
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-26T18:00:00Z"
-      epic_id: EP-AUTO-GIT
-      actor: merlin
-      description: "Applied Merlin-only authority guardrails to Redis"
-    
-    # February 25, 2026 entries
-    - story_id: ST-REFLECT-001
-      action: phase_2_kickoff_status_sync
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T23:59:00Z"
-      epic_id: null
-      actor: jarvis
-      description: "Phase 2 kickoff status synchronization"
-    
-    - story_id: ST-SOUL-001
-      action: party-mode-audit-correction
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T23:00:00Z"
-      epic_id: EP-NS-009
-      actor: merlin
-      description: "Party-mode audit corrections completed"
-    
-    - story_id: EP-NS-008
-      action: ep-ns-008-final-closeout
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T22:00:00Z"
-      epic_id: EP-NS-008
-      actor: jarvis
-      description: "EP-NS-008 final closeout completed"
-    
-    - story_id: EP-NS-008
-      action: canary_close
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T18:00:00Z"
-      epic_id: EP-NS-008
-      actor: jarvis
-      description: "EP-NS-008 canary-close assessment completed"
-    
-    - story_id: EP-NS-008
-      action: ep-ns-008-batch1-completion
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T16:45:00Z"
-      epic_id: EP-NS-008
-      actor: jarvis
-      description: "EP-NS-008 Batch 1 all canary conditions resolved"
-    
-    - story_id: INFRA-RECOVERY-001
-      action: infrastructure_recovery_phase_a
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T14:55:00Z"
-      epic_id: null
-      actor: merlin
-      description: "INFRA-RECOVERY-001: Container recovery Phase A complete"
-    
-    - story_id: EP-NS-008
-      action: batch2_truth_sync
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T17:00:00Z"
-      epic_id: EP-NS-008
-      actor: merlin
-      description: "EP-NS-008 truth-sync correction for Batch 2"
-    
-    - story_id: REPO-003
-      action: agent_instruction_consistency_patch
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T12:30:00Z"
-      epic_id: null
-      actor: jarvis
-      description: "Updated agent instruction files with consistent merge authority wording"
-    
-    - story_id: REPO-002
-      action: enforcement_window_start
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T12:00:00Z"
-      epic_id: null
-      actor: jarvis
-      description: "1-week mandatory completion payload enforcement window started"
-    
-    - story_id: BMAD-CORRECT-001
-      action: hardening_sync_workflow_patches
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-25T08:10:00Z"
-      epic_id: null
-      actor: merlin
-      description: "Workflow patch hardening finalized"
-    
-    # February 24, 2026 entries
-    - story_id: null
-      action: truth_sync_launch_epics
-      archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-24T14:30:00Z"
-      epic_id: null
-      actor: jarvis
-      description: "Fixed Launch epic status inconsistencies"
+  - story_id: ST-AUTO-CONTROL-003
+    action: st-auto-control-enforcement-final
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-26T23:55:00Z'
+    epic_id: EP-AUTO-GIT-001
+    actor: senior-dev
+    description: Final fail-closed enforcement for status-write-gate
+  - story_id: ST-AUTO-CONTROL-001
+    action: st-auto-control-enforcement-wired
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-26T23:45:00Z'
+    epic_id: EP-AUTO-GIT-001
+    actor: jarvis
+    description: Status write gate enforcement integrated into CI pipeline
+  - story_id: ST-AUTO-CONTROL-002
+    action: st-auto-control-enforcement-correction
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-26T23:50:00Z'
+    epic_id: EP-AUTO-GIT-001
+    actor: jarvis
+    description: Corrected status-write-gate enforcement
+  - story_id: ST-AUTO-TRUTH-SYNC
+    action: ep-auto-git-guardrails-applied
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-26T18:00:00Z'
+    epic_id: EP-AUTO-GIT
+    actor: merlin
+    description: Applied Merlin-only authority guardrails to Redis
+  - story_id: ST-REFLECT-001
+    action: phase_2_kickoff_status_sync
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T23:59:00Z'
+    epic_id: null
+    actor: jarvis
+    description: Phase 2 kickoff status synchronization
+  - story_id: ST-SOUL-001
+    action: party-mode-audit-correction
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T23:00:00Z'
+    epic_id: EP-NS-009
+    actor: merlin
+    description: Party-mode audit corrections completed
+  - story_id: EP-NS-008
+    action: ep-ns-008-final-closeout
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T22:00:00Z'
+    epic_id: EP-NS-008
+    actor: jarvis
+    description: EP-NS-008 final closeout completed
+  - story_id: EP-NS-008
+    action: canary_close
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T18:00:00Z'
+    epic_id: EP-NS-008
+    actor: jarvis
+    description: EP-NS-008 canary-close assessment completed
+  - story_id: EP-NS-008
+    action: ep-ns-008-batch1-completion
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T16:45:00Z'
+    epic_id: EP-NS-008
+    actor: jarvis
+    description: EP-NS-008 Batch 1 all canary conditions resolved
+  - story_id: INFRA-RECOVERY-001
+    action: infrastructure_recovery_phase_a
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T14:55:00Z'
+    epic_id: null
+    actor: merlin
+    description: 'INFRA-RECOVERY-001: Container recovery Phase A complete'
+  - story_id: EP-NS-008
+    action: batch2_truth_sync
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T17:00:00Z'
+    epic_id: EP-NS-008
+    actor: merlin
+    description: EP-NS-008 truth-sync correction for Batch 2
+  - story_id: REPO-003
+    action: agent_instruction_consistency_patch
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T12:30:00Z'
+    epic_id: null
+    actor: jarvis
+    description: Updated agent instruction files with consistent merge authority wording
+  - story_id: REPO-002
+    action: enforcement_window_start
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T12:00:00Z'
+    epic_id: null
+    actor: jarvis
+    description: 1-week mandatory completion payload enforcement window started
+  - story_id: BMAD-CORRECT-001
+    action: hardening_sync_workflow_patches
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-25T08:10:00Z'
+    epic_id: null
+    actor: merlin
+    description: Workflow patch hardening finalized
+  - story_id: null
+    action: truth_sync_launch_epics
+    archived_to: archive-2026-02.yaml
+    original_timestamp: '2026-02-24T14:30:00Z'
+    epic_id: null
+    actor: jarvis
+    description: Fixed Launch epic status inconsistencies
+  - story_id: EP-LOCAL-CI-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-EP-LOCAL-CI-001.yaml
+    archive_ref: ARCH-20260406-023722-EP-LOCAL-CI-001
+    original_timestamp: '2026-03-26T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story EP-LOCAL-CI-001 to entries
+  - story_id: REPO-LINT-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-REPO-LINT-001.yaml
+    archive_ref: ARCH-20260406-023722-REPO-LINT-001
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story REPO-LINT-001 to entries
+  - story_id: ST-ICT-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-ICT-001.yaml
+    archive_ref: ARCH-20260406-023722-ST-ICT-001
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story ST-ICT-001 to entries
+  - story_id: ST-ICT-002
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-ICT-002.yaml
+    archive_ref: ARCH-20260406-023722-ST-ICT-002
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story ST-ICT-002 to entries
+  - story_id: ST-ICT-003
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-ICT-003.yaml
+    archive_ref: ARCH-20260406-023722-ST-ICT-003
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story ST-ICT-003 to entries
+  - story_id: ST-ICT-004
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-ICT-004.yaml
+    archive_ref: ARCH-20260406-023722-ST-ICT-004
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story ST-ICT-004 to entries
+  - story_id: CI-INFRA-DRIFT-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-CI-INFRA-DRIFT-001.yaml
+    archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
+    original_timestamp: '2026-03-28T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story CI-INFRA-DRIFT-001 to entries
+  - story_id: REPO-MERGE-POLICY-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-REPO-MERGE-POLICY-001.yaml
+    archive_ref: ARCH-20260406-023722-REPO-MERGE-POLICY-001
+    original_timestamp: '2026-03-07T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story REPO-MERGE-POLICY-001 to entries
+  - story_id: PAPER-LLM-DIAG-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-PAPER-LLM-DIAG-001.yaml
+    archive_ref: ARCH-20260406-023722-PAPER-LLM-DIAG-001
+    original_timestamp: '2026-03-06T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story PAPER-LLM-DIAG-001 to entries
+  - story_id: PAPER-LLM-TIMEOUT-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-PAPER-LLM-TIMEOUT-001.yaml
+    archive_ref: ARCH-20260406-023722-PAPER-LLM-TIMEOUT-001
+    original_timestamp: '2026-03-06T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story PAPER-LLM-TIMEOUT-001 to entries
+  - story_id: ST-MEMORY-INGEST-002
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-MEMORY-INGEST-002.yaml
+    archive_ref: ARCH-20260406-023722-ST-MEMORY-INGEST-002
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story ST-MEMORY-INGEST-002 to entries
+  - story_id: ST-MEMORY-INGEST-003
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-MEMORY-INGEST-003.yaml
+    archive_ref: ARCH-20260406-023722-ST-MEMORY-INGEST-003
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story ST-MEMORY-INGEST-003 to entries
+  - story_id: ST-MEMORY-INGEST-004
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-MEMORY-INGEST-004.yaml
+    archive_ref: ARCH-20260406-023722-ST-MEMORY-INGEST-004
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story ST-MEMORY-INGEST-004 to entries
+  - story_id: ST-MEMORY-INGEST-005
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-MEMORY-INGEST-005.yaml
+    archive_ref: ARCH-20260406-023722-ST-MEMORY-INGEST-005
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story ST-MEMORY-INGEST-005 to entries
+  - story_id: SIG-REM-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-001.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-001
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-001 to entries
+  - story_id: SIG-REM-002
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-002.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-002
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-002 to entries
+  - story_id: SIG-REM-003
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-003.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-003
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-003 to entries
+  - story_id: SIG-REM-004
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-004.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-004
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-004 to entries
+  - story_id: SIG-REM-005
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-005.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-005
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-005 to entries
+  - story_id: SIG-REM-006
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-006.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-006
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-006 to entries
+  - story_id: SIG-REM-007
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-007.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-007
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-007 to entries
+  - story_id: SIG-REM-008
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-008.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-008
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-008 to entries
+  - story_id: SIG-REM-009
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-009.yaml
+    archive_ref: ARCH-20260406-023722-SIG-REM-009
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived story SIG-REM-009 to entries
+  - story_id: EP-NS-008
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-EP-NS-008.yaml
+    archive_ref: ARCH-20260406-023722-EP-NS-008
+    original_timestamp: '2026-02-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic EP-NS-008 to entries
+  - story_id: ST-CI-EVIDENCE-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-CI-EVIDENCE-001.yaml
+    archive_ref: ARCH-20260406-023722-ST-CI-EVIDENCE-001
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-CI-EVIDENCE-001 to entries
+  - story_id: ST-GOV-DRIFT-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-DRIFT-001.yaml
+    archive_ref: ARCH-20260406-023722-ST-GOV-DRIFT-001
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-GOV-DRIFT-001 to entries
+  - story_id: D-03
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-D-03.yaml
+    archive_ref: ARCH-20260406-023722-D-03
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic D-03 to entries
+  - story_id: I-02
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-I-02.yaml
+    archive_ref: ARCH-20260406-023722-I-02
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic I-02 to entries
+  - story_id: I-03
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-I-03.yaml
+    archive_ref: ARCH-20260406-023722-I-03
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic I-03 to entries
+  - story_id: I-04
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-I-04.yaml
+    archive_ref: ARCH-20260406-023722-I-04
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic I-04 to entries
+  - story_id: I-01
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-I-01.yaml
+    archive_ref: ARCH-20260406-023722-I-01
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic I-01 to entries
+  - story_id: D-02a
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-D-02a.yaml
+    archive_ref: ARCH-20260406-023722-D-02a
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic D-02a to entries
+  - story_id: D-02b
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-D-02b.yaml
+    archive_ref: ARCH-20260406-023722-D-02b
+    original_timestamp: '2026-03-25T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic D-02b to entries
+  - story_id: FIX-005-T1
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-FIX-005-T1.yaml
+    archive_ref: ARCH-20260406-023722-FIX-005-T1
+    original_timestamp: '2026-03-28T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic FIX-005-T1 to entries
+  - story_id: FIX-007-A
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-FIX-007-A.yaml
+    archive_ref: ARCH-20260406-023722-FIX-007-A
+    original_timestamp: '2026-03-28T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic FIX-007-A to entries
+  - story_id: FIX-007-B
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-FIX-007-B.yaml
+    archive_ref: ARCH-20260406-023722-FIX-007-B
+    original_timestamp: '2026-03-28T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic FIX-007-B to entries
+  - story_id: ST-LAUNCH-005
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-LAUNCH-005.yaml
+    archive_ref: ARCH-20260406-023722-ST-LAUNCH-005
+    original_timestamp: '2026-02-22T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-LAUNCH-005 to entries
+  - story_id: ST-LAUNCH-006
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-LAUNCH-006.yaml
+    archive_ref: ARCH-20260406-023722-ST-LAUNCH-006
+    original_timestamp: '2026-02-22T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-LAUNCH-006 to entries
+  - story_id: ST-LAUNCH-007
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-LAUNCH-007.yaml
+    archive_ref: ARCH-20260406-023722-ST-LAUNCH-007
+    original_timestamp: '2026-02-22T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-LAUNCH-007 to entries
+  - story_id: ST-LAUNCH-008
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-LAUNCH-008.yaml
+    archive_ref: ARCH-20260406-023722-ST-LAUNCH-008
+    original_timestamp: '2026-02-22T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-LAUNCH-008 to entries
+  - story_id: ST-LAUNCH-011
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-LAUNCH-011.yaml
+    archive_ref: ARCH-20260406-023722-ST-LAUNCH-011
+    original_timestamp: '2026-02-22T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-LAUNCH-011 to entries
+  - story_id: ST-GOV-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-001.yaml
+    archive_ref: ARCH-20260406-023722-ST-GOV-001
+    original_timestamp: '2026-03-22T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-GOV-001 to entries
+  - story_id: ST-GOV-002
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-002.yaml
+    archive_ref: ARCH-20260406-023722-ST-GOV-002
+    original_timestamp: '2026-03-21T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-GOV-002 to entries
+  - story_id: ST-GOV-005
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-005.yaml
+    archive_ref: ARCH-20260406-023722-ST-GOV-005
+    original_timestamp: '2026-02-23T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-GOV-005 to entries
+  - story_id: ST-GOV-006
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-006.yaml
+    archive_ref: ARCH-20260406-023722-ST-GOV-006
+    original_timestamp: '2026-02-23T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-GOV-006 to entries
+  - story_id: ST-GOV-009
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-009.yaml
+    archive_ref: ARCH-20260406-023722-ST-GOV-009
+    original_timestamp: '2026-02-23T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-GOV-009 to entries
+  - story_id: ST-CONTAINER-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-CONTAINER-001.yaml
+    archive_ref: ARCH-20260406-023722-ST-CONTAINER-001
+    original_timestamp: '2026-03-03T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-CONTAINER-001 to entries
+  - story_id: ST-CI-001
+    action: archived_to_entries
+    archived_to: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-CI-001.yaml
+    archive_ref: ARCH-20260406-023722-ST-CI-001
+    original_timestamp: '2026-03-03T00:00:00Z'
+    epic_id: null
+    actor: archive_workflow_status_items.py
+    description: Archived epic ST-CI-001 to entries
+  last_updated: '2026-04-06'

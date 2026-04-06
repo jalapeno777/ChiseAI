@@ -1,0 +1,46 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-ICT-001
+original_story_id: ST-ICT-001
+item_type: story
+source_section: completed
+archived_at: '2026-04-06T02:37:22.834037Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-ICT-001
+  id: ST-ICT-001
+  status: archived
+  title: Fix DISCORD_BYPASS_CONFIDENCE_FILTER env var risk
+  priority: P1
+  completion_date: '2026-03-25'
+  merge_commit: b04eb24e
+  pr_number: 632
+archived_fields:
+  acceptance_criteria:
+  - DISCORD_BYPASS_CONFIDENCE_FILTER env var renamed to CHISEAI_BYPASS_CONFIDENCE_FILTER
+  - Risk assessment completed and documented
+  - All references updated across codebase
+  description: Fix DISCORD_BYPASS_CONFIDENCE_FILTER env var security risk - renamed
+    to CHISEAI_BYPASS_CONFIDENCE_FILTER to follow naming convention
+  notes:
+  - 'Risk: DISCORD_BYPASS_CONFIDENCE_FILTER exposed credentials pattern'
+  - 'Fix: Renamed to CHISEAI_BYPASS_CONFIDENCE_FILTER'
+  - 26 tests passed
+  sprint_id: ICT-S1
+  story_points: 1
+  test_results:
+    passed: 26
+    total: 26
+completion_evidence:
+  pr_number: 632
+  merge_commit: b04eb24e
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-ICT-001.yaml
+integrity:
+  original_checksum: 32b634efb6150c6cd0cdebc15b484567a4b0539038eca9fa0cad935598a939e4
+  archived_checksum: 49df4aaadd1eeb553a09fd9ae0e4062bce192f36a7b151895c435579f82d6b57
+  verification_date: '2026-04-06T02:37:22.834047Z'

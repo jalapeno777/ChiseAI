@@ -1,0 +1,32 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-D-02a
+original_story_id: D-02a
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834855Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-D-02a
+  id: D-02a
+  status: archived
+  name: Test Failure Categorization
+  title: Test Failure Categorization
+  completion_date: '2026-03-25'
+  sprint_id: SP-2026-Q1-03
+archived_fields:
+  merge_commit: 50e8d68
+  pr_number: 627
+completion_evidence:
+  pr_number: 627
+  merge_commit: 50e8d68
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-D-02a.yaml
+integrity:
+  original_checksum: 977080d471b6a99f42604b13828aa37c1b0689954a54421bdfae89704aea80ea
+  archived_checksum: 91144bf4af10fb0b895ae32617e62fd2f4d378f3ba5179361946b7226e90df65
+  verification_date: '2026-04-06T02:37:22.834860Z'

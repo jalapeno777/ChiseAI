@@ -1,0 +1,32 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-I-03
+original_story_id: I-03
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834795Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-I-03
+  id: I-03
+  status: archived
+  name: Container Restart Policies
+  title: Container Restart Policies
+  completion_date: '2026-03-25'
+  sprint_id: SP-2026-Q1-03
+archived_fields:
+  merge_commit: 89b48af
+  pr_number: 624
+completion_evidence:
+  pr_number: 624
+  merge_commit: 89b48af
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-I-03.yaml
+integrity:
+  original_checksum: 29647173e09ea0aa18b6f8ba6f1cd201f09ee060c2cb6e8b4301964767b6b96a
+  archived_checksum: 1adf9ca6484469cdcd97313484f62e6b7854dc1c4cda60eaa4282a3d74a2f0bc
+  verification_date: '2026-04-06T02:37:22.834799Z'

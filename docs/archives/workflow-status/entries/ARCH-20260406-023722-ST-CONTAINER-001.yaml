@@ -1,0 +1,49 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-CONTAINER-001
+original_story_id: ST-CONTAINER-001
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.835537Z'
+archive_reason: age
+archive_reason_detail: Item completed 34 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-CONTAINER-001
+  id: ST-CONTAINER-001
+  status: archived
+  title: Container Governance - Bring Out-of-Category Containers Under Terraform
+  completion_date: '2026-03-03'
+  story_points: TBD
+  sprint_id: INFRA-CLEANUP-001
+  name: Container Governance - Bring Out-of-Category Containers Under Terraform
+archived_fields:
+  acceptance_criteria:
+  - Inventory of all running containers created with Terraform vs non-Terraform classification
+  - All non-Terraform ChiseAI containers identified (including chiseai-daily-summary)
+  - Terraform configurations created/updated for all out-of-category containers
+  - All containers properly connected to chiseai network
+  - All containers have project=chiseai label applied
+  - Validation that pre-commit hook passes after migration
+  completion_notes: Container governance audit complete. All out-of-category containers
+    identified and migrated to Terraform. Pre-commit hook validation passes.
+  dependency_notes: Depends on infrastructure/terraform state; may require state import
+    for existing containers
+  description: Identify all containers not managed by Terraform (e.g., chiseai-daily-summary)
+    and bring them under proper Terraform management with chiseai network and labels
+  epic_id: EP-INFRA-CLEANUP-001
+  merge_commit_sha: 723d9bf1d396e216f9e8fb1c1194e96c080f11e1
+  owner_role: jarvis
+  pr_number: 330
+  priority: P1-HIGH
+  validation_status: validated
+completion_evidence:
+  pr_number: 330
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-CONTAINER-001.yaml
+integrity:
+  original_checksum: 45038f52cfa6f4b9d1d5a214084407bb95cc6892c2750082ce7695086790555e
+  archived_checksum: 01ed2507be0220bee10f674fefacd23b8e050d85604b6fb9b4daf2bc231c2154
+  verification_date: '2026-04-06T02:37:22.835545Z'

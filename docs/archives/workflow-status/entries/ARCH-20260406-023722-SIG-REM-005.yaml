@@ -1,0 +1,38 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-SIG-REM-005
+original_story_id: SIG-REM-005
+item_type: story
+source_section: backlog
+archived_at: '2026-04-06T02:37:22.834533Z'
+archive_reason: age
+archive_reason_detail: Item completed 16 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-SIG-REM-005
+  id: SIG-REM-005
+  status: archived
+  title: bybit_demo_connector API key prefix hashing
+  priority: P0
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
+  pr_number: 556
+  completion_date: '2026-03-21'
+archived_fields:
+  story_points: 1
+  created_date: '2026-03-20'
+  completed_date: '2026-03-21'
+  description: Implement API key prefix hashing in bybit_demo_connector for secure
+    logging and debugging.
+  owner: dev
+  implementation_notes: hash_api_key() with prefix hashing in src/execution/connectors/bybit_demo_connector.py:494-513
+completion_evidence:
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-005.yaml
+integrity:
+  original_checksum: 9db6744d804b1f39464fcce0337c42d165f15c831644d5934a1b7da7594360d9
+  archived_checksum: f003cf5913e6c5a6fa69cd80ba92dbb7f4bc658247037108071c0c0419779660
+  verification_date: '2026-04-06T02:37:22.834539Z'

@@ -1,0 +1,41 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-FIX-007-A
+original_story_id: FIX-007-A
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834926Z'
+archive_reason: age
+archive_reason_detail: Item completed 9 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-FIX-007-A
+  id: FIX-007-A
+  status: archived
+  title: Belief Expansion BeliefStore Integration
+  completion_date: '2026-03-28'
+  story_points: 2
+  sprint_id: AUTOCOG-BACKLOG-FIX
+  name: Belief Expansion BeliefStore Integration
+archived_fields:
+  acceptance_criteria:
+  - Belief expansion uses BeliefStore for persistence
+  - Validation registry updated for expansion artifacts
+  - Integration tests pass
+  created_date: '2026-03-28'
+  description: Belief expansion should use BeliefStore for persistence instead of
+    raw Redis. Part of AUTOCOG-RESTORE-001 deferred work.
+  merge_commit: 1671b9d39
+  pr_number: 768
+  priority: P1
+completion_evidence:
+  pr_number: 768
+  merge_commit: 1671b9d39
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-FIX-007-A.yaml
+integrity:
+  original_checksum: 5784e6475d7d5ebc4cd39c2fd523e1552ab2fcb388129d06fd046915b6721fad
+  archived_checksum: dcddd46fa6c1a9ded9dd1ac1defb6b05831d10161494663560c818e1eed401a7
+  verification_date: '2026-04-06T02:37:22.834931Z'

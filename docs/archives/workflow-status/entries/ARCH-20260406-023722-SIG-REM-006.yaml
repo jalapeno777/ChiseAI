@@ -1,0 +1,42 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-SIG-REM-006
+original_story_id: SIG-REM-006
+item_type: story
+source_section: backlog
+archived_at: '2026-04-06T02:37:22.834565Z'
+archive_reason: age
+archive_reason_detail: Item completed 16 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-SIG-REM-006
+  id: SIG-REM-006
+  status: archived
+  title: Replace datetime.utcnow() with datetime.now(UTC)
+  priority: P0
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
+  pr_number: 556
+  completion_date: '2026-03-21'
+archived_fields:
+  story_points: 1
+  created_date: '2026-03-20'
+  completed_date: '2026-03-21'
+  description: Replace all deprecated datetime.utcnow() calls with timezone-aware
+    datetime.now(UTC) across codebase.
+  owner: dev
+  implementation_notes: 3,903+ occurrences of datetime.now(UTC) verified across codebase;
+    no deprecated utcnow() found
+  completion_notes: 'Documentation cleanup completed. All example code in docs/ updated
+    from datetime.utcnow() to datetime.now(UTC). 3 files changed: runbook (2 lines),
+    architecture plan (4 lines), workflow doc (2 lines).'
+completion_evidence:
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-006.yaml
+integrity:
+  original_checksum: 242abc308d73d6e34b109151fdd14b720fcfdfe92dae9f35d1c9d39bdb028244
+  archived_checksum: e25cc431122d6c0b2412cf15ae5531913ee0605c759f0b91739db155987f9a68
+  verification_date: '2026-04-06T02:37:22.834575Z'

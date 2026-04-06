@@ -1,0 +1,77 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-EP-LOCAL-CI-001
+original_story_id: EP-LOCAL-CI-001
+item_type: story
+source_section: completed
+archived_at: '2026-04-06T02:37:22.833839Z'
+archive_reason: age
+archive_reason_detail: Item completed 11 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-EP-LOCAL-CI-001
+  id: EP-LOCAL-CI-001
+  status: archived
+  title: Batch 1 Local CI Improvements
+  priority: P1
+  completion_date: '2026-03-26'
+  merge_commit: 26254f55762ec690a729562fc307b6f00909417e
+  pr_number: 688
+archived_fields:
+  acceptance_criteria:
+  - ST-LOCAL-001: Pre-push gate unification with timing metrics
+  - ST-LOCAL-002: Local/CI consistency validator operational
+  - ST-LOCAL-003: Test selector 50%+ speed improvement
+  - ST-LOCAL-007: Error classifier 90%+ accuracy
+  - ST-LOCAL-008: Woodpecker CI YAML hardening
+  description: Batch 1 Local CI improvements focusing on quality, consistency, speed,
+    accuracy, and CI hardening. All 5 stories merged.
+  notes:
+  - 'Quality: pre_push_gate.py runs all checks in ~20s with timing metrics'
+  - 'Consistency: validate_local_ci_consistency.py detects version/config drift'
+  - 'Speed: test_selector.py enables 50%+ faster local runs for typical changes'
+  - 'Accuracy: error_classifier.py categorizes 90%+ failures with diagnostics'
+  - 'CI Hardening: .woodpecker/ci.yaml with non-blocking consistency check'
+  - 'PRs: #688 (ST-LOCAL-001), #690 (ST-LOCAL-002), #687 (ST-LOCAL-003), #689 (ST-LOCAL-007),
+    #691 (ST-LOCAL-008)'
+  - 'Infrastructure issues: Woodpecker pull:false bug on PR events (documented)'
+  pr_numbers: &id001
+  - 688
+  - 690
+  - 687
+  - 689
+  - 691
+  stories:
+  - id: ST-LOCAL-001
+    merge_commit: 15cf393e
+    pr_number: 688
+    title: Local CI Pre-Push Gate Unification
+  - id: ST-LOCAL-002
+    merge_commit: 15cf393e
+    pr_number: 690
+    title: Local CI Consistency Validator
+  - id: ST-LOCAL-003
+    merge_commit: 00945653b61c1208e57f9d190d091b792452da0a
+    pr_number: 687
+    title: Local CI Speed Optimization
+  - id: ST-LOCAL-007
+    merge_commit: 26254f55762ec690a729562fc307b6f00909417e
+    pr_number: 689
+    title: Local CI Accuracy Improvements
+  - id: ST-LOCAL-008
+    merge_commit: a0310e54ac7669d7b01d96b8b7fb9ac0b3a24bab
+    pr_number: 691
+    title: Woodpecker CI YAML Hardening
+  story_points: 9
+completion_evidence:
+  pr_number: 688
+  merge_commit: 26254f55762ec690a729562fc307b6f00909417e
+  pr_numbers: *id001
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-EP-LOCAL-CI-001.yaml
+integrity:
+  original_checksum: b8ad0ec039e322e8f79b983234194479e93df1be9b940e15c2fd603412455451
+  archived_checksum: b970439102e3a8eb10c43303f6cab87da298053d2e8678e47adb37d17db1b71e
+  verification_date: '2026-04-06T02:37:22.833937Z'

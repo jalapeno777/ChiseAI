@@ -1,0 +1,65 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-GOV-006
+original_story_id: ST-GOV-006
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.835473Z'
+archive_reason: age
+archive_reason_detail: Item completed 42 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-GOV-006
+  id: ST-GOV-006
+  status: archived
+  title: Self-Review Quality Gate
+  completion_date: '2026-02-23'
+  story_points: 8
+  sprint_id: GOV-PHASE2-001
+  name: Self-Review Quality Gate
+archived_fields:
+  acceptance_criteria:
+  - Automated self-review for all PRs
+  - Quality score algorithm (style, coverage, security, constitution, docs)
+  - Blocks PR if quality score <80%
+  - Human can override with justification
+  - Integration with GitReviewBot (ST-AUTO-003)
+  description: Automated self-review for all PRs with quality scoring and constitution
+    alignment
+  epic_id: EP-GOV-001
+  fr_coverage:
+  - FR-GOV-006
+  governance_feature: GF-006
+  implementation_notes:
+  - 10 files added (3,852 lines) - merged to main from feature branch
+  - 'Quality scoring: Style 20%, Coverage 25%, Security 20%, Constitution 20%, Docs
+    15%'
+  - 'PR blocking: automatic block when quality score <80%'
+  - 'Human override: OverrideManager with approval workflow and justification'
+  - 'GitReviewBot integration: REST API + CLI script'
+  - 'CLI: scripts/governance/self_review.py'
+  - 'Merge commit: a565de09085f77568ca44b4b4f0feddb75a83779'
+  merge_commit: a565de09085f77568ca44b4b4f0feddb75a83779
+  priority: P1-HIGH
+  test_results:
+    coverage_percent: 82
+    coverage_target: 80
+    failed: 0
+    passed: 65
+    status: All tests pass, coverage exceeds target
+    total_tests: 65
+  validation_gates:
+  - false_negative_rate: <5%
+  - false_positive_rate: <10%
+  - review_time: <2min
+  validation_status: validated
+completion_evidence:
+  merge_commit: a565de09085f77568ca44b4b4f0feddb75a83779
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-006.yaml
+integrity:
+  original_checksum: 66001ac51043fbcd70fdd923af832b0cd4517d9a8679894b91aad9506453b6b2
+  archived_checksum: 824def59d1a1b4db789bf1649ffb60b0890c2a078898756d33014a83fc55c8f7
+  verification_date: '2026-04-06T02:37:22.835483Z'

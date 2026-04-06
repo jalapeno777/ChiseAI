@@ -1,0 +1,63 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-GOV-009
+original_story_id: ST-GOV-009
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.835506Z'
+archive_reason: age
+archive_reason_detail: Item completed 42 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-GOV-009
+  id: ST-GOV-009
+  status: archived
+  title: Decision Audit Trail Export
+  completion_date: '2026-02-23'
+  story_points: 5
+  sprint_id: GOV-PHASE3-001
+  name: Decision Audit Trail Export
+archived_fields:
+  acceptance_criteria:
+  - Exports all autonomous decisions to immutable storage
+  - Queryable by agent, time range, decision type, outcome
+  - Tamper-evident logging (hash chain)
+  - Automated daily exports to S3
+  - Retention: 7 years
+  completion_evidence:
+  - 5 source files (decision, trail, query, exporter, __init__) - 2,037 lines
+  - 4 test files - 75 tests passing, 0 failed
+  - Hash chain with SHA-256 tamper-evident logging
+  - S3 export with 7-year retention compliance
+  - Query interface supporting agent, time range, decision type, outcome filters
+  description: Complete audit trail for compliance with tamper-evident logging and
+    7-year retention
+  epic_id: EP-GOV-001
+  fr_coverage:
+  - FR-GOV-009
+  governance_feature: GF-009
+  merge_commit: 86224f5
+  pr_number: LEGACY
+  priority: P2-MEDIUM
+  test_results:
+    coverage_percent: 83
+    failed: 0
+    passed: 75
+    status: All tests pass, coverage exceeds target
+    total: 75
+  validation_gates:
+  - audit_completeness: 100%
+  - integrity_verification: pass
+  - export_reliability: 100%
+  validation_status: validated
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: 86224f5
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-009.yaml
+integrity:
+  original_checksum: 3cb8473c54771fa8b9022148cadc6732acf7a439807fdb41a91e21c79d15f300
+  archived_checksum: 09f3c00468da545bf28360dd03cd48a2edd8719c3361ddbd37c6189f1975c6c5
+  verification_date: '2026-04-06T02:37:22.835515Z'

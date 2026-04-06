@@ -1,0 +1,72 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-LAUNCH-006
+original_story_id: ST-LAUNCH-006
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.835146Z'
+archive_reason: age
+archive_reason_detail: Item completed 43 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-LAUNCH-006
+  id: ST-LAUNCH-006
+  status: archived
+  title: Signal-to-Outcome Pipeline
+  completion_date: '2026-02-22'
+  story_points: 5
+  sprint_id: LAUNCH-SPRINT-1
+  name: Signal-to-Outcome Pipeline
+archived_fields:
+  acceptance_criteria:
+  - Outcome capture service - Every filled order captured with signal_id, exit_price,
+    pnl, timestamp
+  - Signal matching - Outcome matched to originating signal with >95% match confidence
+  - Database schema - signal_outcomes table exists with proper indexes, query latency
+    <100ms
+  - Pipeline latency - Outcome available for ECE calculation within 1 hour, 99% capture
+    rate
+  - Outcome types - Types recorded: tp_hit, sl_hit, manual_close, expired, each with
+      metadata
+  depends_on:
+  - ST-LAUNCH-001
+  description: Create complete signal-to-outcome pipeline capturing TP/SL fills from
+    Bybit execution and matching to original signals
+  epic_id: EP-LAUNCH-002
+  fr_coverage:
+  - FR-017
+  - FR-018
+  live_validation_gates:
+  - check: Execute 100 trades, verify capture
+    gate: outcome_capture_rate
+    threshold: '>=99% captured'
+  merge_commit: 7dc761d
+  notes:
+  - CRITICAL for launch - enables ML learning from day one
+  - Fallback: CSV export if pipeline delays
+  pr_number: 247
+  priority: P0-CRITICAL
+  rollback_plan:
+  - action: Disable outcome capture
+    command: redis-cli SET launch:feedback:signal_capture:enabled 0
+  scope_globs:
+  - src/ml/feedback/outcome_capture_service.py
+  - src/ml/feedback/signal_outcome_matcher.py
+  - src/ml/models/signal_outcome.py
+  - tests/test_ml/test_outcome_capture.py
+  test_strategy:
+    e2e: pytest tests/e2e/test_signal_to_outcome.py -v
+    integration: pytest tests/test_ml/integration/test_bybit_outcomes.py -v
+    unit: pytest tests/test_ml/test_outcome_capture.py -v
+  validation_status: validated
+completion_evidence:
+  pr_number: 247
+  merge_commit: 7dc761d
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-LAUNCH-006.yaml
+integrity:
+  original_checksum: 1d305fd640b80dec585a4a6a9796dcb2dd07cd2ddd07d10cf91e0742d4cb7ffc
+  archived_checksum: 1ed4a41d1705e046f17ae777c38d26353db66775c91e6445fce55ce4d5519225
+  verification_date: '2026-04-06T02:37:22.835181Z'

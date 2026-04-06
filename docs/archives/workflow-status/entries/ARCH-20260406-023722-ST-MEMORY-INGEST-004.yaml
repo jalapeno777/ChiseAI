@@ -1,0 +1,51 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-MEMORY-INGEST-004
+original_story_id: ST-MEMORY-INGEST-004
+item_type: story
+source_section: backlog
+archived_at: '2026-04-06T02:37:22.834368Z'
+archive_reason: age
+archive_reason_detail: Item completed 16 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-MEMORY-INGEST-004
+  id: ST-MEMORY-INGEST-004
+  status: archived
+  title: Frontmatter Validation Pre-Commit Hook
+  priority: P2
+  completion_date: '2026-03-21'
+  merge_commit: 37a3d2aa6
+  pr_number: 563
+archived_fields:
+  acceptance_criteria:
+  - Pre-commit hook validates YAML frontmatter structure
+  - Required fields checked: type, story_id, created
+  - Valid type values enforced: decision, pattern, summary, anti-pattern
+  - Optional fields validated with type checking: tags, author, priority
+  - Clear error messages for validation failures
+  - Hook skippable with --no-verify flag
+  - CLI tool available for standalone validation
+  created_date: '2026-03-03'
+  description: Create Git pre-commit hook to validate tempmemory frontmatter schema
+    before commit. Catches errors early and prevents invalid files from reaching ingestion.
+  estimated_points: 3
+  notes:
+  - Completion report (line 496-498) identified this as Month 1 short-term priority
+  - Reduces ingestion failures due to malformed frontmatter
+  - Consistent frontmatter quality improves semantic search quality
+  owner: TBD
+  related_story: ST-MEMORY-INGEST-001
+  completion_notes: Pre-commit hook implemented for YAML frontmatter validation with
+    required field checking, type enforcement, and clear error messages.
+completion_evidence:
+  pr_number: 563
+  merge_commit: 37a3d2aa6
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-MEMORY-INGEST-004.yaml
+integrity:
+  original_checksum: 56929beda767f1fa48649faebfe8d3382660d877c01047c1d0b0473947eb3d3d
+  archived_checksum: b74b9da3f12ad9b752864726c1d5f9d8eeaee46c89df95266adcdaea14bc339b
+  verification_date: '2026-04-06T02:37:22.834377Z'

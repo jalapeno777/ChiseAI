@@ -1,0 +1,32 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-D-03
+original_story_id: D-03
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834751Z'
+archive_reason: age
+archive_reason_detail: Item completed 12 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-D-03
+  id: D-03
+  status: archived
+  name: Pip Install Failure Detection
+  title: Pip Install Failure Detection
+  completion_date: '2026-03-25'
+  sprint_id: SP-2026-Q1-03
+archived_fields:
+  merge_commit: 1f4071f
+  pr_number: 622
+completion_evidence:
+  pr_number: 622
+  merge_commit: 1f4071f
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-D-03.yaml
+integrity:
+  original_checksum: 7b5c1195572d179854588b11ea45f2a3ce3a3f797343471501479ad5ea3547db
+  archived_checksum: 4fb644b01d88a59e6c64e62f8eb6084a4a170b0b4c4d56c10bda6a252463c617
+  verification_date: '2026-04-06T02:37:22.834755Z'

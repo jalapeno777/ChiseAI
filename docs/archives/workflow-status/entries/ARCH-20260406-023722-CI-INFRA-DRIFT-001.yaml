@@ -1,0 +1,54 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
+original_story_id: CI-INFRA-DRIFT-001
+item_type: story
+source_section: backlog
+archived_at: '2026-04-06T02:37:22.834167Z'
+archive_reason: age
+archive_reason_detail: Item completed 9 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
+  id: CI-INFRA-DRIFT-001
+  status: archived
+  title: CI Infrastructure Drift - Docker PATH and ci-gate Mismatch Fixes
+  priority: P0-CRITICAL
+  merge_commit: cfc9fe12147ae1d54f27dacbcf470b2df2b4b9bf
+  pr_number: 774
+  completion_date: '2026-03-28'
+archived_fields:
+  acceptance_criteria:
+  - Docker images use consistent python/python3 PATH across all CI steps
+  - CI steps reference correct python executable without PATH ambiguity
+  - ci-gate FAST_REQUIRED behavior aligned with status file expectations
+  - All CI pipelines pass with drift fixes applied
+  - Validation registry updated with new validation entry for CI drift prevention
+  created_date: '2026-03-28'
+  description: "CI infrastructure drift discovered during EP-AUTOCOG-005 closeout\n\
+    requiring immediate remediation:\n1. Docker image python vs python3 PATH mismatch\
+    \ in CI steps - CI\n   Docker images have inconsistent python executable naming\
+    \ causing\n   step failures\n2. FAST_REQUIRED/status-file expectation mismatch\
+    \ in ci-gate -\n   ci-gate step has mismatched expectations on FAST_REQUIRED\n\
+    \   environment variable and status file format\n"
+  discovered_during: EP-AUTOCOG-005
+  estimated_points: 3
+  notes:
+  - Discovered during EP-AUTOCOG-005 sprint closeout (2026-03-27)
+  - 'Root cause: Docker image inconsistency between python and python3 naming'
+  - 'Impact: CI pipeline failures, blocking merges'
+  - 'Related: AUTOCOG-2026-03-27 sprint, ST-AUTOCOG-* stories'
+  - 'Fix: Standardized all bare ''python'' calls to ''python3'' in .woodpecker/ci.yaml'
+  owner: senior-dev
+  completed_date: '2026-03-28'
+completion_evidence:
+  pr_number: 774
+  merge_commit: cfc9fe12147ae1d54f27dacbcf470b2df2b4b9bf
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-CI-INFRA-DRIFT-001.yaml
+integrity:
+  original_checksum: 036521521454f58258734d57ed450ddf2ab6ee1f57e3c4cb613a5f3de642dc32
+  archived_checksum: 4857939aef361e5dce242f18d8ba07a60ea06208f7cef78a89819effbb2b1ce6
+  verification_date: '2026-04-06T02:37:22.834177Z'

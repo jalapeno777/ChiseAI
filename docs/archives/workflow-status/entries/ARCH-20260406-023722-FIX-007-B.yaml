@@ -1,0 +1,42 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-FIX-007-B
+original_story_id: FIX-007-B
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.834950Z'
+archive_reason: age
+archive_reason_detail: Item completed 9 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-FIX-007-B
+  id: FIX-007-B
+  status: archived
+  title: Validation Registry Update
+  completion_date: '2026-03-28'
+  story_points: 1
+  sprint_id: AUTOCOG-BACKLOG-FIX
+  name: Validation Registry Update
+archived_fields:
+  acceptance_criteria:
+  - Validation registry updated with new Phase 4 validation entries
+  - Validation entries follow existing pattern
+  - Entries linked to EP-NS-PHASE4-001
+  created_date: '2026-03-28'
+  description: Update validation registry with Phase 4 story validations. Part of
+    AUTOCOG-RESTORE-001 deferred work.
+  merge_commit: 636fbc06b
+  pr_number: 769
+  priority: P1
+  launch_stories: null
+completion_evidence:
+  pr_number: 769
+  merge_commit: 636fbc06b
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-FIX-007-B.yaml
+integrity:
+  original_checksum: 8c229ab542d17e0e333b35969cdde4fb37102fe6663a26ea31a07b8d2a427f52
+  archived_checksum: 615e67a7142adac27c415ce4fef389588fd3ecb8f38e136e9cfc45daba2787e0
+  verification_date: '2026-04-06T02:37:22.834956Z'

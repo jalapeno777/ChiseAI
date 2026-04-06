@@ -1,0 +1,54 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-ST-GOV-002
+original_story_id: ST-GOV-002
+item_type: epic
+source_section: epics
+archived_at: '2026-04-06T02:37:22.835408Z'
+archive_reason: age
+archive_reason_detail: Item completed 16 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-ST-GOV-002
+  id: ST-GOV-002
+  status: archived
+  title: Agent Constitution Artifact
+  completion_date: '2026-03-21'
+  story_points: 8
+  sprint_id: GOV-PHASE1-001
+  name: Agent Constitution Artifact
+archived_fields:
+  acceptance_criteria:
+  - Constitution stored as versioned artifact in docs/constitution/
+  - JSON schema for programmatic validation
+  - Runtime access via API: GET /api/v1/constitution
+  - Violation detection and alerting
+  - Human override capability with audit logging
+  description: Codify agent behavior rules, decision boundaries, and escalation criteria
+    as versioned artifact
+  epic_id: EP-GOV-001
+  fr_coverage:
+  - FR-GOV-002
+  governance_feature: GF-002
+  priority: P0-CRITICAL
+  validation_gates:
+  - schema_validation: pass
+  - api_latency: <50ms
+  - violation_detection_accuracy: 99%
+  validation_status: validated
+  pr_number: 562
+  merge_commit: a35675af
+  completion_notes: Agent Constitution Artifact implemented with comprehensive governance
+    bounds, task decomposition validation, and conflict detection. All acceptance
+    criteria met.
+completion_evidence:
+  pr_number: 562
+  merge_commit: a35675af
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-ST-GOV-002.yaml
+integrity:
+  original_checksum: a9559265faf53ae5e1a49f100f13f072ef2e2b5231122d13f692f2958b5227f5
+  archived_checksum: 1a07ef5f2adff164e3f9004739515314d701c3edf0d144192c8f0e0f068996e8
+  verification_date: '2026-04-06T02:37:22.835416Z'

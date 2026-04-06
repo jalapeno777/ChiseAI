@@ -1,0 +1,39 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260406-023722-SIG-REM-004
+original_story_id: SIG-REM-004
+item_type: story
+source_section: backlog
+archived_at: '2026-04-06T02:37:22.834508Z'
+archive_reason: age
+archive_reason_detail: Item completed 16 days ago, exceeds 7-day threshold
+migration:
+  phase: batch_auto
+  migrated_by: jarvis
+  migration_script_version: 1.1.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260406-023722-SIG-REM-004
+  id: SIG-REM-004
+  status: archived
+  title: funding_rate compute(data) contract compliance
+  priority: P0
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
+  pr_number: 556
+  completion_date: '2026-03-21'
+archived_fields:
+  story_points: 1
+  created_date: '2026-03-20'
+  completed_date: '2026-03-21'
+  description: Ensure funding_rate compute(data) function signature and return type
+    comply with the signal contract.
+  owner: dev
+  implementation_notes: 'compute(self, data: list) -> FundingRateResult signature
+    in src/market_analysis/fundamentals/funding_rate.py:259'
+completion_evidence:
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
+archive_location: docs/archives/workflow-status/entries/ARCH-20260406-023722-SIG-REM-004.yaml
+integrity:
+  original_checksum: cef50cf609a5f60d3ce85643d3c3baa1137a74652750ddeb94470a851c30068e
+  archived_checksum: 71bac13f1bcb7f926b4a870d5ddb173165935d4c871ee74c40ce04803c63c12d
+  verification_date: '2026-04-06T02:37:22.834514Z'
