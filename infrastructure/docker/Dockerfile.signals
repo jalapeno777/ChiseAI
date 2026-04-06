@@ -1,6 +1,9 @@
 # Signal Supervisor Container for EP-PAPER-RUN-001
 # Runs the signal consumer service that polls Redis for actionable signals
 # and submits them to the paper trading orchestrator.
+#
+# BUILD: Must be built from repo root as context:
+#   docker build -t chiseai-signals:latest -f infrastructure/docker/Dockerfile.signals .
 
 FROM chiseai-api:latest
 
