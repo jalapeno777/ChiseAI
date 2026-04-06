@@ -7808,11 +7808,19 @@ stories:
   - 'BLOCKER: ST2 must be done first (ST2 is now unblocked per Aria)'
   - 'Owner: senior-dev agent'
   - Part 1 of ICT decomposition (B-OS/CHoCH)
+  - Merged via PR #929, commit fafc9e833 on main
+  - Critic review: C-1 (CRITICAL), H-1 (HIGH), H-2 (HIGH) all fixed
   owner: senior-dev
   priority: P2-MEDIUM
   sprint_id: PIPELINE-W3
   sp: 2
-  status: planned
+  status: completed
+  completion_date: '2026-04-06'
+  evidence: >-
+    Merged via PR #929 (superseded #928), commit fafc9e833 on main.
+    High water mark flush to trade database with critic fixes for
+    signal handler safety (C-1), flush atomicity (H-1), and
+    SIGTERM handling (H-2). 22 unit tests passing.
   title: Real ICT Pipeline - B-OS/CHoCH Decomposition
 - description: 'Real ICT signal pipeline - H, L, H-OLD, L-OLD decomposition. Implement
     real ICT signal generation for highs/lows and old highs/lows. These complete the
@@ -7822,7 +7830,7 @@ stories:
   epic_id: EP-PIPELINE-TRANSPARENCY
   id: S1A-2
   notes:
-  - 'BLOCKER: Depends on S1A-1 (must be merged first)'
+  - 'S1A-1 merged (PR #929) — blocker resolved'
   - 'Owner: senior-dev agent'
   - Part 2 of ICT decomposition (H/L/H-OLD/L-OLD)
   owner: senior-dev
