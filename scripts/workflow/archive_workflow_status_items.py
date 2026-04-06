@@ -87,7 +87,9 @@ def _load_yaml(path: Path) -> dict[str, Any]:
 
 
 def _dump_yaml(data: Any) -> str:
-    text = yaml.safe_dump(data, sort_keys=False, default_flow_style=False, allow_unicode=True)
+    text = yaml.safe_dump(
+        data, sort_keys=False, default_flow_style=False, allow_unicode=True
+    )
     if not text.endswith("\n"):
         text += "\n"
     return text
@@ -95,7 +97,9 @@ def _dump_yaml(data: Any) -> str:
 
 def _atomic_write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as tmp:
+    with NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, delete=False
+    ) as tmp:
         tmp.write(text)
         tmp_path = Path(tmp.name)
     tmp_path.replace(path)
@@ -164,7 +168,9 @@ def _story_date_map(data: dict[str, Any]) -> dict[str, datetime]:
     return out
 
 
-def _get_completion_dt(item: dict[str, Any], item_type: str, story_dates: dict[str, datetime]) -> datetime | None:
+def _get_completion_dt(
+    item: dict[str, Any], item_type: str, story_dates: dict[str, datetime]
+) -> datetime | None:
     direct = _parse_date(
         item.get("completion_date")
         or item.get("completed_date")
@@ -188,7 +194,13 @@ def _get_completion_dt(item: dict[str, Any], item_type: str, story_dates: dict[s
     return max(candidates)
 
 
-def _should_archive(item: dict[str, Any], item_type: str, retention_days: int, now: datetime, story_dates: dict[str, datetime]) -> tuple[bool, str, int | None, datetime | None]:
+def _should_archive(
+    item: dict[str, Any],
+    item_type: str,
+    retention_days: int,
+    now: datetime,
+    story_dates: dict[str, datetime],
+) -> tuple[bool, str, int | None, datetime | None]:
     if item.get("archive_ref"):
         return False, "already archived", None, None
 
@@ -207,7 +219,12 @@ def _should_archive(item: dict[str, Any], item_type: str, retention_days: int, n
 
     age_days = (now - completion_dt).days
     if age_days <= retention_days:
-        return False, f"age {age_days}d <= threshold {retention_days}d", age_days, completion_dt
+        return (
+            False,
+            f"age {age_days}d <= threshold {retention_days}d",
+            age_days,
+            completion_dt,
+        )
 
     return True, "age", age_days, completion_dt
 
@@ -235,15 +252,14 @@ def _has_completion_evidence(item: dict[str, Any]) -> bool:
         return True
 
     completion_evidence = item.get("completion_evidence")
-    if isinstance(completion_evidence, dict) and completion_evidence:
-        return True
-
-    return False
+    return isinstance(completion_evidence, dict) and bool(completion_evidence)
 
 
 def _title_for(item: dict[str, Any], item_type: str) -> str:
     if item_type == "epic":
-        return str(item.get("title") or item.get("name") or item.get("id") or "(untitled)")
+        return str(
+            item.get("title") or item.get("name") or item.get("id") or "(untitled)"
+        )
     return str(item.get("title") or item.get("name") or item.get("id") or "(untitled)")
 
 
@@ -257,7 +273,12 @@ def _checksum(data: Any) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _build_stub(item: dict[str, Any], item_type: str, archive_ref: str, completion_dt: datetime | None) -> dict[str, Any]:
+def _build_stub(
+    item: dict[str, Any],
+    item_type: str,
+    archive_ref: str,
+    completion_dt: datetime | None,
+) -> dict[str, Any]:
     fields = EPIC_STUB_FIELDS if item_type == "epic" else STORY_STUB_FIELDS
     stub: dict[str, Any] = {"archive_ref": archive_ref}
 
@@ -350,7 +371,9 @@ def _collect_candidates(
             return
 
         if ids_filter and item_id not in ids_filter:
-            skipped.append({"id": item_id, "section": section, "reason": "not in --id filter"})
+            skipped.append(
+                {"id": item_id, "section": section, "reason": "not in --id filter"}
+            )
             return
 
         should, reason, age_days, completion_dt = _should_archive(
@@ -380,7 +403,9 @@ def _collect_candidates(
                 section=section,
                 index=idx,
                 age_days=int(age_days or 0),
-                completion_date=(completion_dt.date().isoformat() if completion_dt else ""),
+                completion_date=(
+                    completion_dt.date().isoformat() if completion_dt else ""
+                ),
                 status=str(item.get("status", "")),
                 title=_title_for(item, item_type),
             )
@@ -458,9 +483,7 @@ def _archive(
             completion_dt = _get_completion_dt(item, "epic", story_dates)
 
         stub = _build_stub(item, c.item_type, archive_ref, completion_dt)
-        detail = (
-            f"Item completed {c.age_days} days ago, exceeds {retention_days}-day threshold"
-        )
+        detail = f"Item completed {c.age_days} days ago, exceeds {retention_days}-day threshold"
         archive_entry = _build_archive_entry(
             item=item,
             item_type=c.item_type,
@@ -493,7 +516,9 @@ def _archive(
     projected_text = _dump_yaml(working)
     projected_lines = _count_lines(projected_text)
     line_reduction = before_lines - projected_lines
-    line_reduction_pct = round((line_reduction / before_lines) * 100, 2) if before_lines else 0.0
+    line_reduction_pct = (
+        round((line_reduction / before_lines) * 100, 2) if before_lines else 0.0
+    )
 
     backup_path = None
     index_updated = 0
@@ -579,7 +604,9 @@ def _archive(
     return result
 
 
-def _append_archive_index(archive_index_file: Path, archived_records: list[dict[str, Any]]) -> int:
+def _append_archive_index(
+    archive_index_file: Path, archived_records: list[dict[str, Any]]
+) -> int:
     """Append archived records to archive-index.yaml preserving legacy structure."""
     if archive_index_file.exists():
         with archive_index_file.open(encoding="utf-8") as f:
@@ -607,7 +634,9 @@ def _append_archive_index(archive_index_file: Path, archived_records: list[dict[
     for rec in archived_records:
         completion_date = rec.get("completion_date")
         original_timestamp = (
-            f"{completion_date}T00:00:00Z" if completion_date else _now_utc().isoformat().replace("+00:00", "Z")
+            f"{completion_date}T00:00:00Z"
+            if completion_date
+            else _now_utc().isoformat().replace("+00:00", "Z")
         )
         entries.append(
             {
@@ -637,7 +666,9 @@ def _print_human(result: dict[str, Any]) -> None:
     print(f"Archive dir: {result['archive_dir']}")
     print(f"Retention days: {result['retention_days']}")
     print("-" * 80)
-    print(f"Candidates: {metrics['candidates_total']} (stories={metrics['candidates_stories']}, epics={metrics['candidates_epics']})")
+    print(
+        f"Candidates: {metrics['candidates_total']} (stories={metrics['candidates_stories']}, epics={metrics['candidates_epics']})"
+    )
     print(f"Selected this run: {metrics['items_selected_this_run']}")
     print(
         f"Archived this run: {metrics['items_archived_this_run']} "
@@ -680,13 +711,29 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Archive workflow-status stories/epics older than retention threshold"
     )
-    parser.add_argument("--file", type=Path, default=WORKFLOW_FILE, help="Workflow status YAML path")
-    parser.add_argument("--archive-dir", type=Path, default=ARCHIVE_DIR, help="Archive entries directory")
+    parser.add_argument(
+        "--file", type=Path, default=WORKFLOW_FILE, help="Workflow status YAML path"
+    )
+    parser.add_argument(
+        "--archive-dir",
+        type=Path,
+        default=ARCHIVE_DIR,
+        help="Archive entries directory",
+    )
     parser.add_argument("--retention-days", type=int, default=RETENTION_DAYS_DEFAULT)
-    parser.add_argument("--id", action="append", default=[], help="Archive specific ID(s); can be repeated")
-    parser.add_argument("--batch-size", type=int, default=0, help="Max items this run (0 = all)")
+    parser.add_argument(
+        "--id",
+        action="append",
+        default=[],
+        help="Archive specific ID(s); can be repeated",
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=0, help="Max items this run (0 = all)"
+    )
     parser.add_argument("--migrated-by", default="opencode")
-    parser.add_argument("--execute", action="store_true", help="Persist archive + stub changes")
+    parser.add_argument(
+        "--execute", action="store_true", help="Persist archive + stub changes"
+    )
     parser.add_argument("--json", action="store_true", help="Emit JSON result")
     parser.add_argument(
         "--require-completion-evidence",
