@@ -24,6 +24,7 @@ import hashlib
 import logging
 import os
 import random
+import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -539,13 +540,20 @@ class BybitDemoConnector:
         provenance: Provenance information proving demo execution
         provenance_tracker: Full lifecycle provenance tracker
         _orders: Cache of orders placed via this connector
+        _redis: Optional Redis client for deduplication
     """
+
+    # Fill polling configuration
+    FILL_POLL_INTERVAL_MS = 100
+    DEFAULT_POLL_TIMEOUT_MS = 5000
+    DEDUP_TTL_HOURS = 24
 
     def __init__(
         self,
         connector: BybitConnector,
         market_data: MarketDataProvider | None = None,
         retry_config: RetryConfig | None = None,
+        redis_client: Any | None = None,
     ) -> None:
         """Initialize the Bybit demo connector.
 
@@ -553,6 +561,7 @@ class BybitDemoConnector:
             connector: Configured BybitConnector instance (must be in demo mode)
             market_data: Optional market data provider for price lookups
             retry_config: Optional retry configuration (default: 3 retries)
+            redis_client: Optional Redis client for fill deduplication
 
         Raises:
             ValueError: If connector is not configured for demo mode
@@ -566,6 +575,7 @@ class BybitDemoConnector:
         self._retry_config = retry_config or RetryConfig()
         self._retry = ExponentialBackoffRetry(config=self._retry_config)
         self.provenance_tracker = ProvenanceTracker()
+        self._redis = redis_client
 
         # Validate demo mode
         config = connector.config
@@ -862,6 +872,15 @@ class BybitDemoConnector:
 
             # Store order
             self._orders[order.order_id] = order
+
+            # Poll for fill if order is not immediately filled
+            # This handles async fills from Bybit (common for market orders)
+            if order.state == OrderState.PENDING:
+                order = await self._poll_for_fill(
+                    order_id=order.order_id,
+                    symbol=symbol,
+                    initial_response=result,
+                )
 
             self.provenance_tracker.record(
                 ProvenanceEventType.ORDER_PLACED,
@@ -1423,6 +1442,202 @@ class BybitDemoConnector:
         """Close the connector and cleanup resources."""
         await self.connector.close()
         logger.info("BybitDemoConnector closed")
+
+    # -------------------------------------------------------------------------
+    # Fill Polling for Async Fills
+    # -------------------------------------------------------------------------
+
+    async def _is_duplicate_exec(self, exec_id: str) -> bool:
+        """Check if an execution has already been processed (idempotency check).
+
+        Args:
+            exec_id: The execution ID from Bybit
+
+        Returns:
+            True if already processed, False otherwise
+        """
+        if self._redis is None:
+            return False
+        try:
+            key = f"bybit:fill:dedup:exec:{exec_id}"
+            return bool(self._redis.exists(key))
+        except Exception as exc:
+            logger.warning("Redis dedup check failed for exec_id=%s: %s", exec_id, exc)
+            return False
+
+    async def _mark_processed_exec(self, exec_id: str) -> None:
+        """Mark an execution as processed in Redis.
+
+        Args:
+            exec_id: The execution ID from Bybit
+        """
+        if self._redis is None:
+            return
+        try:
+            key = f"bybit:fill:dedup:exec:{exec_id}"
+            ttl_seconds = self.DEDUP_TTL_HOURS * 3600
+            self._redis.setex(key, ttl_seconds, "1")
+        except Exception as exc:
+            logger.warning("Redis dedup mark failed for exec_id=%s: %s", exec_id, exc)
+
+    async def _poll_for_fill(
+        self,
+        order_id: str,
+        symbol: str,
+        initial_response: dict[str, Any],
+    ) -> PaperOrder:
+        """Poll for fill after order placement returns non-FILLED state.
+
+        This handles the case where Bybit fills orders asynchronously,
+        which is common for market orders.
+
+        Args:
+            order_id: The order ID to poll for
+            symbol: The trading symbol
+            initial_response: The initial place_order response
+
+        Returns:
+            Updated PaperOrder with fill data if detected, otherwise order
+            in its current state after timeout
+        """
+        logger.info("Fill polling started: order_id=%s, symbol=%s", order_id, symbol)
+
+        # Get or create the order from initial response
+        order = self._orders.get(order_id)
+        if order is None:
+            # Reconstruct from initial response if not stored yet
+            order = PaperOrder(
+                order_id=order_id,
+                symbol=symbol.upper(),
+                side=initial_response.get("side", "buy").lower(),
+                order_type=initial_response.get("order_type", "market").lower(),
+                quantity=float(initial_response.get("quantity", 0)),
+                price=float(initial_response.get("price") or 0),
+            )
+            order.state = OrderState.PENDING
+            self._orders[order_id] = order
+
+        timeout_ms = int(
+            os.getenv("BYBIT_FILL_POLL_TIMEOUT_MS", str(self.DEFAULT_POLL_TIMEOUT_MS))
+        )
+        deadline = time.time() + (timeout_ms / 1000)
+        poll_attempt = 0
+
+        while time.time() < deadline:
+            await asyncio.sleep(self.FILL_POLL_INTERVAL_MS / 1000)
+            poll_attempt += 1
+
+            logger.debug(
+                "Polling for fill: order_id=%s, attempt=%d", order_id, poll_attempt
+            )
+
+            try:
+                executions = await self._retry.execute(
+                    lambda **kw: self.connector.get_fills(**kw),
+                    symbol=self._normalize_bybit_symbol(symbol),
+                    order_id=order_id,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Fill poll attempt %d failed for order_id=%s: %s",
+                    poll_attempt,
+                    order_id,
+                    exc,
+                )
+                continue
+
+            exec_list = executions.get("list", [])
+            if not exec_list:
+                continue
+
+            # Process any new fills
+            fills_detected = 0
+            for exec_data in exec_list:
+                exec_id = exec_data.get("execId")
+                if not exec_id:
+                    continue
+
+                # Idempotency check
+                if await self._is_duplicate_exec(exec_id):
+                    continue
+
+                exec_price = float(exec_data.get("execPrice", 0))
+                exec_qty = float(exec_data.get("execQty", 0))
+
+                if exec_price <= 0 or exec_qty <= 0:
+                    continue
+
+                fill = PaperFill(
+                    fill_id=f"fill_{exec_id}",
+                    order_id=order_id,
+                    symbol=symbol.upper(),
+                    side=order.side,
+                    price=exec_price,
+                    quantity=exec_qty,
+                    timestamp=datetime.now(UTC),
+                )
+                order.add_fill(fill)
+                await self._mark_processed_exec(exec_id)
+                fills_detected += 1
+
+                logger.info(
+                    "Fill detected via polling: order_id=%s, exec_id=%s, qty=%s, price=%s",
+                    order_id,
+                    exec_id,
+                    exec_qty,
+                    exec_price,
+                )
+
+            if fills_detected > 0:
+                order.state = OrderState.FILLED
+                order.filled_quantity = sum(f.quantity for f in order.fills)
+                order.avg_fill_price = (
+                    sum(f.price * f.quantity for f in order.fills)
+                    / order.filled_quantity
+                )
+                order.filled_at = datetime.now(UTC)
+
+                self.provenance_tracker.record(
+                    ProvenanceEventType.ORDER_FILLED,
+                    order_id=order_id,
+                    symbol=symbol,
+                    details={
+                        "fills_detected": fills_detected,
+                        "total_filled_qty": order.filled_quantity,
+                        "avg_fill_price": order.avg_fill_price,
+                        "poll_attempts": poll_attempt,
+                    },
+                )
+
+                logger.info(
+                    "Fill polling completed: order_id=%s, filled_qty=%s, avg_price=%s",
+                    order_id,
+                    order.filled_quantity,
+                    order.avg_fill_price,
+                )
+                return order
+
+        # Timeout - return order in current state
+        logger.warning(
+            "Fill polling timeout: order_id=%s, fills_found=%d, state=%s",
+            order_id,
+            len(order.fills),
+            order.state.value,
+        )
+
+        self.provenance_tracker.record(
+            ProvenanceEventType.ERROR,
+            order_id=order_id,
+            symbol=symbol,
+            details={
+                "operation": "_poll_for_fill",
+                "error": "Fill polling timeout",
+                "fills_found": len(order.fills),
+                "poll_attempts": poll_attempt,
+            },
+        )
+
+        return order
 
 
 # ---------------------------------------------------------------------------
