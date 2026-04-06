@@ -1735,7 +1735,7 @@ epics:
     sprint_id: ICT-S8
     completion_date: "2026-03-30"
     status: completed
-    story_count: 10
+    story_count: 13
     story_ids:
       - ST-ICT-019
       - ST-ICT-020-PART-A
@@ -1745,9 +1745,12 @@ epics:
       - ST-ICT-023
       - ST-ICT-024
       - ST-ICT-025
+      - ST-ICT-026
       - ST-ICT-027
-      - ST-ICT-028
-    story_points: 17
+      - ST-ICT-028-A
+      - ST-ICT-028-B
+      - ST-ICT-028-C
+    story_points: 31
     remediation_plan_sp: 11.5
     completed_stories:
       - id: ST-ICT-019
