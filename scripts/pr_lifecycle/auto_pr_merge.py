@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 import sys
 import time
 import urllib.error
@@ -95,30 +94,38 @@ def _repo_path(cfg: Config) -> str:
     return f"/api/v1/repos/{cfg.owner}/{cfg.repo}"
 
 
-def _run_git(*args: str) -> tuple[int, str, str]:
-    proc = subprocess.run(
-        ["git", *args],
-        capture_output=True,
-        text=True,
-        timeout=30,
-        check=False,
-    )
-    return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
+def _branch_is_behind_main(
+    cfg: Config, head_branch: str, base_branch: str = "main"
+) -> tuple[bool, str]:
+    """Check branch staleness via Gitea compare API.
 
-
-def _branch_is_behind_main(base_branch: str = "main") -> tuple[bool, str]:
-    rc, out, err = _run_git("fetch", "origin", base_branch)
-    if rc != 0:
-        return False, f"fetch origin/{base_branch} failed: {err or out}"
-    rc, out, err = _run_git(
-        "merge-base",
-        "--is-ancestor",
-        f"origin/{base_branch}",
-        "HEAD",
+    This avoids requiring `git` in CI runtime images such as python:3.11-slim.
+    """
+    path = (
+        f"{_repo_path(cfg)}/compare/"
+        f"{urllib.parse.quote(base_branch, safe='')}...{urllib.parse.quote(head_branch, safe='')}"
     )
-    if rc == 0:
-        return False, "branch includes latest origin/main"
-    return True, "branch is behind origin/main"
+    out = _safe_req_json(cfg, "GET", path)
+    if not isinstance(out, dict):
+        return False, "compare API unavailable"
+
+    behind_by_raw = out.get("behind_by")
+    ahead_by_raw = out.get("ahead_by")
+    try:
+        behind_by = int(behind_by_raw) if behind_by_raw is not None else 0
+    except (TypeError, ValueError):
+        behind_by = 0
+    try:
+        ahead_by = int(ahead_by_raw) if ahead_by_raw is not None else 0
+    except (TypeError, ValueError):
+        ahead_by = 0
+
+    if behind_by > 0:
+        return True, (
+            f"branch is behind {base_branch} by {behind_by} commit(s)"
+            + (f"; ahead by {ahead_by}" if ahead_by > 0 else "")
+        )
+    return False, f"branch includes latest {base_branch}"
 
 
 def _issue_comments(cfg: Config, number: int) -> list[dict[str, Any]]:
@@ -263,7 +270,7 @@ def ensure_prs(cfg: Config) -> int:
         is_stale = False
         stale_reason = ""
         if cfg.source_branch and name == cfg.source_branch:
-            is_stale, stale_reason = _branch_is_behind_main(cfg.default_base)
+            is_stale, stale_reason = _branch_is_behind_main(cfg, name, cfg.default_base)
         open_pr = _open_pr_for_head(cfg, name)
         if open_pr:
             if is_stale:

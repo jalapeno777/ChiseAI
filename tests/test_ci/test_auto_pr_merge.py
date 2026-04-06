@@ -46,6 +46,11 @@ def test_ensure_prs_creates_new_pr_even_if_historical_pr_exists(monkeypatch) -> 
             {"name": "feature/test-branch", "commit": {"timestamp": ts}},
         ],
     )
+    monkeypatch.setattr(
+        auto_pr_merge,
+        "_branch_is_behind_main",
+        lambda _cfg, _head_branch, _base_branch="main": (False, "up-to-date"),
+    )
     monkeypatch.setattr(auto_pr_merge, "_open_pr_for_head", lambda _cfg, _name: None)
 
     calls: list[tuple[str, str, dict[str, str]]] = []
@@ -61,6 +66,23 @@ def test_ensure_prs_creates_new_pr_even_if_historical_pr_exists(monkeypatch) -> 
     created = auto_pr_merge.ensure_prs(cfg)
     assert created == 1
     assert len(calls) == 1
+
+
+def test_branch_is_behind_main_uses_compare_api(monkeypatch) -> None:
+    cfg = _cfg()
+
+    def _fake_req(_cfg, method: str, path: str, body=None):
+        assert method == "GET"
+        assert path.endswith("/compare/main...feature%2Ftest-branch")
+        return {"behind_by": 2, "ahead_by": 1}
+
+    monkeypatch.setattr(auto_pr_merge, "_safe_req_json", _fake_req)
+
+    is_stale, reason = auto_pr_merge._branch_is_behind_main(
+        cfg, "feature/test-branch", "main"
+    )
+    assert is_stale is True
+    assert "behind main by 2 commit(s)" in reason
 
 
 @patch("auto_pr_merge._safe_req_json")
