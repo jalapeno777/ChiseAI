@@ -142,7 +142,7 @@ in_progress:
   sprint_id: q2-2
   status: completed
   completion_date: '2026-04-06'
-  merge_commit: <pending - will fill after PR merge>
+  merge_commit: a1001154f3f1613a8a736f82121292abc2397ed0
   story_points: 5
   test_results:
     passed: 34
