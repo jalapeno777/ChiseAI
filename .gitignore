@@ -58,3 +58,4 @@ docs/governance/self_assessments/*.json
 
 # Utility scripts (not part of tracked codebase)
 scripts/archive_iterlog_to_qdrant.py
+.opencode/package-lock.json

@@ -1072,4 +1072,17 @@ LESSON
 - added_utc: 2026-04-05T20:00:00Z
 ```
 
-(End of file - total 720 lines)
+## LESSON: ST-ICT-S1A-1 Safety Fix (2026-04-06)
+
+**Context:**
+Critic review of ST-ICT-S1A-1 flush implementation found 1 CRITICAL + 2 HIGH issues AFTER initial implementation was "complete". A safety branch was needed to fix C-1 (signal handler crash on non-main thread), H-1 (flush rollback interleaving), H-2 (SIGTERM handler crash on loop shutdown).
+
+**Failure or Win:**
+Win (but discovered late in the process)
+
+**Actionable Rule:**
+Always run critic review BEFORE merge, not after. A safety/critical bug should never need a post-merge hotfix when a pre-merge review would have caught it. The Critic reviewer must be run as a hard gate BEFORE any branch is handed to Merlin for merge — not after.
+
+Evidence: INC-2026-0406-ICT-S1A-1
+
+---

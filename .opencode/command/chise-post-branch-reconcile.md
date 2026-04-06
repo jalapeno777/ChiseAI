@@ -58,21 +58,22 @@ For PRs with `failure` or `error` status:
 discord_send --channel "#development" --message "PR #<number> failed CI. Routing to <owner> for fixes. Blocking dependent work."
 ```
 
-### Step 3: Verify Merged Commits on Main
+### Step 3: Verify Merged Commits on Origin/Main
 
-Confirm that recently merged branches are actually on main using `git branch --contains`.
+Confirm that recently merged branches are actually on `origin/main` using `git merge-base --is-ancestor`. This explicitly checks the remote main, not the local main which may diverge in worktree contexts.
 
 ```bash
-# For each merged PR, verify the merge commit is on main
-git branch --contains <merge_commit_sha>
+# For each merged PR, verify the merge commit is on origin/main
+git merge-base --is-ancestor <merge_commit_sha> origin/main
+# Exit code 0 = commit IS on origin/main
+# Exit code 1 = commit is NOT on origin/main
 
 # Example:
 # Merge commit from PR #599 was 560a9d9e
-git branch --contains 560a9d9e
-# Should output: * main (or show main in the list)
+git merge-base --is-ancestor 560a9d9e origin/main && echo "ON MAIN" || echo "NOT ON MAIN"
 ```
 
-If the commit is NOT on main:
+If the commit is NOT on origin/main:
 
 - STOP immediately
 - Do not proceed with new work
@@ -123,12 +124,12 @@ bmad:chiseai:reconcile:blocking_prs = <comma-separated PR numbers or empty>
 
 ## Exit Conditions
 
-| Condition                | Action                                |
-| ------------------------ | ------------------------------------- |
-| All steps pass           | Proceed with new work                 |
-| PRs failing              | Route for fixes, block dependent work |
-| Merge commit not on main | STOP, escalate via BLOCKER_PACKET     |
-| Cannot sync main         | STOP, escalate via BLOCKER_PACKET     |
+| Condition                       | Action                                |
+| ------------------------------- | ------------------------------------- |
+| All steps pass                  | Proceed with new work                 |
+| PRs failing                     | Route for fixes, block dependent work |
+| Merge commit not on origin/main | STOP, escalate via BLOCKER_PACKET     |
+| Cannot sync main                | STOP, escalate via BLOCKER_PACKET     |
 
 ## Example Output
 
@@ -141,8 +142,8 @@ bmad:chiseai:reconcile:blocking_prs = <comma-separated PR numbers or empty>
 [2/5] Routing failed PRs...
   PR #601 routed to @owner via Discord
 
-[3/5] Verifying merged commits on main...
-  Commit 560a9d9e: on main ✓
+[3/5] Verifying merged commits on origin/main...
+  Commit 560a9d9e: on origin/main ✓
 
 [4/5] Syncing local main...
   Fetched origin/main

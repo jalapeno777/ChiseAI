@@ -5,7 +5,7 @@
 # Implements the 5-step post-branch reconcile loop from AGENTS.md:
 #   1. Check Woodpecker PR/pipeline state (classify non-green)
 #   2. Route failed/error PRs for fixes (report only)
-#   3. Verify merged branch head is on main (git branch --contains)
+#   3. Verify merged branch head is on origin/main (git merge-base --is-ancestor)
 #   4. Sync local main to origin
 #   5. Report status
 #
@@ -243,34 +243,41 @@ step_2_route_failed_prs() {
 }
 
 #######################################
-# STEP 3: Verify merged branch head on main
+# STEP 3: Verify merged branch head on origin/main
 #######################################
 step_3_verify_on_main() {
-    log_step "Step 3: Verifying commit $COMMIT_SHA is on main..."
+    log_step "Step 3: Verifying commit $COMMIT_SHA is on origin/main..."
     
     ci_output "{\"step\": 3, \"name\": \"verify_on_main\", \"status\": \"running\", \"commit\": \"$COMMIT_SHA\"}"
     
-    # Check if commit is on main using git branch --contains
-    if git branch --contains "$COMMIT_SHA" 2>/dev/null | grep -q "^\* main$"; then
+    # First ensure origin/main exists
+    if ! git rev-parse --verify origin/main >/dev/null 2>&1; then
+        BRANCH_ON_MAIN=false
+        ISSUES_FOUND=true
+        STEP_FAILURES+=("origin/main does not exist: $COMMIT_SHA")
+        log_fail "origin/main does not exist - cannot verify commit"
+        ci_output "{\"step\": 3, \"name\": \"verify_on_main\", \"status\": \"fail\", \"commit\": \"$COMMIT_SHA\", \"origin_main\": false, \"reason\": \"origin_main_not_found\"}"
+        return 1
+    fi
+    
+    # Use git merge-base --is-ancestor to definitively check if commit is ancestor of origin/main
+    # This checks origin/main, NOT local main, avoiding worktree/local state issues
+    if git merge-base --is-ancestor "$COMMIT_SHA" origin/main 2>/dev/null; then
         BRANCH_ON_MAIN=true
-        log_pass "Commit $COMMIT_SHA is on main"
-        ci_output "{\"step\": 3, \"name\": \"verify_on_main\", \"status\": \"pass\", \"commit\": \"$COMMIT_SHA\", \"on_main\": true}"
-    elif git branch --contains "$COMMIT_SHA" 2>/dev/null | grep -q "main"; then
-        BRANCH_ON_MAIN=true
-        log_pass "Commit $COMMIT_SHA is on main (detached HEAD or main not current)"
-        ci_output "{\"step\": 3, \"name\": \"verify_on_main\", \"status\": \"pass\", \"commit\": \"$COMMIT_SHA\", \"on_main\": true}"
+        log_pass "Commit $COMMIT_SHA is on origin/main"
+        ci_output "{\"step\": 3, \"name\": \"verify_on_main\", \"status\": \"pass\", \"commit\": \"$COMMIT_SHA\", \"origin_main\": true}"
     else
         BRANCH_ON_MAIN=false
         ISSUES_FOUND=true
-        STEP_FAILURES+=("Commit not on main: $COMMIT_SHA")
-        log_fail "Commit $COMMIT_SHA is NOT on main"
+        STEP_FAILURES+=("Commit not on origin/main: $COMMIT_SHA")
+        log_fail "Commit $COMMIT_SHA is NOT on origin/main"
         
-        # Show which branches contain this commit
+        # Show which branches contain this commit for debugging
         local containing_branches
         containing_branches=$(git branch --contains "$COMMIT_SHA" 2>/dev/null | tr '\n' ' ' || echo "none")
-        log_info "Branches containing this commit: $containing_branches"
+        log_info "Local branches containing this commit: $containing_branches"
         
-        ci_output "{\"step\": 3, \"name\": \"verify_on_main\", \"status\": \"fail\", \"commit\": \"$COMMIT_SHA\", \"on_main\": false, \"containing_branches\": \"$containing_branches\"}"
+        ci_output "{\"step\": 3, \"name\": \"verify_on_main\", \"status\": \"fail\", \"commit\": \"$COMMIT_SHA\", \"origin_main\": false, \"containing_branches\": \"$containing_branches\"}"
     fi
 }
 
