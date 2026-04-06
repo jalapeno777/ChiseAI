@@ -8,11 +8,10 @@ The notifier is called by handle_event() which executes the full routing pipelin
 """
 
 import asyncio
+import os
+import sys
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
-
-import sys
-import os
 
 # Add src to path for imports
 sys.path.insert(
@@ -28,7 +27,7 @@ def _mock_redis_get(key: str, field: str):
 class TestNotificationRoutingIntegration(unittest.TestCase):
     """Integration tests for the notification routing pipeline."""
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_high_severity_routes_to_immediate_and_delivers_to_discord(
         self, mock_get_redis
     ):
@@ -37,7 +36,7 @@ class TestNotificationRoutingIntegration(unittest.TestCase):
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
         # Import here to avoid module-level Redis calls
-        from governance.notifications.event_router import NotificationEventRouter
+        from src.governance.notifications.event_router import NotificationEventRouter
 
         # Create mock DiscordNotifier
         mock_notifier = MagicMock()
@@ -78,12 +77,12 @@ class TestNotificationRoutingIntegration(unittest.TestCase):
         # Assert NOT buffered to digest
         mock_notifier.add_to_digest.assert_not_called()
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_low_severity_routes_to_digest_and_buffers(self, mock_get_redis):
         """Test that low severity events route to digest and buffer correctly."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import NotificationEventRouter
+        from src.governance.notifications.event_router import NotificationEventRouter
 
         # Create mock DiscordNotifier
         mock_notifier = MagicMock()
@@ -122,12 +121,12 @@ class TestNotificationRoutingIntegration(unittest.TestCase):
         # Assert NOT sent immediately
         mock_notifier.notify_autocog_event.assert_not_called()
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_approval_request_overrides_severity_to_immediate(self, mock_get_redis):
         """Test that approval_request event_type overrides severity to immediate."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import NotificationEventRouter
+        from src.governance.notifications.event_router import NotificationEventRouter
 
         # Create mock DiscordNotifier
         mock_notifier = MagicMock()
@@ -164,8 +163,8 @@ class TestNotificationRoutingIntegration(unittest.TestCase):
         # Assert NOT buffered to digest
         mock_notifier.add_to_digest.assert_not_called()
 
-    @patch("governance.notifications.event_router._get_redis_client")
-    @patch("governance.notifications.severity_mapper._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.severity_mapper._get_redis_client")
     def test_severity_mapper_derives_severity_and_routes_correctly(
         self, mock_sev_redis, mock_router_redis
     ):
@@ -173,8 +172,8 @@ class TestNotificationRoutingIntegration(unittest.TestCase):
         mock_router_redis.return_value = {"get": _mock_redis_get}
         mock_sev_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import NotificationEventRouter
-        from governance.notifications.severity_mapper import SeverityMapper
+        from src.governance.notifications.event_router import NotificationEventRouter
+        from src.governance.notifications.severity_mapper import SeverityMapper
 
         # Create mock DiscordNotifier
         mock_notifier = MagicMock()
@@ -224,13 +223,12 @@ class TestNotificationRoutingIntegration(unittest.TestCase):
         # Assert DiscordNotifier was called
         mock_notifier.notify_autocog_event.assert_called_once()
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_digest_builder_generates_correct_format(self, mock_get_redis):
         """Test that DigestBuilder generates correctly formatted digest."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import DigestBuilder
-        from governance.notifications.formatters import LowSeverityDigestFormatter
+        from src.governance.notifications.event_router import DigestBuilder
 
         # Create mock DiscordNotifier with pre-populated buffer
         mock_notifier = MagicMock()
@@ -278,12 +276,12 @@ class TestNotificationRoutingIntegration(unittest.TestCase):
 class TestDigestBuilderIntegration(unittest.TestCase):
     """Additional tests for DigestBuilder behavior."""
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_digest_builder_empty_buffer_returns_none(self, mock_get_redis):
         """Test that DigestBuilder returns None when buffer is empty."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import DigestBuilder
+        from src.governance.notifications.event_router import DigestBuilder
 
         # Create mock DiscordNotifier with empty buffer
         mock_notifier = MagicMock()
@@ -297,12 +295,12 @@ class TestDigestBuilderIntegration(unittest.TestCase):
         # Assert None is returned for empty buffer
         self.assertIsNone(digest_content)
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_digest_builder_should_flush(self, mock_get_redis):
         """Test should_flush logic in DigestBuilder."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import DigestBuilder
+        from src.governance.notifications.event_router import DigestBuilder
 
         # Create mock DiscordNotifier with buffer at max
         mock_notifier = MagicMock()
@@ -322,12 +320,12 @@ class TestRoutingEdgeCases(unittest.TestCase):
         """Mock redis_state_hget - returns 'false' to disable feature."""
         return "false"
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_disabled_feature_flag_routes_to_digest(self, mock_get_redis):
         """Test that disabled feature flag routes all events to digest."""
         mock_get_redis.return_value = {"get": self._mock_redis_get_disabled}
 
-        from governance.notifications.event_router import NotificationEventRouter
+        from src.governance.notifications.event_router import NotificationEventRouter
 
         mock_notifier = MagicMock()
         mock_notifier.notify_autocog_event = AsyncMock(return_value=True)
@@ -347,12 +345,12 @@ class TestRoutingEdgeCases(unittest.TestCase):
         self.assertEqual(decision.mode, "digest")
         self.assertIn("disabled", decision.reason.lower())
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_send_immediate_exception_returns_false(self, mock_get_redis):
         """Test that exception in _send_immediate returns False gracefully."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import NotificationEventRouter
+        from src.governance.notifications.event_router import NotificationEventRouter
 
         mock_notifier = MagicMock()
         mock_notifier.notify_autocog_event = AsyncMock(
@@ -372,12 +370,12 @@ class TestRoutingEdgeCases(unittest.TestCase):
         result = asyncio.run(router.handle_event(event))
         self.assertFalse(result)
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_add_to_digest_exception_returns_false(self, mock_get_redis):
         """Test that exception in _add_to_digest returns False gracefully."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import NotificationEventRouter
+        from src.governance.notifications.event_router import NotificationEventRouter
 
         mock_notifier = MagicMock()
         mock_notifier.notify_autocog_event = AsyncMock(return_value=True)
@@ -395,12 +393,12 @@ class TestRoutingEdgeCases(unittest.TestCase):
         result = asyncio.run(router.handle_event(event))
         self.assertFalse(result)
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_get_next_digest_time_returns_toronto_timezone(self, mock_get_redis):
         """Test that get_next_digest_time returns datetime in America/Toronto."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import DigestBuilder
+        from src.governance.notifications.event_router import DigestBuilder
 
         builder = DigestBuilder()
         next_time = builder.get_next_digest_time()
@@ -408,12 +406,12 @@ class TestRoutingEdgeCases(unittest.TestCase):
         # Should have Toronto timezone
         self.assertIsNotNone(next_time.tzinfo)
 
-    @patch("governance.notifications.event_router._get_redis_client")
+    @patch("src.governance.notifications.event_router._get_redis_client")
     def test_routing_with_minor_event_type_default_severity(self, mock_get_redis):
         """Test routing for event type that maps to medium severity."""
         mock_get_redis.return_value = {"get": _mock_redis_get}
 
-        from governance.notifications.event_router import NotificationEventRouter
+        from src.governance.notifications.event_router import NotificationEventRouter
 
         mock_notifier = MagicMock()
         mock_notifier.notify_autocog_event = AsyncMock(return_value=True)
