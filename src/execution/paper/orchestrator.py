@@ -413,6 +413,17 @@ class PaperTradingOrchestrator:
         # Write initial health key
         self._update_health("running")
 
+        # Start BybitFillListener if feature flag is enabled (polling-first fallback)
+        if os.getenv("BYBIT_FILL_LISTENER_ENABLED", "false").lower() == "true":
+            try:
+                await self.start_fill_listener()
+            except Exception as e:
+                logger.error(f"Failed to start BybitFillListener: {e}")
+        else:
+            logger.debug(
+                "BybitFillListener disabled (BYBIT_FILL_LISTENER_ENABLED != true)"
+            )
+
         logger.info("PaperTradingOrchestrator started")
 
     async def stop(self) -> None:
@@ -428,6 +439,12 @@ class PaperTradingOrchestrator:
         # Stop signal consumer if running
         if self._signal_consumer:
             await self._signal_consumer.stop()
+
+        # Stop BybitFillListener if running
+        if self._fill_listener is not None:
+            await self._fill_listener.stop()
+            self._fill_listener = None
+            logger.info("BybitFillListener stopped")
 
         # Stop telemetry
         if self.telemetry:
