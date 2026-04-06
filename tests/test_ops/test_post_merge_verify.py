@@ -14,11 +14,9 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import tempfile
 from pathlib import Path
 
 import pytest
-
 
 # Get the scripts/ops directory path relative to tests/test_ops
 SCRIPTS_OPS_DIR = Path(__file__).resolve().parents[2] / "scripts" / "ops"
@@ -112,12 +110,12 @@ class TestPostMergeVerifyScript:
 
     def test_script_executable(self):
         """Verify the script exists and is executable."""
-        assert POST_MERGE_VERIFY_SCRIPT.exists(), (
-            f"Script not found at {POST_MERGE_VERIFY_SCRIPT}"
-        )
-        assert os.access(POST_MERGE_VERIFY_SCRIPT, os.X_OK), (
-            f"Script {POST_MERGE_VERIFY_SCRIPT} is not executable"
-        )
+        assert (
+            POST_MERGE_VERIFY_SCRIPT.exists()
+        ), f"Script not found at {POST_MERGE_VERIFY_SCRIPT}"
+        assert os.access(
+            POST_MERGE_VERIFY_SCRIPT, os.X_OK
+        ), f"Script {POST_MERGE_VERIFY_SCRIPT} is not executable"
 
     def test_script_with_help_flag(self):
         """Test that --help flag works and script exits cleanly."""
@@ -204,9 +202,9 @@ class TestPostMergeVerifyScript:
                     data = json.loads(output)
                     # The step 3 should report on_main: false for this unmerged commit
                     if "step" in data and data.get("step") == 3:
-                        assert data.get("on_main") == False, (
-                            f"Expected unmerged commit to report on_main: false, got: {data}"
-                        )
+                        assert not data.get(
+                            "on_main"
+                        ), f"Expected unmerged commit to report on_main: false, got: {data}"
                 except json.JSONDecodeError:
                     pass  # Output may be split across multiple lines
         finally:
@@ -220,9 +218,9 @@ class TestPostMergeVerifyScript:
             ["bash", str(POST_MERGE_VERIFY_SCRIPT), "--ci", "invalid-sha-12345"],
             capture_output=True,
         )
-        assert result.returncode == 2, (
-            f"Expected exit code 2 for invalid SHA, got {result.returncode}"
-        )
+        assert (
+            result.returncode == 2
+        ), f"Expected exit code 2 for invalid SHA, got {result.returncode}"
 
 
 class TestOriginMainContainmentVsLocalMain:
