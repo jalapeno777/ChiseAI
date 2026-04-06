@@ -1086,3 +1086,43 @@ Always run critic review BEFORE merge, not after. A safety/critical bug should n
 Evidence: INC-2026-0406-ICT-S1A-1
 
 ---
+
+## LESSON: Bybit Demo API Connection (2026-04-06)
+
+- Context: Paper trading health check wasted 2+ hours on credential/endpoint issues
+- Rule: ALWAYS use api-demo.bybit.com (NOT api-testnet.bybit.com) for paper trading
+- Rule: Check for stale host env vars (R9KF prefix = stale, lqwh prefix = correct)
+- Rule: ccxt sandbox=True = testnet. Use direct HTTP or proper URL override for demo
+- Rule: Credentials come from .env file. If API returns "invalid key", check for env var override first
+- Rule: Containers get creds from terraform, not .env. Always rebuild via terraform.
+- Evidence: Bybit demo returned 10003 (invalid key) with stale creds, 10032 (not supported) with testnet endpoint
+
+## LESSON: Fill Tracking Requires Active Polling or WebSocket (2026-04-06)
+
+- Context: Paper trading pipeline placed 35 fills on Bybit but recorded 0 locally
+- Trigger: Bybit returns status="Created" (pending) but connector never checks back for fills
+- Rule: ALWAYS implement fill detection (polling loop or WebSocket subscription) when connecting to any exchange. Never assume "order placed" = "fill recorded" — these are separate events. The reconciliation monitor is the safety net, not the primary mechanism.
+- Applies_to: dev, senior-dev, jarvis
+- Expected_outcome: All fills detected and recorded within seconds of occurrence; zero orphan fills
+- Evidence_ref: FT-001 (src/data/exchange/bybit_demo_connector.py), 35 Bybit fills vs 0 local records
+- Added_utc: 2026-04-06T00:00:00Z
+
+## LESSON: Dead Code in Conditional Paths Blocks Trade Execution (2026-04-06)
+
+- Context: orchestrator.py line 865-871 had return PaperTradeResult() executing unconditionally, blocking enhanced trades
+- Trigger: LLM enhancer approved trades but dead code blocked execution path
+- Rule: When reviewing conditional trade paths, verify BOTH branches reach their intended destinations. Dead code in async orchestration is especially dangerous because it fails silently.
+- Applies_to: dev, senior-dev, critic
+- Expected_outcome: All conditional branches tested; dead code detected before merge
+- Evidence_ref: FT-002 (src/trading/paper/orchestrator.py:865-871)
+- Added_utc: 2026-04-06T00:00:00Z
+
+## LESSON: Container Rebuild Must Include Latest Merged Code (2026-04-06)
+
+- Context: Containers were rebuilt but didn't include PR #929 fixes (merged after container start)
+- Trigger: C-1/H-1/H-2 safety fixes were in git but not in running container image
+- Rule: Always sync main AND verify commit SHA matches before rebuilding containers. Terraform apply should use git-pulled latest, not stale worktree.
+- Applies_to: dev, senior-dev, jarvis
+- Expected_outcome: Container images always contain latest merged code; no stale image gap
+- Evidence_ref: INC-2026-0406-ICT-S1A-1, PR #929
+- Added_utc: 2026-04-06T00:00:00Z
