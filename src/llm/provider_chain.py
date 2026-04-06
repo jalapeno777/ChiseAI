@@ -284,10 +284,8 @@ class LLMProviderChain:
         self.provider_order = self._normalize_provider_order(
             provider_order
             or [
-                "kimi_compat",  # Adapter first (LLM-PROVIDER-FIX-003)
-                "kimi",  # Direct API fallback
                 "zai",
-                # "minimax",  # Disabled per PAPER-LLM-DIAG-001
+                "minimax",
             ]
         )
         self.max_retries = max_retries

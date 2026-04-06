@@ -258,8 +258,8 @@ RISK_ASSESSMENT: <risk evaluation>
 CONFIDENCE_SCORE: <number 0-100>
 RATIONALE: <your reasoning>"""
 
-    # Default provider order: KIMI Adapter → KIMI Direct → Z.ai
-    DEFAULT_PROVIDER_ORDER = ["kimi_compat", "kimi", "zai"]
+    # Default provider order: Z.ai → MiniMax
+    DEFAULT_PROVIDER_ORDER = ["zai", "minimax"]
 
     def __init__(
         self,
