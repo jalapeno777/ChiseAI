@@ -199,7 +199,7 @@ class TestNotificationEventRouterFailureRollback:
     """Test cases for NotificationEventRouter failure and rollback scenarios."""
 
     @patch("src.governance.notifications.event_router.DiscordNotifier")
-    async def test_discord_delivery_failure_logs_error_and_returns_false(
+    def test_discord_delivery_failure_logs_error_and_returns_false(
         self, mock_notifier_class
     ):
         """Test that Discord delivery failure logs error and returns False.
@@ -207,6 +207,8 @@ class TestNotificationEventRouterFailureRollback:
         When DiscordNotifier.notify_autocog_event raises an exception,
         handle_event() should log the error and return False.
         """
+        import asyncio
+
         # Setup mock notifier that raises exception
         mock_notifier = MagicMock()
         mock_notifier.notify_autocog_event = AsyncMock(
@@ -224,7 +226,7 @@ class TestNotificationEventRouterFailureRollback:
 
         # Patch logger to verify error logging
         with patch("src.governance.notifications.event_router.logger") as mock_logger:
-            result = await router.handle_event(event)
+            result = asyncio.run(router.handle_event(event))
 
             # handle_event should return False on delivery failure
             assert result is False
