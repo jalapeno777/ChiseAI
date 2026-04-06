@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import signal
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -65,6 +66,8 @@ class CaptureMetrics:
         errors_encountered: Number of errors
         last_fill_timestamp: Timestamp of last fill received
         avg_latency_seconds: Average processing latency
+        high_water_mark_reached: Number of times max_pending_outcomes triggered flush
+        last_flush_timestamp: Timestamp of last successful flush
     """
 
     fills_received: int = 0
@@ -74,6 +77,8 @@ class CaptureMetrics:
     errors_encountered: int = 0
     last_fill_timestamp: datetime | None = None
     avg_latency_seconds: float = 0.0
+    high_water_mark_reached: int = 0
+    last_flush_timestamp: datetime | None = None
     _latency_sum: float = field(default=0.0, repr=False)
     _latency_count: int = field(default=0, repr=False)
 
@@ -97,6 +102,12 @@ class CaptureMetrics:
                 else None
             ),
             "avg_latency_seconds": round(self.avg_latency_seconds, 3),
+            "high_water_mark_reached": self.high_water_mark_reached,
+            "last_flush_timestamp": (
+                self.last_flush_timestamp.isoformat()
+                if self.last_flush_timestamp
+                else None
+            ),
         }
 
 
@@ -152,8 +163,10 @@ class OutcomeCaptureService:
         self._listener: BybitFillListener | None = None
         self._running = False
         self._pending_outcomes: list[SignalOutcome] = []
+        self._outcome_count: int = 0
         self._flush_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     async def start(self) -> None:
         """Start the outcome capture service."""
@@ -162,6 +175,12 @@ class OutcomeCaptureService:
             return
 
         self._running = True
+
+        # Store loop reference for signal handlers
+        self._loop = asyncio.get_running_loop()
+
+        # Register SIGTERM handler for graceful shutdown
+        self._register_signal_handlers()
 
         # Initialize listener
         self._listener = BybitFillListener(
@@ -180,6 +199,92 @@ class OutcomeCaptureService:
         self._flush_task = asyncio.create_task(self._flush_loop())
 
         logger.info("Outcome capture service started")
+
+    def _register_signal_handlers(self) -> None:
+        """Register SIGTERM handler for graceful shutdown.
+
+        When the process receives SIGTERM (e.g., from Kubernetes/ Docker stop),
+        the service will flush pending outcomes before exiting.
+
+        Uses loop.add_signal_handler() when available, with a thread-safe
+        fallback for non-main thread execution.
+        """
+        try:
+            loop = self._loop or asyncio.get_running_loop()
+        except RuntimeError:
+            logger.warning(
+                "No running event loop found. SIGTERM handler not registered."
+            )
+            return
+
+        try:
+            loop.add_signal_handler(
+                signal.SIGTERM, lambda: asyncio.create_task(self._handle_sigterm())
+            )
+            return
+        except (NotImplementedError, OSError, RuntimeError):
+            pass
+
+        # Fallback for non-main-thread or Windows
+        try:
+            signal.signal(signal.SIGTERM, self._handle_sigterm_sync)
+        except ValueError:
+            logger.warning(
+                "Cannot register SIGTERM handler: not running in main thread. "
+                "Graceful shutdown on SIGTERM is disabled."
+            )
+
+    async def _handle_sigterm(self) -> None:
+        """Handle SIGTERM signal for graceful shutdown.
+
+        Called directly by add_signal_handler when SIGTERM is received.
+        """
+        logger.info("Received SIGTERM, initiating graceful shutdown")
+        self._running = False
+
+        # Flush pending outcomes before shutdown
+        async with self._lock:
+            if self._pending_outcomes:
+                try:
+                    await self._store_outcomes(self._pending_outcomes)
+                    self.metrics.outcomes_stored += len(self._pending_outcomes)
+                    self.metrics.last_flush_timestamp = datetime.now(UTC)
+                    logger.info(
+                        f"Graceful shutdown: flushed {len(self._pending_outcomes)} outcomes"
+                    )
+                    self._pending_outcomes.clear()
+                    self._outcome_count = 0
+                except Exception as e:
+                    logger.error(f"Graceful shutdown: failed to flush outcomes: {e}")
+
+        # Stop the listener
+        if self._listener:
+            await self._listener.stop()
+            self._listener = None
+
+        logger.info("Graceful shutdown complete")
+
+    def _handle_sigterm_sync(self, signum: int, frame: Any) -> None:
+        """Handle SIGTERM from signal handler context (sync).
+
+        Used as fallback when add_signal_handler is not available
+        (non-main thread or Windows).
+
+        Args:
+            signum: Signal number
+            frame: Current stack frame
+        """
+        try:
+            future = asyncio.run_coroutine_threadsafe(
+                self._handle_sigterm(), self._loop
+            )
+            future.result(timeout=5.0)
+        except RuntimeError:
+            pass  # Loop already closed — nothing to do
+        except TimeoutError:
+            pass  # Handler didn't complete in time — nothing to do
+        except Exception as e:
+            logger.error(f"SIGTERM handler failed: {e}")
 
     async def stop(self) -> None:
         """Stop the service gracefully."""
@@ -200,7 +305,10 @@ class OutcomeCaptureService:
         async with self._lock:
             if self._pending_outcomes:
                 await self._store_outcomes(self._pending_outcomes)
+                self.metrics.outcomes_stored += len(self._pending_outcomes)
+                self.metrics.last_flush_timestamp = datetime.now(UTC)
                 self._pending_outcomes.clear()
+                self._outcome_count = 0
 
         logger.info("Outcome capture service stopped")
 
@@ -317,9 +425,11 @@ class OutcomeCaptureService:
             # Add to pending batch
             async with self._lock:
                 self._pending_outcomes.append(outcome)
+                self._outcome_count += 1
 
-                # Force flush if max pending reached
-                if len(self._pending_outcomes) >= self.config.max_pending_outcomes:
+                # Force flush if max pending reached (high water mark)
+                if self._should_flush_by_count():
+                    self.metrics.high_water_mark_reached += 1
                     await self._flush_outcomes()
 
             # Record latency
@@ -340,6 +450,14 @@ class OutcomeCaptureService:
         """
         logger.error(f"Listener error: {error}")
         self.metrics.errors_encountered += 1
+
+    def _should_flush_by_count(self) -> bool:
+        """Check if buffer should be flushed based on pending count.
+
+        Returns:
+            True if max_pending_outcomes threshold is reached
+        """
+        return len(self._pending_outcomes) >= self.config.max_pending_outcomes
 
     async def _match_to_signal(self, outcome: SignalOutcome) -> OutcomeMatchResult:
         """Match outcome to originating signal.
@@ -456,14 +574,21 @@ class OutcomeCaptureService:
         return min(confidence, 1.0)
 
     async def _flush_loop(self) -> None:
-        """Background loop to periodically flush pending outcomes."""
+        """Background loop to periodically flush pending outcomes.
+
+        Flushes when:
+        - Timer interval expires (flush_interval_seconds)
+        - High water mark is reached (max_pending_outcomes)
+        """
         while self._running:
             try:
                 await asyncio.sleep(self.config.flush_interval_seconds)
 
-                async with self._lock:
-                    if self._pending_outcomes:
-                        await self._flush_outcomes()
+                if self._pending_outcomes:
+                    # Check if we should flush by count OR just timer expired
+                    if self._should_flush_by_count():
+                        self.metrics.high_water_mark_reached += 1
+                    await self._flush_outcomes()
 
             except asyncio.CancelledError:
                 break
@@ -471,21 +596,31 @@ class OutcomeCaptureService:
                 logger.error(f"Flush loop error: {e}")
 
     async def _flush_outcomes(self) -> None:
-        """Flush pending outcomes to database."""
-        if not self._pending_outcomes:
-            return
+        """Flush pending outcomes to database.
 
-        outcomes_to_store = self._pending_outcomes[:]
-        self._pending_outcomes.clear()
+        Atomic operation: either all outcomes are persisted or none are.
+        Uses lock to prevent race with concurrent fills during flush.
+        On failure, the pending buffer is restored with failed outcomes prepended.
+        """
+        async with self._lock:
+            if not self._pending_outcomes:
+                return
+
+            outcomes_to_flush = list(self._pending_outcomes)
+            self._pending_outcomes.clear()
+            self._outcome_count = 0
 
         try:
-            await self._store_outcomes(outcomes_to_store)
-            self.metrics.outcomes_stored += len(outcomes_to_store)
-            logger.debug(f"Flushed {len(outcomes_to_store)} outcomes")
-        except Exception as e:
-            logger.error(f"Failed to flush outcomes: {e}")
-            # Re-add to pending for retry
-            self._pending_outcomes.extend(outcomes_to_store)
+            await self._store_outcomes(outcomes_to_flush)
+            self.metrics.outcomes_stored += len(outcomes_to_flush)
+            self.metrics.last_flush_timestamp = datetime.now(UTC)
+            logger.debug(f"Flushed {len(outcomes_to_flush)} outcomes")
+        except Exception:
+            # Prepend failed outcomes back (new fills already in buffer)
+            async with self._lock:
+                self._pending_outcomes = outcomes_to_flush + self._pending_outcomes
+                self._outcome_count = len(self._pending_outcomes)
+            raise
 
     async def _store_outcome(self, outcome: SignalOutcome) -> None:
         """Store a single outcome in database.
