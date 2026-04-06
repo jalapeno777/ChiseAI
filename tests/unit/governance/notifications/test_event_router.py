@@ -1,7 +1,8 @@
 """Tests for NotificationEventRouter."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
+from src.governance.notifications.discord_notifier import DiscordNotifier
 from src.governance.notifications.event_router import (
     DigestBuilder,
     NotificationEventRouter,
@@ -192,3 +193,131 @@ class TestDigestBuilder:
         builder = DigestBuilder()
         result = builder.build_digest()
         assert result is None
+
+
+class TestNotificationEventRouterFailureRollback:
+    """Test cases for NotificationEventRouter failure and rollback scenarios."""
+
+    @patch("src.governance.notifications.event_router.DiscordNotifier")
+    async def test_discord_delivery_failure_logs_error_and_returns_false(
+        self, mock_notifier_class
+    ):
+        """Test that Discord delivery failure logs error and returns False.
+
+        When DiscordNotifier.notify_autocog_event raises an exception,
+        handle_event() should log the error and return False.
+        """
+        # Setup mock notifier that raises exception
+        mock_notifier = MagicMock()
+        mock_notifier.notify_autocog_event = AsyncMock(
+            side_effect=Exception("Discord API error")
+        )
+        mock_notifier_class.return_value = mock_notifier
+
+        router = NotificationEventRouter(notifier=mock_notifier)
+        event = {
+            "event_type": "execution_quality_change",
+            "severity": "high",
+            "event_id": "evt-rollback-001",
+            "summary": "Test event",
+        }
+
+        # Patch logger to verify error logging
+        with patch("src.governance.notifications.event_router.logger") as mock_logger:
+            result = await router.handle_event(event)
+
+            # handle_event should return False on delivery failure
+            assert result is False
+            # Logger.error should have been called
+            mock_logger.error.assert_called_once()
+            assert (
+                "Failed to send immediate notification"
+                in mock_logger.error.call_args[0][0]
+            )
+
+    @patch("src.governance.notifications.event_router._get_redis_client")
+    def test_redis_unavailable_graceful_fallback(self, mock_get_redis):
+        """Test that Redis unavailability doesn't break routing.
+
+        When _get_redis_client returns None (Redis unavailable),
+        critical events should still route to immediate mode.
+        """
+        # Redis unavailable returns None
+        mock_get_redis.return_value = None
+
+        router = NotificationEventRouter()
+        event = {
+            "event_type": "execution_quality_change",
+            "severity": "critical",
+            "event_id": "evt-rollback-002",
+        }
+
+        decision = router.route_event(event)
+
+        # Critical severity should route to immediate even without Redis
+        assert decision.mode == "immediate"
+        assert "critical" in decision.reason.lower()
+
+    @patch("src.governance.notifications.event_router._get_redis_client")
+    def test_feature_flag_false_all_events_route_to_digest(self, mock_get_redis):
+        """Test that disabled feature flag routes all events to digest (safe-fail rollback).
+
+        When the notification_routing_enabled flag is 'false',
+        all events should route to digest regardless of severity or event type.
+        """
+        # Mock Redis client that returns "false" for the feature flag
+        mock_get_redis.return_value = {"get": lambda k, d: "false"}
+
+        router = NotificationEventRouter()
+
+        # Test critical severity event
+        event1 = {
+            "event_type": "approval_request",
+            "severity": "critical",
+            "event_id": "evt-rollback-003a",
+        }
+        decision1 = router.route_event(event1)
+        assert decision1.mode == "digest"
+        assert "disabled by feature flag" in decision1.reason.lower()
+
+        # Test core_identity_conflict (normally immediate)
+        event2 = {
+            "event_type": "core_identity_conflict",
+            "severity": "critical",
+            "event_id": "evt-rollback-003b",
+        }
+        decision2 = router.route_event(event2)
+        assert decision2.mode == "digest"
+        assert "disabled by feature flag" in decision2.reason.lower()
+
+        # Test high severity event (normally immediate)
+        event3 = {
+            "event_type": "execution_quality_change",
+            "severity": "high",
+            "event_id": "evt-rollback-003c",
+        }
+        decision3 = router.route_event(event3)
+        assert decision3.mode == "digest"
+        assert "disabled by feature flag" in decision3.reason.lower()
+
+    def test_digest_buffer_overflow_triggers_should_flush(self):
+        """Test that digest buffer overflow triggers should_flush.
+
+        When digest_max_items=3 and 3 low-severity events are added,
+        should_flush_digest() should return True.
+        """
+        notifier = DiscordNotifier(digest_max_items=3)
+
+        # Add 3 low-severity events
+        for i in range(3):
+            event = {
+                "event_type": f"test_event_{i}",
+                "severity": "low",
+                "event_id": f"evt-overflow-{i}",
+                "summary": f"Test event {i}",
+            }
+            result = notifier.add_to_digest(event)
+            assert result is True, f"Event {i} should be buffered"
+
+        # should_flush_digest should return True when buffer is at capacity
+        assert notifier.should_flush_digest() is True
