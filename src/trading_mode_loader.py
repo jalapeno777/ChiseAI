@@ -80,9 +80,7 @@ class TradingModeConfig(BaseModel):
             ModuleType.LLM_PROVIDER_CHAIN: True,
         }
     )
-    llm_provider_priority: list[str] = Field(
-        default_factory=lambda: ["kimi_compat", "kimi", "zai"]
-    )
+    llm_provider_priority: list[str] = Field(default_factory=lambda: ["zai", "minimax"])
     health_check_interval: int = Field(default=30, ge=5)
 
 
