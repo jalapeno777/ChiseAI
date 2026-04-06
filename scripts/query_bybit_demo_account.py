@@ -25,7 +25,7 @@ API_SECRET = os.getenv("BYBIT_DEMO_API_SECRET", "")
 
 # Fail-fast with clear error if not set
 if not API_KEY or not API_SECRET:
-    raise EnvironmentError(
+    raise OSError(
         "BYBIT_DEMO_API_KEY and BYBIT_DEMO_API_SECRET environment variables are required. "
         "Set them in your .env file or environment before running this script."
     )
@@ -316,7 +316,7 @@ def print_order_history() -> None:
 
                 if is_target:
                     found_orders.append(order)
-                    print(f"\n  === TARGET ORDER FOUND ===")
+                    print("\n  === TARGET ORDER FOUND ===")
                     print(f"  Order ID: {order_id}")
                     if order_link_id:
                         print(f"  Link ID:  {order_link_id}")
