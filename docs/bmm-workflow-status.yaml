@@ -1735,7 +1735,7 @@ epics:
     sprint_id: ICT-S8
     completion_date: "2026-03-30"
     status: completed
-    story_count: 13
+    story_count: 7
     story_ids:
       - ST-ICT-019
       - ST-ICT-020-PART-A
@@ -1744,13 +1744,7 @@ epics:
       - ST-ICT-022
       - ST-ICT-023
       - ST-ICT-024
-      - ST-ICT-025
-      - ST-ICT-026
-      - ST-ICT-027
-      - ST-ICT-028-A
-      - ST-ICT-028-B
-      - ST-ICT-028-C
-    story_points: 31
+    story_points: 17
     remediation_plan_sp: 11.5
     completed_stories:
       - id: ST-ICT-019
@@ -8252,3 +8246,10 @@ linkage_exceptions:
       reason: Uses batch.stories format instead of story_ids array. All stories have standalone entries.
     - story_id: ST-CI-001
       reason: Shared between EP-CI-001 and EP-INFRA-CLEANUP-001. Both epics legitimately claim this story.
+    - epic_id: EP-ICT-006
+      reason: >-
+        completed_stories includes ST-ICT-025/026/027/028-A/028-B/028-C which were executed under
+        EP-ICT-006's ICT-S8-REMEDIATION sprint but have canonical epic_id: EP-ICT-007.
+        The story_ids array correctly reflects the 7 canonical EP-ICT-006 stories.
+        The 6 additional stories are tracked via completed_stories (historical fact)
+        but cannot be added to story_ids without creating cross-epic ownership conflicts.
