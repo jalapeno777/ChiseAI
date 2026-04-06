@@ -721,10 +721,11 @@ resource "docker_container" "chiseai_paper_trading_executor" {
   }
 
   healthcheck {
-    test     = ["CMD-SHELL", "pgrep -f 'scripts/run_trading_activity.py --mode paper' || exit 1"]
-    interval = "60s"
-    timeout  = "10s"
-    retries  = 3
+    test         = ["CMD-SHELL", "python3 -c \"import os; exit(0) if any('run_trading_activity.py' in open(f'/proc/{p}/cmdline','r').read() for p in os.listdir('/proc') if p.isdigit()) else exit(1)\" || exit 1"]
+    interval     = "60s"
+    timeout      = "10s"
+    retries      = 3
+    start_period = "30s"
   }
 }
 
@@ -857,7 +858,7 @@ resource "docker_container" "chiseai_signal_supervisor" {
     "ALLOW_SIMULATOR_FALLBACK=false",
     "TRADING_SYMBOLS=BTC/USDT,ETH/USDT",
     "PYTHONUNBUFFERED=1",
-    "PYTHONPATH=/app:/app/src",
+    "PYTHONPATH=/app:/app/src:/app/local_packages",
   ]
 
   restart = "always"
@@ -882,9 +883,10 @@ resource "docker_container" "chiseai_signal_supervisor" {
   }
 
   healthcheck {
-    test     = ["CMD-SHELL", "pgrep -f 'run_signal_consumer.py' || exit 1"]
-    interval = "60s"
-    timeout  = "10s"
-    retries  = 3
+    test         = ["CMD-SHELL", "python3 -c \"import os; exit(0) if any('run_signal_consumer.py' in open(f'/proc/{p}/cmdline','r').read() for p in os.listdir('/proc') if p.isdigit()) else exit(1)\" || exit 1"]
+    interval     = "60s"
+    timeout      = "10s"
+    retries      = 3
+    start_period = "30s"
   }
 }
