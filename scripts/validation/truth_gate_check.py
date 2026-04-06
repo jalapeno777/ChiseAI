@@ -4,7 +4,7 @@ Truth Gate Check - Core validation logic for ChiseAI merge truth enforcement.
 
 Validates:
 1. Commit exists in repository
-2. Commit is on specified branch (git branch --contains)
+2. Commit is merged into origin/main (git merge-base --is-ancestor)
 3. Story ID format is valid (ST-*, CH-*, FT-*, REWARD-*, REPO-*, SAFETY-*, BRANCH-*, PAPER-*, RECON-*, TG-*, GOV-*)
 4. PR title contains story ID (when --pr provided)
 
@@ -167,11 +167,15 @@ def verify_commit_on_branch(
     repo_root: Path | None = None,
 ) -> dict[str, Any]:
     """
-    Verify a commit is on a specific branch using git branch --contains.
+    Verify a commit is an ancestor of origin/main (merged into main).
+
+    Uses git merge-base --is-ancestor which returns:
+    - exit code 0 if commit IS an ancestor of origin/main (merged)
+    - exit code 1 if commit is NOT an ancestor (not merged)
 
     Args:
         commit: Commit SHA to verify
-        branch: Branch name to check
+        branch: Branch name to check (unused, kept for API compatibility)
         repo_root: Root of the git repository
 
     Returns:
@@ -181,49 +185,36 @@ def verify_commit_on_branch(
         repo_root = Path.cwd()
 
     try:
-        # Run git branch --contains <commit>
+        # Run git merge-base --is-ancestor <commit> origin/main
+        # Returns 0 if commit IS an ancestor of origin/main (merged)
+        # Returns 1 if commit is NOT an ancestor (not merged)
         result = subprocess.run(
-            ["git", "branch", "--contains", commit],
+            ["git", "merge-base", "--is-ancestor", commit, "origin/main"],
             capture_output=True,
             text=True,
             cwd=repo_root,
         )
 
-        if result.returncode != 0:
-            return {
-                "passed": False,
-                "check": "commit-on-branch",
-                "message": f"Failed to check branches containing {commit[:8]}",
-                "commit": commit,
-                "branch": branch,
-                "error": result.stderr.strip() if result.stderr else "Unknown error",
-            }
-
-        # Parse branch list
-        branches = [
-            b.strip().strip("* ")  # Remove leading * and spaces (current branch marker)
-            for b in result.stdout.strip().split("\n")
-            if b.strip()
-        ]
-
-        # Check if target branch is in the list
-        if branch in branches:
+        if result.returncode == 0:
             return {
                 "passed": True,
                 "check": "commit-on-branch",
-                "message": f"Commit {commit[:8]} is on branch '{branch}'",
+                "message": f"Commit {commit[:8]} is merged into origin/main",
                 "commit": commit,
                 "branch": branch,
-                "branches_found": branches,
             }
         else:
             return {
                 "passed": False,
                 "check": "commit-on-branch",
-                "message": f"Commit {commit[:8]} is NOT on branch '{branch}'",
+                "message": f"Commit {commit[:8]} is NOT merged into origin/main",
                 "commit": commit,
                 "branch": branch,
-                "branches_found": branches,
+                "error": (
+                    result.stderr.strip()
+                    if result.stderr
+                    else "Not an ancestor of origin/main"
+                ),
             }
 
     except Exception as e:

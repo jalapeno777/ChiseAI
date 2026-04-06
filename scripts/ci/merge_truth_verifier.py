@@ -106,20 +106,24 @@ class MergeTruthVerifier:
             return 1, "", str(e)
 
     def is_commit_in_main(self, commit_sha: str) -> bool:
-        """Check if a commit is in the main branch."""
-        # Use git branch --contains to verify
+        """Check if a commit is an ancestor of origin/main (merged into main).
+
+        Uses git merge-base --is-ancestor which returns:
+        - exit code 0 if commit IS an ancestor of origin/main (merged)
+        - exit code 1 if commit is NOT an ancestor (not merged)
+        """
+        # Use git merge-base --is-ancestor <commit> origin/main
         exit_code, stdout, stderr = self.run_git_command(
-            ["branch", "--contains", commit_sha]
+            ["merge-base", "--is-ancestor", commit_sha, "origin/main"]
         )
 
-        if exit_code != 0:
-            self.log(f"Commit {commit_sha[:8]} not found in any branch")
+        # exit_code 0 = IS ancestor (merged), exit_code 1 = NOT ancestor (not merged)
+        if exit_code == 0:
+            self.log(f"Commit {commit_sha[:8]} is ancestor of origin/main (merged)")
+            return True
+        else:
+            self.log(f"Commit {commit_sha[:8]} is NOT an ancestor of origin/main")
             return False
-
-        branches = stdout.strip().split("\n")
-        branches = [b.strip().strip("* ") for b in branches]
-
-        return self.main_branch in branches
 
     def get_commit_sha_from_ref(self, ref: str) -> str | None:
         """Resolve a ref (branch, tag, etc.) to a commit SHA."""
