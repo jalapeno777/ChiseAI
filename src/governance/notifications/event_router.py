@@ -213,6 +213,10 @@ class NotificationEventRouter:
         else:
             severity = "low"
 
+        # H-2 Fix: Propagate derived severity to event dict for _send_immediate()
+        if "severity" not in event:
+            event["severity"] = severity
+
         # Check always_send_for list first
         always_send_for = self.get_always_send_for_types()
         if event_type in always_send_for:

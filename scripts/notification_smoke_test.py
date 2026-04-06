@@ -182,15 +182,16 @@ def run_smoke_test(
     correct_count = 0
 
     for event in events:
-        event_desc = event.pop("description")
-        expected_mode = event.pop("expected_mode")
+        event_copy = dict(event)  # Shallow copy to avoid mutating original
+        event_desc = event_copy.pop("description")
+        expected_mode = event_copy.pop("expected_mode")
 
         if verbose:
             print(f"Testing: {event_desc}")
 
         # Measure routing decision time
         start_time = time.perf_counter()
-        decision = router.route_event(event)
+        decision = router.route_event(event_copy)
         elapsed = time.perf_counter() - start_time
 
         # Record latency for immediate-path events
