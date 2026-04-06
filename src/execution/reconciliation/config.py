@@ -44,12 +44,16 @@ class ReconciliationConfig:
     Attributes:
         warn_threshold_pct: Percentage delta that triggers WARN status
         fail_threshold_pct: Percentage delta that triggers FAIL status
+        alert_on_stale_threshold_hours: Alert if no fills in this many hours
+        alert_on_discrepancy_pct: Alert if discrepancy exceeds this percentage
         categories: List of categories to reconcile
         timing: Timing configuration (auto-created with defaults if not provided)
     """
 
     warn_threshold_pct: float = 1.0
     fail_threshold_pct: float = 5.0
+    alert_on_stale_threshold_hours: float = 24.0
+    alert_on_discrepancy_pct: float = 5.0
     categories: list[str] | None = None
     timing: ReconciliationTimingConfig = field(
         default_factory=ReconciliationTimingConfig
