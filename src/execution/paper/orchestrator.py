@@ -56,6 +56,10 @@ from execution.paper.reason_codes import (
 from execution.paper.trade_journal import TradeJournal
 from execution.paper.trade_journal_persistence import TradeJournalRedisPersistence
 from execution.paper.trade_journal_service import TradeJournalService
+from execution.reconciliation.service import (
+    OutcomeReconciliationService,
+    ReconciliationMonitor,
+)
 from ml.feedback.bybit_fill_listener import BybitFillListener, BybitListenerConfig
 from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
@@ -153,6 +157,9 @@ class PaperTradingOrchestrator:
         # Optional BybitFillListener for async fill notifications (polling-first fallback)
         self._fill_listener: BybitFillListener | None = None
         self._fill_listener_redis: Any | None = redis_client
+
+        # ST-FILL-004: ReconciliationMonitor for safety net reconciliation (alert-only)
+        self._reconciliation_monitor: ReconciliationMonitor | None = None
 
         # PAPER-FORENSIC-001: Extract and store connector provenance
         self._connector_provenance = self._extract_connector_provenance(order_simulator)
@@ -429,7 +436,67 @@ class PaperTradingOrchestrator:
                 "BybitFillListener disabled (BYBIT_FILL_LISTENER_ENABLED != true)"
             )
 
+        # ST-FILL-004: Start ReconciliationMonitor if feature flag is enabled (alert-only)
+        await self._start_reconciliation_monitor()
+
         logger.info("PaperTradingOrchestrator started")
+
+    async def _start_reconciliation_monitor(self) -> None:
+        """Start the reconciliation monitor if enabled by feature flag.
+
+        ST-FILL-004: The ReconciliationMonitor runs OutcomeReconciliationService
+        on a schedule and emits alerts when discrepancies exceed thresholds.
+        Alert-only policy: NEVER auto-closes positions or triggers liquidation.
+
+        The monitor respects:
+        - reconciliation_monitor_enabled: Overall enable/disable
+        - reconciliation_check_interval_seconds: How often to run checks
+        - reconciliation_auto_backfill: Whether to backfill missed fills
+        """
+        from src.config.feature_flags import get_feature_flags
+
+        flags = get_feature_flags()
+
+        # Check if reconciliation monitor is enabled
+        if not flags.is_reconciliation_monitor_enabled():
+            logger.debug(
+                "ReconciliationMonitor disabled "
+                "(reconciliation_monitor_enabled != true)"
+            )
+            return
+
+        # Check if already running
+        if self._reconciliation_monitor is not None:
+            logger.warning("ReconciliationMonitor already running")
+            return
+
+        try:
+            # Create OutcomeReconciliationService with orchestrator's telemetry
+            reconciliation_service = OutcomeReconciliationService(
+                telemetry_exporter=self.telemetry,
+                redis_client=self._redis,
+            )
+
+            # Create ReconciliationMonitor with feature-flag-configured interval and backfill
+            check_interval = flags.get_reconciliation_check_interval_seconds()
+            backfill_enabled = flags.is_reconciliation_auto_backfill_enabled()
+
+            self._reconciliation_monitor = ReconciliationMonitor(
+                reconciliation_service=reconciliation_service,
+                redis_client=self._redis,
+                check_interval_seconds=check_interval,
+                backfill_enabled=backfill_enabled,
+            )
+
+            await self._reconciliation_monitor.start()
+            logger.info(
+                f"ReconciliationMonitor started with check interval={check_interval}s, "
+                f"backfill={'enabled' if backfill_enabled else 'disabled'}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to start ReconciliationMonitor: {e}")
+            self._reconciliation_monitor = None
 
     async def start_fill_listener(
         self, config: BybitListenerConfig | None = None
@@ -516,6 +583,12 @@ class PaperTradingOrchestrator:
             await self._fill_listener.stop()
             self._fill_listener = None
             logger.info("BybitFillListener stopped")
+
+        # ST-FILL-004: Stop ReconciliationMonitor if running
+        if self._reconciliation_monitor is not None:
+            await self._reconciliation_monitor.stop()
+            self._reconciliation_monitor = None
+            logger.info("ReconciliationMonitor stopped")
 
         # Stop telemetry
         if self.telemetry:
@@ -950,6 +1023,7 @@ class PaperTradingOrchestrator:
                             logger.warning(
                                 f"outcome_capture.on_signal_rejected(G6) failed: {e}"
                             )
+                    # Return UNCONDITIONALLY for NO-GO signals
                     return PaperTradeResult(
                         signal=signal,
                         status=TradeStatus.REJECTED,

@@ -783,6 +783,7 @@ class ReconciliationMonitor:
         reconciliation_service: OutcomeReconciliationService,
         redis_client: Any | None = None,
         check_interval_seconds: int = 3600,
+        backfill_enabled: bool = False,
     ):
         """Initialize reconciliation monitor.
 
@@ -790,10 +791,13 @@ class ReconciliationMonitor:
             reconciliation_service: The reconciliation service to run on schedule
             redis_client: Optional Redis client for state tracking
             check_interval_seconds: How often to run reconciliation (default 1h)
+            backfill_enabled: Whether to backfill missed fills (default False).
+                When True, calls backfill_missed_fills() on each cycle.
         """
         self.service = reconciliation_service
         self.redis = redis_client
         self.check_interval = check_interval_seconds
+        self.backfill_enabled = backfill_enabled
         self._running = False
         self._task: asyncio.Task | None = None
 
@@ -813,14 +817,40 @@ class ReconciliationMonitor:
         logger.info("ReconciliationMonitor stopped")
 
     async def _run_loop(self) -> None:
-        """Main reconciliation loop."""
+        """Main reconciliation loop.
+
+        Runs reconciliation and optionally backfills missed fills based on
+        the backfill_enabled flag. Alert-only policy: NEVER auto-closes
+        positions or triggers liquidation.
+        """
         while self._running:
             try:
+                # Run standard reconciliation
                 result = await self.service.reconcile(
                     environment="paper",
                     portfolio_id="default",
                 )
                 await self._handle_result(result)
+
+                # ST-FILL-004: Run backfill if enabled (respects reconciliation_auto_backfill flag)
+                # Only backfill if explicitly enabled - this is separate from reconciliation alerts
+                if self.backfill_enabled:
+                    try:
+                        backfill_result = await self.service.backfill_missed_fills(
+                            environment="paper",
+                            portfolio_id="default",
+                            lookback_seconds=300,  # 5 minute lookback window
+                        )
+                        if backfill_result.get("fills_backfilled", 0) > 0:
+                            logger.info(
+                                f"Backfill completed: "
+                                f"fills_found={backfill_result['fills_found']}, "
+                                f"fills_backfilled={backfill_result['fills_backfilled']}"
+                            )
+                    except Exception as e:
+                        logger.error(f"Backfill failed: {e}")
+                        # Continue running even if backfill fails - don't crash the loop
+
             except asyncio.CancelledError:
                 raise
             except Exception as e:

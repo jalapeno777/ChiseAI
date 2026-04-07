@@ -128,9 +128,9 @@ class TestBybitFillLifecycle:
                 assert filled_order.filled_quantity > 0, "Filled quantity should be > 0"
                 assert filled_order.filled_at is not None, "filled_at should be set"
 
-                assert (
-                    len(filled_order.fills) > 0
-                ), "Order should have at least one fill"
+                assert len(filled_order.fills) > 0, (
+                    "Order should have at least one fill"
+                )
                 fill = filled_order.fills[0]
                 assert fill.fill_id is not None, "Fill should have fill_id"
                 assert fill.order_id == order.order_id, "Fill order_id should match"
@@ -144,9 +144,9 @@ class TestBybitFillLifecycle:
                 assert cached.state == OrderState.FILLED
             else:
                 # Demo trading may not auto-fill - verify order is at least PENDING
-                assert (
-                    filled_order.state == OrderState.PENDING
-                ), f"Expected FILLED or PENDING, got {filled_order.state.value}"
+                assert filled_order.state == OrderState.PENDING, (
+                    f"Expected FILLED or PENDING, got {filled_order.state.value}"
+                )
 
             # 6. Verify connector provenance
             provenance = connector.get_provenance()
@@ -196,14 +196,14 @@ class TestBybitFillLifecycle:
             if order.state == OrderState.FILLED:
                 assert len(order.fills) > 0, "Should have fills"
                 assert order.filled_quantity > 0, "Should have filled quantity"
-                assert (
-                    cached.state == OrderState.FILLED
-                ), "Cached order should be FILLED"
+                assert cached.state == OrderState.FILLED, (
+                    "Cached order should be FILLED"
+                )
             else:
                 # Demo trading may not auto-fill - verify PENDING state
-                assert (
-                    order.state == OrderState.PENDING
-                ), f"Expected FILLED or PENDING, got {order.state.value}"
+                assert order.state == OrderState.PENDING, (
+                    f"Expected FILLED or PENDING, got {order.state.value}"
+                )
 
             # Verify connector provenance
             provenance = connector.get_provenance()
@@ -336,16 +336,16 @@ class TestBybitFillLifecycle:
         order.add_fill(fill2)
 
         assert order.filled_quantity == pytest.approx(0.8), "Should have 0.8 filled"
-        assert order.remaining_quantity == pytest.approx(
-            0.2
-        ), "Should have 0.2 remaining"
+        assert order.remaining_quantity == pytest.approx(0.2), (
+            "Should have 0.2 remaining"
+        )
         assert order.state == OrderState.PARTIAL, "Should still be PARTIAL"
 
         # Average price should be weighted
         expected_avg = (0.4 * 50000 + 0.4 * 50100) / 0.8
-        assert order.avg_fill_price == pytest.approx(
-            expected_avg
-        ), f"Avg price should be {expected_avg}, got {order.avg_fill_price}"
+        assert order.avg_fill_price == pytest.approx(expected_avg), (
+            f"Avg price should be {expected_avg}, got {order.avg_fill_price}"
+        )
 
         # Final fill (20%, completes order)
         fill3 = PaperFill(
@@ -359,9 +359,9 @@ class TestBybitFillLifecycle:
         order.add_fill(fill3)
 
         assert order.filled_quantity == pytest.approx(1.0), "Should be fully filled"
-        assert order.remaining_quantity == pytest.approx(
-            0.0
-        ), "Should have nothing remaining"
+        assert order.remaining_quantity == pytest.approx(0.0), (
+            "Should have nothing remaining"
+        )
         assert order.state == OrderState.FILLED, "Should now be FILLED"
         assert order.filled_at is not None, "filled_at should be set"
 
@@ -798,3 +798,357 @@ class TestFailureModes:
                 quantity=0.001,
                 price=-100.0,  # Invalid
             )
+
+
+class TestReconciliationMonitorLifecycle:
+    """Tests for ReconciliationMonitor lifecycle in PaperTradingOrchestrator.
+
+    ST-FILL-004: Verifies that ReconciliationMonitor is properly wired into
+    the orchestrator's start/stop lifecycle and respects feature flags.
+    """
+
+    @pytest.fixture
+    def mock_feature_flags(self):
+        """Mock feature flags with reconciliation monitor enabled."""
+        from unittest.mock import MagicMock
+
+        flags = MagicMock()
+        flags.is_reconciliation_monitor_enabled.return_value = True
+        flags.get_reconciliation_check_interval_seconds.return_value = 3600
+        flags.is_reconciliation_auto_backfill_enabled.return_value = False
+        return flags
+
+    @pytest.fixture
+    def mock_feature_flags_with_backfill(self):
+        """Mock feature flags with reconciliation monitor AND backfill enabled."""
+        from unittest.mock import MagicMock
+
+        flags = MagicMock()
+        flags.is_reconciliation_monitor_enabled.return_value = True
+        flags.get_reconciliation_check_interval_seconds.return_value = 3600
+        flags.is_reconciliation_auto_backfill_enabled.return_value = True
+        return flags
+
+    @pytest.fixture
+    def mock_feature_flags_disabled(self):
+        """Mock feature flags with reconciliation monitor disabled."""
+        from unittest.mock import MagicMock
+
+        flags = MagicMock()
+        flags.is_reconciliation_monitor_enabled.return_value = False
+        return flags
+
+    async def test_reconciliation_monitor_starts_with_orchestrator(
+        self, mock_redis, mock_feature_flags
+    ):
+        """Test that ReconciliationMonitor starts when orchestrator starts.
+
+        Verifies:
+        1. When reconciliation_monitor_enabled=True, monitor is instantiated
+        2. Monitor.start() is called during orchestrator.start()
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from execution.reconciliation.service import (
+            OutcomeReconciliationService,
+            ReconciliationMonitor,
+        )
+
+        # Create mock telemetry
+        mock_telemetry = MagicMock()
+        mock_telemetry.start = AsyncMock()
+        mock_telemetry.stop = AsyncMock()
+
+        # Create minimal orchestrator
+        with patch(
+            "src.config.feature_flags.get_feature_flags",
+            return_value=mock_feature_flags,
+        ):
+            from execution.paper.orchestrator import PaperTradingOrchestrator
+
+            # Create a minimal mock setup
+            orchestrator = PaperTradingOrchestrator(
+                signal_generator=MagicMock(),
+                order_simulator=MagicMock(),
+                position_tracker=MagicMock(),
+                risk_enforcer=MagicMock(),
+                telemetry_collector=mock_telemetry,
+                kill_switch=MagicMock(),
+                redis_client=mock_redis,
+            )
+
+            # Verify monitor is not started yet
+            assert orchestrator._reconciliation_monitor is None
+
+            # Start orchestrator
+            await orchestrator.start()
+
+            # Verify monitor was started
+            assert orchestrator._reconciliation_monitor is not None
+            assert orchestrator._reconciliation_monitor._running is True
+
+            # Stop orchestrator
+            await orchestrator.stop()
+
+            # Verify monitor was stopped
+            assert orchestrator._reconciliation_monitor is None
+
+    async def test_reconciliation_monitor_respects_disabled_flag(
+        self, mock_redis, mock_feature_flags_disabled
+    ):
+        """Test that ReconciliationMonitor is NOT started when feature flag is disabled.
+
+        Verifies:
+        1. When reconciliation_monitor_enabled=False, monitor is not instantiated
+        2. Orchestrator starts successfully without the monitor
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        # Create mock telemetry
+        mock_telemetry = MagicMock()
+        mock_telemetry.start = AsyncMock()
+        mock_telemetry.stop = AsyncMock()
+
+        with patch(
+            "src.config.feature_flags.get_feature_flags",
+            return_value=mock_feature_flags_disabled,
+        ):
+            from execution.paper.orchestrator import PaperTradingOrchestrator
+
+            orchestrator = PaperTradingOrchestrator(
+                signal_generator=MagicMock(),
+                order_simulator=MagicMock(),
+                position_tracker=MagicMock(),
+                risk_enforcer=MagicMock(),
+                telemetry_collector=mock_telemetry,
+                kill_switch=MagicMock(),
+                redis_client=mock_redis,
+            )
+
+            # Verify monitor is not started yet
+            assert orchestrator._reconciliation_monitor is None
+
+            # Start orchestrator
+            await orchestrator.start()
+
+            # Verify monitor was NOT started (flag is disabled)
+            assert orchestrator._reconciliation_monitor is None
+
+            # Stop orchestrator
+            await orchestrator.stop()
+
+    async def test_reconciliation_monitor_respects_backfill_flag(
+        self, mock_redis, mock_feature_flags_with_backfill
+    ):
+        """Test that ReconciliationMonitor respects the backfill flag.
+
+        Verifies:
+        1. When reconciliation_auto_backfill=True, backfill_enabled=True is passed
+        2. When reconciliation_auto_backfill=False, backfill_enabled=False is passed
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        # Create mock telemetry
+        mock_telemetry = MagicMock()
+        mock_telemetry.start = AsyncMock()
+        mock_telemetry.stop = AsyncMock()
+
+        with patch(
+            "src.config.feature_flags.get_feature_flags",
+            return_value=mock_feature_flags_with_backfill,
+        ):
+            from execution.paper.orchestrator import PaperTradingOrchestrator
+
+            orchestrator = PaperTradingOrchestrator(
+                signal_generator=MagicMock(),
+                order_simulator=MagicMock(),
+                position_tracker=MagicMock(),
+                risk_enforcer=MagicMock(),
+                telemetry_collector=mock_telemetry,
+                kill_switch=MagicMock(),
+                redis_client=mock_redis,
+            )
+
+            await orchestrator.start()
+
+            # Verify backfill is enabled when flag is True
+            assert orchestrator._reconciliation_monitor is not None
+            assert orchestrator._reconciliation_monitor.backfill_enabled is True
+
+            await orchestrator.stop()
+
+    async def test_reconciliation_monitor_backfill_disabled_by_default(
+        self, mock_redis, mock_feature_flags
+    ):
+        """Test that ReconciliationMonitor has backfill disabled when flag is False.
+
+        Verifies that backfill_enabled=False when reconciliation_auto_backfill=False.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        # Create mock telemetry
+        mock_telemetry = MagicMock()
+        mock_telemetry.start = AsyncMock()
+        mock_telemetry.stop = AsyncMock()
+
+        with patch(
+            "src.config.feature_flags.get_feature_flags",
+            return_value=mock_feature_flags,
+        ):
+            from execution.paper.orchestrator import PaperTradingOrchestrator
+
+            orchestrator = PaperTradingOrchestrator(
+                signal_generator=MagicMock(),
+                order_simulator=MagicMock(),
+                position_tracker=MagicMock(),
+                risk_enforcer=MagicMock(),
+                telemetry_collector=mock_telemetry,
+                kill_switch=MagicMock(),
+                redis_client=mock_redis,
+            )
+
+            await orchestrator.start()
+
+            # Verify backfill is disabled (flag is False in mock_feature_flags)
+            assert orchestrator._reconciliation_monitor is not None
+            assert orchestrator._reconciliation_monitor.backfill_enabled is False
+
+            await orchestrator.stop()
+
+
+class TestReconciliationMonitorBackfill:
+    """Tests for ReconciliationMonitor backfill behavior.
+
+    ST-FILL-004: Verifies that ReconciliationMonitor properly respects the
+    backfill_enabled flag when calling backfill_missed_fills().
+    """
+
+    async def test_monitor_calls_backfill_when_enabled(self):
+        """Test that ReconciliationMonitor calls backfill_missed_fills when enabled.
+
+        Verifies:
+        1. When backfill_enabled=True, backfill_missed_fills is called
+        2. When backfill_enabled=False, backfill_missed_fills is NOT called
+        """
+        from unittest.mock import AsyncMock, MagicMock
+
+        from execution.reconciliation.models import (
+            ReconciliationResult,
+            ReconciliationStatus,
+        )
+        from execution.reconciliation.service import ReconciliationMonitor
+
+        # Create mock reconciliation service
+        mock_service = MagicMock()
+        mock_service.reconcile = AsyncMock(
+            return_value=ReconciliationResult(
+                telemetry_count={"fills": 10},
+                persisted_count={"fills": 10},
+                delta_count={"fills": 0},
+                delta_pct={"fills": 0.0},
+                status=ReconciliationStatus.OK,
+                discrepancies=[],
+                environment="paper",
+                portfolio_id="default",
+            )
+        )
+        mock_service.backfill_missed_fills = AsyncMock(
+            return_value={
+                "fills_found": 5,
+                "fills_backfilled": 0,
+                "errors": [],
+            }
+        )
+
+        # Create monitor with backfill DISABLED
+        monitor_no_backfill = ReconciliationMonitor(
+            reconciliation_service=mock_service,
+            redis_client=None,
+            check_interval_seconds=3600,
+            backfill_enabled=False,
+        )
+
+        # Manually run one cycle of the loop
+        monitor_no_backfill._running = True
+        await monitor_no_backfill._run_loop()
+
+        # backfill_missed_fills should NOT be called when disabled
+        mock_service.backfill_missed_fills.assert_not_called()
+        mock_service.reconcile.assert_called_once()
+
+        # Reset mock
+        mock_service.reset_mock()
+
+        # Create monitor with backfill ENABLED
+        monitor_with_backfill = ReconciliationMonitor(
+            reconciliation_service=mock_service,
+            redis_client=None,
+            check_interval_seconds=3600,
+            backfill_enabled=True,
+        )
+
+        # Manually run one cycle of the loop
+        monitor_with_backfill._running = True
+        await monitor_with_backfill._run_loop()
+
+        # backfill_missed_fills SHOULD be called when enabled
+        mock_service.backfill_missed_fills.assert_called_once()
+        mock_service.reconcile.assert_called_once()
+
+        # Cleanup
+        monitor_no_backfill._running = False
+        monitor_with_backfill._running = False
+
+    async def test_monitor_backfill_does_not_crash_on_error(self):
+        """Test that ReconciliationMonitor handles backfill errors gracefully.
+
+        Verifies:
+        1. If backfill_missed_fills raises, the monitor continues running
+        2. Error is logged but doesn't crash the loop
+        """
+        from unittest.mock import AsyncMock, MagicMock
+
+        from execution.reconciliation.models import (
+            ReconciliationResult,
+            ReconciliationStatus,
+        )
+        from execution.reconciliation.service import ReconciliationMonitor
+
+        # Create mock reconciliation service
+        mock_service = MagicMock()
+        mock_service.reconcile = AsyncMock(
+            return_value=ReconciliationResult(
+                telemetry_count={"fills": 10},
+                persisted_count={"fills": 10},
+                delta_count={"fills": 0},
+                delta_pct={"fills": 0.0},
+                status=ReconciliationStatus.OK,
+                discrepancies=[],
+                environment="paper",
+                portfolio_id="default",
+            )
+        )
+        mock_service.backfill_missed_fills = AsyncMock(
+            side_effect=Exception("Backfill error")
+        )
+
+        # Create monitor with backfill ENABLED but backfill will fail
+        monitor = ReconciliationMonitor(
+            reconciliation_service=mock_service,
+            redis_client=None,
+            check_interval_seconds=3600,
+            backfill_enabled=True,
+        )
+
+        # Run one cycle - should not crash despite backfill error
+        monitor._running = True
+        try:
+            await monitor._run_loop()
+        except Exception as e:
+            if "Backfill error" in str(e):
+                pytest.fail("Monitor should not propagate backfill errors")
+        finally:
+            monitor._running = False
+
+        # Reconcile should have been called
+        mock_service.reconcile.assert_called_once()

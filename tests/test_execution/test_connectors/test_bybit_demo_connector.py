@@ -1959,3 +1959,359 @@ class TestBybitDemoConnectorDedupMethods:
         demo_connector._redis.setex.side_effect = Exception("Redis error")
         # Should not raise
         await demo_connector._mark_processed_exec("exec_error")
+
+
+class TestBybitDemoConnectorPartialFillAccumulation:
+    """Tests for partial fill accumulation during polling (ST-FILL-001)."""
+
+    @pytest.fixture
+    def demo_connector(self) -> BybitDemoConnector:
+        with patch(
+            "data.exchange.bybit_safety.validate_endpoint_url",
+            return_value=None,
+        ):
+            connector = _make_mock_connector(demo=True)
+            md = _make_market_data()
+            mock_redis = MagicMock()
+            mock_redis.exists.return_value = False
+            dc = BybitDemoConnector(connector, market_data=md, redis_client=mock_redis)
+            return dc
+
+    @pytest.mark.asyncio
+    async def test_partial_fill_accumulation_80_percent(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test partial fills accumulate correctly (first 40%, second 40% = 80%).
+
+        Verifies:
+        1. First partial fill (40%) updates filled_quantity and state to PARTIAL
+        2. Second partial fill (40%) adds to existing fills, total = 80%
+        3. Order remains PARTIAL until fully filled
+        4. avg_fill_price is weighted average
+        """
+        order_id = "bybit_order_partial_123"
+        symbol = "BTCUSDT"
+
+        # Pre-populate order as PENDING
+        order = PaperOrder(
+            order_id=order_id,
+            symbol=symbol.upper(),
+            side="buy",
+            order_type="market",
+            quantity=1.0,  # Total quantity
+        )
+        order.state = OrderState.PENDING
+        demo_connector._orders[order_id] = order
+
+        # Track call count to return different responses
+        call_count = {"count": 0}
+
+        async def mock_get_fills(**kwargs):
+            call_count["count"] += 1
+            if call_count["count"] == 1:
+                # First poll: partial fill (40%)
+                return {
+                    "list": [
+                        {
+                            "execId": "exec_partial_1",
+                            "execPrice": "50000.00",
+                            "execQty": "0.4",
+                        }
+                    ]
+                }
+            elif call_count["count"] == 2:
+                # Second poll: another partial fill (40% more, total 80%)
+                return {
+                    "list": [
+                        {
+                            "execId": "exec_partial_2",
+                            "execPrice": "50100.00",
+                            "execQty": "0.4",
+                        }
+                    ]
+                }
+            else:
+                # Subsequent polls: empty (order still PARTIAL, will timeout)
+                return {"list": []}
+
+        demo_connector.connector.get_fills = mock_get_fills
+
+        # Set a short timeout to avoid long test
+        with patch.dict(os.environ, {"BYBIT_FILL_POLL_TIMEOUT_MS": "500"}):
+            result = await demo_connector._poll_for_fill(
+                order_id=order_id,
+                symbol=symbol,
+                initial_response={"order_id": order_id},
+            )
+
+        # After two partial fills, should have 80% filled
+        assert result.filled_quantity == pytest.approx(0.8), "Should have 0.8 filled"
+        assert result.remaining_quantity == pytest.approx(0.2), (
+            "Should have 0.2 remaining"
+        )
+        assert result.state == OrderState.PARTIAL, "Should be PARTIAL (not yet filled)"
+
+        # Should have 2 fills accumulated
+        assert len(result.fills) == 2, "Should have 2 fills"
+
+        # Verify fill details
+        assert result.fills[0].quantity == 0.4
+        assert result.fills[0].price == 50000.00
+        assert result.fills[1].quantity == 0.4
+        assert result.fills[1].price == 50100.00
+
+        # Verify weighted average price
+        expected_avg = (0.4 * 50000.0 + 0.4 * 50100.0) / 0.8
+        assert result.avg_fill_price == pytest.approx(expected_avg), (
+            f"Avg price should be {expected_avg}, got {result.avg_fill_price}"
+        )
+
+        # Verify PARTIAL state provenance events were recorded
+        # (One for each polling cycle where fills were detected)
+        partial_events = demo_connector.provenance_tracker.get_events(
+            event_type=ProvenanceEventType.ORDER_PARTIAL,
+        )
+        assert len(partial_events) == 2, (
+            f"Should have recorded 2 PARTIAL events (one per fill), got {len(partial_events)}"
+        )
+        # Verify the details of the most recent PARTIAL event (partial_events[0] is most recent)
+        # The most recent PARTIAL event should show 0.8 filled (after second fill was added)
+        most_recent_partial = partial_events[0]
+        assert most_recent_partial.order_id == order_id
+        assert most_recent_partial.details["details"]["total_filled_qty"] == 0.8
+
+    @pytest.mark.asyncio
+    async def test_partial_fill_then_complete(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test partial fills accumulate then complete to FILLED state.
+
+        Verifies:
+        1. First partial fill (40%) -> PARTIAL state
+        2. Second partial fill (40%) -> PARTIAL state continues
+        3. Final fill (20%) -> FILLED state, polling stops
+        """
+        order_id = "bybit_order_complete_456"
+        symbol = "BTCUSDT"
+
+        # Pre-populate order
+        order = PaperOrder(
+            order_id=order_id,
+            symbol=symbol.upper(),
+            side="buy",
+            order_type="market",
+            quantity=1.0,
+        )
+        order.state = OrderState.PENDING
+        demo_connector._orders[order_id] = order
+
+        # Mock get_fills to return partial then complete
+        demo_connector.connector.get_fills = AsyncMock(
+            side_effect=[
+                # First poll: partial fill (40%)
+                {
+                    "list": [
+                        {
+                            "execId": "exec_complete_1",
+                            "execPrice": "50000.00",
+                            "execQty": "0.4",
+                        }
+                    ]
+                },
+                # Second poll: another partial (40%, total 80%)
+                {
+                    "list": [
+                        {
+                            "execId": "exec_complete_2",
+                            "execPrice": "50100.00",
+                            "execQty": "0.4",
+                        }
+                    ]
+                },
+                # Third poll: final fill (20%, total 100%)
+                {
+                    "list": [
+                        {
+                            "execId": "exec_complete_3",
+                            "execPrice": "50200.00",
+                            "execQty": "0.2",
+                        }
+                    ]
+                },
+            ]
+        )
+
+        with patch.dict(os.environ, {"BYBIT_FILL_POLL_TIMEOUT_MS": "5000"}):
+            result = await demo_connector._poll_for_fill(
+                order_id=order_id,
+                symbol=symbol,
+                initial_response={"order_id": order_id},
+            )
+
+        # Should be fully filled
+        assert result.filled_quantity == pytest.approx(1.0), "Should be fully filled"
+        assert result.remaining_quantity == pytest.approx(0.0), (
+            "Should have nothing remaining"
+        )
+        assert result.state == OrderState.FILLED, "Should be FILLED"
+        assert result.filled_at is not None, "filled_at should be set"
+
+        # Should have all 3 fills
+        assert len(result.fills) == 3, "Should have 3 fills"
+
+        # Verify FILLED provenance event
+        filled_events = demo_connector.provenance_tracker.get_events(
+            event_type=ProvenanceEventType.ORDER_FILLED,
+        )
+        assert len(filled_events) == 1, "Should have recorded FILLED state"
+
+    @pytest.mark.asyncio
+    async def test_missing_exec_id_uses_composite_dedup_key(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test that missing execId falls back to composite dedup key.
+
+        When Bybit doesn't return execId, the connector should:
+        1. Use a composite key (order_id:price:qty:time) for deduplication
+        2. Still process the fill correctly
+        3. Log a warning about missing execId
+        """
+        order_id = "bybit_order_no_execid_789"
+        symbol = "BTCUSDT"
+
+        # Pre-populate order
+        order = PaperOrder(
+            order_id=order_id,
+            symbol=symbol.upper(),
+            side="buy",
+            order_type="market",
+            quantity=0.001,
+        )
+        order.state = OrderState.PENDING
+        demo_connector._orders[order_id] = order
+
+        # Mock get_fills to return fill WITHOUT execId
+        demo_connector.connector.get_fills = AsyncMock(
+            return_value={
+                "list": [
+                    {
+                        # No execId!
+                        "execPrice": "50000.00",
+                        "execQty": "0.001",
+                        "execTime": "1709654321000",
+                    }
+                ]
+            }
+        )
+
+        result = await demo_connector._poll_for_fill(
+            order_id=order_id,
+            symbol=symbol,
+            initial_response={"order_id": order_id},
+        )
+
+        # Should still process the fill using composite dedup key
+        assert result.state == OrderState.FILLED
+        assert len(result.fills) == 1
+        assert result.fills[0].price == 50000.00
+        assert result.fills[0].quantity == 0.001
+
+    @pytest.mark.asyncio
+    async def test_idempotent_fill_same_exec_not_duplicated(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test that the same execution is not recorded twice (idempotency).
+
+        When the same execId appears in multiple polling results:
+        1. First occurrence is processed and recorded
+        2. Second occurrence is skipped (duplicate)
+        3. Only one fill exists in the order
+        """
+        order_id = "bybit_order_idempotent_101"
+        symbol = "BTCUSDT"
+
+        # Pre-populate order
+        order = PaperOrder(
+            order_id=order_id,
+            symbol=symbol.upper(),
+            side="buy",
+            order_type="market",
+            quantity=0.001,
+        )
+        order.state = OrderState.PENDING
+        demo_connector._orders[order_id] = order
+
+        # Mock Redis to track the exec_id as already processed
+        async def mock_exists(key: str) -> int:
+            if "exec_duplicate_123" in key:
+                return 1  # Already processed
+            return 0
+
+        demo_connector._redis.exists = AsyncMock(side_effect=mock_exists)
+
+        # Mock get_fills to return the same fill twice
+        demo_connector.connector.get_fills = AsyncMock(
+            return_value={
+                "list": [
+                    {
+                        "execId": "exec_duplicate_123",
+                        "execPrice": "50000.00",
+                        "execQty": "0.001",
+                    }
+                ]
+            }
+        )
+
+        result = await demo_connector._poll_for_fill(
+            order_id=order_id,
+            symbol=symbol,
+            initial_response={"order_id": order_id},
+        )
+
+        # Should not have processed the duplicate
+        assert result.state == OrderState.PENDING, (
+            "Should remain PENDING (no fill added)"
+        )
+        assert len(result.fills) == 0, "Duplicate fill should not be recorded"
+
+    @pytest.mark.asyncio
+    async def test_invalid_price_qty_fill_skipped(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test that fills with invalid price or qty are skipped."""
+        order_id = "bybit_order_invalid_202"
+        symbol = "BTCUSDT"
+
+        # Pre-populate order
+        order = PaperOrder(
+            order_id=order_id,
+            symbol=symbol.upper(),
+            side="buy",
+            order_type="market",
+            quantity=0.001,
+        )
+        order.state = OrderState.PENDING
+        demo_connector._orders[order_id] = order
+
+        # Mock get_fills to return fill with zero qty
+        demo_connector.connector.get_fills = AsyncMock(
+            return_value={
+                "list": [
+                    {
+                        "execId": "exec_zero_qty",
+                        "execPrice": "50000.00",
+                        "execQty": "0.0",  # Invalid!
+                    }
+                ]
+            }
+        )
+
+        result = await demo_connector._poll_for_fill(
+            order_id=order_id,
+            symbol=symbol,
+            initial_response={"order_id": order_id},
+        )
+
+        # Fill with zero qty should be skipped
+        assert result.state == OrderState.PENDING
+        assert len(result.fills) == 0
