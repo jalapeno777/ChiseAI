@@ -30,21 +30,16 @@ _worktree_src = Path(__file__).parent.parent.parent / "src"
 if str(_worktree_src) not in sys.path:
     sys.path.insert(0, str(_worktree_src))
 
-from datetime import datetime
-from unittest.mock import MagicMock, patch
 
-import pytest
 
-from signal_generation.registry.ict_signal_registry import (
-    ICTSignalRegistry,
-    RegisteredSignal,
-    SignalMetadata,
-)
-from signal_generation.registry.signal_types import ICTSignalType, SignalPriority
 from signal_generation.ict_signal_emitter import (
     ICTEmissionConfig,
     ICTSignalEmitter,
 )
+from signal_generation.registry.ict_signal_registry import (
+    ICTSignalRegistry,
+)
+from signal_generation.registry.signal_types import ICTSignalType, SignalPriority
 
 
 class TestSingleDetection:
@@ -261,9 +256,9 @@ class TestPriorityOrderEnumeration:
         # All registered signals should have priority defined
         for signal in registry.get_registered_signals():
             assert signal.priority < 99, f"Signal {signal.signal_type} missing priority"
-            assert signal.priority > 0, (
-                f"Signal {signal.signal_type} has invalid priority"
-            )
+            assert (
+                signal.priority > 0
+            ), f"Signal {signal.signal_type} has invalid priority"
 
     def test_default_priority_order_sequence(self) -> None:
         """Default priority order sequence is correct."""
@@ -310,9 +305,9 @@ class TestPriorityOrderEnumeration:
         registered_types = {s.signal_type.value for s in registered_signals}
 
         for sig_type in registered_types:
-            assert sig_type in priority_order, (
-                f"Signal type {sig_type} not in emission priority order"
-            )
+            assert (
+                sig_type in priority_order
+            ), f"Signal type {sig_type} not in emission priority order"
 
 
 class TestSignalMetadata:
