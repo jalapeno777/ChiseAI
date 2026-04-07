@@ -26,7 +26,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from signal_generation.registry.signal_types import ICTSignalType, SignalSource
+from signal_generation.registry.signal_types import (
+    ICTSignalType,
+    SignalPriority,
+    SignalSource,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +78,7 @@ class RegisteredSignal:
         enabled: Whether the signal is currently enabled
         registered_at: When the signal was registered
         last_updated: When the signal was last updated
+        priority: Detection priority (lower = higher priority)
     """
 
     signal_type: ICTSignalType
@@ -82,6 +87,7 @@ class RegisteredSignal:
     enabled: bool = True
     registered_at: datetime = field(default_factory=datetime.utcnow)
     last_updated: datetime = field(default_factory=datetime.utcnow)
+    priority: int = 10  # Default low priority; set explicitly per signal
 
     def to_dict(self) -> dict[str, Any]:
         """Convert registered signal to dictionary."""
@@ -262,6 +268,46 @@ class ICTSignalRegistry:
         ),
     ]
 
+    # --- Detection priority configuration (ST-ICT-ST2) ---
+    # Maps each ICTSignalType to its SignalPriority value.
+    # This mapping is the single source of truth for priority ordering.
+    # To reconfigure priority, update this dictionary.
+    #
+    # Priority rationale:
+    #   BOS/CHoCH > Order Blocks > FVG > Liquidity Sweeps > Price Structure
+    #   (lower numeric value = higher priority)
+    #
+    # Note: BOS/CHOCH is excluded per BL-BOS-CHOCH-001 but its priority
+    # is preserved here for when it is re-enabled.
+    SIGNAL_PRIORITY_ORDER: dict[ICTSignalType, int] = {
+        # Priority 1: BOS/CHoCH (excluded per BL-BOS-CHOCH-001)
+        # Uncomment when re-enabled:
+        # ICTSignalType.BOS_CHOCH: SignalPriority.BOS_CHOCH.value,
+        # Priority 2: Order Blocks - institutional order flow zones
+        ICTSignalType.ORDER_BLOCK: SignalPriority.ORDER_BLOCK.value,
+        # Priority 3: FVG - imbalance / fair value zones
+        ICTSignalType.FVG: SignalPriority.FVG.value,
+        # Priority 4: CVD - volume delta (treated as liquidity-sensitive)
+        ICTSignalType.CVD: SignalPriority.LIQUIDITY_SWEEP.value,
+        # Priority 5: Price structure (H/L/H-OLD/L-OLD)
+        ICTSignalType.H: SignalPriority.PRICE_STRUCTURE.value,
+        ICTSignalType.L: SignalPriority.PRICE_STRUCTURE.value,
+        ICTSignalType.HIGH_OLD: SignalPriority.PRICE_STRUCTURE.value,
+        ICTSignalType.LOW_OLD: SignalPriority.PRICE_STRUCTURE.value,
+    }
+
+    def _get_priority(self, signal_type: ICTSignalType) -> int:
+        """Get detection priority for a signal type.
+
+        Args:
+            signal_type: The ICT signal type
+
+        Returns:
+            Priority value (lower = higher priority). Defaults to 99
+            (lowest priority) for unknown signal types.
+        """
+        return self.SIGNAL_PRIORITY_ORDER.get(signal_type, 99)
+
     def __init__(self) -> None:
         """Initialize ICT signal registry."""
         self._signals: dict[ICTSignalType, RegisteredSignal] = {}
@@ -269,15 +315,19 @@ class ICTSignalRegistry:
         self._initialize_default_signals()
 
     def _initialize_default_signals(self) -> None:
-        """Register default ICT signals."""
+        """Register default ICT signals with detection priority."""
         for signal_type, metadata, feature_flag in self.DEFAULT_SIGNALS:
             self._signals[signal_type] = RegisteredSignal(
                 signal_type=signal_type,
                 metadata=metadata,
                 feature_flag=feature_flag,
                 enabled=True,
+                priority=self._get_priority(signal_type),
             )
-            logger.debug(f"Registered default signal: {signal_type.value}")
+            logger.debug(
+                f"Registered default signal: {signal_type.value} "
+                f"(priority={self._get_priority(signal_type)})"
+            )
 
     def register_signal(
         self,
@@ -285,6 +335,7 @@ class ICTSignalRegistry:
         metadata: SignalMetadata,
         feature_flag: str | None = None,
         enabled: bool = True,
+        priority: int | None = None,
     ) -> RegisteredSignal:
         """Register a new ICT signal.
 
@@ -293,6 +344,8 @@ class ICTSignalRegistry:
             metadata: Signal metadata
             feature_flag: Optional feature flag name
             enabled: Whether the signal is enabled
+            priority: Detection priority (lower = higher priority).
+                If None, uses the default from SIGNAL_PRIORITY_ORDER.
 
         Returns:
             The registered signal
@@ -307,14 +360,21 @@ class ICTSignalRegistry:
         if feature_flag:
             self._feature_flags.set_flag(feature_flag, enabled)
 
+        resolved_priority = (
+            priority if priority is not None else self._get_priority(signal_type)
+        )
+
         registered = RegisteredSignal(
             signal_type=signal_type,
             metadata=metadata,
             feature_flag=feature_flag,
             enabled=enabled,
+            priority=resolved_priority,
         )
         self._signals[signal_type] = registered
-        logger.info(f"Registered ICT signal: {signal_type.value}")
+        logger.info(
+            f"Registered ICT signal: {signal_type.value} (priority={resolved_priority})"
+        )
 
         return registered
 
@@ -362,6 +422,25 @@ class ICTSignalRegistry:
             signals = [s for s in signals if self.is_signal_enabled(s.signal_type)]
 
         return signals
+
+    def get_registered_signals_sorted_by_priority(
+        self,
+        enabled_only: bool = False,
+    ) -> list[RegisteredSignal]:
+        """Get registered signals sorted by detection priority.
+
+        Signals are returned in priority order (lower priority value first =
+        higher priority). This determines the order in which signals are
+        processed when multiple fire simultaneously.
+
+        Args:
+            enabled_only: If True, only return enabled signals
+
+        Returns:
+            List of registered signals sorted by priority (ascending)
+        """
+        signals = self.get_registered_signals(enabled_only=enabled_only)
+        return sorted(signals, key=lambda s: s.priority)
 
     def is_signal_enabled(self, signal_type: ICTSignalType) -> bool:
         """Check if a signal is enabled.
