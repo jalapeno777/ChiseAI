@@ -16,12 +16,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from signal_generation.models import Signal, SignalDirection, SignalStatus
 from signal_generation.confidence_filter import ConfidenceFilter
 from signal_generation.dedup import SignalDeduper
+from signal_generation.models import Signal, SignalDirection, SignalStatus
 from signal_generation.quality_filter import QualityFilter
 from signal_generation.signal_memory import SignalMemory
-
 
 # ---------------------------------------------------------------------------
 # Helpers
