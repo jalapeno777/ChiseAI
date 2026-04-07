@@ -262,7 +262,7 @@ class TestResolveHighestPrioritySignal:
     def test_default_priority_order_is_correct(self):
         """Verify default priority order matches AC."""
         expected = ["bos_choch", "order_block", "fvg", "liquidity_sweep"]
-        assert DEFAULT_PRIORITY_ORDER == expected
+        assert expected == DEFAULT_PRIORITY_ORDER
 
     def test_full_integration_multiple_signals(self):
         """Integration test with multiple signals of different priorities."""

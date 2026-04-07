@@ -31,7 +31,6 @@ if str(_worktree_src) not in sys.path:
     sys.path.insert(0, str(_worktree_src))
 
 
-
 from signal_generation.ict_signal_emitter import (
     ICTEmissionConfig,
     ICTSignalEmitter,
