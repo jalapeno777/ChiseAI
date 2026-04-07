@@ -82,6 +82,41 @@ class ICTSignalType(Enum):
         return ["bos_choch"]
 
 
+class SignalPriority(Enum):
+    """Detection priority for ICT signals.
+
+    When multiple ICT signals fire simultaneously, the system acts on
+    the highest-priority signal first. Lower numeric value = higher priority.
+
+    Priority rationale (ICT Smart Money Concepts):
+        1. BOS/CHoCH (priority 1): Structural break signals indicate a
+           fundamental shift in market bias. They are the most important
+           confirmation of trend change or continuation. Currently excluded
+           per BL-BOS-CHOCH-001 but priority preserved for re-enablement.
+        2. Order Blocks (priority 2): Institutional order flow zones where
+           large market participants placed orders before a strong move.
+           These represent the highest-probability entry zones in the ICT
+           framework.
+        3. FVG (priority 3): Fair Value Gaps represent price imbalance zones
+           where price may revisit to fill the gap. Lower priority than Order
+           Blocks because FVGs are more frequent and less precise.
+        4. Liquidity Sweeps (priority 4): Stop hunts and liquidity grabs
+           are common but less actionable on their own. They provide context
+           but typically require confluence with higher-priority signals.
+        5. Price Structure (priority 5): H/L/H-OLD/L-OLD levels provide
+           structural context and support/resistance reference points.
+           Lowest priority as they are informational rather than actionable.
+
+    This priority is configurable via ICTSignalRegistry.SIGNAL_PRIORITY_ORDER.
+    """
+
+    BOS_CHOCH = 1  # Break of Structure / Change of Character
+    ORDER_BLOCK = 2  # Institutional order flow zones
+    FVG = 3  # Fair Value Gap (imbalance zones)
+    LIQUIDITY_SWEEP = 4  # Stops and liquidity grabs
+    PRICE_STRUCTURE = 5  # H/L/H-OLD/L-OLD levels
+
+
 class SignalSource(Enum):
     """Source of the signal generation."""
 

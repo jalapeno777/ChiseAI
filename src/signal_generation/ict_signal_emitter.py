@@ -58,6 +58,10 @@ class ICTEmissionConfig:
         emission_interval_seconds: Interval between emission cycles
         max_signals_per_cycle: Maximum signals to emit per cycle
         bos_choch_warning: Whether to log warning if BOS/CHoCH detected
+        signal_priority: Detection priority order. When multiple signals fire
+            simultaneously, they are processed in this order (list of signal
+            type strings). Lower index = higher priority. If None, uses the
+            default from ICTSignalRegistry.SIGNAL_PRIORITY_ORDER.
     """
 
     min_confidence: float = 0.50
@@ -68,6 +72,7 @@ class ICTEmissionConfig:
     emission_interval_seconds: float = 60.0
     max_signals_per_cycle: int = 10
     bos_choch_warning: bool = True
+    signal_priority: list[str] | None = None  # Configurable priority override
 
 
 @dataclass
@@ -677,6 +682,35 @@ class ICTSignalEmitter:
                 emission_latency_ms=latency_ms,
             )
 
+    def _get_emission_priority_order(self) -> list[str]:
+        """Get the signal emission priority order.
+
+        Returns the priority-ordered list of signal type strings.
+        If config.signal_priority is set, it overrides the registry default.
+
+        Priority rationale (ST-ICT-ST2):
+            BOS/CHoCH > Order Blocks > FVG > Liquidity (CVD) > Price Structure
+            Lower index = higher priority = processed first.
+
+        Returns:
+            List of signal type strings in priority order
+        """
+        # Config override takes precedence
+        if self.config.signal_priority is not None:
+            return list(self.config.signal_priority)
+
+        # Build priority order from registry's SIGNAL_PRIORITY_ORDER
+        priority_map = self.registry.SIGNAL_PRIORITY_ORDER
+
+        # Map ICTSignalType to string keys for emitter usage
+        type_to_str: dict[str, str] = {}
+        for sig_type, _priority_val in priority_map.items():
+            type_to_str[sig_type.value] = sig_type.value
+
+        # Sort by priority value (ascending = highest priority first)
+        sorted_types = sorted(priority_map.items(), key=lambda x: x[1])
+        return [sig_type.value for sig_type, _ in sorted_types]
+
     async def emit_signals(
         self,
         token: str,
@@ -722,49 +756,73 @@ class ICTSignalEmitter:
 
         logger.info(f"ICT emission cycle started: {cycle_id} for {token} {timeframe}")
 
-        # Process CVD
-        if cvd_data is not None and self.config.enable_cvd:
-            cycle.signals_processed += 1
-            result = await self.emit_signal("cvd", token, timeframe, cvd_data)
-            cycle.results.append(result)
-            if result.emission_success:
-                cycle.signals_emitted += 1
-            elif result.skipped:
-                cycle.signals_skipped += 1
+        # Build the priority-ordered list of signal types to process.
+        # Each entry is (signal_type_str, data, is_list) where is_list indicates
+        # the data contains multiple items (FVG, Order Block) vs single (CVD, HL).
+        priority_order = self._get_emission_priority_order()
+        logger.debug(f"Emission priority order: {priority_order}")
 
-        # Process FVG
-        if fvg_data and self.config.enable_fvg:
-            for i, fvg in enumerate(fvg_data[: self.config.max_signals_per_cycle]):
-                cycle.signals_processed += 1
-                result = await self.emit_signal("fvg", token, timeframe, fvg)
-                result.signal_type = f"fvg_{i}"  # Distinguish multiple FVGs
-                cycle.results.append(result)
-                if result.emission_success:
-                    cycle.signals_emitted += 1
-                elif result.skipped:
-                    cycle.signals_skipped += 1
+        # Map signal types to their data and processing mode
+        # Order Blocks (priority 2): institutional order flow zones
+        # FVG (priority 3): imbalance / fair value zones
+        # CVD (priority 4): volume delta
+        # H/L/H-OLD/L-OLD (priority 5): price structure levels
+        #
+        # BOS/CHoCH (priority 1) is excluded per BL-BOS-CHOCH-001 but
+        # its position in the priority order is preserved for re-enablement.
 
-        # Process Order Blocks
-        if order_block_data and self.config.enable_order_block:
-            for i, ob in enumerate(
-                order_block_data[: self.config.max_signals_per_cycle]
+        # Process each signal type in priority order
+        for signal_type_str in priority_order:
+            if (
+                signal_type_str == "order_block"
+                and order_block_data
+                and self.config.enable_order_block
+            ):
+                for i, ob in enumerate(
+                    order_block_data[: self.config.max_signals_per_cycle]
+                ):
+                    cycle.signals_processed += 1
+                    result = await self.emit_signal("order_block", token, timeframe, ob)
+                    result.signal_type = f"order_block_{i}"
+                    cycle.results.append(result)
+                    if result.emission_success:
+                        cycle.signals_emitted += 1
+                    elif result.skipped:
+                        cycle.signals_skipped += 1
+
+            elif signal_type_str == "fvg" and fvg_data and self.config.enable_fvg:
+                for i, fvg in enumerate(fvg_data[: self.config.max_signals_per_cycle]):
+                    cycle.signals_processed += 1
+                    result = await self.emit_signal("fvg", token, timeframe, fvg)
+                    result.signal_type = f"fvg_{i}"
+                    cycle.results.append(result)
+                    if result.emission_success:
+                        cycle.signals_emitted += 1
+                    elif result.skipped:
+                        cycle.signals_skipped += 1
+
+            elif (
+                signal_type_str == "cvd"
+                and cvd_data is not None
+                and self.config.enable_cvd
             ):
                 cycle.signals_processed += 1
-                result = await self.emit_signal("order_block", token, timeframe, ob)
-                result.signal_type = f"order_block_{i}"  # Distinguish multiple OBs
+                result = await self.emit_signal("cvd", token, timeframe, cvd_data)
                 cycle.results.append(result)
                 if result.emission_success:
                     cycle.signals_emitted += 1
                 elif result.skipped:
                     cycle.signals_skipped += 1
 
-        # Process H/L/H-OLD/L-OLD signals (S1A-2)
-        if hl_data and self.config.enable_hl:
-            for signal_key in ["h", "l", "high_old", "low_old"]:
-                if signal_key in hl_data:
+            elif (
+                signal_type_str in ("h", "l", "high_old", "low_old")
+                and hl_data
+                and self.config.enable_hl
+            ):
+                if signal_type_str in hl_data:
                     cycle.signals_processed += 1
                     result = await self.emit_signal(
-                        signal_key, token, timeframe, hl_data[signal_key]
+                        signal_type_str, token, timeframe, hl_data[signal_type_str]
                     )
                     cycle.results.append(result)
                     if result.emission_success:
