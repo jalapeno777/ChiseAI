@@ -11,6 +11,16 @@ Tests cover:
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# CRITICAL: Add src to path BEFORE any signal_generation imports
+# This must happen at module load time before pytest's import hook
+# interferes with the path resolution
+_worktree_src = Path(__file__).parent.parent.parent / "src"
+if str(_worktree_src) not in sys.path:
+    sys.path.insert(0, str(_worktree_src))
+
 from datetime import UTC, datetime
 
 from signal_generation.priority_resolver import (
