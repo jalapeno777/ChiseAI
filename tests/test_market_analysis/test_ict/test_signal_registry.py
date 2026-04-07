@@ -43,6 +43,22 @@ class TestICTSignalType:
         """Test Order Block signal type exists."""
         assert ICTSignalType.ORDER_BLOCK.value == "order_block"
 
+    def test_h_signal_type_exists(self) -> None:
+        """Test H (High) signal type exists (S1A-2)."""
+        assert ICTSignalType.H.value == "h"
+
+    def test_l_signal_type_exists(self) -> None:
+        """Test L (Low) signal type exists (S1A-2)."""
+        assert ICTSignalType.L.value == "l"
+
+    def test_high_old_signal_type_exists(self) -> None:
+        """Test HIGH_OLD (Old High) signal type exists (S1A-2)."""
+        assert ICTSignalType.HIGH_OLD.value == "high_old"
+
+    def test_low_old_signal_type_exists(self) -> None:
+        """Test LOW_OLD (Old Low) signal type exists (S1A-2)."""
+        assert ICTSignalType.LOW_OLD.value == "low_old"
+
     def test_bos_choch_is_excluded(self) -> None:
         """Test that BOS/CHoCH is excluded per BL-BOS-CHOCH-001."""
         excluded = ICTSignalType.get_excluded_signals()
@@ -174,12 +190,18 @@ class TestICTSignalRegistry:
         registry = ICTSignalRegistry()
 
         signals = registry.get_registered_signals()
-        assert len(signals) == 3
+        # 3 original + 4 new HL signals (H, L, HIGH_OLD, LOW_OLD) = 7
+        assert len(signals) == 7
 
         signal_types = [s.signal_type for s in signals]
         assert ICTSignalType.CVD in signal_types
         assert ICTSignalType.FVG in signal_types
         assert ICTSignalType.ORDER_BLOCK in signal_types
+        # New H/L/H-OLD/L-OLD signals (S1A-2)
+        assert ICTSignalType.H in signal_types
+        assert ICTSignalType.L in signal_types
+        assert ICTSignalType.HIGH_OLD in signal_types
+        assert ICTSignalType.LOW_OLD in signal_types
 
     def test_get_registered_signals_enabled_only(self) -> None:
         """Test getting only enabled signals."""
@@ -189,7 +211,8 @@ class TestICTSignalRegistry:
         registry.set_signal_enabled(ICTSignalType.CVD, False)
 
         enabled_signals = registry.get_registered_signals(enabled_only=True)
-        assert len(enabled_signals) == 2
+        # 6 remaining (7 - 1 disabled CVD)
+        assert len(enabled_signals) == 6
 
         enabled_types = [s.signal_type for s in enabled_signals]
         assert ICTSignalType.CVD not in enabled_types
@@ -200,13 +223,15 @@ class TestICTSignalRegistry:
         registry = ICTSignalRegistry()
 
         types = registry.list_signal_types()
-        assert len(types) == 3
+        # 3 original + 4 new HL signals = 7
+        assert len(types) == 7
         assert ICTSignalType.CVD in types
 
         # Disable one and check
         registry.set_signal_enabled(ICTSignalType.CVD, False)
         types_disabled = registry.list_signal_types(enabled_only=True)
-        assert len(types_disabled) == 2
+        # 6 remaining (7 - 1 disabled CVD)
+        assert len(types_disabled) == 6
         assert ICTSignalType.CVD not in types_disabled
 
     def test_excluded_signals_documented(self) -> None:
@@ -223,7 +248,8 @@ class TestICTSignalRegistry:
         assert "signals" in d
         assert "excluded_signals" in d
         assert "feature_flags" in d
-        assert len(d["signals"]) == 3
+        # 3 original + 4 new HL signals = 7
+        assert len(d["signals"]) == 7
 
     def test_register_duplicate_signal_raises(self) -> None:
         """Test that registering duplicate signal raises error."""

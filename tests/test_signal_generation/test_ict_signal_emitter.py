@@ -22,6 +22,7 @@ from signal_generation.ict_signal_emitter import (
 )
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 from signal_generation.registry.ict_signal_registry import ICTSignalRegistry
+from signal_generation.registry.signal_types import ICTSignalType
 
 logger = logging.getLogger(__name__)
 
@@ -628,3 +629,225 @@ class TestICTConfidenceThreshold:
         assert result.emission_success is True
         assert result.signal is not None
         assert result.signal.status == SignalStatus.ACTIONABLE
+
+
+class TestHLSignals:
+    """Tests for H/L/H-OLD/L-OLD price structure signals (S1A-2)."""
+
+    def test_h_signal_type_exists(self):
+        """Test H signal type exists in registry."""
+        registry = ICTSignalRegistry()
+        signal = registry.get_signal(ICTSignalType.H)
+        assert signal is not None
+        assert signal.metadata.name == "High"
+        assert signal.feature_flag == "enable_hl_signals"
+
+    def test_l_signal_type_exists(self):
+        """Test L signal type exists in registry."""
+        registry = ICTSignalRegistry()
+        signal = registry.get_signal(ICTSignalType.L)
+        assert signal is not None
+        assert signal.metadata.name == "Low"
+        assert signal.feature_flag == "enable_hl_signals"
+
+    def test_high_old_signal_type_exists(self):
+        """Test HIGH_OLD signal type exists in registry."""
+        registry = ICTSignalRegistry()
+        signal = registry.get_signal(ICTSignalType.HIGH_OLD)
+        assert signal is not None
+        assert signal.metadata.name == "Old High"
+        assert signal.feature_flag == "enable_hl_signals"
+
+    def test_low_old_signal_type_exists(self):
+        """Test LOW_OLD signal type exists in registry."""
+        registry = ICTSignalRegistry()
+        signal = registry.get_signal(ICTSignalType.LOW_OLD)
+        assert signal is not None
+        assert signal.metadata.name == "Old Low"
+        assert signal.feature_flag == "enable_hl_signals"
+
+    def test_hl_signals_enabled_by_default(self):
+        """Test H/L/H-OLD/L-OLD signals are enabled by default."""
+        emitter = ICTSignalEmitter()
+        assert emitter.is_signal_enabled("h") is True
+        assert emitter.is_signal_enabled("l") is True
+        assert emitter.is_signal_enabled("high_old") is True
+        assert emitter.is_signal_enabled("low_old") is True
+
+    def test_hl_signals_disabled_via_feature_flag(self):
+        """Test H/L/H-OLD/L-OLD signals can be disabled via feature flag."""
+        emitter = ICTSignalEmitter()
+        emitter.set_feature_flag("h", False)
+        assert emitter.is_signal_enabled("h") is False
+        # All HL signals share the same feature flag
+        assert emitter.is_signal_enabled("l") is False
+        assert emitter.is_signal_enabled("high_old") is False
+        assert emitter.is_signal_enabled("low_old") is False
+
+    @pytest.mark.asyncio
+    async def test_emit_h_signal_success(self):
+        """Test successful H signal emission."""
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        signal_data = {
+            "price": 50000.0,
+            "direction": "long",
+            "confidence": 0.75,
+            "timestamp": 1704067200000,
+        }
+
+        result = await emitter.emit_signal(
+            signal_type="h",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data=signal_data,
+        )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.metadata["signal_type"] == "h"
+        assert result.signal.metadata["price"] == 50000.0
+
+    @pytest.mark.asyncio
+    async def test_emit_l_signal_success(self):
+        """Test successful L signal emission."""
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        signal_data = {
+            "price": 49000.0,
+            "direction": "short",
+            "confidence": 0.70,
+            "timestamp": 1704067200000,
+        }
+
+        result = await emitter.emit_signal(
+            signal_type="l",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data=signal_data,
+        )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.metadata["signal_type"] == "l"
+        assert result.signal.metadata["price"] == 49000.0
+
+    @pytest.mark.asyncio
+    async def test_emit_high_old_signal_success(self):
+        """Test successful HIGH_OLD signal emission."""
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        signal_data = {
+            "price": 51000.0,
+            "direction": "long",
+            "confidence": 0.72,
+            "timestamp": 1704067200000,
+            "swing_high": 51500.0,
+        }
+
+        result = await emitter.emit_signal(
+            signal_type="high_old",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data=signal_data,
+        )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.metadata["signal_type"] == "high_old"
+        assert result.signal.metadata["swing_high"] == 51500.0
+
+    @pytest.mark.asyncio
+    async def test_emit_low_old_signal_success(self):
+        """Test successful LOW_OLD signal emission."""
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        signal_data = {
+            "price": 48000.0,
+            "direction": "short",
+            "confidence": 0.68,
+            "timestamp": 1704067200000,
+            "swing_low": 47500.0,
+        }
+
+        result = await emitter.emit_signal(
+            signal_type="low_old",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data=signal_data,
+        )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.metadata["signal_type"] == "low_old"
+        assert result.signal.metadata["swing_low"] == 47500.0
+
+    @pytest.mark.asyncio
+    async def test_emit_signals_with_hl_data(self):
+        """Test emit_signals with hl_data parameter."""
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        hl_data = {
+            "h": {
+                "price": 50000.0,
+                "direction": "long",
+                "confidence": 0.75,
+                "timestamp": 1704067200000,
+            },
+            "l": {
+                "price": 49000.0,
+                "direction": "short",
+                "confidence": 0.75,
+                "timestamp": 1704067200000,
+            },
+        }
+
+        cycle = await emitter.emit_signals(
+            token="BTC/USDT",
+            timeframe="1H",
+            hl_data=hl_data,
+        )
+
+        # Should process 2 HL signals
+        assert cycle.signals_processed == 2
+        assert cycle.signals_emitted == 2
