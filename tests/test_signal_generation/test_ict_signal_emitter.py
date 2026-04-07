@@ -1079,3 +1079,323 @@ class TestSignalPriority:
             assert min(fvg_positions) < min(
                 cvd_positions
             ), "FVG results should appear before CVD results in priority order"
+
+
+class TestLiquiditySweepSignals:
+    """Tests for liquidity sweep (stop hunt) signal integration (ST-ICT-ST3)."""
+
+    def test_enable_sweep_config_default(self):
+        """Test enable_sweep is True by default in ICTEmissionConfig."""
+        config = ICTEmissionConfig()
+        assert config.enable_sweep is True
+
+    def test_enable_sweep_config_false(self):
+        """Test enable_sweep can be set to False."""
+        config = ICTEmissionConfig(enable_sweep=False)
+        assert config.enable_sweep is False
+
+    def test_sweep_signal_type_enabled_by_default(self):
+        """Test liquidity_sweep signal type is enabled by default."""
+        emitter = ICTSignalEmitter()
+        assert emitter.is_signal_enabled("liquidity_sweep") is True
+
+    def test_sweep_signal_type_disabled_via_feature_flag(self):
+        """Test liquidity_sweep can be disabled via feature flag."""
+        emitter = ICTSignalEmitter()
+        emitter.set_feature_flag("liquidity_sweep", False)
+        assert emitter.is_signal_enabled("liquidity_sweep") is False
+
+    def test_get_status_includes_sweep_config(self):
+        """Test get_status includes enable_sweep in config."""
+        emitter = ICTSignalEmitter()
+        status = emitter.get_status()
+        assert "enable_sweep" in status["config"]
+        assert status["config"]["enable_sweep"] is True
+
+    def test_get_status_includes_sweep_feature_flag(self):
+        """Test get_status includes enable_sweep_signals in feature_flags."""
+        emitter = ICTSignalEmitter()
+        status = emitter.get_status()
+        assert "enable_sweep_signals" in status["feature_flags"]
+        assert status["feature_flags"]["enable_sweep_signals"] is True
+
+    @pytest.mark.asyncio
+    async def test_emit_liquidity_sweep_signal_success(self):
+        """Test successful liquidity_sweep signal emission."""
+        from ict.liquidity.models import (
+            LiquidityLevel,
+            LiquidityLevelType,
+            LiquiditySweep,
+            SweepConfirmation,
+            SweepDirection,
+            SweepSignal,
+        )
+
+        # Create mock sweep signal
+        mock_level = LiquidityLevel(
+            price=50000.0,
+            level_type=LiquidityLevelType.PREVIOUS_HIGH,
+            source_indices=(10,),
+            strength=3.0,
+            timestamp_ms=1704067200000,
+        )
+        mock_sweep = LiquiditySweep(
+            sweep_candle_index=15,
+            direction=SweepDirection.BEARISH_SWEEP,
+            level=mock_level,
+            sweep_high=50025.0,
+            sweep_low=49975.0,
+            penetration=25.0,
+            penetration_pct=0.05,
+            confirmation=SweepConfirmation(
+                confirmed=True,
+                rejection_candle_index=16,
+                wick_ratio=2.5,
+                close_beyond_level=True,
+            ),
+        )
+        mock_sweep_signal = SweepSignal(
+            sweep=mock_sweep,
+            signal_direction=SweepDirection.BEARISH_SWEEP,
+            confidence=0.85,
+            metadata={
+                "level_type": "previous_high",
+                "level_price": 50000.0,
+                "penetration_pct": 0.05,
+                "wick_ratio": 2.5,
+                "strength": 3.0,
+            },
+        )
+
+        # Create mock emitter
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        result = await emitter.emit_signal(
+            signal_type="liquidity_sweep",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data=mock_sweep_signal,
+        )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.metadata["signal_type"] == "liquidity_sweep"
+        assert result.signal.metadata["level_type"] == "previous_high"
+        assert result.signal.metadata["level_price"] == 50000.0
+        assert result.signal.confidence == 0.85
+
+    @pytest.mark.asyncio
+    async def test_emit_liquidity_sweep_below_threshold(self):
+        """Test liquidity_sweep signal rejected when confidence < 0.75."""
+        from ict.liquidity.models import (
+            LiquidityLevel,
+            LiquidityLevelType,
+            LiquiditySweep,
+            SweepConfirmation,
+            SweepDirection,
+            SweepSignal,
+        )
+
+        mock_level = LiquidityLevel(
+            price=50000.0,
+            level_type=LiquidityLevelType.PREVIOUS_HIGH,
+            source_indices=(10,),
+            strength=2.0,
+            timestamp_ms=1704067200000,
+        )
+        mock_sweep = LiquiditySweep(
+            sweep_candle_index=15,
+            direction=SweepDirection.BEARISH_SWEEP,
+            level=mock_level,
+            sweep_high=50020.0,
+            sweep_low=49980.0,
+            penetration=20.0,
+            penetration_pct=0.04,
+            confirmation=SweepConfirmation(
+                confirmed=True,
+                rejection_candle_index=16,
+                wick_ratio=1.8,
+                close_beyond_level=True,
+            ),
+        )
+        mock_sweep_signal = SweepSignal(
+            sweep=mock_sweep,
+            signal_direction=SweepDirection.BEARISH_SWEEP,
+            confidence=0.70,  # Below 0.75 threshold
+            metadata={},
+        )
+
+        emitter = ICTSignalEmitter(emitters=[MagicMock()])
+
+        result = await emitter.emit_signal(
+            signal_type="liquidity_sweep",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data=mock_sweep_signal,
+        )
+
+        assert result.skipped is True
+        assert result.skip_reason == "confidence_below_threshold"
+        assert result.signal is None
+
+    @pytest.mark.asyncio
+    async def test_emit_signals_with_sweep_data(self):
+        """Test emit_signals processes sweep_data correctly."""
+        from ict.liquidity.models import (
+            LiquidityLevel,
+            LiquidityLevelType,
+            LiquiditySweep,
+            SweepConfirmation,
+            SweepDirection,
+            SweepSignal,
+        )
+
+        # Create mock sweep signals
+        mock_level1 = LiquidityLevel(
+            price=50000.0,
+            level_type=LiquidityLevelType.PREVIOUS_HIGH,
+            source_indices=(10,),
+            strength=3.0,
+            timestamp_ms=1704067200000,
+        )
+        mock_sweep1 = LiquiditySweep(
+            sweep_candle_index=15,
+            direction=SweepDirection.BEARISH_SWEEP,
+            level=mock_level1,
+            sweep_high=50025.0,
+            sweep_low=49975.0,
+            penetration=25.0,
+            penetration_pct=0.05,
+            confirmation=SweepConfirmation(
+                confirmed=True,
+                rejection_candle_index=16,
+                wick_ratio=2.5,
+                close_beyond_level=True,
+            ),
+        )
+        sweep_signal1 = SweepSignal(
+            sweep=mock_sweep1,
+            signal_direction=SweepDirection.BEARISH_SWEEP,
+            confidence=0.85,
+            metadata={"level_type": "previous_high", "level_price": 50000.0},
+        )
+
+        mock_level2 = LiquidityLevel(
+            price=49000.0,
+            level_type=LiquidityLevelType.PREVIOUS_LOW,
+            source_indices=(12,),
+            strength=4.0,
+            timestamp_ms=1704067200000,
+        )
+        mock_sweep2 = LiquiditySweep(
+            sweep_candle_index=18,
+            direction=SweepDirection.BULLISH_SWEEP,
+            level=mock_level2,
+            sweep_high=49025.0,
+            sweep_low=48975.0,
+            penetration=25.0,
+            penetration_pct=0.05,
+            confirmation=SweepConfirmation(
+                confirmed=True,
+                rejection_candle_index=19,
+                wick_ratio=2.8,
+                close_beyond_level=True,
+            ),
+        )
+        sweep_signal2 = SweepSignal(
+            sweep=mock_sweep2,
+            signal_direction=SweepDirection.BULLISH_SWEEP,
+            confidence=0.90,
+            metadata={"level_type": "previous_low", "level_price": 49000.0},
+        )
+
+        sweep_data = [sweep_signal1, sweep_signal2]
+
+        # Create mock emitter
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        cycle = await emitter.emit_signals(
+            token="BTC/USDT",
+            timeframe="1H",
+            sweep_data=sweep_data,
+        )
+
+        # Should process 2 sweep signals
+        assert cycle.signals_processed == 2
+        assert cycle.signals_emitted == 2
+        assert cycle.signals_skipped == 0
+
+        # Verify result types
+        result_types = [r.signal_type for r in cycle.results]
+        assert "liquidity_sweep_0" in result_types
+        assert "liquidity_sweep_1" in result_types
+
+    @pytest.mark.asyncio
+    async def test_emit_signals_with_sweep_disabled(self):
+        """Test emit_signals skips sweep_data when enable_sweep=False."""
+        from ict.liquidity.models import (
+            LiquidityLevel,
+            LiquidityLevelType,
+            LiquiditySweep,
+            SweepConfirmation,
+            SweepDirection,
+            SweepSignal,
+        )
+
+        mock_level = LiquidityLevel(
+            price=50000.0,
+            level_type=LiquidityLevelType.PREVIOUS_HIGH,
+            source_indices=(10,),
+            strength=3.0,
+            timestamp_ms=1704067200000,
+        )
+        mock_sweep = LiquiditySweep(
+            sweep_candle_index=15,
+            direction=SweepDirection.BEARISH_SWEEP,
+            level=mock_level,
+            sweep_high=50025.0,
+            sweep_low=49975.0,
+            penetration=25.0,
+            penetration_pct=0.05,
+            confirmation=SweepConfirmation(
+                confirmed=True,
+                rejection_candle_index=16,
+                wick_ratio=2.5,
+                close_beyond_level=True,
+            ),
+        )
+        sweep_signal = SweepSignal(
+            sweep=mock_sweep,
+            signal_direction=SweepDirection.BEARISH_SWEEP,
+            confidence=0.85,
+            metadata={},
+        )
+
+        config = ICTEmissionConfig(enable_sweep=False)
+        emitter = ICTSignalEmitter(config=config, emitters=[MagicMock()])
+
+        cycle = await emitter.emit_signals(
+            token="BTC/USDT",
+            timeframe="1H",
+            sweep_data=[sweep_signal],
+        )
+
+        # Should not process any sweep signals
+        assert cycle.signals_processed == 0
+        assert cycle.signals_emitted == 0

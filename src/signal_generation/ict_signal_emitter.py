@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
+from ict.liquidity.models import SweepSignal as LiquiditySweepSignal
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 from signal_generation.registry.ict_signal_registry import (
     ICTSignalRegistry,
@@ -55,6 +56,7 @@ class ICTEmissionConfig:
         enable_fvg: Whether to enable FVG signals
         enable_order_block: Whether to enable Order Block signals
         enable_hl: Whether to enable H/L/H-OLD/L-OLD signals (S1A-2)
+        enable_sweep: Whether to enable liquidity sweep (stop hunt) signals
         emission_interval_seconds: Interval between emission cycles
         max_signals_per_cycle: Maximum signals to emit per cycle
         bos_choch_warning: Whether to log warning if BOS/CHoCH detected
@@ -69,6 +71,7 @@ class ICTEmissionConfig:
     enable_fvg: bool = True
     enable_order_block: bool = True
     enable_hl: bool = True
+    enable_sweep: bool = True
     emission_interval_seconds: float = 60.0
     max_signals_per_cycle: int = 10
     bos_choch_warning: bool = True
@@ -224,6 +227,8 @@ class ICTSignalEmitter:
             self.registry.set_feature_flag("enable_order_block_signals", True)
         if self.config.enable_hl:
             self.registry.set_feature_flag("enable_hl_signals", True)
+        if self.config.enable_sweep:
+            self.registry.set_feature_flag("enable_sweep_signals", True)
 
     def _get_two_layer_scorer(self) -> TwoLayerScorer:
         """Get or create TwoLayerScorer instance.
@@ -353,6 +358,8 @@ class ICTSignalEmitter:
             "l": "enable_hl_signals",
             "high_old": "enable_hl_signals",
             "low_old": "enable_hl_signals",
+            # Liquidity sweep (stop hunt) signals (ST-ICT-ST3)
+            "liquidity_sweep": "enable_sweep_signals",
         }
 
         flag_name = flag_map.get(signal_type.lower())
@@ -388,6 +395,8 @@ class ICTSignalEmitter:
             "l": "enable_hl_signals",
             "high_old": "enable_hl_signals",
             "low_old": "enable_hl_signals",
+            # Liquidity sweep (stop hunt) signals (ST-ICT-ST3)
+            "liquidity_sweep": "enable_sweep_signals",
         }
 
         flag_name = flag_map.get(signal_type.lower())
@@ -607,6 +616,91 @@ class ICTSignalEmitter:
                     emission_error=last_error,
                     emission_latency_ms=latency_ms,
                 )
+            # Liquidity sweep (stop hunt) signals (ST-ICT-ST3)
+            # signal_data is a LiquiditySweepSignal with confidence, direction, sweep info
+            elif signal_type == "liquidity_sweep":
+                if not isinstance(signal_data, LiquiditySweepSignal):
+                    return ICTSignalResult(
+                        signal_type=signal_type,
+                        skipped=True,
+                        skip_reason="Invalid signal_data for liquidity_sweep: expected SweepSignal",
+                    )
+
+                # Apply confidence threshold (reject < 0.75 per ST-ICT-ST3)
+                actionable_threshold = getattr(
+                    self.config, "signal_confidence_threshold", 0.75
+                )
+                if signal_data.confidence < actionable_threshold:
+                    return ICTSignalResult(
+                        signal_type=signal_type,
+                        skipped=True,
+                        skip_reason="confidence_below_threshold",
+                    )
+
+                from signal_generation.models import SignalDirection as SigDir
+
+                sig_direction = (
+                    SigDir.LONG
+                    if signal_data.signal_direction.value == "bullish_sweep"
+                    else SigDir.SHORT
+                )
+
+                status = SignalStatus.LOGGED_ONLY
+                if signal_data.confidence >= actionable_threshold:
+                    status = SignalStatus.ACTIONABLE
+
+                signal = Signal(
+                    token=token,
+                    direction=sig_direction,
+                    confidence=signal_data.confidence,
+                    base_score=signal_data.confidence * 100,
+                    timestamp=datetime.now(UTC),
+                    status=status,
+                    timeframe=timeframe,
+                    contributing_factors=[
+                        {
+                            "factor": "ict_liquidity_sweep",
+                            "weight": 1.0,
+                            "score": signal_data.confidence,
+                        }
+                    ],
+                    metadata={
+                        "signal_type": "liquidity_sweep",
+                        "source": "ict",
+                        "level_type": signal_data.metadata.get("level_type"),
+                        "level_price": signal_data.metadata.get("level_price"),
+                        "penetration_pct": signal_data.metadata.get("penetration_pct"),
+                        "wick_ratio": signal_data.metadata.get("wick_ratio"),
+                        "strength": signal_data.metadata.get("strength"),
+                    },
+                )
+
+                # Emit to all registered emitters
+                emission_latency_ms = 0.0
+                any_success = False
+                last_error = None
+
+                for emitter in self.emitters:
+                    try:
+                        result = await emitter.emit(signal)
+                        emission_latency_ms += result.latency_ms
+                        if result.success:
+                            any_success = True
+                        else:
+                            last_error = result.error
+                    except Exception as e:
+                        last_error = str(e)
+                        logger.error(f"Emitter {emitter.name} failed: {e}")
+
+                latency_ms = (time.perf_counter() - start_time) * 1000
+
+                return ICTSignalResult(
+                    signal=signal,
+                    signal_type=signal_type,
+                    emission_success=any_success,
+                    emission_error=last_error,
+                    emission_latency_ms=latency_ms,
+                )
             else:
                 return ICTSignalResult(
                     signal_type=signal_type,
@@ -689,7 +783,7 @@ class ICTSignalEmitter:
         If config.signal_priority is set, it overrides the registry default.
 
         Priority rationale (ST-ICT-ST2):
-            BOS/CHoCH > Order Blocks > FVG > Liquidity (CVD) > Price Structure
+            BOS/CHoCH > Order Blocks > FVG > Liquidity Sweep > CVD > Price Structure
             Lower index = higher priority = processed first.
 
         Returns:
@@ -709,7 +803,15 @@ class ICTSignalEmitter:
 
         # Sort by priority value (ascending = highest priority first)
         sorted_types = sorted(priority_map.items(), key=lambda x: x[1])
-        return [sig_type.value for sig_type, _ in sorted_types]
+        result = [sig_type.value for sig_type, _ in sorted_types]
+
+        # Add liquidity_sweep if not in registry (ST-ICT-ST3)
+        # Default priority: after FVG (3) and before CVD (4)
+        if "liquidity_sweep" not in result:
+            # Insert at position 4 (after FVG at 3, before CVD at 4 which becomes 5)
+            result.insert(3, "liquidity_sweep")
+
+        return result
 
     async def emit_signals(
         self,
@@ -719,6 +821,7 @@ class ICTSignalEmitter:
         fvg_data: list[Any] | None = None,
         order_block_data: list[Any] | None = None,
         hl_data: dict[str, Any] | None = None,
+        sweep_data: list[LiquiditySweepSignal] | None = None,
     ) -> ICTEmissionCycle:
         """Emit all available ICT signals for a token/timeframe.
 
@@ -738,6 +841,9 @@ class ICTSignalEmitter:
                     "swing_high": float (optional),
                     "swing_low": float (optional),
                 }
+            sweep_data: List of LiquiditySweepSignal from LiquiditySweepDetector
+                (ST-ICT-ST3). Each SweepSignal contains sweep direction,
+                confidence score, and metadata about the swept level.
 
         Returns:
             ICTEmissionCycle with results for all signals
@@ -830,6 +936,26 @@ class ICTSignalEmitter:
                     elif result.skipped:
                         cycle.signals_skipped += 1
 
+            # Liquidity sweep (stop hunt) signals (ST-ICT-ST3)
+            elif (
+                signal_type_str == "liquidity_sweep"
+                and sweep_data
+                and self.config.enable_sweep
+            ):
+                for i, sweep_signal in enumerate(
+                    sweep_data[: self.config.max_signals_per_cycle]
+                ):
+                    cycle.signals_processed += 1
+                    result = await self.emit_signal(
+                        "liquidity_sweep", token, timeframe, sweep_signal
+                    )
+                    result.signal_type = f"liquidity_sweep_{i}"
+                    cycle.results.append(result)
+                    if result.emission_success:
+                        cycle.signals_emitted += 1
+                    elif result.skipped:
+                        cycle.signals_skipped += 1
+
         cycle.duration_ms = (time.perf_counter() - start_time) * 1000
 
         logger.info(
@@ -855,6 +981,7 @@ class ICTSignalEmitter:
                 "enable_fvg": self.config.enable_fvg,
                 "enable_order_block": self.config.enable_order_block,
                 "enable_hl": self.config.enable_hl,
+                "enable_sweep": self.config.enable_sweep,
                 "emission_interval_seconds": self.config.emission_interval_seconds,
                 "max_signals_per_cycle": self.config.max_signals_per_cycle,
             },
@@ -870,6 +997,9 @@ class ICTSignalEmitter:
                 ),
                 "enable_hl_signals": self.registry._feature_flags.is_enabled(
                     "enable_hl_signals"
+                ),
+                "enable_sweep_signals": self.registry._feature_flags.is_enabled(
+                    "enable_sweep_signals"
                 ),
             },
             "emitters": [e.name for e in self.emitters],
