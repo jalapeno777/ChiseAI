@@ -406,8 +406,10 @@ class ICTSignalEmitter:
         sig_direction = SigDir.LONG if direction.value == "long" else SigDir.SHORT
 
         # Determine status based on confidence threshold
+        # Use configurable threshold from TradingModeConfig via min_confidence
+        actionable_threshold = getattr(self.config, "signal_confidence_threshold", 0.75)
         status = SignalStatus.LOGGED_ONLY
-        if confidence >= 0.75:
+        if confidence >= actionable_threshold:
             status = SignalStatus.ACTIONABLE
 
         # Build metadata
@@ -507,8 +509,11 @@ class ICTSignalEmitter:
                     skip_reason=f"Unsupported signal type: {signal_type}",
                 )
 
-            # Check confidence threshold
-            if score_result.confidence < self.config.min_confidence:
+            # Check confidence threshold (ST-ICT-S4: use signal_confidence_threshold for actionable gate)
+            actionable_threshold = getattr(
+                self.config, "signal_confidence_threshold", 0.75
+            )
+            if score_result.confidence < actionable_threshold:
                 return ICTSignalResult(
                     signal_type=signal_type,
                     skipped=True,

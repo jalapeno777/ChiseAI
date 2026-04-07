@@ -207,6 +207,7 @@ class AsyncSignalProcessor:
         retry_delay: float = 0.1,
         emitters: list[SignalEmitter] | None = None,
         deduper: SignalDeduper | None = None,
+        actionable_threshold: float = 0.75,
     ):
         """Initialize async signal processor.
 
@@ -216,12 +217,14 @@ class AsyncSignalProcessor:
             retry_delay: Delay between retries (seconds)
             emitters: List of signal emitters for delivery
             deduper: Signal deduplicator for duplicate detection
+            actionable_threshold: Minimum confidence for actionable signals (default 0.75)
         """
         self.max_concurrent = max_concurrent
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.emitters = emitters or []
         self._deduper = deduper
+        self._actionable_threshold = actionable_threshold
 
         # Concurrency control
         self._semaphore = asyncio.Semaphore(max_concurrent)
@@ -256,7 +259,7 @@ class AsyncSignalProcessor:
         """
         if signal.confidence >= 0.90:
             return SignalPriority.HIGH.value
-        elif signal.confidence >= 0.75:
+        elif signal.confidence >= self._actionable_threshold:
             return SignalPriority.MEDIUM.value
         else:
             return SignalPriority.LOW.value

@@ -513,3 +513,118 @@ class TestICTEmissionCycle:
         assert result["signals_skipped"] == 2
         assert "bos_choch" in result["excluded_signals"]
         assert "Some error" in result["errors"]
+
+
+class TestICTConfidenceThreshold:
+    """Tests for configurable confidence threshold (ST-ICT-S4)."""
+
+    @pytest.mark.asyncio
+    async def test_confidence_074_rejected(self):
+        """Test that confidence=0.74 is rejected with confidence_below_threshold."""
+        # Create mock emitter
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        # Mock the two-layer scorer with confidence=0.74
+        mock_score_result = MagicMock()
+        mock_score_result.confluence_score = 0.60
+        mock_score_result.confidence = 0.74  # Below 0.75 threshold
+        mock_score_result.direction = MagicMock(value="long")
+        mock_score_result.to_dict = MagicMock(return_value={})
+
+        with patch.object(emitter, "_get_two_layer_scorer") as mock_get_scorer:
+            mock_scorer = MagicMock()
+            mock_scorer.score = MagicMock(return_value=mock_score_result)
+            mock_get_scorer.return_value = mock_scorer
+
+            result = await emitter.emit_signal(
+                signal_type="cvd",
+                token="BTC/USDT",
+                timeframe="1H",
+                signal_data=MagicMock(),
+            )
+
+        assert result.skipped is True
+        assert result.skip_reason == "confidence_below_threshold"
+        assert result.signal is None
+
+    @pytest.mark.asyncio
+    async def test_confidence_075_passes(self):
+        """Test that confidence=0.75 passes and is actionable."""
+        # Create mock emitter
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        # Mock the two-layer scorer with confidence=0.75
+        mock_score_result = MagicMock()
+        mock_score_result.confluence_score = 0.70
+        mock_score_result.confidence = 0.75  # Exactly at threshold
+        mock_score_result.direction = MagicMock(value="long")
+        mock_score_result.to_dict = MagicMock(return_value={})
+
+        with patch.object(emitter, "_get_two_layer_scorer") as mock_get_scorer:
+            mock_scorer = MagicMock()
+            mock_scorer.score = MagicMock(return_value=mock_score_result)
+            mock_get_scorer.return_value = mock_scorer
+
+            result = await emitter.emit_signal(
+                signal_type="cvd",
+                token="BTC/USDT",
+                timeframe="1H",
+                signal_data=MagicMock(),
+            )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.status == SignalStatus.ACTIONABLE
+
+    @pytest.mark.asyncio
+    async def test_confidence_076_passes(self):
+        """Test that confidence=0.76 passes and is actionable."""
+        # Create mock emitter
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+
+        emitter = ICTSignalEmitter(emitters=[mock_emitter])
+
+        # Mock the two-layer scorer with confidence=0.76
+        mock_score_result = MagicMock()
+        mock_score_result.confluence_score = 0.72
+        mock_score_result.confidence = 0.76  # Above threshold
+        mock_score_result.direction = MagicMock(value="long")
+        mock_score_result.to_dict = MagicMock(return_value={})
+
+        with patch.object(emitter, "_get_two_layer_scorer") as mock_get_scorer:
+            mock_scorer = MagicMock()
+            mock_scorer.score = MagicMock(return_value=mock_score_result)
+            mock_get_scorer.return_value = mock_scorer
+
+            result = await emitter.emit_signal(
+                signal_type="cvd",
+                token="BTC/USDT",
+                timeframe="1H",
+                signal_data=MagicMock(),
+            )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.status == SignalStatus.ACTIONABLE
