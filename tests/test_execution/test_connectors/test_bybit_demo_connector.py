@@ -1677,3 +1677,285 @@ class TestCreateBybitDemoConnector:
             mock_from_env.return_value = MagicMock()
             create_bybit_demo_connector()
             mock_from_env.assert_called_once()
+
+
+# ===========================================================================
+# Fill Polling Tests (ST-FILL-001)
+# ===========================================================================
+
+
+class TestBybitDemoConnectorFillPolling:
+    """Tests for fill polling functionality."""
+
+    @pytest.fixture
+    def demo_connector(self) -> BybitDemoConnector:
+        with patch(
+            "data.exchange.bybit_safety.validate_endpoint_url",
+            return_value=None,
+        ):
+            connector = _make_mock_connector(demo=True)
+            md = _make_market_data()
+            # Create connector with a mock Redis client
+            mock_redis = MagicMock()
+            mock_redis.exists.return_value = False
+            dc = BybitDemoConnector(connector, market_data=md, redis_client=mock_redis)
+            return dc
+
+    @pytest.mark.asyncio
+    async def test_poll_for_fill_detects_async_fill(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test that _poll_for_fill correctly detects and processes an async fill."""
+        order_id = "bybit_order_async_123"
+        symbol = "BTCUSDT"
+
+        # Pre-populate order as PENDING
+        order = PaperOrder(
+            order_id=order_id,
+            symbol=symbol.upper(),
+            side="buy",
+            order_type="market",
+            quantity=0.001,
+        )
+        order.state = OrderState.PENDING
+        demo_connector._orders[order_id] = order
+
+        # Mock get_fills to return empty then fill
+        demo_connector.connector.get_fills = AsyncMock(
+            side_effect=[
+                {"list": []},  # First poll: no fills yet
+                {  # Second poll: fill detected
+                    "list": [
+                        {
+                            "execId": "exec_123",
+                            "execPrice": "50000.50",
+                            "execQty": "0.001",
+                        }
+                    ]
+                },
+            ]
+        )
+
+        result = await demo_connector._poll_for_fill(
+            order_id=order_id,
+            symbol=symbol,
+            initial_response={"order_id": order_id},
+        )
+
+        assert result.state == OrderState.FILLED
+        assert len(result.fills) == 1
+        assert result.fills[0].price == 50000.50
+        assert result.fills[0].quantity == 0.001
+
+    @pytest.mark.asyncio
+    async def test_poll_for_fill_timeout_returns_pending(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test that _poll_for_fill returns PENDING state on timeout."""
+        order_id = "bybit_order_timeout_456"
+        symbol = "ETHUSDT"
+
+        # Pre-populate order as PENDING
+        order = PaperOrder(
+            order_id=order_id,
+            symbol=symbol.upper(),
+            side="sell",
+            order_type="market",
+            quantity=1.0,
+        )
+        order.state = OrderState.PENDING
+        demo_connector._orders[order_id] = order
+
+        # Mock get_fills to always return empty list (timeout scenario)
+        demo_connector.connector.get_fills = AsyncMock(return_value={"list": []})
+
+        # Set a short timeout via env var for testing
+        with patch.dict(os.environ, {"BYBIT_FILL_POLL_TIMEOUT_MS": "200"}):
+            result = await demo_connector._poll_for_fill(
+                order_id=order_id,
+                symbol=symbol,
+                initial_response={"order_id": order_id},
+            )
+
+        # Should timeout and return order still in PENDING state
+        assert result.state == OrderState.PENDING
+        assert len(result.fills) == 0
+
+    @pytest.mark.asyncio
+    async def test_poll_for_fill_idempotency_skips_duplicate_exec(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test that _poll_for_fill skips already-processed executions."""
+        order_id = "bybit_order_dedup_789"
+        symbol = "BTCUSDT"
+
+        # Pre-populate order as PENDING
+        order = PaperOrder(
+            order_id=order_id,
+            symbol=symbol.upper(),
+            side="buy",
+            order_type="market",
+            quantity=0.001,
+        )
+        order.state = OrderState.PENDING
+        demo_connector._orders[order_id] = order
+
+        # Mock Redis to say the exec is already processed
+        demo_connector._redis.exists.return_value = True
+        demo_connector.connector.get_fills = AsyncMock(
+            return_value={
+                "list": [
+                    {
+                        "execId": "exec_already_seen",
+                        "execPrice": "50000.50",
+                        "execQty": "0.001",
+                    }
+                ]
+            }
+        )
+
+        result = await demo_connector._poll_for_fill(
+            order_id=order_id,
+            symbol=symbol,
+            initial_response={"order_id": order_id},
+        )
+
+        # Should not have processed the duplicate
+        assert result.state == OrderState.PENDING
+        assert len(result.fills) == 0
+
+    @pytest.mark.asyncio
+    async def test_place_order_polls_for_pending_market_order(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test that place_order calls _poll_for_fill for PENDING market orders."""
+        # Mock place_order to return Created (PENDING) status
+        demo_connector.connector.place_order = AsyncMock(
+            return_value={
+                "order_id": "bybit_order_market_001",
+                "status": "Created",
+            }
+        )
+
+        # Mock get_fills to return a fill
+        demo_connector.connector.get_fills = AsyncMock(
+            return_value={
+                "list": [
+                    {
+                        "execId": "exec_market_fill",
+                        "execPrice": "50000.00",
+                        "execQty": "0.001",
+                    }
+                ]
+            }
+        )
+        demo_connector.connector.set_trading_stop = AsyncMock()
+
+        with patch("data.exchange.bybit_safety.audit_log_order_operation"):
+            order = await demo_connector.place_order(
+                symbol="BTCUSDT",
+                side="buy",
+                order_type="market",
+                quantity=0.001,
+            )
+
+        # Order should be FILLED after polling
+        assert order.state == OrderState.FILLED
+        assert len(order.fills) == 1
+
+    @pytest.mark.asyncio
+    async def test_place_order_no_poll_when_immediately_filled(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test that place_order does NOT poll when order is immediately filled."""
+        # Mock place_order to return Filled status
+        demo_connector.connector.place_order = AsyncMock(
+            return_value={
+                "order_id": "bybit_order_filled_002",
+                "status": "Filled",
+                "price": "50000.00",
+            }
+        )
+
+        # Mock market data for fill price fallback
+        demo_connector.market_data.get_price.return_value = 50000.00
+
+        # This should NOT call get_fills since already filled
+        demo_connector.connector.get_fills = AsyncMock()
+
+        with patch("data.exchange.bybit_safety.audit_log_order_operation"):
+            order = await demo_connector.place_order(
+                symbol="BTCUSDT",
+                side="buy",
+                order_type="market",
+                quantity=0.001,
+            )
+
+        # Order should be FILLED immediately
+        assert order.state == OrderState.FILLED
+        # get_fills should NOT have been called
+        demo_connector.connector.get_fills.assert_not_called()
+
+
+class TestBybitDemoConnectorDedupMethods:
+    """Tests for Redis deduplication methods."""
+
+    @pytest.fixture
+    def demo_connector(self) -> BybitDemoConnector:
+        with patch(
+            "data.exchange.bybit_safety.validate_endpoint_url",
+            return_value=None,
+        ):
+            connector = _make_mock_connector(demo=True)
+            mock_redis = MagicMock()
+            return BybitDemoConnector(connector, redis_client=mock_redis)
+
+    @pytest.mark.asyncio
+    async def test_is_duplicate_exec_returns_true_when_exists(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test _is_duplicate_exec returns True when Redis key exists."""
+        demo_connector._redis.exists.return_value = True
+        result = await demo_connector._is_duplicate_exec("exec_123")
+        assert result is True
+        demo_connector._redis.exists.assert_called_once_with(
+            "bybit:fill:dedup:exec:exec_123"
+        )
+
+    @pytest.mark.asyncio
+    async def test_is_duplicate_exec_returns_false_when_not_exists(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test _is_duplicate_exec returns False when Redis key doesn't exist."""
+        demo_connector._redis.exists.return_value = False
+        result = await demo_connector._is_duplicate_exec("exec_456")
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_is_duplicate_exec_returns_false_when_no_redis(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test _is_duplicate_exec returns False when Redis client is None."""
+        demo_connector._redis = None
+        result = await demo_connector._is_duplicate_exec("exec_789")
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_mark_processed_exec_sets_key_with_ttl(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test _mark_processed_exec sets Redis key with correct TTL."""
+        await demo_connector._mark_processed_exec("exec_abc")
+        demo_connector._redis.setex.assert_called_once()
+        call_args = demo_connector._redis.setex.call_args
+        assert call_args[0][0] == "bybit:fill:dedup:exec:exec_abc"
+        assert call_args[0][1] == 24 * 3600  # 24 hours in seconds
+
+    @pytest.mark.asyncio
+    async def test_mark_processed_exec_handles_redis_error(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """Test _mark_processed_exec handles Redis errors gracefully."""
+        demo_connector._redis.setex.side_effect = Exception("Redis error")
+        # Should not raise
+        await demo_connector._mark_processed_exec("exec_error")
