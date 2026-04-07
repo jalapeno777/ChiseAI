@@ -7,9 +7,11 @@ Flags persist across restarts via Redis storage.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
@@ -62,6 +64,36 @@ class FeatureFlags:
     )
     KEY_PERSONA_REGRESSION: ClassVar[str] = f"{REDIS_PREFIX}:persona_regression_enabled"
 
+    # ST-FILL-001: Fill polling
+    KEY_BYBIT_FILL_POLLING: ClassVar[str] = f"{REDIS_PREFIX}:bybit_fill_polling_enabled"
+    KEY_BYBIT_FILL_POLL_TIMEOUT: ClassVar[str] = (
+        f"{REDIS_PREFIX}:bybit_fill_poll_timeout_ms"
+    )
+
+    # ST-FILL-003: BybitFillListener integration
+    KEY_BYBIT_FILL_LISTENER: ClassVar[str] = (
+        f"{REDIS_PREFIX}:bybit_fill_listener_enabled"
+    )
+
+    # ST-FILL-004: Reconciliation monitor
+    KEY_RECONCILIATION_MONITOR: ClassVar[str] = (
+        f"{REDIS_PREFIX}:reconciliation_monitor_enabled"
+    )
+    KEY_RECONCILIATION_CHECK_INTERVAL: ClassVar[str] = (
+        f"{REDIS_PREFIX}:reconciliation_check_interval_seconds"
+    )
+    KEY_RECONCILIATION_ALERT_THRESHOLD: ClassVar[str] = (
+        f"{REDIS_PREFIX}:reconciliation_alert_threshold_hours"
+    )
+
+    # ST-FILL-007: Rollback safety
+    KEY_FILL_ROLLBACK_ON_ERROR: ClassVar[str] = (
+        f"{REDIS_PREFIX}:fill_rollback_on_error_enabled"
+    )
+    KEY_RECONCILIATION_AUTO_BACKFILL: ClassVar[str] = (
+        f"{REDIS_PREFIX}:reconciliation_auto_backfill"
+    )
+
     # TTL for Redis flag storage (seconds) - 24 hours
     FLAG_TTL: ClassVar[int] = 86400
 
@@ -78,6 +110,22 @@ class FeatureFlags:
 
     # Persona regression scheduling gate (SAFETY)
     persona_regression_enabled: bool = True
+
+    # ST-FILL-001: Fill polling
+    bybit_fill_polling_enabled: bool = True
+    bybit_fill_poll_timeout_ms: int = 5000
+
+    # ST-FILL-003: BybitFillListener integration
+    bybit_fill_listener_enabled: bool = False
+
+    # ST-FILL-004: Reconciliation monitor
+    reconciliation_monitor_enabled: bool = True
+    reconciliation_check_interval_seconds: int = 3600
+    reconciliation_alert_threshold_hours: float = 24.0
+
+    # ST-FILL-007: Rollback safety
+    fill_rollback_on_error_enabled: bool = False
+    reconciliation_auto_backfill: bool = True
 
     # Redis client reference (not frozen, but accessed via property)
     _redis_client: Any = field(default=None, repr=False, compare=False)
@@ -212,6 +260,88 @@ class FeatureFlags:
             self.KEY_PERSONA_REGRESSION, self.persona_regression_enabled
         )
 
+    # ST-FILL-001: Fill polling
+    def is_bybit_fill_polling_enabled(self) -> bool:
+        """Check if Bybit fill polling is enabled (Redis or default)."""
+        return self.get_redis_value(
+            self.KEY_BYBIT_FILL_POLLING, self.bybit_fill_polling_enabled
+        )
+
+    def get_bybit_fill_poll_timeout_ms(self) -> int:
+        """Get Bybit fill poll timeout in milliseconds."""
+        client = self.redis_client
+        if client is None:
+            return self.bybit_fill_poll_timeout_ms
+        try:
+            value = client.get(self.KEY_BYBIT_FILL_POLL_TIMEOUT)
+            if value is None:
+                return self.bybit_fill_poll_timeout_ms
+            return int(value)
+        except Exception as e:
+            logger.warning(
+                f"Redis error reading {self.KEY_BYBIT_FILL_POLL_TIMEOUT}: {e}"
+            )
+            return self.bybit_fill_poll_timeout_ms
+
+    # ST-FILL-003: BybitFillListener integration
+    def is_bybit_fill_listener_enabled(self) -> bool:
+        """Check if Bybit WebSocket fill listener is enabled (Redis or default)."""
+        return self.get_redis_value(
+            self.KEY_BYBIT_FILL_LISTENER, self.bybit_fill_listener_enabled
+        )
+
+    # ST-FILL-004: Reconciliation monitor
+    def is_reconciliation_monitor_enabled(self) -> bool:
+        """Check if reconciliation monitor is enabled (Redis or default)."""
+        return self.get_redis_value(
+            self.KEY_RECONCILIATION_MONITOR, self.reconciliation_monitor_enabled
+        )
+
+    def get_reconciliation_check_interval_seconds(self) -> int:
+        """Get reconciliation check interval in seconds."""
+        client = self.redis_client
+        if client is None:
+            return self.reconciliation_check_interval_seconds
+        try:
+            value = client.get(self.KEY_RECONCILIATION_CHECK_INTERVAL)
+            if value is None:
+                return self.reconciliation_check_interval_seconds
+            return int(value)
+        except Exception as e:
+            logger.warning(
+                f"Redis error reading {self.KEY_RECONCILIATION_CHECK_INTERVAL}: {e}"
+            )
+            return self.reconciliation_check_interval_seconds
+
+    def get_reconciliation_alert_threshold_hours(self) -> float:
+        """Get reconciliation alert threshold in hours."""
+        client = self.redis_client
+        if client is None:
+            return self.reconciliation_alert_threshold_hours
+        try:
+            value = client.get(self.KEY_RECONCILIATION_ALERT_THRESHOLD)
+            if value is None:
+                return self.reconciliation_alert_threshold_hours
+            return float(value)
+        except Exception as e:
+            logger.warning(
+                f"Redis error reading {self.KEY_RECONCILIATION_ALERT_THRESHOLD}: {e}"
+            )
+            return self.reconciliation_alert_threshold_hours
+
+    # ST-FILL-007: Rollback safety
+    def is_fill_rollback_on_error_enabled(self) -> bool:
+        """Check if fill rollback on error is enabled (Redis or default)."""
+        return self.get_redis_value(
+            self.KEY_FILL_ROLLBACK_ON_ERROR, self.fill_rollback_on_error_enabled
+        )
+
+    def is_reconciliation_auto_backfill_enabled(self) -> bool:
+        """Check if reconciliation auto backfill is enabled (Redis or default)."""
+        return self.get_redis_value(
+            self.KEY_RECONCILIATION_AUTO_BACKFILL, self.reconciliation_auto_backfill
+        )
+
     # Runtime flag setters (write to Redis)
 
     def set_retraining_ece_trigger_enabled(self, enabled: bool) -> bool:
@@ -332,6 +462,18 @@ class FeatureFlags:
             "retraining_discord_alerts": self.is_retraining_discord_alerts_enabled(),
             "launch_training_pipeline_enabled": self.is_launch_training_pipeline_enabled(),
             "persona_regression_enabled": self.is_persona_regression_enabled(),
+            # ST-FILL-001: Fill polling
+            "bybit_fill_polling_enabled": self.is_bybit_fill_polling_enabled(),
+            "bybit_fill_poll_timeout_ms": self.get_bybit_fill_poll_timeout_ms(),
+            # ST-FILL-003: BybitFillListener integration
+            "bybit_fill_listener_enabled": self.is_bybit_fill_listener_enabled(),
+            # ST-FILL-004: Reconciliation monitor
+            "reconciliation_monitor_enabled": self.is_reconciliation_monitor_enabled(),
+            "reconciliation_check_interval_seconds": self.get_reconciliation_check_interval_seconds(),
+            "reconciliation_alert_threshold_hours": self.get_reconciliation_alert_threshold_hours(),
+            # ST-FILL-007: Rollback safety
+            "fill_rollback_on_error_enabled": self.is_fill_rollback_on_error_enabled(),
+            "reconciliation_auto_backfill": self.is_reconciliation_auto_backfill_enabled(),
         }
 
     def to_defaults_dict(self) -> dict[str, Any]:
@@ -349,6 +491,18 @@ class FeatureFlags:
             "retraining_discord_alerts": self.retraining_discord_alerts,
             "launch_training_pipeline_enabled": self.launch_training_pipeline_enabled,
             "persona_regression_enabled": self.persona_regression_enabled,
+            # ST-FILL-001: Fill polling
+            "bybit_fill_polling_enabled": self.bybit_fill_polling_enabled,
+            "bybit_fill_poll_timeout_ms": self.bybit_fill_poll_timeout_ms,
+            # ST-FILL-003: BybitFillListener integration
+            "bybit_fill_listener_enabled": self.bybit_fill_listener_enabled,
+            # ST-FILL-004: Reconciliation monitor
+            "reconciliation_monitor_enabled": self.reconciliation_monitor_enabled,
+            "reconciliation_check_interval_seconds": self.reconciliation_check_interval_seconds,
+            "reconciliation_alert_threshold_hours": self.reconciliation_alert_threshold_hours,
+            # ST-FILL-007: Rollback safety
+            "fill_rollback_on_error_enabled": self.fill_rollback_on_error_enabled,
+            "reconciliation_auto_backfill": self.reconciliation_auto_backfill,
         }
 
 
@@ -384,3 +538,58 @@ def reset_feature_flags() -> None:
     """Reset global feature flags to None (mainly for testing)."""
     global _feature_flags
     _feature_flags = None
+
+
+# ST-FILL-007: Rollback safety
+async def rollback_fill_on_error(order_id: str, reason: str) -> None:
+    """Rollback fill state on unrecoverable error.
+
+    Only used when FILL_ROLLBACK_ON_ERROR_ENABLED is True.
+
+    Args:
+        order_id: The order ID to rollback
+        reason: The reason for the rollback
+    """
+    flags = get_feature_flags()
+    if not flags.is_fill_rollback_on_error_enabled():
+        return
+
+    logger.warning(f"Rolling back fill for order_id={order_id}: {reason}")
+
+    try:
+        # Get Redis client
+        client = flags.redis_client
+        if client is None:
+            logger.error("Redis not available, cannot rollback fill")
+            return
+
+        # Mark as rollback in Redis with 24h TTL
+        redis_key = f"bybit:fill:rollback:{order_id}"
+        rollback_data = json.dumps(
+            {
+                "reason": reason,
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
+        client.setex(redis_key, 86400, rollback_data)
+        logger.info(f"Fill rollback marked in Redis: {order_id}")
+
+        # Publish incident
+        try:
+            from execution.incident_reporter import publish_execution_incident
+
+            await publish_execution_incident(
+                incident_type="fill_rollback_on_error",
+                severity="P1",
+                title=f"Fill rollback: {order_id}",
+                message=reason,
+                context={
+                    "order_id": order_id,
+                    "reason": reason,
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to publish fill rollback incident: {e}")
+
+    except Exception as e:
+        logger.error(f"Failed to rollback fill for order_id={order_id}: {e}")
