@@ -2178,7 +2178,19 @@ epics:
           ready), P2 (PipelineAuditLogger with Redis streams). New Grafana dashboard (signal-pipeline-dashboard.json)
           with 5 panel groups. Black PASS, Ruff PASS, pre-push gate PASS. Feature branch
           deleted.
-    progress: 6 of ~15 stories completed
+      - id: ST-ICT-S2
+        status: completed
+        completion_date: "2026-04-07"
+        note: already implemented on main
+      - id: ST-ICT-S4
+        status: completed
+        completion_date: "2026-04-07"
+        merge_commit: 13120b10c
+      - id: ST-ICT-S5
+        status: completed
+        completion_date: "2026-04-07"
+        note: already implemented on main
+    progress: 9 of ~15 stories completed
     story_ids:
       - Q2
       - Q3
