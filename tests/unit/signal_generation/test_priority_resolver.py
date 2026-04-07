@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import pytest
-
 from signal_generation.priority_resolver import (
     DEFAULT_PRIORITY_ORDER,
     resolve_highest_priority_signal,
