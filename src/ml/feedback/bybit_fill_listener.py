@@ -458,10 +458,13 @@ class BybitFillListener:
                 self.state.freshness_status = FreshnessReason.FRESH.value
                 await self._update_redis_freshness(outcome)
 
-                # Notify callbacks
+                # Notify callbacks - support both sync and async callbacks
                 for callback in self._fill_callbacks:
                     try:
-                        callback(outcome)
+                        if asyncio.iscoroutinefunction(callback):
+                            await callback(outcome)
+                        else:
+                            callback(outcome)
                     except Exception as e:
                         logger.error(f"Fill callback error: {e}")
 

@@ -1554,21 +1554,47 @@ class BybitDemoConnector:
             fills_detected = 0
             for exec_data in exec_list:
                 exec_id = exec_data.get("execId")
-                if not exec_id:
-                    continue
 
-                # Idempotency check
-                if await self._is_duplicate_exec(exec_id):
-                    continue
-
+                # Build a fallback dedup key if execId is missing
                 exec_price = float(exec_data.get("execPrice", 0))
                 exec_qty = float(exec_data.get("execQty", 0))
+                exec_time = exec_data.get(
+                    "execTime", str(datetime.now(UTC).timestamp())
+                )
 
                 if exec_price <= 0 or exec_qty <= 0:
+                    logger.warning(
+                        "Skipping fill with invalid price/qty: order_id=%s, exec_id=%s, price=%s, qty=%s",
+                        order_id,
+                        exec_id,
+                        exec_price,
+                        exec_qty,
+                    )
+                    continue
+
+                # Use execId if available, otherwise build a composite key for dedup
+                if exec_id:
+                    dedup_key = exec_id
+                else:
+                    # Fallback: use composite key when Bybit doesn't return execId
+                    dedup_key = f"{order_id}:{exec_price}:{exec_qty}:{exec_time}"
+                    logger.warning(
+                        "Bybit fill missing execId, using composite dedup key: order_id=%s, dedup_key=%s",
+                        order_id,
+                        dedup_key,
+                    )
+
+                # Idempotency check
+                if await self._is_duplicate_exec(dedup_key):
+                    logger.debug(
+                        "Skipping duplicate fill: order_id=%s, dedup_key=%s",
+                        order_id,
+                        dedup_key,
+                    )
                     continue
 
                 fill = PaperFill(
-                    fill_id=f"fill_{exec_id}",
+                    fill_id=f"fill_{dedup_key}",
                     order_id=order_id,
                     symbol=symbol.upper(),
                     side=order.side,
@@ -1577,45 +1603,72 @@ class BybitDemoConnector:
                     timestamp=datetime.now(UTC),
                 )
                 order.add_fill(fill)
-                await self._mark_processed_exec(exec_id)
+                await self._mark_processed_exec(dedup_key)
                 fills_detected += 1
 
                 logger.info(
                     "Fill detected via polling: order_id=%s, exec_id=%s, qty=%s, price=%s",
                     order_id,
-                    exec_id,
+                    exec_id or dedup_key,
                     exec_qty,
                     exec_price,
                 )
 
+            # Update order state if fills were detected - but DON'T return yet
+            # We need to keep polling until order is FILLED or timeout
             if fills_detected > 0:
-                order.state = OrderState.FILLED
+                # Recalculate totals from all accumulated fills
                 order.filled_quantity = sum(f.quantity for f in order.fills)
                 order.avg_fill_price = (
                     sum(f.price * f.quantity for f in order.fills)
                     / order.filled_quantity
                 )
-                order.filled_at = datetime.now(UTC)
 
-                self.provenance_tracker.record(
-                    ProvenanceEventType.ORDER_FILLED,
-                    order_id=order_id,
-                    symbol=symbol,
-                    details={
-                        "fills_detected": fills_detected,
-                        "total_filled_qty": order.filled_quantity,
-                        "avg_fill_price": order.avg_fill_price,
-                        "poll_attempts": poll_attempt,
-                    },
-                )
+                # Update state based on whether fully filled
+                if order.remaining_quantity <= 0:
+                    order.state = OrderState.FILLED
+                    order.filled_at = datetime.now(UTC)
 
-                logger.info(
-                    "Fill polling completed: order_id=%s, filled_qty=%s, avg_price=%s",
-                    order_id,
-                    order.filled_quantity,
-                    order.avg_fill_price,
-                )
-                return order
+                    self.provenance_tracker.record(
+                        ProvenanceEventType.ORDER_FILLED,
+                        order_id=order_id,
+                        symbol=symbol,
+                        details={
+                            "fills_detected": fills_detected,
+                            "total_filled_qty": order.filled_quantity,
+                            "avg_fill_price": order.avg_fill_price,
+                            "poll_attempts": poll_attempt,
+                        },
+                    )
+
+                    logger.info(
+                        "Fill polling completed (fully filled): order_id=%s, filled_qty=%s, avg_price=%s",
+                        order_id,
+                        order.filled_quantity,
+                        order.avg_fill_price,
+                    )
+                    return order
+                else:
+                    # Partial fill - keep polling to get remaining fills
+                    self.provenance_tracker.record(
+                        ProvenanceEventType.ORDER_PARTIAL,
+                        order_id=order_id,
+                        symbol=symbol,
+                        details={
+                            "fills_detected": fills_detected,
+                            "total_filled_qty": order.filled_quantity,
+                            "remaining_qty": order.remaining_quantity,
+                            "avg_fill_price": order.avg_fill_price,
+                            "poll_attempts": poll_attempt,
+                        },
+                    )
+
+                    logger.info(
+                        "Partial fill detected, continuing to poll: order_id=%s, filled_qty=%s, remaining_qty=%s",
+                        order_id,
+                        order.filled_quantity,
+                        order.remaining_quantity,
+                    )
 
         # Timeout - return order in current state
         logger.warning(
