@@ -315,6 +315,19 @@ Before Jarvis runs Critic review for release acceptance:
 
 ---
 
+### P0/P1 Safety Story Critic Gate (Required)
+
+For any story with priority P0-CRITICAL, P0, P1, or containing "safety" in the story ID:
+1. Critic review MUST be completed before merge
+2. Critic sign-off must be obtained and documented
+3. High/Critical critic findings must be resolved or escalated
+4. Evidence of critic review must be included in PR handoff
+
+Exception: Emergency hotfixes (marked with SAFETY-* prefix) may bypass critic gate
+with Merlin approval and post-merge critic review within 24 hours.
+
+---
+
 ## Docker & Network Governance (CRITICAL SUMMARY)
 
 Skill-first rule:
