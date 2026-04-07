@@ -512,7 +512,7 @@ class ICTSignalEmitter:
                 return ICTSignalResult(
                     signal_type=signal_type,
                     skipped=True,
-                    skip_reason=f"Confidence {score_result.confidence:.1%} below threshold {self.config.min_confidence:.0%}",
+                    skip_reason="confidence_below_threshold",
                 )
 
             # Create signal

@@ -389,7 +389,7 @@ class TestICTSignalEmitter:
             )
 
         assert result.skipped is True
-        assert "below threshold" in result.skip_reason
+        assert result.skip_reason == "confidence_below_threshold"
 
     @pytest.mark.asyncio
     async def test_emit_signals_full_cycle(self):

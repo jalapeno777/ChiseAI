@@ -81,7 +81,7 @@ class TestConfidenceFilter:
         assert result.is_actionable is False
         assert result.threshold == 0.75
         assert result.confidence == 0.60
-        assert "below threshold" in result.reason
+        assert result.reason == "confidence_below_threshold"
 
     def test_should_emit(self):
         """Test quick emission check."""

@@ -345,11 +345,7 @@ class ConfidenceFilter:
                 is_actionable=False,
                 threshold=self.threshold,
                 confidence=final_confidence,
-                reason=(
-                    f"Signal confidence {final_confidence:.1%} below threshold "
-                    f"{self.threshold:.0%} - logged only"
-                    + (" (LLM-enhanced)" if llm_enhanced else "")
-                ),
+                reason="confidence_below_threshold",
                 llm_enhanced=llm_enhanced,
                 llm_rationale=llm_rationale,
                 base_confidence=base_confidence,
