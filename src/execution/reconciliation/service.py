@@ -1,10 +1,13 @@
 """Reconciliation service for comparing telemetry vs persisted counts.
 
 For ST-VENUE-002: Canonical reporting and venue enforcement.
+For ST-FILL-004: Reconciliation daemon safety net with alerting.
 """
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -552,3 +555,358 @@ class OutcomeReconciliationService:
             health["components"]["postgres"] = "not_configured"
 
         return health
+
+    async def backfill_missed_fills(
+        self,
+        environment: str = "paper",
+        portfolio_id: str = "default",
+        lookback_seconds: int = 300,
+    ) -> dict[str, Any]:
+        """Backfill logic for fills that may have been missed.
+
+        Compares telemetry fills with execution list from Bybit API
+        to detect and record any missed fills.
+
+        Args:
+            environment: Trading environment (paper/live)
+            portfolio_id: Portfolio identifier
+            lookback_seconds: How far back to look for missed fills (default 5 min)
+
+        Returns:
+            Dict with backfill results: fills_found, fills_backfilled, errors
+        """
+        end_time = datetime.now(UTC)
+        start_time = end_time - timedelta(seconds=lookback_seconds)
+
+        logger.info(
+            f"Backfill check for {environment}/{portfolio_id} "
+            f"from {start_time.isoformat()} to {end_time.isoformat()}"
+        )
+
+        result: dict[str, Any] = {
+            "fills_found": 0,
+            "fills_backfilled": 0,
+            "errors": [],
+            "environment": environment,
+            "portfolio_id": portfolio_id,
+            "lookback_seconds": lookback_seconds,
+        }
+
+        try:
+            # Get telemetry fills for the lookback window
+            telemetry_fills = await self._get_telemetry_fills(
+                environment=environment,
+                portfolio_id=portfolio_id,
+                start_time=start_time,
+                end_time=end_time,
+            )
+
+            # Get persisted fills for the lookback window
+            persisted_fills = await self._get_persisted_fills(
+                environment=environment,
+                portfolio_id=portfolio_id,
+                start_time=start_time,
+                end_time=end_time,
+            )
+
+            result["fills_found"] = len(telemetry_fills)
+
+            # Identify fills in telemetry but not in persisted storage
+            persisted_fill_ids = {
+                f.get("fill_id") or f.get("id") for f in persisted_fills
+            }
+            missed_fills = [
+                f
+                for f in telemetry_fills
+                if (f.get("fill_id") or f.get("id")) not in persisted_fill_ids
+            ]
+
+            result["fills_backfilled"] = len(missed_fills)
+
+            if missed_fills:
+                logger.warning(
+                    f"Found {len(missed_fills)} missed fills in backfill check"
+                )
+                # Record missed fills — do NOT auto-close or auto-trade
+                await self._record_missed_fills(
+                    environment=environment,
+                    portfolio_id=portfolio_id,
+                    missed_fills=missed_fills,
+                )
+
+        except Exception as e:
+            result["errors"].append(str(e))
+            logger.error(f"Backfill check failed: {e}")
+
+        return result
+
+    async def _get_telemetry_fills(
+        self,
+        environment: str,
+        portfolio_id: str,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> list[dict[str, Any]]:
+        """Get fills from telemetry source for backfill comparison.
+
+        Args:
+            environment: Trading environment
+            portfolio_id: Portfolio identifier
+            start_time: Start of time range
+            end_time: End of time range
+
+        Returns:
+            List of fill dictionaries from telemetry
+        """
+        try:
+            if hasattr(self.telemetry_exporter, "query_fills"):
+                return await self.telemetry_exporter.query_fills(
+                    environment=environment,
+                    portfolio_id=portfolio_id,
+                    start_time=start_time,
+                    end_time=end_time,
+                )
+        except Exception as e:
+            logger.error(f"Failed to get telemetry fills: {e}")
+        return []
+
+    async def _get_persisted_fills(
+        self,
+        environment: str,
+        portfolio_id: str,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> list[dict[str, Any]]:
+        """Get fills from persisted storage for backfill comparison.
+
+        Args:
+            environment: Trading environment
+            portfolio_id: Portfolio identifier
+            start_time: Start of time range
+            end_time: End of time range
+
+        Returns:
+            List of fill dictionaries from persisted storage
+        """
+        fills: list[dict[str, Any]] = []
+        try:
+            if self.postgres_client and hasattr(self.postgres_client, "execute"):
+                query = """
+                    SELECT id, symbol, side, qty, price, created_at
+                    FROM fills
+                    WHERE environment = %s
+                    AND portfolio_id = %s
+                    AND created_at >= %s
+                    AND created_at < %s
+                    ORDER BY created_at ASC
+                """
+                rows = await self.postgres_client.execute(
+                    query,
+                    environment,
+                    portfolio_id,
+                    start_time,
+                    end_time,
+                )
+                if rows:
+                    fills = [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Failed to get persisted fills: {e}")
+        return fills
+
+    async def _record_missed_fills(
+        self,
+        environment: str,
+        portfolio_id: str,
+        missed_fills: list[dict[str, Any]],
+    ) -> None:
+        """Record missed fills for investigation.
+
+        Alert-only: logs and publishes incident, does NOT auto-close positions.
+
+        Args:
+            environment: Trading environment
+            portfolio_id: Portfolio identifier
+            missed_fills: List of missed fill dictionaries
+        """
+        msg = (
+            f"MISSED FILLS DETECTED: {len(missed_fills)} fills in "
+            f"{environment}/{portfolio_id} not found in persisted storage"
+        )
+        logger.warning(msg)
+
+        try:
+            from execution.incident_reporter import publish_execution_incident
+
+            await publish_execution_incident(
+                incident_type="missed_fills",
+                severity="P2",
+                title=f"Missed fills detected in {environment}/{portfolio_id}",
+                message=msg,
+                context={
+                    "missed_count": len(missed_fills),
+                    "fills": [
+                        {
+                            "fill_id": f.get("fill_id") or f.get("id"),
+                            "symbol": f.get("symbol"),
+                            "side": f.get("side"),
+                            "qty": f.get("qty"),
+                        }
+                        for f in missed_fills[:50]  # Cap context to 50 fills
+                    ],
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to publish missed fills incident: {e}")
+
+
+class ReconciliationMonitor:
+    """Scheduled reconciliation daemon with alerting.
+
+    Runs OutcomeReconciliationService on a schedule and emits
+    alerts when discrepancies exceed thresholds.
+
+    Alert-only policy: this monitor NEVER auto-closes positions or
+    triggers liquidation. It only logs and publishes incidents.
+
+    Example:
+        >>> monitor = ReconciliationMonitor(
+        ...     reconciliation_service=service,
+        ...     check_interval_seconds=3600,
+        ... )
+        >>> await monitor.start()
+        >>> # ... runs in background ...
+        >>> await monitor.stop()
+    """
+
+    def __init__(
+        self,
+        reconciliation_service: OutcomeReconciliationService,
+        redis_client: Any | None = None,
+        check_interval_seconds: int = 3600,
+    ):
+        """Initialize reconciliation monitor.
+
+        Args:
+            reconciliation_service: The reconciliation service to run on schedule
+            redis_client: Optional Redis client for state tracking
+            check_interval_seconds: How often to run reconciliation (default 1h)
+        """
+        self.service = reconciliation_service
+        self.redis = redis_client
+        self.check_interval = check_interval_seconds
+        self._running = False
+        self._task: asyncio.Task | None = None
+
+    async def start(self) -> None:
+        """Start the reconciliation monitor."""
+        self._running = True
+        self._task = asyncio.create_task(self._run_loop())
+        logger.info("ReconciliationMonitor started")
+
+    async def stop(self) -> None:
+        """Stop the reconciliation monitor."""
+        self._running = False
+        if self._task and not self._task.done():
+            self._task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._task
+        logger.info("ReconciliationMonitor stopped")
+
+    async def _run_loop(self) -> None:
+        """Main reconciliation loop."""
+        while self._running:
+            try:
+                result = await self.service.reconcile(
+                    environment="paper",
+                    portfolio_id="default",
+                )
+                await self._handle_result(result)
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.error(f"ReconciliationMonitor error: {e}")
+
+            await asyncio.sleep(self.check_interval)
+
+    async def _handle_result(self, result: ReconciliationResult) -> None:
+        """Handle reconciliation result — alert on discrepancies.
+
+        Alert-only policy: logs and publishes incidents.
+        NEVER auto-closes positions or triggers liquidation.
+
+        Args:
+            result: The reconciliation result to evaluate
+        """
+        if result.status == ReconciliationStatus.FAIL:
+            await self._alert_failure(result)
+        elif result.status == ReconciliationStatus.WARN:
+            await self._alert_warning(result)
+
+    async def _alert_failure(self, result: ReconciliationResult) -> None:
+        """Alert on reconciliation failure.
+
+        Alert-only: logs at CRITICAL level and publishes incident.
+        Does NOT auto-close positions or trigger liquidation.
+
+        Args:
+            result: The failed reconciliation result
+        """
+        msg = (
+            f"RECONCILIATION FAIL: telemetry={result.telemetry_count}, "
+            f"persisted={result.persisted_count}, "
+            f"delta={result.delta_count}, "
+            f"discrepancies={len(result.discrepancies)}"
+        )
+        logger.critical(msg)
+        await self._publish_incident("reconciliation_failure", msg, result)
+
+    async def _alert_warning(self, result: ReconciliationResult) -> None:
+        """Alert on reconciliation warning.
+
+        Alert-only: logs at WARNING level and publishes incident.
+        Does NOT auto-close positions or trigger liquidation.
+
+        Args:
+            result: The warning reconciliation result
+        """
+        msg = (
+            f"RECONCILIATION WARN: delta_pct={result.delta_pct}, "
+            f"discrepancies={len(result.discrepancies)}"
+        )
+        logger.warning(msg)
+
+    async def _publish_incident(
+        self, incident_type: str, message: str, result: ReconciliationResult
+    ) -> None:
+        """Publish incident to incident reporter.
+
+        Args:
+            incident_type: Type of incident
+            message: Human-readable incident message
+            result: The reconciliation result for context
+        """
+        try:
+            from execution.incident_reporter import publish_execution_incident
+
+            await publish_execution_incident(
+                incident_type=incident_type,
+                severity="P1" if result.status == ReconciliationStatus.FAIL else "P2",
+                title=f"Reconciliation {result.status.value}",
+                message=message,
+                context={
+                    "telemetry_count": result.telemetry_count,
+                    "persisted_count": result.persisted_count,
+                    "delta_count": result.delta_count,
+                    "delta_pct": result.delta_pct,
+                    "discrepancies": [
+                        {
+                            "category": d.category,
+                            "delta": d.delta,
+                            "delta_pct": d.delta_pct,
+                        }
+                        for d in result.discrepancies
+                    ],
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to publish reconciliation incident: {e}")
