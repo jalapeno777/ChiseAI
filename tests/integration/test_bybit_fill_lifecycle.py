@@ -128,9 +128,9 @@ class TestBybitFillLifecycle:
                 assert filled_order.filled_quantity > 0, "Filled quantity should be > 0"
                 assert filled_order.filled_at is not None, "filled_at should be set"
 
-                assert len(filled_order.fills) > 0, (
-                    "Order should have at least one fill"
-                )
+                assert (
+                    len(filled_order.fills) > 0
+                ), "Order should have at least one fill"
                 fill = filled_order.fills[0]
                 assert fill.fill_id is not None, "Fill should have fill_id"
                 assert fill.order_id == order.order_id, "Fill order_id should match"
@@ -144,9 +144,9 @@ class TestBybitFillLifecycle:
                 assert cached.state == OrderState.FILLED
             else:
                 # Demo trading may not auto-fill - verify order is at least PENDING
-                assert filled_order.state == OrderState.PENDING, (
-                    f"Expected FILLED or PENDING, got {filled_order.state.value}"
-                )
+                assert (
+                    filled_order.state == OrderState.PENDING
+                ), f"Expected FILLED or PENDING, got {filled_order.state.value}"
 
             # 6. Verify connector provenance
             provenance = connector.get_provenance()
@@ -196,14 +196,14 @@ class TestBybitFillLifecycle:
             if order.state == OrderState.FILLED:
                 assert len(order.fills) > 0, "Should have fills"
                 assert order.filled_quantity > 0, "Should have filled quantity"
-                assert cached.state == OrderState.FILLED, (
-                    "Cached order should be FILLED"
-                )
+                assert (
+                    cached.state == OrderState.FILLED
+                ), "Cached order should be FILLED"
             else:
                 # Demo trading may not auto-fill - verify PENDING state
-                assert order.state == OrderState.PENDING, (
-                    f"Expected FILLED or PENDING, got {order.state.value}"
-                )
+                assert (
+                    order.state == OrderState.PENDING
+                ), f"Expected FILLED or PENDING, got {order.state.value}"
 
             # Verify connector provenance
             provenance = connector.get_provenance()
@@ -336,16 +336,16 @@ class TestBybitFillLifecycle:
         order.add_fill(fill2)
 
         assert order.filled_quantity == pytest.approx(0.8), "Should have 0.8 filled"
-        assert order.remaining_quantity == pytest.approx(0.2), (
-            "Should have 0.2 remaining"
-        )
+        assert order.remaining_quantity == pytest.approx(
+            0.2
+        ), "Should have 0.2 remaining"
         assert order.state == OrderState.PARTIAL, "Should still be PARTIAL"
 
         # Average price should be weighted
         expected_avg = (0.4 * 50000 + 0.4 * 50100) / 0.8
-        assert order.avg_fill_price == pytest.approx(expected_avg), (
-            f"Avg price should be {expected_avg}, got {order.avg_fill_price}"
-        )
+        assert order.avg_fill_price == pytest.approx(
+            expected_avg
+        ), f"Avg price should be {expected_avg}, got {order.avg_fill_price}"
 
         # Final fill (20%, completes order)
         fill3 = PaperFill(
@@ -359,9 +359,9 @@ class TestBybitFillLifecycle:
         order.add_fill(fill3)
 
         assert order.filled_quantity == pytest.approx(1.0), "Should be fully filled"
-        assert order.remaining_quantity == pytest.approx(0.0), (
-            "Should have nothing remaining"
-        )
+        assert order.remaining_quantity == pytest.approx(
+            0.0
+        ), "Should have nothing remaining"
         assert order.state == OrderState.FILLED, "Should now be FILLED"
         assert order.filled_at is not None, "filled_at should be set"
 
@@ -848,11 +848,6 @@ class TestReconciliationMonitorLifecycle:
         2. Monitor.start() is called during orchestrator.start()
         """
         from unittest.mock import AsyncMock, MagicMock, patch
-
-        from execution.reconciliation.service import (
-            OutcomeReconciliationService,
-            ReconciliationMonitor,
-        )
 
         # Create mock telemetry
         mock_telemetry = MagicMock()

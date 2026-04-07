@@ -2046,9 +2046,9 @@ class TestBybitDemoConnectorPartialFillAccumulation:
 
         # After two partial fills, should have 80% filled
         assert result.filled_quantity == pytest.approx(0.8), "Should have 0.8 filled"
-        assert result.remaining_quantity == pytest.approx(0.2), (
-            "Should have 0.2 remaining"
-        )
+        assert result.remaining_quantity == pytest.approx(
+            0.2
+        ), "Should have 0.2 remaining"
         assert result.state == OrderState.PARTIAL, "Should be PARTIAL (not yet filled)"
 
         # Should have 2 fills accumulated
@@ -2062,18 +2062,18 @@ class TestBybitDemoConnectorPartialFillAccumulation:
 
         # Verify weighted average price
         expected_avg = (0.4 * 50000.0 + 0.4 * 50100.0) / 0.8
-        assert result.avg_fill_price == pytest.approx(expected_avg), (
-            f"Avg price should be {expected_avg}, got {result.avg_fill_price}"
-        )
+        assert result.avg_fill_price == pytest.approx(
+            expected_avg
+        ), f"Avg price should be {expected_avg}, got {result.avg_fill_price}"
 
         # Verify PARTIAL state provenance events were recorded
         # (One for each polling cycle where fills were detected)
         partial_events = demo_connector.provenance_tracker.get_events(
             event_type=ProvenanceEventType.ORDER_PARTIAL,
         )
-        assert len(partial_events) == 2, (
-            f"Should have recorded 2 PARTIAL events (one per fill), got {len(partial_events)}"
-        )
+        assert (
+            len(partial_events) == 2
+        ), f"Should have recorded 2 PARTIAL events (one per fill), got {len(partial_events)}"
         # Verify the details of the most recent PARTIAL event (partial_events[0] is most recent)
         # The most recent PARTIAL event should show 0.8 filled (after second fill was added)
         most_recent_partial = partial_events[0]
@@ -2150,9 +2150,9 @@ class TestBybitDemoConnectorPartialFillAccumulation:
 
         # Should be fully filled
         assert result.filled_quantity == pytest.approx(1.0), "Should be fully filled"
-        assert result.remaining_quantity == pytest.approx(0.0), (
-            "Should have nothing remaining"
-        )
+        assert result.remaining_quantity == pytest.approx(
+            0.0
+        ), "Should have nothing remaining"
         assert result.state == OrderState.FILLED, "Should be FILLED"
         assert result.filled_at is not None, "filled_at should be set"
 
@@ -2269,9 +2269,9 @@ class TestBybitDemoConnectorPartialFillAccumulation:
         )
 
         # Should not have processed the duplicate
-        assert result.state == OrderState.PENDING, (
-            "Should remain PENDING (no fill added)"
-        )
+        assert (
+            result.state == OrderState.PENDING
+        ), "Should remain PENDING (no fill added)"
         assert len(result.fills) == 0, "Duplicate fill should not be recorded"
 
     @pytest.mark.asyncio
