@@ -56,6 +56,7 @@ from execution.paper.reason_codes import (
 from execution.paper.trade_journal import TradeJournal
 from execution.paper.trade_journal_persistence import TradeJournalRedisPersistence
 from execution.paper.trade_journal_service import TradeJournalService
+from ml.feedback.bybit_fill_listener import BybitFillListener, BybitListenerConfig
 from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
 logger = logging.getLogger(__name__)
@@ -148,6 +149,10 @@ class PaperTradingOrchestrator:
         self.symbol_registry = symbol_registry
         self._redis = redis_client
         self._paper_kill_switch = paper_kill_switch
+
+        # Optional BybitFillListener for async fill notifications (polling-first fallback)
+        self._fill_listener: BybitFillListener | None = None
+        self._fill_listener_redis: Any | None = redis_client
 
         # PAPER-FORENSIC-001: Extract and store connector provenance
         self._connector_provenance = self._extract_connector_provenance(order_simulator)
@@ -413,7 +418,84 @@ class PaperTradingOrchestrator:
         # Write initial health key
         self._update_health("running")
 
+        # Start BybitFillListener if feature flag is enabled (polling-first fallback)
+        if os.getenv("BYBIT_FILL_LISTENER_ENABLED", "false").lower() == "true":
+            try:
+                await self.start_fill_listener()
+            except Exception as e:
+                logger.error(f"Failed to start BybitFillListener: {e}")
+        else:
+            logger.debug(
+                "BybitFillListener disabled (BYBIT_FILL_LISTENER_ENABLED != true)"
+            )
+
         logger.info("PaperTradingOrchestrator started")
+
+    async def start_fill_listener(
+        self, config: BybitListenerConfig | None = None
+    ) -> None:
+        """Start the Bybit fill listener for async fill notifications.
+
+        This is a polling-first fallback: the listener provides async notifications
+        when fills occur outside the normal polling cycle.
+
+        Args:
+            config: Optional listener configuration. If not provided, reads from
+                environment variables BYBIT_DEMO_API_KEY and BYBIT_DEMO_API_SECRET.
+        """
+        if self._fill_listener is not None:
+            logger.warning("Fill listener already running")
+            return
+
+        if config is None:
+            config = BybitListenerConfig(
+                api_key=os.getenv("BYBIT_DEMO_API_KEY", ""),
+                api_secret=os.getenv("BYBIT_DEMO_API_SECRET", ""),
+            )
+
+        self._fill_listener = BybitFillListener(
+            config=config, redis_client=self._fill_listener_redis
+        )
+        self._fill_listener.on_fill(self._on_bybit_fill)
+        await self._fill_listener.start()
+        logger.info("BybitFillListener started")
+
+    async def _on_bybit_fill(self, outcome: SignalOutcome) -> None:
+        """Handle async fill notification from BybitFillListener.
+
+        This callback is invoked when the WebSocket listener receives a fill event.
+        It updates the corresponding order state and triggers position tracking.
+
+        Args:
+            outcome: SignalOutcome from the fill event
+        """
+        order_id = outcome.order_id
+        if not order_id:
+            logger.debug("Fill callback received with no order_id")
+            return
+
+        logger.debug(
+            f"Fill callback received: order_id={order_id}, "
+            f"exec_id={outcome.order_id}, symbol={outcome.symbol}"
+        )
+
+        # Find the corresponding order in order_simulator
+        orders = getattr(self.order_simulator, "_orders", {})
+        order = orders.get(order_id)
+
+        if not order:
+            logger.debug(f"Fill callback for unknown order: {order_id}")
+            return
+
+        # Update order with fill data if not already filled
+        if order.state != OrderState.FILLED:
+            order.state = OrderState.FILLED
+            order.filled_quantity = outcome.fill_quantity or order.quantity
+            order.avg_fill_price = outcome.fill_price
+            order.filled_at = outcome.fill_timestamp
+            logger.info(f"Async fill applied via listener: order_id={order_id}")
+        else:
+            logger.debug(f"Order already filled, ignoring duplicate: {order_id}")
 
     async def stop(self) -> None:
         """Stop the orchestrator gracefully."""
@@ -428,6 +510,12 @@ class PaperTradingOrchestrator:
         # Stop signal consumer if running
         if self._signal_consumer:
             await self._signal_consumer.stop()
+
+        # Stop BybitFillListener if running
+        if self._fill_listener is not None:
+            await self._fill_listener.stop()
+            self._fill_listener = None
+            logger.info("BybitFillListener stopped")
 
         # Stop telemetry
         if self.telemetry:
