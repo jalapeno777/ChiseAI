@@ -15,6 +15,10 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Configurable threshold for actionable signals (default 0.75)
+# Set via TradingModeConfig.signal_confidence_threshold in production
+ACTIONABLE_CONFIDENCE_THRESHOLD: float = 0.75
+
 
 def _safe_float(value: float, default: float = 0.0) -> float:
     """Safely convert a value to float, handling NaN and None.
@@ -123,17 +127,23 @@ class Signal:
 
     @property
     def is_actionable(self) -> bool:
-        """Check if signal is actionable (meets 75% threshold).
+        """Check if signal is actionable (meets configurable threshold).
 
         Guards against:
         - Zero confidence (should never be actionable)
         - NaN confidence (should never be actionable)
         - Missing or invalid confidence data
+
+        The threshold is controlled by ACTIONABLE_CONFIDENCE_THRESHOLD module variable,
+        which should be set to TradingModeConfig.signal_confidence_threshold in production.
         """
         # Re-check confidence is valid (defense in depth after __post_init__)
         if not isinstance(self.confidence, float) or self.confidence <= 0.0:
             return False
-        return self.status == SignalStatus.ACTIONABLE and self.confidence >= 0.75
+        return (
+            self.status == SignalStatus.ACTIONABLE
+            and self.confidence >= ACTIONABLE_CONFIDENCE_THRESHOLD
+        )
 
     @property
     def confidence_percent(self) -> float:
