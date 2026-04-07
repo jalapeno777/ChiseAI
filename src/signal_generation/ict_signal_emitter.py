@@ -54,6 +54,7 @@ class ICTEmissionConfig:
         enable_cvd: Whether to enable CVD signals
         enable_fvg: Whether to enable FVG signals
         enable_order_block: Whether to enable Order Block signals
+        enable_hl: Whether to enable H/L/H-OLD/L-OLD signals (S1A-2)
         emission_interval_seconds: Interval between emission cycles
         max_signals_per_cycle: Maximum signals to emit per cycle
         bos_choch_warning: Whether to log warning if BOS/CHoCH detected
@@ -63,6 +64,7 @@ class ICTEmissionConfig:
     enable_cvd: bool = True
     enable_fvg: bool = True
     enable_order_block: bool = True
+    enable_hl: bool = True
     emission_interval_seconds: float = 60.0
     max_signals_per_cycle: int = 10
     bos_choch_warning: bool = True
@@ -203,6 +205,7 @@ class ICTSignalEmitter:
             f"min_confidence={self.config.min_confidence:.0%}, "
             f"cvd={self.config.enable_cvd}, fvg={self.config.enable_fvg}, "
             f"ob={self.config.enable_order_block}, "
+            f"hl={self.config.enable_hl}, "
             f"telemetry={'enabled' if signal_tracker else 'disabled'}"
         )
 
@@ -214,6 +217,8 @@ class ICTSignalEmitter:
             self.registry.set_feature_flag("enable_fvg_signals", True)
         if self.config.enable_order_block:
             self.registry.set_feature_flag("enable_order_block_signals", True)
+        if self.config.enable_hl:
+            self.registry.set_feature_flag("enable_hl_signals", True)
 
     def _get_two_layer_scorer(self) -> TwoLayerScorer:
         """Get or create TwoLayerScorer instance.
@@ -331,13 +336,18 @@ class ICTSignalEmitter:
         """Set feature flag for a signal type.
 
         Args:
-            signal_type: The signal type (cvd, fvg, order_block)
+            signal_type: The signal type (cvd, fvg, order_block, h, l, high_old, low_old)
             enabled: Whether the signal type is enabled
         """
         flag_map = {
             "cvd": "enable_cvd_signals",
             "fvg": "enable_fvg_signals",
             "order_block": "enable_order_block_signals",
+            # H/L/H-OLD/L-OLD price structure signals (S1A-2)
+            "h": "enable_hl_signals",
+            "l": "enable_hl_signals",
+            "high_old": "enable_hl_signals",
+            "low_old": "enable_hl_signals",
         }
 
         flag_name = flag_map.get(signal_type.lower())
@@ -368,6 +378,11 @@ class ICTSignalEmitter:
             "cvd": "enable_cvd_signals",
             "fvg": "enable_fvg_signals",
             "order_block": "enable_order_block_signals",
+            # H/L/H-OLD/L-OLD price structure signals (S1A-2)
+            "h": "enable_hl_signals",
+            "l": "enable_hl_signals",
+            "high_old": "enable_hl_signals",
+            "low_old": "enable_hl_signals",
         }
 
         flag_name = flag_map.get(signal_type.lower())
@@ -502,6 +517,91 @@ class ICTSignalEmitter:
                     order_blocks=ob_list,
                     timeframe=timeframe,
                 )
+            # H/L/H-OLD/L-OLD price structure signals (S1A-2)
+            # These are direct price level signals with their own directionality
+            elif signal_type in ("h", "l", "high_old", "low_old"):
+                # signal_data for HL signals is expected to be a dict with:
+                # {
+                #     "price": float,          # The price level
+                #     "direction": str,        # "long" or "short" based on context
+                #     "confidence": float,     # Confidence score 0.0-1.0
+                #     "timestamp": int,        # Unix timestamp ms
+                #     "swing_high": float,     # For H-OLD/L-OLD, the swing high/low price
+                #     "swing_low": float,      # For H-OLD/L-OLD, the swing high/low price
+                # }
+                if not isinstance(signal_data, dict):
+                    return ICTSignalResult(
+                        signal_type=signal_type,
+                        skipped=True,
+                        skip_reason=f"Invalid signal_data for {signal_type}: expected dict",
+                    )
+
+                price = signal_data.get("price", 0.0)
+                direction_str = signal_data.get("direction", "long")
+                confidence = signal_data.get("confidence", 0.60)
+
+                # Create signal directly for HL signals
+                from signal_generation.models import SignalDirection as SigDir
+
+                sig_direction = SigDir.LONG if direction_str == "long" else SigDir.SHORT
+
+                actionable_threshold = getattr(
+                    self.config, "signal_confidence_threshold", 0.75
+                )
+                status = SignalStatus.LOGGED_ONLY
+                if confidence >= actionable_threshold:
+                    status = SignalStatus.ACTIONABLE
+
+                signal = Signal(
+                    token=token,
+                    direction=sig_direction,
+                    confidence=confidence,
+                    base_score=confidence * 100,
+                    timestamp=datetime.now(UTC),
+                    status=status,
+                    timeframe=timeframe,
+                    contributing_factors=[
+                        {
+                            "factor": f"ict_{signal_type}",
+                            "weight": 1.0,
+                            "score": confidence,
+                        }
+                    ],
+                    metadata={
+                        "signal_type": signal_type,
+                        "source": "ict",
+                        "price": price,
+                        "swing_high": signal_data.get("swing_high"),
+                        "swing_low": signal_data.get("swing_low"),
+                    },
+                )
+
+                # Emit to all registered emitters
+                emission_latency_ms = 0.0
+                any_success = False
+                last_error = None
+
+                for emitter in self.emitters:
+                    try:
+                        result = await emitter.emit(signal)
+                        emission_latency_ms += result.latency_ms
+                        if result.success:
+                            any_success = True
+                        else:
+                            last_error = result.error
+                    except Exception as e:
+                        last_error = str(e)
+                        logger.error(f"Emitter {emitter.name} failed: {e}")
+
+                latency_ms = (time.perf_counter() - start_time) * 1000
+
+                return ICTSignalResult(
+                    signal=signal,
+                    signal_type=signal_type,
+                    emission_success=any_success,
+                    emission_error=last_error,
+                    emission_latency_ms=latency_ms,
+                )
             else:
                 return ICTSignalResult(
                     signal_type=signal_type,
@@ -584,6 +684,7 @@ class ICTSignalEmitter:
         cvd_data: Any | None = None,
         fvg_data: list[Any] | None = None,
         order_block_data: list[Any] | None = None,
+        hl_data: dict[str, Any] | None = None,
     ) -> ICTEmissionCycle:
         """Emit all available ICT signals for a token/timeframe.
 
@@ -593,6 +694,16 @@ class ICTSignalEmitter:
             cvd_data: CVD calculation result
             fvg_data: List of FVG detection results
             order_block_data: List of Order Block detection results
+            hl_data: H/L/H-OLD/L-OLD price structure signal data (S1A-2).
+                Dict with keys: h, l, high_old, low_old, each containing:
+                {
+                    "price": float,
+                    "direction": "long" | "short",
+                    "confidence": float,
+                    "timestamp": int,
+                    "swing_high": float (optional),
+                    "swing_low": float (optional),
+                }
 
         Returns:
             ICTEmissionCycle with results for all signals
@@ -647,6 +758,20 @@ class ICTSignalEmitter:
                 elif result.skipped:
                     cycle.signals_skipped += 1
 
+        # Process H/L/H-OLD/L-OLD signals (S1A-2)
+        if hl_data and self.config.enable_hl:
+            for signal_key in ["h", "l", "high_old", "low_old"]:
+                if signal_key in hl_data:
+                    cycle.signals_processed += 1
+                    result = await self.emit_signal(
+                        signal_key, token, timeframe, hl_data[signal_key]
+                    )
+                    cycle.results.append(result)
+                    if result.emission_success:
+                        cycle.signals_emitted += 1
+                    elif result.skipped:
+                        cycle.signals_skipped += 1
+
         cycle.duration_ms = (time.perf_counter() - start_time) * 1000
 
         logger.info(
@@ -671,6 +796,7 @@ class ICTSignalEmitter:
                 "enable_cvd": self.config.enable_cvd,
                 "enable_fvg": self.config.enable_fvg,
                 "enable_order_block": self.config.enable_order_block,
+                "enable_hl": self.config.enable_hl,
                 "emission_interval_seconds": self.config.emission_interval_seconds,
                 "max_signals_per_cycle": self.config.max_signals_per_cycle,
             },
@@ -683,6 +809,9 @@ class ICTSignalEmitter:
                 ),
                 "enable_order_block_signals": self.registry._feature_flags.is_enabled(
                     "enable_order_block_signals"
+                ),
+                "enable_hl_signals": self.registry._feature_flags.is_enabled(
+                    "enable_hl_signals"
                 ),
             },
             "emitters": [e.name for e in self.emitters],

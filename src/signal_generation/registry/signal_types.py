@@ -39,12 +39,24 @@ class ICTSignalType(Enum):
 
     EXCLUDED_SIGNALS:
         - BOS_CHOCH: "bos_choch" - Break of Structure / Change of Character
+
+    Price Structure Signals (S1A-2):
+        H: Current period high
+        L: Current period low
+        HIGH_OLD: Previous significant high
+        LOW_OLD: Previous significant low
     """
 
     CVD = "cvd"
     FVG = "fvg"
     ORDER_BLOCK = "order_block"
     # BOS_CHOCH = "bos_choch"  # EXCLUDED per BL-BOS-CHOCH-001
+
+    # Price structure signals (H/L/H-OLD/L-OLD)
+    H = "h"  # Current period high
+    L = "l"  # Current period low
+    HIGH_OLD = "high_old"  # Previous significant high
+    LOW_OLD = "low_old"  # Previous significant low
 
     @classmethod
     def is_excluded(cls, signal_type: "ICTSignalType") -> bool:

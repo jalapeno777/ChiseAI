@@ -199,6 +199,67 @@ class ICTSignalRegistry:
             ),
             "enable_order_block_signals",
         ),
+        # Price structure signals (H/L/H-OLD/L-OLD) - S1A-2
+        (
+            ICTSignalType.H,
+            SignalMetadata(
+                name="High",
+                description=(
+                    "Current period high - the highest price reached during "
+                    "the measurement period. Key resistance level for potential "
+                    "reversal or continuation signals."
+                ),
+                confidence_base=0.60,
+                timeframe_default="1H",
+                tags=["price_structure", "high", "resistance"],
+            ),
+            "enable_hl_signals",
+        ),
+        (
+            ICTSignalType.L,
+            SignalMetadata(
+                name="Low",
+                description=(
+                    "Current period low - the lowest price reached during "
+                    "the measurement period. Key support level for potential "
+                    "reversal or continuation signals."
+                ),
+                confidence_base=0.60,
+                timeframe_default="1H",
+                tags=["price_structure", "low", "support"],
+            ),
+            "enable_hl_signals",
+        ),
+        (
+            ICTSignalType.HIGH_OLD,
+            SignalMetadata(
+                name="Old High",
+                description=(
+                    "Previous significant high - the most recent swing high "
+                    "that preceded the current period. Used to identify "
+                    "potential breakouts or rejection at resistance."
+                ),
+                confidence_base=0.65,
+                timeframe_default="1H",
+                tags=["price_structure", "high", "swing", "resistance"],
+            ),
+            "enable_hl_signals",
+        ),
+        (
+            ICTSignalType.LOW_OLD,
+            SignalMetadata(
+                name="Old Low",
+                description=(
+                    "Previous significant low - the most recent swing low "
+                    "that preceded the current period. Used to identify "
+                    "potential breakdowns or rejection at support."
+                ),
+                confidence_base=0.65,
+                timeframe_default="1H",
+                tags=["price_structure", "low", "swing", "support"],
+            ),
+            "enable_hl_signals",
+        ),
     ]
 
     def __init__(self) -> None:
