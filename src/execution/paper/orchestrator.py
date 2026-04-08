@@ -999,54 +999,51 @@ class PaperTradingOrchestrator:
                         },
                     )
                     if not enhanced.go_no_go:
+                        # NO-GO signal: reject and return immediately
                         logger.info(
                             f"Signal rejected by LLM: {signal.token} - {enhanced.rationale}"
                         )
-                    async with self._lock:
-                        self._metrics["trades_rejected"] += 1
-                        self._metrics["gate_g6_llm_reject_count"] += 1
-                    logger.debug(
-                        "G6_LLM_REJECT triggered, count: %d (correlation_id=%s)",
-                        self._metrics["gate_g6_llm_reject_count"],
-                        correlation_id,
-                    )
-                    # ST-ICT-Q3: Record signal rejection at LLM gate
-                    if self.outcome_capture:
-                        try:
-                            await self.outcome_capture.on_signal_rejected(
-                                signal,
-                                "G6_LLM_REJECT",
-                                f"LLM rejection: {enhanced.rationale}",
-                                correlation_id,
-                            )
-                        except Exception as e:
-                            logger.warning(
-                                f"outcome_capture.on_signal_rejected(G6) failed: {e}"
-                            )
-                    # Return UNCONDITIONALLY for NO-GO signals
-                    return PaperTradeResult(
-                        signal=signal,
-                        status=TradeStatus.REJECTED,
-                        # TODO: When models.py is updated, use RejectReason enum directly
-                        reject_reason=[f"LLM rejection: {enhanced.rationale}"],
-                        correlation_id=correlation_id,
-                    )
-                    # Log LLM input for observability
+                        async with self._lock:
+                            self._metrics["trades_rejected"] += 1
+                            self._metrics["gate_g6_llm_reject_count"] += 1
+                        logger.debug(
+                            "G6_LLM_REJECT triggered, count: %d (correlation_id=%s)",
+                            self._metrics["gate_g6_llm_reject_count"],
+                            correlation_id,
+                        )
+                        # ST-ICT-Q3: Record signal rejection at LLM gate
+                        if self.outcome_capture:
+                            try:
+                                await self.outcome_capture.on_signal_rejected(
+                                    signal,
+                                    "G6_LLM_REJECT",
+                                    f"LLM rejection: {enhanced.rationale}",
+                                    correlation_id,
+                                )
+                            except Exception as e:
+                                logger.warning(
+                                    f"outcome_capture.on_signal_rejected(G6) failed: {e}"
+                                )
+                        return PaperTradeResult(
+                            signal=signal,
+                            status=TradeStatus.REJECTED,
+                            reject_reason=[f"LLM rejection: {enhanced.rationale}"],
+                            correlation_id=correlation_id,
+                        )
+
+                    # GO signal: store LLM recommendations for later comparison
+                    # with risk enforcer (risk enforcer remains authoritative)
                     logger.debug(
                         f"LLM enhanced decision: {signal.token} "
                         f"confidence={enhanced.confidence} provider={enhanced.provider}"
                     )
-
-                    # Store LLM recommendations for later comparison with risk enforcer
-                    # Risk enforcer remains authoritative - we'll compare after assessment
                     llm_position_size = enhanced.position_size
                     llm_stop_loss = enhanced.stop_loss
                     llm_take_profit = enhanced.take_profit
                     llm_risk_rec = enhanced.risk_recommendation
 
-                    # Store full LLM decision payload for notifications
                     llm_decision_payload = {
-                        "decision": "GO" if enhanced.go_no_go else "NO-GO",
+                        "decision": "GO",
                         "confidence": enhanced.confidence,
                         "provider": enhanced.provider,
                         "rationale": enhanced.rationale,
@@ -1078,10 +1075,34 @@ class PaperTradingOrchestrator:
             risk_start = time.perf_counter()
             current_positions = await self.position_tracker.get_open_positions()
 
+            # B-03: Calculate current drawdown from DrawdownMonitor if available
+            # Pass drawdown to risk_enforcer so kill-switch can trigger at >= 15%
+            current_drawdown_pct = 0.0
+            if (
+                self.kill_switch
+                and hasattr(self.kill_switch, "drawdown_monitor")
+                and self.kill_switch.drawdown_monitor is not None
+            ):
+                try:
+                    drawdown_metrics = (
+                        self.kill_switch.drawdown_monitor.calculate_rolling_drawdown()
+                    )
+                    current_drawdown_pct = drawdown_metrics.current_drawdown_pct
+                    logger.debug(
+                        f"Calculated drawdown: {current_drawdown_pct:.2%} "
+                        f"(correlation_id={correlation_id})"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to calculate drawdown, using 0.0: {e} "
+                        f"(correlation_id={correlation_id})"
+                    )
+
             assessment = await self.risk_enforcer.validate_order(
                 signal=signal,
                 portfolio_value=self.portfolio_value,
                 current_positions=current_positions,
+                current_drawdown_pct=current_drawdown_pct,
                 entry_price=entry_price,
             )
 
@@ -1123,6 +1144,39 @@ class PaperTradingOrchestrator:
                     reject_reason=assessment.violations,
                     correlation_id=correlation_id,
                 )
+
+            # B-04: Symbol registry check - enforce one-trade-per-symbol invariant
+            # Use correlation_id as provisional position_id (stored in position.metadata later)
+            symbol_acquired = False
+            if self.symbol_registry:
+                try:
+                    symbol_acquired = await self.symbol_registry.try_acquire_symbol(
+                        signal.token,
+                        correlation_id,  # Use correlation_id as position_id
+                    )
+                    if not symbol_acquired:
+                        logger.warning(
+                            f"Symbol {signal.token} already held by another position, "
+                            f"rejecting signal (correlation_id={correlation_id})"
+                        )
+                        async with self._lock:
+                            self._metrics["trades_rejected"] += 1
+                        return PaperTradeResult(
+                            signal=signal,
+                            status=TradeStatus.REJECTED,
+                            reject_reason=[f"Symbol {signal.token} already in use"],
+                            correlation_id=correlation_id,
+                        )
+                except Exception as e:
+                    # Redis failures should not block trading - log and proceed
+                    logger.warning(
+                        f"Symbol registry acquisition failed for {signal.token}, "
+                        f"proceeding without symbol lock: {e} "
+                        f"(correlation_id={correlation_id})"
+                    )
+                    symbol_acquired = True  # Proceed as if acquired
+            else:
+                symbol_acquired = True  # No registry configured, proceed
 
             # Step 3: Apply LLM recommendations with risk enforcer as authoritative
             # Use most conservative position size: min(LLM suggestion, risk enforcer cap)
@@ -1312,6 +1366,24 @@ class PaperTradingOrchestrator:
                     self._metrics["gate_g8_order_not_filled_count"],
                     correlation_id,
                 )
+                # B-04: Release symbol if order was not filled
+                # (symbol was acquired before order placement)
+                if self.symbol_registry and symbol_acquired:
+                    try:
+                        released = await self.symbol_registry.release_symbol(
+                            signal.token,
+                            correlation_id,
+                        )
+                        if released:
+                            logger.debug(
+                                f"Released symbol {signal.token} after order not filled "
+                                f"(correlation_id={correlation_id})"
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to release symbol {signal.token} after order not filled: {e}"
+                        )
+
                 # ST-ICT-Q3: Record signal rejection at order-not-filled gate
                 if self.outcome_capture:
                     try:
@@ -1619,6 +1691,42 @@ class PaperTradingOrchestrator:
             logger.info(
                 f"Closed position {position_id}: PnL={realized_pnl:.4f}, reason={reason}"
             )
+
+            # B-04: Release symbol from registry after successful position close
+            if self.symbol_registry:
+                try:
+                    # Retrieve correlation_id from position metadata (stored during symbol acquisition)
+                    registry_position_id = (
+                        position.metadata.get("correlation_id")
+                        if position.metadata
+                        else None
+                    )
+                    if registry_position_id:
+                        released = await self.symbol_registry.release_symbol(
+                            position.symbol,
+                            registry_position_id,
+                        )
+                        if released:
+                            logger.debug(
+                                f"Released symbol {position.symbol} from registry "
+                                f"(position_id={registry_position_id})"
+                            )
+                        else:
+                            logger.warning(
+                                f"Failed to release symbol {position.symbol}: "
+                                f"position_id mismatch or already released "
+                                f"(expected={registry_position_id})"
+                            )
+                    else:
+                        logger.debug(
+                            f"No correlation_id in position metadata for {position.symbol}, "
+                            f"skipping symbol registry release"
+                        )
+                except Exception as e:
+                    # Log but don't fail the close
+                    logger.warning(
+                        f"Symbol registry release failed for {position.symbol}: {e}"
+                    )
 
             # Close trade journal entry using service (if available) for persistence
             entry_id = (
