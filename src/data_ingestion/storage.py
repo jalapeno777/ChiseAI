@@ -245,7 +245,7 @@ class InfluxDBStorage(StorageInterface):
             """
 
             if limit:
-                query += f"|> limit(n: {limit})"
+                query += f'|> sort(columns: ["_time"], desc: true) |> limit(n: {limit})'
 
             tables = query_api.query(query)
 
