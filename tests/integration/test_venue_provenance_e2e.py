@@ -159,7 +159,7 @@ class TestVenueProvenanceE2E:
             venue_metadata={
                 "exchange": "bybit",
                 "api_endpoint": "https://api-demo.bybit.com",
-                "api_key_prefix": "DEMO",
+                "api_key_prefix": "DEMO:c775e7b757ed",
                 "provenance_verified": True,
                 "is_authenticated": True,
             },
@@ -185,7 +185,7 @@ class TestVenueProvenanceE2E:
         assert stored_data["venue_metadata"]["is_authenticated"] is True
 
         # Verify this is distinguishable from simulation
-        assert stored_data["venue_metadata"]["api_key_prefix"] == "DEMO"
+        assert stored_data["venue_metadata"]["api_key_prefix"] == "DEMO:c775e7b757ed"
 
     def test_recaps_include_venue_provenance_summary(self, persistence, mock_redis):
         """Test that recaps include venue provenance summary.

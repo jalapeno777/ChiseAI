@@ -9,6 +9,7 @@ Tests cover:
 
 from __future__ import annotations
 
+import uuid
 from unittest.mock import MagicMock
 
 import pytest
@@ -132,16 +133,18 @@ class TestSignalOutcome:
 
     def test_default_values(self):
         """Test default outcome creation."""
-        outcome = SignalOutcome(signal_id="test-123")
+        valid_uuid = "550e8400-e29b-41d4-a716-446655440000"
+        outcome = SignalOutcome(signal_id=valid_uuid)
 
-        assert outcome.signal_id == "test-123"
+        assert outcome.signal_id == valid_uuid
         assert outcome.pnl == 0.0
         assert outcome.outcome == "pending"
 
     def test_win_outcome(self):
         """Test win outcome."""
+        valid_uuid = "550e8400-e29b-41d4-a716-446655440000"
         outcome = SignalOutcome(
-            signal_id="test-123",
+            signal_id=valid_uuid,
             pnl=0.023,
             outcome="win",
             exit_price=1.1230,
@@ -155,8 +158,9 @@ class TestSignalOutcome:
 
     def test_to_redis_hash(self):
         """Test conversion to Redis hash."""
+        valid_uuid = "660e8400-e29b-41d4-a716-446655440001"
         outcome = SignalOutcome(
-            signal_id="test-789",
+            signal_id=valid_uuid,
             pnl=-0.015,
             outcome="loss",
             exit_price=1.0850,
@@ -165,7 +169,7 @@ class TestSignalOutcome:
 
         redis_hash = outcome.to_redis_hash()
 
-        assert redis_hash["signal_id"] == "test-789"
+        assert redis_hash["signal_id"] == valid_uuid
         assert redis_hash["pnl"] == "-0.015"
         assert redis_hash["outcome"] == "loss"
 
