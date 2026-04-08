@@ -31,6 +31,8 @@ def reset_redis_state():
             port=6380,
             db=0,
             decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
         )
         pattern = "chise:paper:metrics:error_rate:*"
         for key in client.scan_iter(match=pattern):
@@ -47,6 +49,8 @@ def reset_redis_state():
             port=6380,
             db=0,
             decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
         )
         pattern = "chise:paper:metrics:error_rate:*"
         for key in client.scan_iter(match=pattern):

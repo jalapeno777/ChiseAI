@@ -12,6 +12,8 @@ from typing import Any
 REDIS_HOST = os.getenv("PAPER_REDIS_HOST", "host.docker.internal")
 REDIS_PORT = int(os.getenv("PAPER_REDIS_PORT", "6380"))
 REDIS_DB = int(os.getenv("PAPER_REDIS_DB", "1"))
+REDIS_SOCKET_CONNECT_TIMEOUT = 5
+REDIS_SOCKET_TIMEOUT = 5
 
 
 def get_redis_client(
@@ -38,6 +40,8 @@ def get_redis_client(
         host=host or REDIS_HOST,
         port=port or REDIS_PORT,
         db=db or REDIS_DB,
+        socket_connect_timeout=REDIS_SOCKET_CONNECT_TIMEOUT,
+        socket_timeout=REDIS_SOCKET_TIMEOUT,
         **kwargs,
     )
 
@@ -65,5 +69,7 @@ def get_redis_client_sync(
         host=host or REDIS_HOST,
         port=port or REDIS_PORT,
         db=db or REDIS_DB,
+        socket_connect_timeout=REDIS_SOCKET_CONNECT_TIMEOUT,
+        socket_timeout=REDIS_SOCKET_TIMEOUT,
         **kwargs,
     )
