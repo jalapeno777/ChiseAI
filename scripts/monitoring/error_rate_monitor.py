@@ -199,6 +199,49 @@ async def run_monitor(args: argparse.Namespace) -> dict[str, Any]:
 
         # Check if we should trigger alert
         if snapshot.total_operations >= thresholds.min_operations:
+            # Safety gate: verify producer has written recently before alerting
+            redis_client = tracker._get_redis()
+            if redis_client:
+                try:
+                    key = tracker._get_key(category, "stats")
+                    last_updated_str = redis_client.hget(key, "last_updated")
+                    if last_updated_str:
+                        last_updated = datetime.fromisoformat(last_updated_str)
+                        age_seconds = (datetime.now(UTC) - last_updated).total_seconds()
+                        if age_seconds > 3600:
+                            logger.warning(
+                                f"Skipping alert for {category.value}: producer data is stale "
+                                f"(last_updated {age_seconds / 3600:.1f}h ago)"
+                            )
+                            alerts_suppressed.append(
+                                {
+                                    "category": category.value,
+                                    "severity": snapshot.severity.value,
+                                    "error_rate": snapshot.error_rate,
+                                    "reason": "stale_producer_data",
+                                    "last_updated": last_updated_str,
+                                }
+                            )
+                            continue
+                    else:
+                        logger.warning(
+                            f"Skipping alert for {category.value}: no producer data "
+                            f"(last_updated field missing)"
+                        )
+                        alerts_suppressed.append(
+                            {
+                                "category": category.value,
+                                "severity": snapshot.severity.value,
+                                "error_rate": snapshot.error_rate,
+                                "reason": "no_producer_data",
+                            }
+                        )
+                        continue
+                except Exception as e:
+                    logger.error(
+                        f"Error checking producer freshness for {category.value}: {e}"
+                    )
+
             if snapshot.is_critical or snapshot.is_warning:
                 if not args.dry_run:
                     alert_result = await alert_integration.check_and_alert(category)

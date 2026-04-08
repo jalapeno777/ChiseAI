@@ -513,6 +513,46 @@ class ErrorRateAlertIntegration:
                 }
             )
 
+            # Safety gate: verify producer has written recently
+            redis_client = self.tracker._get_redis()
+            if redis_client:
+                stats_key = f"{self.tracker.REDIS_KEY_PREFIX}:{cat.value}:stats"
+                try:
+                    last_updated_str = redis_client.hget(stats_key, "last_updated")
+                    if last_updated_str:
+                        last_updated = datetime.fromisoformat(last_updated_str)
+                        age_seconds = (datetime.now(UTC) - last_updated).total_seconds()
+                        if age_seconds > 3600:
+                            logger.warning(
+                                f"Suppressing alert for {cat.value}: producer data stale "
+                                f"({age_seconds / 3600:.1f}h old)"
+                            )
+                            results["alerts_suppressed"].append(
+                                {
+                                    "category": cat.value,
+                                    "reason": "stale_producer_data",
+                                    "last_updated": last_updated_str,
+                                }
+                            )
+                            self._stats["alerts_suppressed"] += 1
+                            continue
+                    else:
+                        logger.warning(
+                            f"Suppressing alert for {cat.value}: no producer data (last_updated field missing)"
+                        )
+                        results["alerts_suppressed"].append(
+                            {
+                                "category": cat.value,
+                                "reason": "no_producer_data",
+                            }
+                        )
+                        self._stats["alerts_suppressed"] += 1
+                        continue
+                except Exception as e:
+                    logger.error(
+                        f"Error checking producer freshness for {cat.value}: {e}"
+                    )
+
             # Check if alert needed
             if snapshot.is_critical or snapshot.is_warning:
                 severity = (
