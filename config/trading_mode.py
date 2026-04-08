@@ -1,1 +1,1 @@
-src/config/trading_mode.py
+../src/config/trading_mode.py

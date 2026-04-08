@@ -1,55 +1,19 @@
 """Configuration package for ChiseAI.
 
 This package provides configuration management for the trading system.
-This is a compatibility shim that re-exports from src.config.
+Submodules (bootstrap.py, trading_mode.py, etc.) are symlinks to src.config.*
+and must be importable via `from config.bootstrap import bootstrap`.
+
+This __init__ adds src/ to sys.path so that symlinked submodules can resolve
+their transitive imports, but does NOT re-export names that would shadow
+the submodule import paths.
 """
 
 import sys
 from pathlib import Path
 
-# Add src to path to ensure we can import from src.config
+# Add src to path so symlinked submodules (e.g. config/bootstrap.py -> src/config/bootstrap.py)
+# can resolve their own imports (e.g. from config.env_loader import ...).
 _src_path = Path(__file__).parent.parent / "src"
 if str(_src_path) not in sys.path:
     sys.path.insert(0, str(_src_path))
-
-# Re-export all config modules from src.config
-from src.config.bootstrap import bootstrap, get_bootstrap_state  # noqa: E402
-from src.config.env_loader import (  # noqa: E402
-    EnvLoader,
-    discord_loader,
-    kimi_loader,
-    load_discord_config,
-    load_discord_config_with_ids,
-    load_kimi_config,
-)
-from src.config.feature_flags import (  # noqa: E402
-    FeatureFlags,
-    get_feature_flags,
-    reset_feature_flags,
-    set_feature_flags,
-)
-from src.config.trading_mode import (  # noqa: E402
-    ModuleStatus,
-    ModuleType,
-    TradingMode,
-    TradingModeConfig,
-)
-
-__all__ = [
-    "bootstrap",
-    "get_bootstrap_state",
-    "EnvLoader",
-    "discord_loader",
-    "kimi_loader",
-    "load_discord_config",
-    "load_discord_config_with_ids",
-    "load_kimi_config",
-    "FeatureFlags",
-    "get_feature_flags",
-    "reset_feature_flags",
-    "set_feature_flags",
-    "ModuleStatus",
-    "ModuleType",
-    "TradingMode",
-    "TradingModeConfig",
-]

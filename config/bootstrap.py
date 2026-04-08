@@ -1,1 +1,1 @@
-src/config/bootstrap.py
+../src/config/bootstrap.py
