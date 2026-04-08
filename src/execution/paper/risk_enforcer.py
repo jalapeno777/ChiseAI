@@ -77,7 +77,7 @@ class PaperRiskEnforcer:
         1. Confidence check (blocks if < 75%)
         2. Drawdown check (triggers kill-switch if >= 15%)
         3. Position size check (blocks if > 10% portfolio)
-        4. Portfolio exposure check (warns if > 80%)
+        4. Portfolio exposure check (blocks if > 80%)
 
         Args:
             signal: Trading signal to validate
@@ -158,7 +158,7 @@ class PaperRiskEnforcer:
             violations.append(violation)
             self._log_violation(violation, signal)
 
-        # 5. Portfolio exposure check (warn at 80%)
+        # 5. Portfolio exposure check (blocks at 80%)
         total_exposure = sum(pos.value for pos in current_positions)
         # Exclude current token's existing position (we're replacing it)
         # Handle both 'symbol' (from position_tracker.PaperPosition) and 'token' (from risk_models.PaperPosition)
@@ -174,8 +174,8 @@ class PaperRiskEnforcer:
         if new_exposure > max_exposure:
             violation = RiskViolation(
                 rule="exposure",
-                severity=RiskSeverity.WARNING.value,
-                message=f"Portfolio exposure would be ${new_exposure:,.2f} ({new_exposure / portfolio_value:.1%}), exceeds {self.config.max_portfolio_exposure_pct:.1%} limit",
+                severity=RiskSeverity.BLOCK.value,
+                message=f"ORDER REJECTED: Exposure cap {self.config.max_portfolio_exposure_pct:.0%} breached. Current: {total_exposure / portfolio_value:.1%}, Attempted: {new_exposure / portfolio_value:.1%}",
                 current_value=new_exposure / portfolio_value,
                 limit_value=self.config.max_portfolio_exposure_pct,
                 metadata={
