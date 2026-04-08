@@ -515,3 +515,8 @@
 {"ts":"2026-04-06T23:57:30.894Z","type":"file.edited","file":"/home/tacopants/projects/ChiseAI/tests/integration/test_bybit_fill_lifecycle.py"}
 {"ts":"2026-04-07T00:02:58.124Z","type":"session.idle","sessionID":"ses_29ad5f987ffe1dh9V7np0gYcOk","value":"{\"sessionID\":\"ses_29ad5f987ffe1dh9V7np0gYcOk\"}"}
 {"ts":"2026-04-07T00:07:37.512Z","type":"file.edited","file":"/home/tacopants/projects/ChiseAI/tests/integration/test_bybit_fill_lifecycle.py"}
+{"ts":"2026-04-08T11:51:33.408Z","type":"session.idle","sessionID":"ses_293147128ffeyr9nQcDs0RjikO","value":"{\"sessionID\":\"ses_293147128ffeyr9nQcDs0RjikO\"}"}
+{"ts":"2026-04-08T11:52:12.832Z","type":"session.idle","sessionID":"ses_293161a51ffebyfN2VFWafF6RQ","value":"{\"sessionID\":\"ses_293161a51ffebyfN2VFWafF6RQ\"}"}
+{"ts":"2026-04-08T11:55:21.004Z","type":"session.idle","sessionID":"ses_2930f4ce8ffeHZDW2o0YJaRhKA","value":"{\"sessionID\":\"ses_2930f4ce8ffeHZDW2o0YJaRhKA\"}"}
+{"ts":"2026-04-08T11:55:54.091Z","type":"session.idle","sessionID":"ses_2930fdedeffeDp06GnE20WgmKA","value":"{\"sessionID\":\"ses_2930fdedeffeDp06GnE20WgmKA\"}"}
+{"ts":"2026-04-08T11:56:41.067Z","type":"session.idle","sessionID":"ses_297ecf492ffeHxxSfTgAJIS1nG","value":"{\"sessionID\":\"ses_297ecf492ffeHxxSfTgAJIS1nG\"}"}
