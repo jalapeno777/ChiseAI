@@ -1,11 +1,12 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-04-07"
+  last_updated: "2026-04-08"
   managed_by: merlin
   status_notes:
     - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324
       tests passing)"
+    - "R2a Canary: ACTIVE (started 2026-04-08, emitter PID 1559035, expected end 2026-04-29)"
     - "MiniMax: DISABLED per PAPER-LLM-DIAG-001 (initialization delays)"
     - "Phase 4 Neuro-Symbolic Runtime Integration: CODE COMPLETE (2026-03-28)"
     - Git divergence incident resolved 2026-03-28 - local main reset to origin/main
@@ -1349,6 +1350,8 @@ epics:
       - ST-LAUNCH-015 completed - readiness validation framework operational
       - Deferred per Craig decision (2026-03-24) — paper trading is active, formal readiness
         to follow 2026-04-14
+      - R2a canary started 2026-04-08 (21-day paper trading run, emitter PID 1559035)
+      - Canary checkpoints: day3=2026-04-11, day7=2026-04-15, day14=2026-04-22, day21=2026-04-29
     sprint_id: LAUNCH-SPRINT-3
     status: in_progress
     stories_completed: 1
@@ -2191,9 +2194,26 @@ epics:
         completion_date: "2026-04-07"
         note: "Implementation predates traceable git history. Batch closeout chore SHA 12f578244 on main. Actual signal cache TTL dedup implementation absorbed into earlier work and cannot be traced to a specific commit. Partial traceability per task requirements."
       - id: ST-ICT-ST1
-        status: in_progress
+        status: completed
         completion_date: "2026-04-07"
-        note: "INCORRECTLY MARKED COMPLETED IN R1 - Actual 'ICT session-based signal cache' was never implemented. Note incorrectly attributed ST-ICT-S4's ConfidenceFilter (0.75 threshold) work to this story. ST-ICT-S4 is the ConfidenceFilter implementation in SignalGenerator. ST-ICT-ST1 needs scope definition or deferral."
+        merge_commit: 1b4e2fdcf11598e315ff9c0dbd2e21accde9309d
+        pr_number: "956"
+        evidence_files:
+          - src/signal_generation/ict_session_manager.py
+          - src/signal_generation/ict_session_filter.py
+          - tests/unit/signal_generation/test_ict_session_manager.py
+          - tests/unit/signal_generation/test_ict_session_filter.py
+          - tests/integration/signal_generation/test_ict_session_integration.py
+        test_results:
+          passed: 47
+          skipped: 8
+          total_tests: 55
+        notes:
+          - "ICTSessionManager: Redis-backed session state for London (08:00-17:00 UTC) and NY (13:30-18:00 UTC) sessions"
+          - "ICTSessionFilter: Session-scoped quality gating - blocks duplicate signals, signals outside session windows, low quality signals"
+          - "Tests: 47 passed (unit), 8 skipped (integration - Redis not available in test env)"
+          - "Black PASS, Ruff PASS"
+          - "Merged via PR #956"
     progress: 9 of ~15 stories completed
     story_ids:
       - Q2
