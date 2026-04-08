@@ -873,6 +873,23 @@ backlog:
     target_sprint: ICT-S9
     deferred_date: "2026-04-03"
     title: BOS/CHoCH Validation Remediation
+  - id: ST-WIRE-ERROR-RATE-TRACKER
+    title: Wire ErrorRateTracker into Execution Pipeline
+    description:
+      The error rate monitoring infrastructure exists but has no producer.
+      ErrorRateTracker.record_operation() is never called by any execution code,
+      causing false-positive Discord alerts from stale data. A producer-safety
+      gate was added (commit b835f4ad) to suppress alerts on stale data, but
+      the tracker needs to be wired into the actual execution pipeline.
+    status: planned
+    priority: P2
+    story_points: 3
+    created_date: "2026-04-08"
+    story_file: docs/stories/ST-WIRE-ERROR-RATE-TRACKER.md
+    risk_notes:
+      - Low risk: adding tracking calls is non-invasive
+      - Safety gate prevents false alerts even if wiring is incomplete
+    related_incident: false-positive-discord-error-rate-alert-2026-04-08
 current_phase:
   note:
     "ACTIVATED on 2026-02-22. Paper trading now fully autonomous. All launch flags
