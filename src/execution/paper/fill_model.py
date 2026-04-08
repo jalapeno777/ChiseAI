@@ -108,9 +108,9 @@ class FillModelConfig:
     symbol: str | None = None
     exchange: str | None = None
     market_data: dict | None = None
-    base_fill_probability: float = 0.85
-    depth_sensitivity: float = 0.5
-    size_sensitivity: float = 0.3
+    base_fill_probability: float = 1.0
+    depth_sensitivity: float = 1.0
+    size_sensitivity: float = 0.05
     typical_trade_value: float = 10000.0
 
     def __post_init__(self) -> None:
