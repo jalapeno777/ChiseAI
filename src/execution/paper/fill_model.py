@@ -91,6 +91,10 @@ class FillModelConfig:
         symbol: Trading symbol (for future market realism features)
         exchange: Exchange name (for future market realism features)
         market_data: Market data dict (for future market realism features)
+        base_fill_probability: Base fill probability for limit orders (default 0.85)
+        depth_sensitivity: How much book depth affects fill probability (default 0.5)
+        size_sensitivity: How much order size affects fill probability (default 0.3)
+        typical_trade_value: Typical dollar value for normalizing order size (default 10000.0)
     """
 
     min_slippage_pct: float = 0.01
@@ -104,6 +108,10 @@ class FillModelConfig:
     symbol: str | None = None
     exchange: str | None = None
     market_data: dict | None = None
+    base_fill_probability: float = 1.0
+    depth_sensitivity: float = 1.0
+    size_sensitivity: float = 0.05
+    typical_trade_value: float = 10000.0
 
     def __post_init__(self) -> None:
         """Validate configuration."""
@@ -122,6 +130,15 @@ class FillModelConfig:
             raise ValueError("Latency values must be non-negative")
         if self.min_latency_ms > self.max_latency_ms:
             raise ValueError("min_latency_ms cannot exceed max_latency_ms")
+        # Validate fill probability configuration
+        if not 0.0 <= self.base_fill_probability <= 1.0:
+            raise ValueError("base_fill_probability must be between 0.0 and 1.0")
+        if self.depth_sensitivity < 0:
+            raise ValueError("depth_sensitivity must be non-negative")
+        if self.size_sensitivity < 0:
+            raise ValueError("size_sensitivity must be non-negative")
+        if self.typical_trade_value <= 0:
+            raise ValueError("typical_trade_value must be positive")
 
     def to_slippage_config(self) -> SlippageConfig:
         """Convert to SlippageConfig.
@@ -480,7 +497,19 @@ class FillModel:
         mid_price: float,
         book_depth: float,
     ) -> float:
-        """Calculate fill probability (placeholder for market realism).
+        """Calculate fill probability using probabilistic model.
+
+        Market orders always return 1.0 (they always execute).
+        Limit orders use a probabilistic model based on:
+        - book_depth: higher depth = higher fill probability
+        - order size: larger orders = lower fill probability
+        - mid_price: used to normalize order size relative to typical trade value
+
+        The formula is:
+            size_ratio = order.remaining_quantity * mid_price / typical_trade_value
+            depth_factor = min(1.0, book_depth * depth_sensitivity / 10.0)
+            size_factor = max(0.3, 1.0 - size_ratio * size_sensitivity)
+            fill_probability = base_fill_probability * depth_factor * size_factor
 
         Args:
             order: The order to check
@@ -488,11 +517,37 @@ class FillModel:
             book_depth: Order book depth
 
         Returns:
-            Fill probability (1.0 for market orders, 0.8 for limit orders)
+            Fill probability between 0.0 and 1.0
         """
         if order.order_type == "market":
             return 1.0
-        return 0.8
+
+        # Get configuration with sensible defaults
+        if self.config is not None:
+            base_fill_prob = self.config.base_fill_probability
+            depth_sensitivity = self.config.depth_sensitivity
+            size_sensitivity = self.config.size_sensitivity
+            typical_trade_value = self.config.typical_trade_value
+        else:
+            base_fill_prob = 0.85
+            depth_sensitivity = 0.5
+            size_sensitivity = 0.3
+            typical_trade_value = 10000.0
+
+        # Calculate size ratio (order value relative to typical trade)
+        size_ratio = (order.remaining_quantity * mid_price) / typical_trade_value
+
+        # Calculate depth factor (capped at 1.0)
+        depth_factor = min(1.0, (book_depth * depth_sensitivity) / 10.0)
+
+        # Calculate size factor (floored at 0.3)
+        size_factor = max(0.3, 1.0 - size_ratio * size_sensitivity)
+
+        # Calculate final fill probability
+        fill_probability = base_fill_prob * depth_factor * size_factor
+
+        # Ensure result is bounded between 0.0 and 1.0
+        return max(0.0, min(1.0, fill_probability))
 
     def should_fill_realistic(
         self,
