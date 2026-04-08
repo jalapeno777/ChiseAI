@@ -2189,7 +2189,11 @@ epics:
       - id: ST-ICT-S5
         status: completed
         completion_date: "2026-04-07"
-        note: already implemented on main
+        note: "Implementation predates traceable git history. Batch closeout chore SHA 12f578244 on main. Actual signal cache TTL dedup implementation absorbed into earlier work and cannot be traced to a specific commit. Partial traceability per task requirements."
+      - id: ST-ICT-ST1
+        status: in_progress
+        completion_date: "2026-04-07"
+        note: "INCORRECTLY MARKED COMPLETED IN R1 - Actual 'ICT session-based signal cache' was never implemented. Note incorrectly attributed ST-ICT-S4's ConfidenceFilter (0.75 threshold) work to this story. ST-ICT-S4 is the ConfidenceFilter implementation in SignalGenerator. ST-ICT-ST1 needs scope definition or deferral."
     progress: 9 of ~15 stories completed
     story_ids:
       - Q2
