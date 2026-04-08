@@ -365,8 +365,10 @@ class TestPaperRiskEnforcer:
         # The position size calculation caps at max_position_pct
 
     @pytest.mark.asyncio
-    async def test_portfolio_exposure_warning(self, enforcer, valid_signal):
-        """Test warning when portfolio exposure > 80%."""
+    async def test_portfolio_exposure_over_cap_blocks_order(
+        self, enforcer, valid_signal
+    ):
+        """Test that portfolio exposure > 80% blocks the order."""
         # Create existing positions that use 75% of portfolio
         existing_positions = [
             PaperPosition(
@@ -385,8 +387,38 @@ class TestPaperRiskEnforcer:
             portfolio_value=100000.0,
             current_positions=existing_positions,
         )
-        assert assessment.has_warning_violations is True
-        assert any(v.rule == "exposure" for v in assessment.violations)
+        # Order should be REJECTED due to exposure cap breach
+        assert assessment.approved is False
+        assert assessment.has_blocking_violations is True
+        exposure_violations = [v for v in assessment.violations if v.rule == "exposure"]
+        assert len(exposure_violations) == 1
+        assert exposure_violations[0].severity == RiskSeverity.BLOCK.value
+        assert "ORDER REJECTED" in exposure_violations[0].message
+        assert "80%" in exposure_violations[0].message
+
+    @pytest.mark.asyncio
+    async def test_portfolio_exposure_under_cap_approved(self, enforcer, valid_signal):
+        """Test that portfolio exposure < 80% is approved."""
+        # Create existing positions that use 50% of portfolio
+        existing_positions = [
+            PaperPosition(
+                position_id="pos-001",
+                token="ETH/USDT",
+                direction="long",
+                quantity=50.0,
+                entry_price=1000.0,
+                current_price=1000.0,
+            )
+        ]
+        # 50 * 1000 = 50,000 value, portfolio is 100,000 = 50% exposure
+        assessment = await enforcer.validate_order(
+            signal=valid_signal,
+            portfolio_value=100000.0,
+            current_positions=existing_positions,
+        )
+        # Order should be approved (no exposure violation)
+        assert assessment.approved is True
+        assert not any(v.rule == "exposure" for v in assessment.violations)
 
     @pytest.mark.asyncio
     async def test_drawdown_triggers_kill_switch(
