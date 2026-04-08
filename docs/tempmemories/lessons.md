@@ -1126,3 +1126,43 @@ Evidence: INC-2026-0406-ICT-S1A-1
 - Expected_outcome: Container images always contain latest merged code; no stale image gap
 - Evidence_ref: INC-2026-0406-ICT-S1A-1, PR #929
 - Added_utc: 2026-04-06T00:00:00Z
+
+## LESSON: Combine Tasks That Share File Scope Before Parallelizing (2026-04-08)
+
+- Context: SAFETY-001 sprint plan had T-01, T-03, T-04 as parallel tasks, but all three modify orchestrator.py — guaranteed merge conflicts
+- Trigger: Aria review caught the scope overlap during plan critique
+- Rule: Before approving parallel execution, check scope_globs for file overlap. If two tasks touch the same file, combine them into a single task or make them sequential.
+- Applies_to: aria, jarvis
+- Expected_outcome: Zero merge conflicts from parallel work; scope overlap caught at plan review
+- Evidence_ref: SAFETY-001 sprint plan (T-01+T-03+T-04 → T-01-03-04)
+- Added_utc: 2026-04-08T00:00:00Z
+
+## LESSON: Adding Validation to Model Constructors Requires Test Fixture Audit (2026-04-08)
+
+- Context: SignalOutcome.__post_init__ added UUID validation, but 6 tests still passed non-UUID strings as signal_id
+- Trigger: Integration verification found 6 test failures with "badly formed hexadecimal UUID string"
+- Rule: When adding validation to any model __post_init__, immediately grep all test files for that class name and verify test data conforms.
+- Applies_to: dev, quickdev, critic
+- Expected_outcome: Zero test failures from new validation; test fixtures audited in same story
+- Evidence_ref: SAFETY-001 T-06 (tests/validation/test_data_collection.py UUID fix)
+- Added_utc: 2026-04-08T00:00:00Z
+
+## LESSON: Redis Socket Timeouts Prevent Indefinite Test Hangs (2026-04-08)
+
+- Context: Tests hung indefinitely when Redis was unavailable because socket.connect() has no default timeout
+- Trigger: test_error_rate.py and test_orchestrator.py tests blocked ~55 other tests
+- Rule: All Redis client configurations must include explicit socket_timeout (recommended: 5 seconds). Add as default in redis_config.py.
+- Applies_to: dev, senior-dev
+- Expected_outcome: No test hangs from Redis unavailability; all Redis operations fail fast
+- Evidence_ref: SAFETY-001 T-06 (src/execution/paper/redis_config.py +5 lines)
+- Added_utc: 2026-04-08T00:00:00Z
+
+## LESSON: Scope Guards Prevent Mid-Task Scope Creep Effectively (2026-04-08)
+
+- Context: B-02 fill model task had a scope guard that required stopping if complexity exceeded 2-3 SP. Task completed within scope.
+- Trigger: Fill model could have expanded to include order book data feeds, historical calibration, etc.
+- Rule: For any task >2 SP touching production logic, include an explicit SCOPE GUARD. Worker must STOP and escalate via BLOCKER_PACKET if scope expands.
+- Applies_to: aria, jarvis
+- Expected_outcome: Tasks complete within estimated SP; scope creep caught and routed for decision
+- Evidence_ref: SAFETY-001 T-02 (fill model completed within 2-3 SP)
+- Added_utc: 2026-04-08T00:00:00Z
