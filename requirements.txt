@@ -5,3 +5,4 @@ aiohttp>=3.9.0
 qdrant-client>=1.7.0
 click>=8.0.0
 PyYAML>=6.0
+influxdb-client>=1.40.0
