@@ -6,12 +6,8 @@ Requires real Redis connection. Skips gracefully if Redis or feature flag unavai
 
 import json
 import logging
-import os
-import time
-from datetime import UTC, datetime
 
 import pytest
-
 from src.governance.memory.observer import (
     FEATURE_FLAG_KEY,
     OBSERVER_STATE_KEY,
@@ -225,7 +221,7 @@ class TestExtractObservationsDryRunIntegration:
         assert len(observations) >= 1
 
         # Verify no storage happened (active key should not exist)
-        active_key = f"chise:observations:active:test-integration-session"
+        active_key = "chise:observations:active:test-integration-session"
         assert client.exists(active_key) == 0
 
     @skip_condition
@@ -271,7 +267,7 @@ class TestObserverStorageIntegration:
 
         # Verify observations were stored
         if len(observations) > 0:
-            active_key = f"chise:observations:active:test-integration-session"
+            active_key = "chise:observations:active:test-integration-session"
             stored_count = client.zcard(active_key)
             assert stored_count >= 0  # May be 0 if dedup filtered everything
 
