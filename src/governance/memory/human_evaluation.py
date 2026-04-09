@@ -12,8 +12,7 @@ Ref: memory-audit-framework-20260409.md Section 3a
 
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from typing import Optional
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 HUMAN_EVAL_PREFIX = "bmad:chiseai:memory:human_eval"
 
 
-def _get_redis_client() -> Optional["redis.Redis"]:
+def _get_redis_client() -> object | None:
     """Get or create Redis client.
 
     Returns:
@@ -123,7 +122,7 @@ def store_human_evaluation(result: HumanEvaluationResult) -> str:
     return key
 
 
-def get_latest_evaluation(story_id: str) -> Optional[HumanEvaluationResult]:
+def get_latest_evaluation(story_id: str) -> HumanEvaluationResult | None:
     """
     Get latest human evaluation for a story.
 
