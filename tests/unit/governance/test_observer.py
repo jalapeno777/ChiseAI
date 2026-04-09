@@ -11,12 +11,10 @@ from unittest.mock import MagicMock, patch
 
 from src.governance.memory.observer import (
     DEFAULT_TOKEN_THRESHOLD,
-    FEATURE_FLAG_KEY,
-    OBSERVER_STATE_KEY,
     RAW_OBSERVATIONS_KEY_PREFIX,
     RAW_OBSERVATIONS_TTL,
-    Observer,
     Observation,
+    Observer,
 )
 
 
@@ -372,36 +370,6 @@ class TestExtractObservationsDryRun(unittest.TestCase):
         observations = self.observer.extract_observations("test-session", dry_run=True)
 
         # Should still return observations
-        self.assertGreater(len(observations), 0)
-        # But no zadd should be called (no storage)
-        self.mock_redis.zadd.assert_not_called()
-
-    def test_dry_run_with_feature_flag_disabled(self):
-        """Verify dry_run still returns observations even with flag disabled."""
-        self.mock_redis.get.return_value = "false"
-        # Use a message with recognizable keywords
-        self.mock_redis.lrange.return_value = [
-            "We decided to use Python for the project"
-        ]
-
-        observations = self.observer.extract_observations("test-session", dry_run=True)
-
-        # Should still return observations (dry_run bypasses storage check)
-        self.assertGreater(len(observations), 0)
-        # But no zadd should be called (no storage)
-        self.mock_redis.zadd.assert_not_called()
-
-    def test_dry_run_with_feature_flag_disabled(self):
-        """Verify dry_run still returns observations even with flag disabled."""
-        self.mock_redis.get.return_value = "false"
-        # Use a message with recognizable keywords
-        self.mock_redis.lrange.return_value = [
-            "We decided to use Python for the project"
-        ]
-
-        observations = self.observer.extract_observations("test-session", dry_run=True)
-
-        # Should still return observations (dry_run bypasses storage check)
         self.assertGreater(len(observations), 0)
         # But no zadd should be called (no storage)
         self.mock_redis.zadd.assert_not_called()
