@@ -177,7 +177,6 @@ def run_observer_dry_run(session_id, messages, use_accumulator=True):
             mock_redis = MagicMock()
             # Pre-configure lrange to return JSON-wrapped messages
             # (same format as what accumulate_message stores)
-            raw_key = f"chise:observations:raw:{session_id}"
             stored_messages = [
                 json.dumps(
                     {

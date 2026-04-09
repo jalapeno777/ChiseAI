@@ -13,7 +13,8 @@ LABEL com.docker.compose.service=ohlcv-ingestion
 
 # Install ccxt for exchange data fetching (required by ohlcv_fetcher.py)
 USER root
-RUN pip install --no-cache-dir ccxt>=4.0.0
+RUN pip install --no-cache-dir ccxt>=4.0.0 && \
+    apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
 
 # Copy latest scripts and source code
 COPY scripts/ /app/scripts/
