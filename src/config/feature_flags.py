@@ -94,6 +94,9 @@ class FeatureFlags:
         f"{REDIS_PREFIX}:reconciliation_auto_backfill"
     )
 
+    # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
+    KEY_MEMORY_HYBRID_ENABLED: ClassVar[str] = f"{REDIS_PREFIX}:memory_hybrid_enabled"
+
     # TTL for Redis flag storage (seconds) - 24 hours
     FLAG_TTL: ClassVar[int] = 86400
 
@@ -126,6 +129,10 @@ class FeatureFlags:
     # ST-FILL-007: Rollback safety
     fill_rollback_on_error_enabled: bool = False
     reconciliation_auto_backfill: bool = True
+
+    # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
+    # Default False (opt-in for Phase 4)
+    memory_hybrid_enabled: bool = False
 
     # Redis client reference (not frozen, but accessed via property)
     _redis_client: Any = field(default=None, repr=False, compare=False)
@@ -342,6 +349,19 @@ class FeatureFlags:
             self.KEY_RECONCILIATION_AUTO_BACKFILL, self.reconciliation_auto_backfill
         )
 
+    # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
+    def is_memory_hybrid_enabled(self) -> bool:
+        """Check if Phase 4 hybrid memory context assembly is enabled.
+
+        When False: uses direct Qdrant retrieval (safe fallback).
+        When True: uses full Context Assembly pipeline with DomainContext.
+
+        Default: False (opt-in for Phase 4).
+        """
+        return self.get_redis_value(
+            self.KEY_MEMORY_HYBRID_ENABLED, self.memory_hybrid_enabled
+        )
+
     # Runtime flag setters (write to Redis)
 
     def set_retraining_ece_trigger_enabled(self, enabled: bool) -> bool:
@@ -375,6 +395,15 @@ class FeatureFlags:
     def set_persona_regression_enabled(self, enabled: bool) -> bool:
         """Enable or disable persona regression scheduling."""
         return self.set_redis_value(self.KEY_PERSONA_REGRESSION, enabled)
+
+    # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
+    def set_memory_hybrid_enabled(self, enabled: bool) -> bool:
+        """Enable or disable Phase 4 hybrid memory context assembly.
+
+        When enabling: ensures full Context Assembly pipeline with DomainContext.
+        When disabling: reverts to safe direct Qdrant retrieval fallback.
+        """
+        return self.set_redis_value(self.KEY_MEMORY_HYBRID_ENABLED, enabled)
 
     @classmethod
     def from_env(cls) -> FeatureFlags:
@@ -474,6 +503,8 @@ class FeatureFlags:
             # ST-FILL-007: Rollback safety
             "fill_rollback_on_error_enabled": self.is_fill_rollback_on_error_enabled(),
             "reconciliation_auto_backfill": self.is_reconciliation_auto_backfill_enabled(),
+            # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory
+            "memory_hybrid_enabled": self.is_memory_hybrid_enabled(),
         }
 
     def to_defaults_dict(self) -> dict[str, Any]:
@@ -503,6 +534,8 @@ class FeatureFlags:
             # ST-FILL-007: Rollback safety
             "fill_rollback_on_error_enabled": self.fill_rollback_on_error_enabled,
             "reconciliation_auto_backfill": self.reconciliation_auto_backfill,
+            # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory
+            "memory_hybrid_enabled": self.memory_hybrid_enabled,
         }
 
 
