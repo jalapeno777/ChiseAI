@@ -12,7 +12,6 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.governance.memory.human_evaluation import (
     HumanEvaluationResult,
     _build_key,
