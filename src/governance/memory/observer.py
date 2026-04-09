@@ -657,6 +657,9 @@ class Observer:
             observation_count: Number of observations extracted.
             dry_run: Whether this was a dry run.
         """
+        if dry_run:
+            return  # Skip state writes in dry-run mode
+
         redis_client = self._get_redis_client()
         if redis_client is None:
             return
