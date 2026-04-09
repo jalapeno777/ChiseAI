@@ -12,9 +12,10 @@ Tests for:
 HARDENING tests from Aria decision AD-PHASE4-20260409T000000Z-ctx001:
 - Strategic challenge invariant enforcement
 - No query-time staleness recomputation
+- Feature flag toggle: MEMORY_HYBRID_ENABLED=false → direct retrieval fallback
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -22,6 +23,8 @@ import pytest
 from src.governance.memory.context_assembler import (
     TOKEN_BUDGET_CAP,
     MemoryContext,
+    _assemble_hybrid_context,
+    _direct_retrieval_fallback,
     assert_no_runtime_staleness_compute_in_context,
     build_session_context,
 )
@@ -454,3 +457,303 @@ class TestAuditCapture:
         summary = get_memory_health_summary(metrics)
         assert summary.health_status == "critical"
         assert summary.staleness_violations == 3
+
+
+class TestFeatureFlagToggle:
+    """Tests for MEMORY_HYBRID_ENABLED feature flag toggle.
+
+    HARDENING (Aria decision AD-PHASE4-20260409T000000Z-ctx001):
+    - MEMORY_HYBRID_ENABLED=false → direct retrieval fallback
+    - MEMORY_HYBRID_ENABLED=true → full hybrid context assembly
+    - Flag toggle must prove safe fallback behavior
+    """
+
+    @pytest.fixture
+    def mock_redis(self):
+        """Mock Redis client."""
+        redis = MagicMock()
+        redis.get.return_value = "true"
+        redis.zrange.return_value = [
+            '{"timestamp": "2026-04-09T10:00:00Z", "content": "L0 obs 1"}',
+        ]
+        return redis
+
+    @pytest.fixture
+    def mock_qdrant(self):
+        """Mock Qdrant client."""
+        qdrant = MagicMock()
+
+        def mock_scroll(collection_name, filter, limit, offset=None, with_payload=True):
+            return [
+                {
+                    "id": "qdrant-1",
+                    "payload": {
+                        "id": "qdrant-1",
+                        "content": "content",
+                        "staleness_score": 0.8,
+                        "created_at": "2026-04-08T10:00:00Z",
+                    },
+                }
+            ], None
+
+        qdrant.scroll.side_effect = mock_scroll
+        return qdrant
+
+    def test_feature_flag_false_uses_direct_retrieval(self, mock_redis, mock_qdrant):
+        """AC2: When MEMORY_HYBRID_ENABLED=false, uses direct retrieval fallback.
+
+        Tests that build_session_context() returns a MemoryContext with
+        domain=None when the feature flag is false.
+        """
+        mock_ff = MagicMock()
+        mock_ff.is_memory_hybrid_enabled.return_value = False
+
+        with patch(
+            "src.config.feature_flags.FeatureFlags",
+            return_value=mock_ff,
+        ):
+            ctx = build_session_context(
+                session_id="toggle-test",
+                redis_client=mock_redis,
+                qdrant_client=mock_qdrant,
+            )
+
+        # In fallback mode, domain should be None
+        assert ctx.domain is None
+        # But all tiers should still be present
+        assert ctx.hot_context is not None
+        assert ctx.warm_context is not None
+        assert ctx.cold_context is not None
+        assert ctx.archived_hints is not None
+
+    def test_feature_flag_true_uses_hybrid_context(self, mock_redis, mock_qdrant):
+        """AC2: When MEMORY_HYBRID_ENABLED=true, uses full hybrid context assembly.
+
+        Tests that build_session_context() returns a MemoryContext with
+        domain potentially populated when the feature flag is true.
+        """
+        mock_ff = MagicMock()
+        mock_ff.is_memory_hybrid_enabled.return_value = True
+
+        with patch(
+            "src.config.feature_flags.FeatureFlags",
+            return_value=mock_ff,
+        ):
+            ctx = build_session_context(
+                session_id="toggle-test",
+                redis_client=mock_redis,
+                qdrant_client=mock_qdrant,
+            )
+
+        # In hybrid mode, domain can be populated if DomainContext is found
+        # (it may still be None if no domain_context in payloads)
+        assert ctx is not None
+        assert ctx.hot_context is not None
+        assert ctx.warm_context is not None
+
+    def test_feature_flag_toggle_proves_safe_fallback(self, mock_redis, mock_qdrant):
+        """AC4: Flag toggle proves safe fallback when flag=false.
+
+        This is the ROLLBACK SMOKE TEST from Aria hardening.
+        When flag is toggled from true to false, the system must
+        continue to work without errors.
+
+        Test sequence:
+        1. Set flag=true, call build_session_context (should work)
+        2. Set flag=false, call build_session_context (should work)
+        3. Verify no errors occurred
+        """
+        # First call with flag=true
+        mock_ff_true = MagicMock()
+        mock_ff_true.is_memory_hybrid_enabled.return_value = True
+
+        with patch(
+            "src.config.feature_flags.FeatureFlags",
+            return_value=mock_ff_true,
+        ):
+            ctx_true = build_session_context(
+                session_id="toggle-test",
+                redis_client=mock_redis,
+                qdrant_client=mock_qdrant,
+            )
+
+        # Second call with flag=false (fallback mode)
+        mock_ff_false = MagicMock()
+        mock_ff_false.is_memory_hybrid_enabled.return_value = False
+
+        with patch(
+            "src.config.feature_flags.FeatureFlags",
+            return_value=mock_ff_false,
+        ):
+            ctx_false = build_session_context(
+                session_id="toggle-test",
+                redis_client=mock_redis,
+                qdrant_client=mock_qdrant,
+            )
+
+        # Both calls should succeed without errors
+        assert ctx_true is not None
+        assert ctx_false is not None
+
+        # Fallback mode should have domain=None
+        assert ctx_false.domain is None
+
+        # All tiers should be populated in both modes
+        assert ctx_true.hot_context is not None
+        assert ctx_false.hot_context is not None
+
+
+class TestDirectRetrievalFallback:
+    """Tests for _direct_retrieval_fallback function."""
+
+    @pytest.fixture
+    def mock_redis(self):
+        """Mock Redis client."""
+        redis = MagicMock()
+        redis.get.return_value = "true"
+        redis.zrange.return_value = [
+            '{"timestamp": "2026-04-09T10:00:00Z", "content": "L0 obs 1"}',
+        ]
+        return redis
+
+    @pytest.fixture
+    def mock_qdrant(self):
+        """Mock Qdrant client."""
+        qdrant = MagicMock()
+
+        def mock_scroll(collection_name, filter, limit, offset=None, with_payload=True):
+            return [
+                {
+                    "id": "qdrant-1",
+                    "payload": {
+                        "id": "qdrant-1",
+                        "content": "content",
+                        "staleness_score": 0.8,
+                        "created_at": "2026-04-08T10:00:00Z",
+                    },
+                }
+            ], None
+
+        qdrant.scroll.side_effect = mock_scroll
+        return qdrant
+
+    def test_direct_retrieval_returns_all_tiers(self, mock_redis, mock_qdrant):
+        """_direct_retrieval_fallback should return all 4 tiers."""
+        ctx = _direct_retrieval_fallback(
+            session_id="test-session",
+            redis_client=mock_redis,
+            qdrant_client=mock_qdrant,
+        )
+
+        assert ctx.hot_context is not None
+        assert ctx.warm_context is not None
+        assert ctx.cold_context is not None
+        assert ctx.archived_hints is not None
+
+    def test_direct_retrieval_has_no_domain(self, mock_redis, mock_qdrant):
+        """_direct_retrieval_fallback should set domain=None."""
+        ctx = _direct_retrieval_fallback(
+            session_id="test-session",
+            redis_client=mock_redis,
+            qdrant_client=mock_qdrant,
+        )
+
+        assert ctx.domain is None
+
+
+class TestHybridContextAssembly:
+    """Tests for _assemble_hybrid_context function."""
+
+    @pytest.fixture
+    def mock_redis(self):
+        """Mock Redis client."""
+        redis = MagicMock()
+        redis.get.return_value = "true"
+        redis.zrange.return_value = [
+            '{"timestamp": "2026-04-09T10:00:00Z", "content": "L0 obs 1"}',
+        ]
+        return redis
+
+    @pytest.fixture
+    def mock_qdrant(self):
+        """Mock Qdrant client."""
+        qdrant = MagicMock()
+
+        def mock_scroll(collection_name, filter, limit, offset=None, with_payload=True):
+            return [
+                {
+                    "id": "qdrant-1",
+                    "payload": {
+                        "id": "qdrant-1",
+                        "content": "content",
+                        "staleness_score": 0.8,
+                        "created_at": "2026-04-08T10:00:00Z",
+                    },
+                }
+            ], None
+
+        qdrant.scroll.side_effect = mock_scroll
+        return qdrant
+
+    def test_assemble_hybrid_returns_all_tiers(self, mock_redis, mock_qdrant):
+        """_assemble_hybrid_context should return all 4 tiers."""
+        ctx = _assemble_hybrid_context(
+            session_id="test-session",
+            redis_client=mock_redis,
+            qdrant_client=mock_qdrant,
+        )
+
+        assert ctx.hot_context is not None
+        assert ctx.warm_context is not None
+        assert ctx.cold_context is not None
+        assert ctx.archived_hints is not None
+
+    def test_assemble_hybrid_domain_may_be_none_without_payload(
+        self, mock_redis, mock_qdrant
+    ):
+        """_assemble_hybrid_context may have domain=None if no DomainContext in payload."""
+        ctx = _assemble_hybrid_context(
+            session_id="test-session",
+            redis_client=mock_redis,
+            qdrant_client=mock_qdrant,
+        )
+
+        # Without explicit domain_context in payloads, domain may be None
+        # This is acceptable - the function still works
+        assert ctx is not None
+
+
+class TestMemoryContextDomainField:
+    """Tests for MemoryContext.domain field."""
+
+    def test_memory_context_with_domain(self):
+        """MemoryContext should accept domain field."""
+        ctx = MemoryContext(
+            hot_context={"tier": "L0", "results": []},
+            warm_context={"tier": "L1", "results": []},
+            cold_context={"tier": "L2", "results": []},
+            archived_hints={"tier": "L3", "results": []},
+            token_budget_used=1000,
+            legacy_missing=[],
+            domain={
+                "domain_context": {
+                    "wing": "trading",
+                    "room": "risk-mgmt",
+                    "hall": "facts",
+                    "tunnels": [],
+                }
+            },
+        )
+        assert ctx.domain is not None
+        assert ctx.domain["domain_context"]["wing"] == "trading"
+
+    def test_memory_context_domain_defaults_to_none(self):
+        """MemoryContext.domain should default to None."""
+        ctx = MemoryContext(
+            hot_context={},
+            warm_context={},
+            cold_context={},
+            archived_hints={},
+            token_budget_used=0,
+        )
+        assert ctx.domain is None
