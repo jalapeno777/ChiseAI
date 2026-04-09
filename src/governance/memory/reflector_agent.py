@@ -685,6 +685,29 @@ class Reflector:
 
         return result
 
+    def _compute_staleness_score(self, created_at: str, updated_at: str) -> float:
+        """Precompute staleness score at WRITE TIME.
+
+        This is called when writing to Qdrant, NOT at query time.
+        Precomputing at write time ensures O(1) L3 queries.
+
+        Uses 30-day (720h) decay window for promoted memories.
+
+        Args:
+            created_at: ISO8601 creation timestamp.
+            updated_at: ISO8601 last update timestamp.
+
+        Returns:
+            Staleness score 0.0 (stale) to 1.0 (fresh).
+        """
+        now = datetime.now(UTC)
+        updated = datetime.fromisoformat(updated_at)
+        hours_since = (now - updated).total_seconds() / 3600
+
+        # 30-day (720h) decay window for promoted memories
+        decay_window = 720.0
+        return max(0.0, 1.0 - hours_since / decay_window)
+
     def _write_to_qdrant(self, consolidation_result: dict) -> bool:
         """Write consolidated memory to Qdrant.
 
@@ -738,6 +761,13 @@ class Reflector:
                 ),
                 "compression_ratio": consolidation_result.get("compression_ratio", 1.0),
             }
+
+            # Precompute staleness_score at WRITE TIME (not query time)
+            # This ensures O(1) L3 queries — no dynamic computation at query time
+            payload["staleness_score"] = self._compute_staleness_score(
+                created_at=created_at,
+                updated_at=updated_at,
+            )
 
             # Write to Qdrant
             qdrant_client.upsert(
