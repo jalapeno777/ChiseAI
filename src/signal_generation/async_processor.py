@@ -15,6 +15,8 @@ Key Features:
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import json
 import logging
 import time
 from dataclasses import dataclass, field
@@ -26,6 +28,14 @@ if TYPE_CHECKING:
     from signal_generation.dedup import SignalDeduper
     from signal_generation.models import Signal
     from signal_generation.signal_emitter import SignalEmitter
+
+# TTL for stored signals (7 days)
+SIGNAL_STORAGE_TTL_SECONDS = 7 * 24 * 60 * 60  # 604800
+
+# Redis key patterns for signal storage
+SIGNAL_KEY_PATTERN = "paper:signal:{timestamp}:{token}:{signal_id}"
+PROCESSED_SIGNALS_KEY = "paper:signals:processed"
+SIGNAL_SCAN_PREFIX = "paper:signal:*"
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +218,7 @@ class AsyncSignalProcessor:
         emitters: list[SignalEmitter] | None = None,
         deduper: SignalDeduper | None = None,
         actionable_threshold: float = 0.75,
+        redis_client: Any | None = None,
     ):
         """Initialize async signal processor.
 
@@ -218,6 +229,8 @@ class AsyncSignalProcessor:
             emitters: List of signal emitters for delivery
             deduper: Signal deduplicator for duplicate detection
             actionable_threshold: Minimum confidence for actionable signals (default 0.75)
+            redis_client: Optional Redis client for durable signal storage.
+                          If None, one is created lazily from redis_config.
         """
         self.max_concurrent = max_concurrent
         self.max_retries = max_retries
@@ -225,6 +238,8 @@ class AsyncSignalProcessor:
         self.emitters = emitters or []
         self._deduper = deduper
         self._actionable_threshold = actionable_threshold
+        self._redis_client: Any | None = redis_client
+        self._redis_client_initialized = redis_client is not None
 
         # Concurrency control
         self._semaphore = asyncio.Semaphore(max_concurrent)
@@ -247,6 +262,27 @@ class AsyncSignalProcessor:
             f"AsyncSignalProcessor initialized: "
             f"max_concurrent={max_concurrent}, max_retries={max_retries}"
         )
+
+    async def _get_redis_client(self) -> Any | None:
+        """Lazily initialize and return the Redis client.
+
+        Returns:
+            Redis client instance, or None if Redis is unavailable.
+        """
+        if self._redis_client_initialized:
+            return self._redis_client
+
+        try:
+            from execution.paper.redis_config import get_redis_client
+
+            self._redis_client = get_redis_client(decode_responses=True)
+            self._redis_client_initialized = True
+            logger.info("Redis client initialized for signal storage")
+            return self._redis_client
+        except Exception as e:
+            logger.warning(f"Failed to initialize Redis client for signal storage: {e}")
+            self._redis_client_initialized = True  # Avoid repeated attempts
+            return None
 
     def _get_priority(self, signal: Signal) -> int:
         """Get processing priority for a signal.
@@ -669,7 +705,11 @@ class AsyncSignalProcessor:
         }
 
     async def _store_signal(self, enriched_signal: EnrichedSignal) -> bool:
-        """Store signal to database asynchronously.
+        """Store signal to Redis durably.
+
+        Persists signal data as a Redis hash with a 7-day TTL. The key
+        follows the pattern ``paper:signal:{timestamp}:{token}:{signal_id}``.
+        Writes are idempotent — re-storing the same signal is safe.
 
         Args:
             enriched_signal: Enriched signal to store
@@ -677,13 +717,103 @@ class AsyncSignalProcessor:
         Returns:
             True if storage succeeded, False otherwise
         """
-        # Simulate async storage work
-        await asyncio.sleep(0.001)  # Minimal async yield
+        client = await self._get_redis_client()
+        if client is None:
+            logger.warning(
+                f"Signal {enriched_signal.signal.signal_id} not stored: "
+                "Redis unavailable"
+            )
+            return False
 
-        # In production, this would store to database
-        # For now, just log success
-        logger.debug(f"Signal {enriched_signal.signal.signal_id} stored successfully")
-        return True
+        signal = enriched_signal.signal
+        timestamp_str = (
+            signal.timestamp.strftime("%Y%m%dT%H%M%S")
+            if signal.timestamp
+            else datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+        )
+        token_safe = signal.token.replace("/", "_")
+        redis_key = SIGNAL_KEY_PATTERN.format(
+            timestamp=timestamp_str,
+            token=token_safe,
+            signal_id=signal.signal_id,
+        )
+
+        try:
+            signal_data = enriched_signal.to_dict()
+            # Redis hashes require string values
+            flat_data: dict[str, str] = {}
+            for k, v in signal_data.items():
+                if isinstance(v, dict):
+                    flat_data[k] = json.dumps(v, default=str)
+                else:
+                    flat_data[k] = str(v) if v is not None else ""
+
+            await client.hset(redis_key, mapping=flat_data)
+            await client.expire(redis_key, SIGNAL_STORAGE_TTL_SECONDS)
+            logger.debug(f"Signal {signal.signal_id} stored to Redis key {redis_key}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to store signal {signal.signal_id} to Redis: {e}")
+            return False
+
+    async def recover_pending_signals(self) -> list[dict[str, Any]]:
+        """Scan Redis for stored signals not yet in the processed set.
+
+        On startup or after a restart, this recovers signals that were
+        persisted but never fully processed (e.g., crash before delivery).
+
+        Returns:
+            List of signal data dicts recovered from Redis.
+        """
+        client = await self._get_redis_client()
+        if client is None:
+            logger.warning("Cannot recover signals: Redis unavailable")
+            return []
+
+        recovered: list[dict[str, Any]] = []
+        try:
+            cursor = 0
+            while True:
+                cursor, keys = await client.scan(
+                    cursor=cursor, match="paper:signal:*", count=100
+                )
+                for key in keys:
+                    # Check if already processed (idempotency guard)
+                    is_processed = await client.sismember(PROCESSED_SIGNALS_KEY, key)
+                    if is_processed:
+                        continue
+
+                    signal_data = await client.hgetall(key)
+                    if signal_data:
+                        # Reconstruct nested JSON fields
+                        for field_name in (
+                            "signal",
+                            "orderbook_depth",
+                            "risk_params",
+                            "market_context",
+                        ):
+                            raw = signal_data.get(field_name)
+                            if raw and isinstance(raw, str):
+                                with contextlib.suppress(
+                                    json.JSONDecodeError, TypeError
+                                ):
+                                    signal_data[field_name] = json.loads(raw)
+                        recovered.append(signal_data)
+                        logger.info(f"Recovered pending signal from {key}")
+
+                if cursor == 0:
+                    break
+
+            if recovered:
+                logger.info(f"Recovered {len(recovered)} pending signal(s) from Redis")
+            else:
+                logger.debug("No pending signals to recover from Redis")
+
+        except Exception as e:
+            logger.error(f"Error recovering pending signals: {e}")
+
+        return recovered
 
     async def _log_processing_complete(
         self,
