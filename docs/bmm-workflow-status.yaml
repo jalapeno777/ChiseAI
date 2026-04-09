@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-04-08"
+  last_updated: "2026-04-09"
   managed_by: merlin
   status_notes:
     - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324
@@ -14,6 +14,12 @@ metadata:
     - "Weekly review 2026-03-29: P0 merge authority bypass fixed, override audit logging,"
     - "  post-merge verify script, CI tag drift fix, lessons normalization (8 branches
       merged)"
+    - "R2a Canary: FULL PIPELINE OPERATIONAL (2026-04-09) — OHLCV ingestion healthy, signal generation active (600+ signals), consumer polling, durable storage via Redis"
+    - "Grafana: r2a-canary-health dashboard active (11 panels, 4 alert rules, InfluxDB datasource configured)"
+    - "I-RISK-001 merged (PR #968): Exposure cap now BLOCKS orders exceeding 80% portfolio exposure"
+    - "I-PIPE-001 merged (PR #974): Durable signal storage replacing _store_signal() stub"
+    - "ST-WIRE-ERROR-RATE-TRACKER deferred to post-Day-3-checkpoint (2026-04-11) — P2, 3SP"
+    - "Docker healthcheck procps fix merged (PR #972): chiseai-signal-supervisor and chiseai-ohlcv-ingestion now healthy"
 completed:
   - archive_ref: ARCH-20260406-023722-EP-LOCAL-CI-001
     id: EP-LOCAL-CI-001
@@ -1369,6 +1375,8 @@ epics:
         to follow 2026-04-14
       - R2a canary started 2026-04-08 (21-day paper trading run, emitter PID 1559035)
       - Canary checkpoints: day3=2026-04-11, day7=2026-04-15, day14=2026-04-22, day21=2026-04-29
+      - "Canary infrastructure fully operational as of 2026-04-09 (signal pipeline, Grafana monitoring, durable storage)"
+      - "InfluxDB org parameter fix merged (PR #971): OHLCV data now persists correctly"
     sprint_id: LAUNCH-SPRINT-3
     status: in_progress
     stories_completed: 1

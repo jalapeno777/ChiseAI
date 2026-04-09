@@ -6,7 +6,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-03-30"
+  last_updated: "2026-04-09"
 
 # Validation entries
 validations:
@@ -2316,6 +2316,62 @@ validations:
       - Contingency plan activated if needed
     test_method: manual
     owner: product-team
+
+  - id: V-I-RISK-001
+    title: Exposure Cap Blocking Enforcement
+    story_id: I-RISK-001
+    status: validated
+    description: Validate exposure cap violation now BLOCKS orders instead of logging WARNING only. 80% portfolio exposure cap enforced with rejection logging.
+    acceptance_criteria:
+      - Orders exceeding 80% exposure cap are rejected
+      - Rejection includes current and attempted exposure percentage in log
+      - Orders under cap are approved normally
+      - No regression in existing risk enforcement tests
+    test_method: automated
+    evidence:
+      - pr: 968
+      - merge_commit: d656f6336
+      - tests: 46 passing (including test_portfolio_exposure_over_cap_blocks_order)
+    owner: dev
+
+  - id: V-I-PIPE-001
+    title: Durable Signal Storage via Redis
+    story_id: I-PIPE-001
+    status: validated
+    description: Validate _store_signal() stub replaced with full Redis-backed implementation. Signals persist as hashes with 7-day TTL, startup recovery via SCAN + dedup.
+    acceptance_criteria:
+      - Signals stored as Redis hashes with key pattern paper:signal:{timestamp}:{token}:{signal_id}
+      - 7-day TTL on all signal keys
+      - Startup recovery via SCAN with idempotency
+      - Error handling (Redis failures log error, not crash)
+      - 20 new tests passing
+    test_method: automated
+    evidence:
+      - pr: 974
+      - merge_commit: f2d719d17
+      - tests: 20 new tests covering store, recover, idempotency, TTL
+    owner: dev
+
+  - id: V-CANARY-001
+    title: Canary Signal Pipeline Infrastructure
+    story_id: I-CANARY-001
+    status: validated
+    description: >
+      Validate full canary signal pipeline operational: OHLCV ingestion from Binance,
+      InfluxDB persistence, signal generation, Redis storage, consumer polling, Grafana monitoring.
+    acceptance_criteria:
+      - chiseai-ohlcv-ingestion container healthy and storing fresh candles
+      - chiseai-signal-supervisor container healthy and generating signals
+      - Redis paper:signal:* keys exist and growing
+      - Grafana r2a-canary-health dashboard showing live data
+      - 4 alert rules configured (drawdown, fill rate, signal gap, data staleness)
+    test_method: manual
+    evidence:
+      - pr: 971 (InfluxDB fix), 972 (healthcheck), 974 (supervisor health + storage)
+      - containers: chiseai-ohlcv-ingestion healthy, chiseai-signal-supervisor healthy
+      - redis: 600+ paper:signal:* keys
+      - grafana: dashboard r2a-canary-health with 11 panels
+    owner: jarvis
 
   # ============================================================
   # MISSING COMPONENTS VALIDATIONS (4 validations for Option A)

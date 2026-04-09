@@ -1166,3 +1166,53 @@ Evidence: INC-2026-0406-ICT-S1A-1
 - Expected_outcome: Tasks complete within estimated SP; scope creep caught and routed for decision
 - Evidence_ref: SAFETY-001 T-02 (fill model completed within 2-3 SP)
 - Added_utc: 2026-04-08T00:00:00Z
+
+LESSON
+- id: LESSON-20260409-single-dep-source
+- context: requirements.txt and pyproject.toml dependency lists diverged, causing missing packages in Docker images. Containers crashed with ModuleNotFoundError.
+- trigger: Signal pipeline activation failure — signal_generator.py couldn't import config.bootstrap
+- actionable_rule: Single source of truth for dependencies — either pyproject.toml OR requirements.txt, never both without sync mechanism. Prefer pyproject.toml.
+- applies_to:
+  - dev
+  - quickdev
+  - senior-dev
+- expected_outcome: No dependency divergence between files
+- evidence_ref: commit 0ebcc5489, I-CANARY-001 remediation
+- added_utc: 2026-04-09T02:00:00Z
+
+LESSON
+- id: LESSON-20260409-compose-service-required
+- context: chiseai-ohlcv-ingestion had a Dockerfile but no docker-compose service entry. Container was never deployed via docker-compose up.
+- trigger: All 36 data sources stale — no OHLCV data flowing to InfluxDB for 6+ weeks
+- actionable_rule: Every service needs both Dockerfile AND compose service entry. If a service has a Dockerfile but no compose definition, it won't be deployed via docker-compose up.
+- applies_to:
+  - dev
+  - senior-dev
+  - merlin
+- expected_outcome: Every containerized service is deployable via compose
+- evidence_ref: I-CANARY-001 investigation, chiseai-ohlcv-ingestion deployment
+- added_utc: 2026-04-09T02:00:00Z
+
+LESSON
+- id: LESSON-20260409-influxdb-org-required
+- context: InfluxDB v2 API requires explicit `org` parameter on write() and query() calls. Missing org causes silent write failures — logs show "stored" but data never persists.
+- trigger: Grafana dashboard showing is_stale=1 despite ingestion logging successful cycles
+- actionable_rule: All InfluxDB v2 API calls must include explicit org parameter. Add org to health check as well. Never trust "success" logs without verifying data actually persists.
+- applies_to:
+  - dev
+  - quickdev
+- expected_outcome: InfluxDB writes verified by query, not just log output
+- evidence_ref: PR #971 (commit 2929bcde), storage.py fix
+- added_utc: 2026-04-09T14:00:00Z
+
+LESSON
+- id: LESSON-20260409-pgrep-healthcheck
+- context: Docker HEALTHCHECK using pgrep fails silently when procps package is not installed in the container image. Container reports UNHEALTHY even when application is running correctly.
+- trigger: Both chiseai-signal-supervisor and chiseai-ohlcv-ingestion showing UNHEALTHY despite functioning applications
+- actionable_rule: If Dockerfile HEALTHCHECK uses pgrep/ps/top, the image must install procps package. Prefer application-level health checks (e.g., Redis ping) over process-level checks (pgrep).
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: No false UNHEALTHY container status from missing procps
+- evidence_ref: PR #972 (commit 9ba13d3), PR #974 (Redis-based healthcheck)
+- added_utc: 2026-04-09T15:00:00Z
