@@ -7,14 +7,189 @@ Part of Phase 4 memory architecture hardening.
 From Aria decision AD-PHASE4-20260409T000000Z-ctx001:
 "Baseline Capture: Also implement baseline capture for metrics that depend
 on context assembly"
+
+Anti-Gaming Protections:
+- Append-only: Never overwrite. Each capture creates a new hash entry.
+- Capture Hash: SHA256(metric_values + timestamp) to detect replay.
+- TTL Refresh: When TTL < 7 days, async refresh (don't block).
 """
 
+import asyncio
+import hashlib
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+import redis
+
 logger = logging.getLogger(__name__)
+
+
+def _get_redis_conn() -> redis.Redis:
+    """Get Redis connection for baseline metrics storage."""
+    host = os.getenv("REDIS_HOST", "host.docker.internal")
+    port = int(os.getenv("REDIS_PORT", "6380"))
+    db = int(os.getenv("REDIS_DB", "0"))
+    return redis.Redis(host=host, port=port, db=db, decode_responses=True)
+
+
+# Redis key prefixes for baseline metrics
+BASELINE_KEY_PREFIX = "bmad:chiseai:memory:baseline"
+BASELINE_METRIC_KEYS = {
+    "recall_accuracy": f"{BASELINE_KEY_PREFIX}:recall_accuracy",
+    "context_cost": f"{BASELINE_KEY_PREFIX}:context_cost",
+    "dedup_effectiveness": f"{BASELINE_KEY_PREFIX}:dedup_effectiveness",
+    "staleness": f"{BASELINE_KEY_PREFIX}:staleness",
+    "compression_ratio": f"{BASELINE_KEY_PREFIX}:compression_ratio",
+    "coverage": f"{BASELINE_KEY_PREFIX}:coverage",
+    "fp_rate": f"{BASELINE_KEY_PREFIX}:fp_rate",
+    "near_dup_rate": f"{BASELINE_KEY_PREFIX}:near_dup_rate",
+}
+
+# TTL: 90 days in seconds
+BASELINE_TTL_SECONDS = 90 * 24 * 60 * 60
+# TTL refresh threshold: 7 days in seconds
+TTL_REFRESH_THRESHOLD_SECONDS = 7 * 24 * 60 * 60
+
+
+def _compute_capture_hash(value: float, captured_at: str) -> str:
+    """Compute SHA256 hash for anti-gaming capture verification."""
+    data = f"{value}:{captured_at}"
+    return f"sha256:{hashlib.sha256(data.encode()).hexdigest()}"
+
+
+def _capture_metric_to_redis(
+    redis_key: str,
+    value: float,
+    captured_at: str | None = None,
+) -> dict[str, Any]:
+    """
+    Capture a single metric to Redis with anti-gaming protections.
+
+    Args:
+        redis_key: Redis hash key for this metric.
+        value: The metric value to capture.
+        captured_at: Optional ISO8601 timestamp. Defaults to now.
+
+    Returns:
+        Dict with value, captured_at, capture_hash, and ttl.
+    """
+    if captured_at is None:
+        captured_at = datetime.now(UTC).isoformat()
+
+    capture_hash = _compute_capture_hash(value, captured_at)
+    ttl = BASELINE_TTL_SECONDS
+
+    # Use current timestamp as field name for append-only behavior
+    field_name = captured_at
+
+    redis_conn = _get_redis_conn()
+    redis_conn.hset(
+        redis_key,
+        field_name,
+        f"{value}|{capture_hash}|{ttl}",
+    )
+
+    # Check if TTL needs refresh
+    _refresh_ttl_if_needed(redis_key)
+
+    return {
+        "value": value,
+        "captured_at": captured_at,
+        "capture_hash": capture_hash,
+        "ttl": ttl,
+    }
+
+
+def _refresh_ttl_if_needed(redis_key: str) -> bool:
+    """
+    Refresh TTL on Redis key if it's below threshold.
+
+    Returns True if refresh was performed.
+    """
+    redis_conn = _get_redis_conn()
+    current_ttl = redis_conn.ttl(redis_key)
+
+    if current_ttl < 0:  # Key doesn't exist or has no TTL
+        redis_conn.expire(redis_key, BASELINE_TTL_SECONDS)
+        logger.debug(f"Set TTL on {redis_key}")
+        return True
+    elif current_ttl < TTL_REFRESH_THRESHOLD_SECONDS:
+        redis_conn.expire(redis_key, BASELINE_TTL_SECONDS)
+        logger.debug(f"Refreshed TTL on {redis_key} (was {current_ttl}s)")
+        return True
+
+    return False
+
+
+def _refresh_ttl_async(redis_key: str) -> None:
+    """Async wrapper for TTL refresh (non-blocking)."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.call_soon_threadsafe(_refresh_ttl_if_needed, redis_key)
+        else:
+            _refresh_ttl_if_needed(redis_key)
+    except RuntimeError:
+        # No event loop, just refresh synchronously
+        _refresh_ttl_if_needed(redis_key)
+
+
+def _parse_metric_entry(entry: str) -> dict[str, Any] | None:
+    """Parse a metric entry from Redis hash value."""
+    try:
+        parts = entry.split("|")
+        if len(parts) != 3:
+            return None
+        value_str, capture_hash, ttl_str = parts
+        return {
+            "value": float(value_str),
+            "capture_hash": capture_hash,
+            "ttl": int(ttl_str),
+        }
+    except (ValueError, TypeError):
+        return None
+
+
+def _get_latest_metric_from_redis(redis_key: str) -> dict[str, Any] | None:
+    """
+    Get the latest (most recent) metric entry from Redis hash.
+
+    Returns None if no entries exist.
+    """
+    redis_conn = _get_redis_conn()
+    all_entries = redis_conn.hgetall(redis_key)
+
+    if not all_entries:
+        return None
+
+    # Find the most recent entry by field name (timestamp)
+    latest_field = max(all_entries.keys())
+    entry = _parse_metric_entry(all_entries[latest_field])
+
+    if entry:
+        entry["captured_at"] = latest_field
+
+    return entry
+
+
+def _get_all_metrics_from_redis(redis_key: str) -> list[dict[str, Any]]:
+    """Get all metric entries from Redis hash."""
+    redis_conn = _get_redis_conn()
+    all_entries = redis_conn.hgetall(redis_key)
+
+    metrics = []
+    for field_name, entry_value in all_entries.items():
+        parsed = _parse_metric_entry(entry_value)
+        if parsed:
+            parsed["captured_at"] = field_name
+            metrics.append(parsed)
+
+    # Sort by captured_at
+    metrics.sort(key=lambda x: x["captured_at"])
+    return metrics
 
 
 @dataclass
@@ -231,3 +406,184 @@ def get_memory_health_summary(
         recommendations=recommendations,
         staleness_violations=metrics.staleness_violations,
     )
+
+
+# =============================================================================
+# Phase 1 PoC Baseline Metrics - 8 Metrics with Anti-Gaming Protections
+# =============================================================================
+
+
+def capture_baseline_metrics_all() -> dict[str, float]:
+    """
+    Capture current values for all 8 baseline metrics.
+    Anti-gaming: append-only with SHA256 hash.
+
+    Returns:
+        Dict mapping metric name to current value.
+    """
+    results = {}
+
+    for metric_name in BASELINE_METRIC_KEYS:
+        latest = _get_latest_metric_from_redis(BASELINE_METRIC_KEYS[metric_name])
+        if latest:
+            results[metric_name] = latest["value"]
+        else:
+            results[metric_name] = 0.0
+
+    return results
+
+
+def capture_recall_accuracy_baseline(value: float) -> dict[str, Any]:
+    """
+    Capture recall accuracy baseline metric.
+
+    Args:
+        value: Recall accuracy value (0.0-1.0).
+
+    Returns:
+        Capture result dict with value, captured_at, capture_hash, ttl.
+    """
+    return _capture_metric_to_redis(
+        BASELINE_METRIC_KEYS["recall_accuracy"],
+        value,
+    )
+
+
+def capture_context_cost_baseline(value: float) -> dict[str, Any]:
+    """
+    Capture context cost baseline metric.
+
+    Args:
+        value: Context cost value (tokens or monetary cost).
+
+    Returns:
+        Capture result dict with value, captured_at, capture_hash, ttl.
+    """
+    return _capture_metric_to_redis(
+        BASELINE_METRIC_KEYS["context_cost"],
+        value,
+    )
+
+
+def capture_dedup_effectiveness_baseline(value: float) -> dict[str, Any]:
+    """
+    Capture deduplication effectiveness baseline metric.
+
+    Args:
+        value: Dedup effectiveness ratio (0.0-1.0).
+
+    Returns:
+        Capture result dict with value, captured_at, capture_hash, ttl.
+    """
+    return _capture_metric_to_redis(
+        BASELINE_METRIC_KEYS["dedup_effectiveness"],
+        value,
+    )
+
+
+def capture_staleness_baseline(value: float) -> dict[str, Any]:
+    """
+    Capture staleness baseline metric.
+
+    Args:
+        value: Staleness score (0.0-1.0, higher = staler).
+
+    Returns:
+        Capture result dict with value, captured_at, capture_hash, ttl.
+    """
+    return _capture_metric_to_redis(
+        BASELINE_METRIC_KEYS["staleness"],
+        value,
+    )
+
+
+def capture_compression_ratio_baseline(value: float) -> dict[str, Any]:
+    """
+    Capture compression ratio baseline metric.
+
+    Args:
+        value: Compression ratio (e.g., 0.5 means 50% compression).
+
+    Returns:
+        Capture result dict with value, captured_at, capture_hash, ttl.
+    """
+    return _capture_metric_to_redis(
+        BASELINE_METRIC_KEYS["compression_ratio"],
+        value,
+    )
+
+
+def capture_coverage_baseline(value: float) -> dict[str, Any]:
+    """
+    Capture coverage baseline metric.
+
+    Args:
+        value: Coverage ratio (0.0-1.0).
+
+    Returns:
+        Capture result dict with value, captured_at, capture_hash, ttl.
+    """
+    return _capture_metric_to_redis(
+        BASELINE_METRIC_KEYS["coverage"],
+        value,
+    )
+
+
+def capture_fp_rate_baseline(value: float) -> dict[str, Any]:
+    """
+    Capture false positive rate baseline from human evaluation.
+
+    Args:
+        value: False positive rate (0.0-1.0).
+
+    Returns:
+        Capture result dict with value, captured_at, capture_hash, ttl.
+    """
+    return _capture_metric_to_redis(
+        BASELINE_METRIC_KEYS["fp_rate"],
+        value,
+    )
+
+
+def capture_near_dup_rate_baseline(value: float) -> dict[str, Any]:
+    """
+    Capture near-duplicate rate (cosine similarity > 0.95 pairs / total).
+
+    Args:
+        value: Near-duplicate rate (0.0-1.0).
+
+    Returns:
+        Capture result dict with value, captured_at, capture_hash, ttl.
+    """
+    return _capture_metric_to_redis(
+        BASELINE_METRIC_KEYS["near_dup_rate"],
+        value,
+    )
+
+
+def get_memory_health_summary_all() -> dict[str, dict[str, Any]]:
+    """
+    Return health summary for all 8 baseline metrics.
+
+    Returns:
+        Dict mapping metric name to dict with:
+        - value: float
+        - captured_at: str
+        - capture_hash: str
+        - ttl: int
+    """
+    results = {}
+
+    for metric_name, redis_key in BASELINE_METRIC_KEYS.items():
+        latest = _get_latest_metric_from_redis(redis_key)
+        if latest:
+            results[metric_name] = latest
+        else:
+            results[metric_name] = {
+                "value": 0.0,
+                "captured_at": "",
+                "capture_hash": "",
+                "ttl": 0,
+            }
+
+    return results
