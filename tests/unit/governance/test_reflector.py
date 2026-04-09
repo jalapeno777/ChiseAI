@@ -7,18 +7,12 @@ Tests Reflector class with mocked Redis, Qdrant, and LLM clients.
 import json
 import unittest
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from src.governance.memory.reflector_agent import (
     DEFAULT_CONSOLIDATION_THRESHOLD,
-    FEATURE_FLAG_KEY,
-    MIN_CONSOLIDATION_INTERVAL,
-    MIN_OBSERVATIONS_FOR_CONSOLIDATION,
-    CONVERGENCE_OVERLAP_THRESHOLD,
-    OBSERVATIONS_ACTIVE_PREFIX,
-    REFLECTOR_STATE_KEY,
-    SupersededObservation,
     Reflector,
+    SupersededObservation,
 )
 
 

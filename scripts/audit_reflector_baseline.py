@@ -250,7 +250,6 @@ def run_reflector_dry_run(session_id, observations, use_mock_llm=True):
 
         # Create mock Redis that returns our observations
         mock_redis = MagicMock()
-        active_key = f"{OBSERVATIONS_ACTIVE_PREFIX}:{session_id}"
         mock_redis.zrange.return_value = [json.dumps(obs) for obs in observations]
         mock_redis.zcard.return_value = len(observations)
         mock_redis.get.return_value = "true"  # Feature flag enabled
