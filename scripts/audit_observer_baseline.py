@@ -146,20 +146,51 @@ def simulate_session_messages():
     return sample_messages
 
 
-def run_observer_dry_run(session_id, messages):
+def run_observer_dry_run(session_id, messages, use_accumulator=True):
     """
     Run Observer in dry-run mode on the given messages.
+
+    Args:
+        session_id: Session identifier for the observation session.
+        messages: List of message strings to process.
+        use_accumulator: If True, use accumulate_message() which writes to Redis.
+                         If False, simulate in-memory without calling accumulate_message().
+                         Default: True.
 
     Returns a dict with extracted observations and metadata.
     """
     try:
+        import json
+        from datetime import UTC, datetime
+        from unittest.mock import MagicMock
+
         from src.governance.memory.observer import Observer
 
-        observer = Observer(session_id)
-
-        # Accumulate messages
-        for msg in messages:
-            observer.accumulate_message(session_id, msg)
+        if use_accumulator:
+            # Use actual Redis accumulator (writes to Redis)
+            observer = Observer(session_id)
+            for msg in messages:
+                observer.accumulate_message(session_id, msg)
+        else:
+            # In dry-run mode WITHOUT accumulator: create observer with mocked Redis
+            # that returns pre-configured messages without any Redis writes
+            mock_redis = MagicMock()
+            # Pre-configure lrange to return JSON-wrapped messages
+            # (same format as what accumulate_message stores)
+            raw_key = f"chise:observations:raw:{session_id}"
+            stored_messages = [
+                json.dumps(
+                    {
+                        "message": msg,
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
+                )
+                for msg in messages
+            ]
+            mock_redis.lrange.return_value = stored_messages
+            mock_redis.type.return_value = "list"
+            # Create observer with mocked Redis (no real Redis connections)
+            observer = Observer(session_id, redis_client=mock_redis)
 
         # Extract observations in dry-run mode
         observations = observer.extract_observations(session_id, dry_run=True)
@@ -398,7 +429,9 @@ Examples:
         for i in range(args.sessions):
             session_id = f"simulated-session-{i + 1}"
             messages = simulate_session_messages()
-            result = run_observer_dry_run(session_id, messages)
+            # Dry-run mode: do NOT call accumulate_message() which writes to Redis
+            # Instead, simulate messages in-memory without side effects
+            result = run_observer_dry_run(session_id, messages, use_accumulator=False)
             sessions_data.append(result)
 
     elif redis_available and feature_flag_enabled:

@@ -387,6 +387,42 @@ class TestExtractObservationsDryRun(unittest.TestCase):
         # Should still return observations (dry_run bypasses storage check)
         self.assertGreater(len(observations), 0)
 
+    def test_extract_observations_parses_json_wrappers(self):
+        """Verify extract_observations() parses JSON wrappers before extraction.
+
+        This is the R1 fix: accumulate_message() stores messages as JSON like
+        {"message": "...", "timestamp": "..."}. extract_observations() must parse
+        this and extract the "message" field, not pass the raw JSON string.
+        """
+        self.mock_redis.get.return_value = "true"
+        # Simulate what accumulate_message() stores: JSON-wrapped messages
+        self.mock_redis.lrange.return_value = [
+            json.dumps(
+                {
+                    "message": "We decided to use Python for the project",
+                    "timestamp": "2026-04-09T10:00:00Z",
+                }
+            ),
+            json.dumps(
+                {
+                    "message": "I noticed a pattern emerging in user behavior",
+                    "timestamp": "2026-04-09T10:05:00Z",
+                }
+            ),
+        ]
+
+        observations = self.observer.extract_observations("test-session", dry_run=True)
+
+        # Verify we got observations
+        self.assertGreater(len(observations), 0)
+        # R1 FIX VERIFICATION: content should be plain text, NOT a JSON blob
+        for obs in observations:
+            self.assertFalse(obs.content.startswith("{"))
+            self.assertFalse(obs.content.endswith("}"))
+            # The content should NOT be a JSON string
+            self.assertNotIn('"message":', obs.content)
+            self.assertNotIn('"timestamp":', obs.content)
+
 
 class TestRunDedup(unittest.TestCase):
     """Test run_dedup() with mocked dedup engine."""

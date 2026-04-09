@@ -33,8 +33,7 @@ RAW_OBSERVATIONS_TTL = 24 * 3600
 # TTL for active observations sorted set (7 days)
 ACTIVE_OBSERVATIONS_TTL = 7 * 24 * 3600
 
-# Redis key prefixes
-OBSERVATIONS_RAW_PREFIX = "chise:observations:raw"
+# Redis key prefix for active observations
 OBSERVATIONS_ACTIVE_PREFIX = "chise:observations:active"
 
 
@@ -465,12 +464,18 @@ class Observer:
         redis_client = self._get_redis_client()
         if redis_client is not None:
             try:
-                raw_key = f"{OBSERVATIONS_RAW_PREFIX}:{session_id}"
+                raw_key = f"{RAW_OBSERVATIONS_KEY_PREFIX}{session_id}"
                 raw_messages = redis_client.lrange(raw_key, 0, -1)
                 for msg_data in raw_messages:
                     if isinstance(msg_data, bytes):
                         msg_data = msg_data.decode("utf-8")
-                    messages.append({"content": msg_data, "id": raw_key})
+                    # Parse JSON wrapper to extract the actual message content
+                    try:
+                        parsed = json.loads(msg_data)
+                        msg_content = parsed.get("message", msg_data)
+                    except (json.JSONDecodeError, TypeError):
+                        msg_content = msg_data
+                    messages.append({"content": msg_content, "id": raw_key})
             except Exception as e:
                 logger.warning(f"Failed to read raw messages: {e}")
 
