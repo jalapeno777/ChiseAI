@@ -15,8 +15,8 @@ HARDENING (Aria decision AD-PHASE4-20260409T000000Z-ctx001):
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional
 from enum import Enum
+from typing import Optional
 
 
 class MemoryWing(str, Enum):
@@ -70,7 +70,7 @@ class DomainContext:
     wing: str  # "chiseai" | "craig" | "trading" | "infra"
     room: str  # "risk-mgmt" | "strategy-dev" | "preferences" | "iterations"
     hall: str  # "facts" | "events" | "discoveries" | "preferences" | "advice"
-    tunnels: List[str] = field(default_factory=list)  # related domains
+    tunnels: list[str] = field(default_factory=list)  # related domains
 
     def to_payload(self) -> dict:
         """
