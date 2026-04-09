@@ -153,19 +153,15 @@ class PartialL3Result:
             TierContext with results and metadata.
         """
         # Read staleness_score from payload (precomputed at write time)
-        now = datetime.now(UTC)
         newest_record = None
         oldest_record = None
 
         for item in self.results:
             payload = item.get("payload", {})
             if "staleness_score" not in payload:
-                # Legacy fallback: compute at read time using 720h denominator
-                updated = datetime.fromisoformat(
-                    payload.get("updated_at", now.isoformat())
-                )
-                hours_since = (now - updated).total_seconds() / 3600
-                payload["staleness_score"] = max(0.0, 1.0 - hours_since / 720.0)
+                # Legacy record: mark as legacy_missing, do NOT compute surrogate
+                payload["legacy_missing"] = True
+                payload["staleness_score"] = None  # Explicit None, not computed
 
             ts = payload.get("created_at")
             if ts:
@@ -175,7 +171,7 @@ class PartialL3Result:
                     newest_record = ts
 
         staleness_scores = [
-            r.get("payload", {}).get("staleness_score", 0.0) for r in self.results
+            r.get("payload", {}).get("staleness_score") or 0.0 for r in self.results
         ]
         avg_staleness = (
             sum(staleness_scores) / len(staleness_scores) if staleness_scores else 0.0
@@ -462,21 +458,17 @@ class RecallEngine:
         results = self._scroll_qdrant(filter_conditions, limit=1000)
 
         # Read staleness_score from payload (precomputed at WRITE TIME)
-        now = datetime.now(UTC)
         newest_record = None
         oldest_record = None
 
         for item in results:
             payload = item.get("payload", {})
             # staleness_score is precomputed at write time; read from payload
-            # For records without precomputed score (legacy), compute at read time
-            # using 720h denominator (consistent with write-time precompute)
+            # For records without precomputed score (legacy), mark as legacy_missing
+            # Do NOT compute surrogate staleness at query time
             if "staleness_score" not in payload:
-                updated = datetime.fromisoformat(
-                    payload.get("updated_at", now.isoformat())
-                )
-                hours_since = (now - updated).total_seconds() / 3600
-                payload["staleness_score"] = max(0.0, 1.0 - hours_since / 720.0)
+                payload["legacy_missing"] = True
+                payload["staleness_score"] = None  # Explicit None, not computed
 
             ts = payload.get("created_at")
             if ts:
@@ -486,7 +478,7 @@ class RecallEngine:
                     newest_record = ts
 
         staleness_scores = [
-            r.get("payload", {}).get("staleness_score", 0.0) for r in results
+            r.get("payload", {}).get("staleness_score") or 0.0 for r in results
         ]
         avg_staleness = (
             sum(staleness_scores) / len(staleness_scores) if staleness_scores else 0.0
@@ -539,19 +531,15 @@ class RecallEngine:
         results = self._scroll_qdrant(filter_conditions, limit=1000)
 
         # Read staleness_score from payload (precomputed at WRITE TIME)
-        now = datetime.now(UTC)
         newest_record = None
         oldest_record = None
 
         for item in results:
             payload = item.get("payload", {})
             if "staleness_score" not in payload:
-                # Legacy fallback: compute at read time using 720h denominator
-                updated = datetime.fromisoformat(
-                    payload.get("updated_at", now.isoformat())
-                )
-                hours_since = (now - updated).total_seconds() / 3600
-                payload["staleness_score"] = max(0.0, 1.0 - hours_since / 720.0)
+                # Legacy record: mark as legacy_missing, do NOT compute surrogate
+                payload["legacy_missing"] = True
+                payload["staleness_score"] = None  # Explicit None, not computed
 
             ts = payload.get("created_at")
             if ts:
@@ -561,7 +549,7 @@ class RecallEngine:
                     newest_record = ts
 
         staleness_scores = [
-            r.get("payload", {}).get("staleness_score", 0.0) for r in results
+            r.get("payload", {}).get("staleness_score") or 0.0 for r in results
         ]
         avg_staleness = (
             sum(staleness_scores) / len(staleness_scores) if staleness_scores else 0.0
