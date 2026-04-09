@@ -15,7 +15,8 @@ Feature Flag: chise:feature_flags:memory:tiered_recall_enabled
 
 import json
 import logging
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -34,6 +35,10 @@ QDRANT_COLLECTION = "ChiseAI"
 
 # Redis key patterns
 REDIS_ACTIVE_OBSERVATIONS_KEY = "chise:observations:active:{session_id}"
+
+# L3 pagination constants
+MAX_L3_PAGE_SIZE = 100
+L3_QUERY_TIMEOUT_SECONDS = 10
 
 
 @dataclass
@@ -76,6 +81,139 @@ class TierContext:
     token_count: int
 
 
+@dataclass
+class SaturationAlert:
+    """Alert when context saturation is outside nominal range.
+
+    Attributes:
+        ratio: Actual tokens / max_tokens ratio.
+        tier_breakdown: Per-tier token ratios.
+        alert_type: "sparse" (< 0.3) | "saturated" (> 0.85) | "nominal".
+        recommendation: Actionable recommendation string or None.
+    """
+
+    ratio: float
+    tier_breakdown: dict[str, float]
+    alert_type: str  # "sparse" | "saturated" | "nominal"
+    recommendation: str | None
+
+
+@dataclass
+class TieredRecallResponse:
+    """Full response from tiered recall with saturation metrics.
+
+    Attributes:
+        tiers: Mapping of tier name to TierContext.
+        context_tokens: Total tokens assembled.
+        max_tokens: Token budget limit.
+        saturation_ratio: context_tokens / max_tokens.
+        complete: True if all tiers returned full results.
+        status: "ok" | "partial" | "feature_disabled".
+        incomplete_tiers: List of tier names that returned partial results.
+        next_cursors: Cursor for next page of incomplete tiers.
+        timeout_ms: Elapsed ms for slowest tier query.
+        saturation_alert: SaturationAlert if outside nominal range.
+    """
+
+    tiers: dict[str, TierContext]
+    context_tokens: int
+    max_tokens: int
+    saturation_ratio: float
+    complete: bool
+    status: str  # "ok" | "partial" | "feature_disabled"
+    incomplete_tiers: list[str] = field(default_factory=list)
+    next_cursors: dict[str, str | None] = field(default_factory=dict)
+    timeout_ms: int | None = None
+    saturation_alert: SaturationAlert | None = None
+
+
+@dataclass
+class PartialL3Result:
+    """Result of a single L3 page query with timeout tracking.
+
+    Attributes:
+        results: List of Qdrant points for this page.
+        complete: True if no more pages remain.
+        next_cursor: Cursor for next page, or None if complete.
+        timeout_ms: Elapsed milliseconds for this query.
+        fallback_tier: Tier to use as fallback on error, or None.
+    """
+
+    results: list[dict[str, Any]]
+    complete: bool
+    next_cursor: str | None
+    timeout_ms: int
+    fallback_tier: str | None = None
+
+    @property
+    def tier_context(self) -> TierContext:
+        """Convert to TierContext for assembly.
+
+        Returns:
+            TierContext with results and metadata.
+        """
+        # Read staleness_score from payload (precomputed at write time)
+        now = datetime.now(UTC)
+        newest_record = None
+        oldest_record = None
+
+        for item in self.results:
+            payload = item.get("payload", {})
+            if "staleness_score" not in payload:
+                # Legacy fallback: compute at read time using 720h denominator
+                updated = datetime.fromisoformat(
+                    payload.get("updated_at", now.isoformat())
+                )
+                hours_since = (now - updated).total_seconds() / 3600
+                payload["staleness_score"] = max(0.0, 1.0 - hours_since / 720.0)
+
+            ts = payload.get("created_at")
+            if ts:
+                if oldest_record is None or ts < oldest_record:
+                    oldest_record = ts
+                if newest_record is None or ts > newest_record:
+                    newest_record = ts
+
+        staleness_scores = [
+            r.get("payload", {}).get("staleness_score", 0.0) for r in self.results
+        ]
+        avg_staleness = (
+            sum(staleness_scores) / len(staleness_scores) if staleness_scores else 0.0
+        )
+
+        return TierContext(
+            tier="L3",
+            results=self.results,
+            freshness=FreshnessSummary(
+                age_hours=None,
+                staleness_score=avg_staleness,
+                confidence_hint=0.3,
+                oldest_record=oldest_record,
+                newest_record=newest_record,
+            ),
+            complete=self.complete,
+            token_count=self._compute_token_count(),
+        )
+
+    def _compute_token_count(self) -> int:
+        """Estimate token count for results.
+
+        Uses rough estimate: 4 characters per token.
+
+        Returns:
+            Estimated token count.
+        """
+        total_chars = 0
+        for item in self.results:
+            payload = item.get("payload", {})
+            content = payload.get("content", "")
+            if isinstance(content, str):
+                total_chars += len(content)
+            else:
+                total_chars += len(str(content))
+        return max(1, total_chars // 4)
+
+
 class RecallEngine:
     """Tiered recall engine for multi-tier memory context assembly.
 
@@ -101,11 +239,27 @@ class RecallEngine:
         self._redis = redis_client
         self._qdrant = qdrant_client
 
+    def _is_feature_enabled(self) -> bool:
+        """Check if tiered recall feature flag is enabled.
+
+        Returns:
+            True if feature flag is set to a truthy value, False otherwise.
+        """
+        if self._redis is None:
+            return False
+        try:
+            flag = self._redis.get(FEATURE_FLAG_KEY)
+            if flag is None:
+                return False
+            return str(flag).lower() in ("true", "1", "yes")
+        except Exception:
+            return False
+
     def get_all_tiers(
         self,
         max_tokens: int = 8000,
         domain_filter: dict[str, Any] | None = None,
-    ) -> dict[str, TierContext]:
+    ) -> TieredRecallResponse:
         """Assemble context from all tiers (L0-L3).
 
         Args:
@@ -113,8 +267,23 @@ class RecallEngine:
             domain_filter: Optional Qdrant filter to limit scope.
 
         Returns:
-            Dict mapping tier name ("L0", "L1", "L2", "L3") to TierContext.
+            TieredRecallResponse with full saturation metrics.
         """
+        # H1: Feature flag gating — return empty response if disabled
+        if not self._is_feature_enabled():
+            return TieredRecallResponse(
+                tiers={},
+                context_tokens=0,
+                max_tokens=max_tokens,
+                saturation_ratio=0.0,
+                complete=False,
+                status="feature_disabled",
+                incomplete_tiers=[],
+                next_cursors={},
+                timeout_ms=None,
+                saturation_alert=None,
+            )
+
         # L0: Immediate (Redis, last 24h)
         l0 = self._get_l0_immediate()
 
@@ -124,16 +293,78 @@ class RecallEngine:
         # L2: Historical (Qdrant, 7-30 days)
         l2 = self._get_l2_historical(domain_filter)
 
-        # L3: Archived (Qdrant, 30+ days) — STUB for Batch 2
-        l3 = self._get_l3_archived_stub(domain_filter)
+        # L3: Archived (Qdrant, 30+ days) with pagination + timeout
+        l3_result = self._get_l3_archived(domain_filter)
+        l3 = l3_result.tier_context
+
+        # Track incomplete tiers and cursors
+        incomplete_tiers = []
+        next_cursors = {}
+        timeout_ms = l3_result.timeout_ms
+        status = "ok"
+
+        if not l3_result.complete:
+            incomplete_tiers.append("L3")
+            next_cursors["L3"] = l3_result.next_cursor
+            if l3_result.fallback_tier:
+                status = "partial"
+
+        if (
+            l3_result.timeout_ms
+            and l3_result.timeout_ms > L3_QUERY_TIMEOUT_SECONDS * 1000
+        ):
+            incomplete_tiers.append("L3")
+            status = "partial"
 
         # Token budget fill order: L0 → L1 → L2 → L3
-        assembled = self._assemble_with_budget(
+        assembled_tiers = self._assemble_with_budget(
             {"L0": l0, "L1": l1, "L2": l2, "L3": l3},
             max_tokens,
         )
 
-        return assembled
+        # Compute saturation metrics
+        total_tokens = sum(ctx.token_count for ctx in assembled_tiers.values())
+        saturation_ratio = total_tokens / max_tokens if max_tokens > 0 else 0.0
+
+        # Compute per-tier breakdown
+        tier_breakdown = {
+            tier: ctx.token_count / max_tokens if max_tokens > 0 else 0.0
+            for tier, ctx in assembled_tiers.items()
+        }
+
+        # Determine alert type and recommendation
+        if saturation_ratio < 0.3:
+            alert_type = "sparse"
+            recommendation = "Consider expanding L2 or L3 search"
+        elif saturation_ratio > 0.85:
+            alert_type = "saturated"
+            recommendation = "Approaching token limit; consider reducing L3 page size"
+        else:
+            alert_type = "nominal"
+            recommendation = None
+
+        saturation_alert = SaturationAlert(
+            ratio=saturation_ratio,
+            tier_breakdown=tier_breakdown,
+            alert_type=alert_type,
+            recommendation=recommendation,
+        )
+
+        # Determine if all tiers are complete
+        all_complete = all(ctx.complete for ctx in assembled_tiers.values())
+
+        return TieredRecallResponse(
+            tiers=assembled_tiers,
+            context_tokens=total_tokens,
+            max_tokens=max_tokens,
+            saturation_ratio=saturation_ratio,
+            complete=all_complete,
+            status=status,
+            incomplete_tiers=incomplete_tiers,
+            next_cursors=next_cursors,
+            timeout_ms=timeout_ms,
+            saturation_alert=saturation_alert,
+        )
 
     def _get_l0_immediate(self) -> TierContext:
         """L0: Immediate context from Redis sorted set (last 24h).
@@ -239,15 +470,13 @@ class RecallEngine:
             payload = item.get("payload", {})
             # staleness_score is precomputed at write time; read from payload
             # For records without precomputed score (legacy), compute at read time
-            # but this is the exception, not the rule
+            # using 720h denominator (consistent with write-time precompute)
             if "staleness_score" not in payload:
                 updated = datetime.fromisoformat(
                     payload.get("updated_at", now.isoformat())
                 )
                 hours_since = (now - updated).total_seconds() / 3600
-                payload["staleness_score"] = max(
-                    0.0, 1.0 - hours_since / L1_MAX_AGE_HOURS
-                )
+                payload["staleness_score"] = max(0.0, 1.0 - hours_since / 720.0)
 
             ts = payload.get("created_at")
             if ts:
@@ -317,13 +546,12 @@ class RecallEngine:
         for item in results:
             payload = item.get("payload", {})
             if "staleness_score" not in payload:
+                # Legacy fallback: compute at read time using 720h denominator
                 updated = datetime.fromisoformat(
                     payload.get("updated_at", now.isoformat())
                 )
                 hours_since = (now - updated).total_seconds() / 3600
-                payload["staleness_score"] = max(
-                    0.0, 1.0 - hours_since / L2_MAX_AGE_HOURS
-                )
+                payload["staleness_score"] = max(0.0, 1.0 - hours_since / 720.0)
 
             ts = payload.get("created_at")
             if ts:
@@ -383,6 +611,87 @@ class RecallEngine:
             complete=False,  # Stub incomplete until Batch 2
             token_count=0,
         )
+
+    def _get_l3_archived(
+        self, domain_filter: dict[str, Any] | None = None, cursor: str | None = None
+    ) -> PartialL3Result:
+        """L3: Archived context from Qdrant (30+ days) with pagination + timeout.
+
+        Args:
+            domain_filter: Optional Qdrant filter.
+            cursor: Pagination cursor from previous page, or None for first page.
+
+        Returns:
+            PartialL3Result with results, completion status, next cursor, and timing.
+        """
+        start_time = time.time()
+        filter_conditions = self._build_l3_filter(domain_filter)
+
+        try:
+            # Use Qdrant scroll with pagination cursor
+            results, next_offset = self._qdrant.scroll(
+                collection_name=QDRANT_COLLECTION,
+                filter=filter_conditions,
+                limit=MAX_L3_PAGE_SIZE,
+                offset=cursor,
+                with_payload=True,
+            )
+
+            elapsed_ms = int((time.time() - start_time) * 1000)
+
+            if elapsed_ms > L3_QUERY_TIMEOUT_SECONDS * 1000:
+                # Timeout exceeded — return partial results with cursor
+                return PartialL3Result(
+                    results=results or [],
+                    complete=False,
+                    next_cursor=str(next_offset) if next_offset else None,
+                    timeout_ms=elapsed_ms,
+                    fallback_tier=None,
+                )
+
+            return PartialL3Result(
+                results=results or [],
+                complete=next_offset is None,
+                next_cursor=str(next_offset) if next_offset else None,
+                timeout_ms=elapsed_ms,
+                fallback_tier=None,
+            )
+
+        except Exception as e:
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            logger.error(f"Failed to get L3 archived context: {e}")
+            return PartialL3Result(
+                results=[],
+                complete=False,
+                next_cursor=None,
+                timeout_ms=elapsed_ms,
+                fallback_tier="L3",
+            )
+
+    def _build_l3_filter(
+        self, domain_filter: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Build L3 Qdrant filter: created_at < L2_MAX_AGE_HOURS (older than L2 window).
+
+        Args:
+            domain_filter: Optional domain filter to append.
+
+        Returns:
+            Qdrant filter conditions for L3 archived tier.
+        """
+        from_dt = datetime.now(UTC) - timedelta(hours=L2_MAX_AGE_HOURS)
+
+        filter_conditions: dict[str, Any] = {
+            "must": [
+                {"key": "created_at", "range": {"lt": from_dt.isoformat()}},
+                {"key": "memory_type", "match": {"value": "consolidated"}},
+            ]
+        }
+
+        if domain_filter:
+            filter_conditions["must"].append(domain_filter)
+
+        return filter_conditions
 
     def _scroll_qdrant(
         self,
