@@ -10,12 +10,21 @@ Usage:
     python scripts/audit_observer_baseline.py --dry-run --output metrics.json
 """
 
+import os
+import sys
+
+# Ensure the worktree root is in sys.path, not just the scripts directory
+# This fixes import resolution when script is run via: python scripts/audit_observer_baseline.py
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_worktree_root = os.path.dirname(_script_dir)
+if _worktree_root not in sys.path:
+    sys.path.insert(0, _worktree_root)
+
 import argparse
 import json
 import logging
 import random
 import statistics
-import sys
 from datetime import UTC, datetime
 from typing import Any
 
@@ -146,7 +155,7 @@ def run_observer_dry_run(session_id, messages):
     try:
         from src.governance.memory.observer import Observer
 
-        observer = Observer(session_id=session_id)
+        observer = Observer(session_id)
 
         # Accumulate messages
         for msg in messages:
