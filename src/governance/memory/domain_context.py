@@ -16,7 +16,6 @@ HARDENING (Aria decision AD-PHASE4-20260409T000000Z-ctx001):
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 
 class MemoryWing(str, Enum):
