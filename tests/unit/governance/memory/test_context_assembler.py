@@ -14,16 +14,16 @@ HARDENING tests from Aria decision AD-PHASE4-20260409T000000Z-ctx001:
 - No query-time staleness recomputation
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
-from datetime import UTC, datetime
 
 # Import modules under test
 from src.governance.memory.context_assembler import (
-    MemoryContext,
-    build_session_context,
-    assert_no_runtime_staleness_compute_in_context,
     TOKEN_BUDGET_CAP,
+    MemoryContext,
+    assert_no_runtime_staleness_compute_in_context,
+    build_session_context,
 )
 from src.governance.memory.invariants import (
     StalenessComputeError,
@@ -358,7 +358,6 @@ class TestTokenBudgetCap:
 
     def test_effective_max_is_capped(self):
         """When max_tokens exceeds cap, should use cap."""
-        from src.governance.memory.context_assembler import TOKEN_BUDGET_CAP
 
         # Verify the cap is enforced in the function
         # This is tested implicitly via test_token_budget_capped_at_25k
