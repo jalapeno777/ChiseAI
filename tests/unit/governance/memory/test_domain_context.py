@@ -8,13 +8,12 @@ Tests for:
 - Enum enforcement
 """
 
+import pytest
 from src.governance.memory.domain_context import (
     DomainContext,
     MemoryHall,
     MemoryWing,
 )
-
-import pytest
 
 
 class TestMemoryWing:
