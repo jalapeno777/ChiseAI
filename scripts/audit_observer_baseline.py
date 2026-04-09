@@ -146,7 +146,7 @@ def simulate_session_messages():
     return sample_messages
 
 
-def run_observer_dry_run(session_id, messages, use_accumulator=True):
+def run_observer_dry_run(session_id, messages, use_accumulator=False):
     """
     Run Observer in dry-run mode on the given messages.
 
@@ -155,7 +155,7 @@ def run_observer_dry_run(session_id, messages, use_accumulator=True):
         messages: List of message strings to process.
         use_accumulator: If True, use accumulate_message() which writes to Redis.
                          If False, simulate in-memory without calling accumulate_message().
-                         Default: True.
+                         Default: False (safe dry-run default).
 
     Returns a dict with extracted observations and metadata.
     """

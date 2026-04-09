@@ -506,6 +506,66 @@ class TestRunDedup(unittest.TestCase):
         self.assertEqual(len(result), 0)
 
 
+class TestExtractObservationsNonJsonFallback(unittest.TestCase):
+    """Test extract_observations() JSON parse fallback."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.mock_redis = MagicMock()
+        self.observer = Observer(
+            session_id="test-session", redis_client=self.mock_redis
+        )
+        # Mock dedup engine to not filter anything
+        self.mock_dedup_engine = MagicMock()
+        self.mock_dedup_engine.deduplicate_content.return_value = {
+            "is_duplicate": False
+        }
+        self.observer._dedup_engine = self.mock_dedup_engine
+
+    def test_extract_observations_non_json_fallback(self):
+        """Test that non-JSON input falls back gracefully.
+
+        This is the N2 fix: when lrange returns plain text (not JSON),
+        the code should use the raw text as the message content rather
+        than failing or producing garbage.
+        """
+        self.mock_redis.get.return_value = "true"
+
+        # Mix of JSON and plain text (simulating what might be stored)
+        self.mock_redis.lrange.return_value = [
+            json.dumps(
+                {
+                    "message": "We decided to use Python for the project",
+                    "timestamp": "2026-04-09T10:00:00Z",
+                }
+            ),
+            "plain text message without JSON wrapping",  # Non-JSON fallback case
+            json.dumps(
+                {
+                    "message": "I noticed a pattern in user behavior",
+                    "timestamp": "2026-04-09T10:05:00Z",
+                }
+            ),
+        ]
+
+        observations = self.observer.extract_observations("test-session", dry_run=True)
+
+        # Should get observations from all three items
+        self.assertGreaterEqual(len(observations), 3)
+
+        # Verify that plain text was handled gracefully
+        # The content should be usable text, not broken JSON
+        contents = [obs.content for obs in observations]
+        for content in contents:
+            # Should not be empty
+            self.assertTrue(len(content) > 0)
+            # Should not be a JSON parse error or broken text
+            if not content.startswith("{"):
+                # Plain text content should be preserved
+                self.assertNotIn("None", content)
+                self.assertNotIn("undefined", content)
+
+
 class TestFeatureFlagGating(unittest.TestCase):
     """Test feature flag gating behavior."""
 
