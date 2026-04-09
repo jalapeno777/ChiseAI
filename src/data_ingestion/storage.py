@@ -195,8 +195,13 @@ class InfluxDBStorage(StorageInterface):
                 )
                 points.append(point)
 
-            write_api.write(bucket=self.config.database, record=points)
-            logger.debug(f"Stored {len(points)} points for {symbol} {timeframe.value}")
+            org = self.config.username or "-"
+            bucket = self.config.database
+            write_api.write(bucket=bucket, org=org, record=points)
+            logger.info(
+                f"Stored {len(points)} points for {symbol} {timeframe.value} "
+                f"(bucket={bucket}, org={org})"
+            )
             return True
 
         except Exception as e:
@@ -247,7 +252,8 @@ class InfluxDBStorage(StorageInterface):
             if limit:
                 query += f'|> sort(columns: ["_time"], desc: true) |> limit(n: {limit})'
 
-            tables = query_api.query(query)
+            org = self.config.username or "-"
+            tables = query_api.query(query, org=org)
 
             results = []
             for table in tables:
@@ -288,7 +294,8 @@ class InfluxDBStorage(StorageInterface):
                     |> last()
             """
 
-            tables = query_api.query(query)
+            org = self.config.username or "-"
+            tables = query_api.query(query, org=org)
 
             for table in tables:
                 for record in table.records:
