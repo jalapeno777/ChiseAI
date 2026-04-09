@@ -12,7 +12,7 @@ on context assembly"
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class MemoryHealthSummary:
 
 def capture_baseline_metrics(
     session_samples: list[dict[str, Any]],
-    timestamp: Optional[str] = None,
+    timestamp: str | None = None,
 ) -> MemoryHealthMetrics:
     """
     Capture baseline metrics from session context samples.

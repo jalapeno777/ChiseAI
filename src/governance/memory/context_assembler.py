@@ -17,12 +17,11 @@ HARDENING (Aria decision AD-PHASE4-20260409T000000Z-ctx001):
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from .invariants import (
     StalenessComputeError,
     assert_no_runtime_staleness_compute,
-    validate_payload_staleness,
 )
 from .tiered_recall import (
     RecallEngine,

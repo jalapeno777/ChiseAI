@@ -16,7 +16,6 @@ HARDENING (Aria decision AD-PHASE4-20260409T000000Z-ctx001):
 """
 
 import logging
-from typing import Any, List
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,7 @@ def assert_no_runtime_staleness_compute(payload: dict) -> None:
 
 def validate_payload_staleness(
     payload: dict, record_id: str | None = None
-) -> tuple[bool, List[str]]:
+) -> tuple[bool, list[str]]:
     """
     Validate that a payload conforms to staleness invariants.
 
@@ -83,7 +82,7 @@ def validate_payload_staleness(
         is_valid is True if no runtime staleness compute is detected.
         legacy_missing_reasons lists any payloads missing staleness_score.
     """
-    legacy_missing: List[str] = []
+    legacy_missing: list[str] = []
     is_valid = True
 
     staleness = payload.get("staleness_score")
