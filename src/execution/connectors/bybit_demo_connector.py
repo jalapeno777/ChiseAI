@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from execution.paper.order_simulator import MarketDataProvider
 
 from execution.paper.models import OrderState, PaperFill, PaperOrder
+from execution.persistence.outcome_persistence import OutcomePersistence
 
 logger = logging.getLogger(__name__)
 
@@ -576,6 +577,7 @@ class BybitDemoConnector:
         self._retry = ExponentialBackoffRetry(config=self._retry_config)
         self.provenance_tracker = ProvenanceTracker()
         self._redis = redis_client
+        self._outcome_persistence: OutcomePersistence | None = None
 
         # Validate demo mode
         config = connector.config
@@ -1465,6 +1467,15 @@ class BybitDemoConnector:
             logger.warning("Redis dedup check failed for exec_id=%s: %s", exec_id, exc)
             return False
 
+    def _get_outcome_persistence(self) -> OutcomePersistence:
+        """Get or create OutcomePersistence instance (lazy init)."""
+        if (
+            not hasattr(self, "_outcome_persistence")
+            or self._outcome_persistence is None
+        ):
+            self._outcome_persistence = OutcomePersistence(redis_client=self._redis)
+        return self._outcome_persistence
+
     async def _mark_processed_exec(self, exec_id: str) -> None:
         """Mark an execution as processed in Redis.
 
@@ -1604,6 +1615,22 @@ class BybitDemoConnector:
                 )
                 order.add_fill(fill)
                 await self._mark_processed_exec(dedup_key)
+
+                # Persistence: write fill to Redis for canary KPI trust
+                if (
+                    os.getenv("BYBIT_FILL_PERSISTENCE_ENABLED", "false").lower()
+                    == "true"
+                ):
+                    try:
+                        persistence = self._get_outcome_persistence()
+                        await asyncio.to_thread(persistence.persist_fill, order)
+                    except Exception as exc:
+                        logger.error(
+                            "Failed to persist fill for order_id=%s: %s",
+                            order_id,
+                            exc,
+                        )
+
                 fills_detected += 1
 
                 logger.info(
