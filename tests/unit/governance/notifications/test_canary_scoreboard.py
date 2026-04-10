@@ -155,11 +155,11 @@ class TestSchemaSelection:
             assert "Recall Quality" not in field_names
             assert "Context Cost" not in field_names
 
-    def test_legacy_trading_defaults_to_trading_schema(self, legacy_trading_canary):
-        """When canary_mode absent, default to trading schema (backward compat)."""
+    def test_legacy_trading_defaults_to_memory_schema(self, legacy_trading_canary):
+        """When canary_mode absent, safe default is now memory (rollout-safe)."""
         with patch("glob.glob", return_value=[legacy_trading_canary]):
             from scripts.ops.canary_scoreboard_discord import (
-                build_trading_embed,
+                build_memory_embed,
                 load_canary_json,
                 select_schema,
             )
@@ -167,13 +167,14 @@ class TestSchemaSelection:
             c = load_canary_json(legacy_trading_canary)
             # No canary_mode field
             assert "canary_mode" not in c
-            # Should default to trading
+            # Safe default is now memory (not trading) for rollout safety
             schema = select_schema(c)
-            assert schema == "trading"
-            embed = build_trading_embed(c)
+            assert schema == "memory"
+            embed = build_memory_embed(c)
             field_names = [f["name"] for f in embed["fields"]]
-            assert "Total Trades" in field_names
-            assert "Net PnL" in field_names
+            # Legacy canary without mode now uses memory schema
+            assert "Recall Quality" in field_names
+            assert "Context Cost" in field_names
 
 
 # ── Missing-Data Rendering Tests ──────────────────────────────────────────
@@ -258,6 +259,99 @@ class TestMissingDataRendering:
             assert "Net PnL" not in field_names
             assert "Win Rate" not in field_names
             assert "Max Drawdown" not in field_names
+
+
+class TestModePrecedence:
+    """Test mode precedence: env override > payload mode > safe default."""
+
+    def test_env_override_memory(self, trading_canary, monkeypatch):
+        """CANARY_SCOREBOARD_MODE=memory forces memory schema even with canary_mode=trading."""
+        monkeypatch.setenv("CANARY_SCOREBOARD_MODE", "memory")
+        from scripts.ops.canary_scoreboard_discord import select_schema
+
+        canary = {"canary_mode": "trading"}
+        assert select_schema(canary) == "memory"
+
+    def test_env_override_trading(self, memory_canary, monkeypatch):
+        """CANARY_SCOREBOARD_MODE=trading forces trading schema even with canary_mode=memory."""
+        monkeypatch.setenv("CANARY_SCOREBOARD_MODE", "trading")
+        from scripts.ops.canary_scoreboard_discord import select_schema
+
+        canary = {"canary_mode": "memory"}
+        assert select_schema(canary) == "trading"
+
+    def test_payload_mode_memory(self):
+        """canary_mode=memory without env override → memory schema."""
+        from scripts.ops.canary_scoreboard_discord import select_schema
+
+        canary = {"canary_mode": "memory"}
+        assert select_schema(canary) == "memory"
+
+    def test_payload_mode_trading(self):
+        """canary_mode=trading without env override → trading schema."""
+        from scripts.ops.canary_scoreboard_discord import select_schema
+
+        canary = {"canary_mode": "trading"}
+        assert select_schema(canary) == "trading"
+
+    def test_safe_default_is_memory(self, monkeypatch):
+        """No canary_mode, no env → defaults to memory (rollout-safe default)."""
+        # Ensure env is NOT set
+        monkeypatch.delenv("CANARY_SCOREBOARD_MODE", raising=False)
+        from scripts.ops.canary_scoreboard_discord import select_schema
+
+        canary = {}
+        assert select_schema(canary) == "memory"
+
+    def test_memory_mode_never_renders_trading_metrics(self):
+        """Memory schema must never include Total Trades/Net PnL/Win Rate/Max Drawdown."""
+        from scripts.ops.canary_scoreboard_discord import build_memory_embed
+
+        # Memory canary → memory embed should never have trading fields
+        canary = {
+            "canary_id": "mem-test",
+            "name": "Memory Test",
+            "status": "running",
+            "canary_mode": "memory",
+            "metrics": {
+                "recall_quality": 0.85,
+                "context_cost": 12500,
+                "token_efficiency": 0.72,
+                "staleness_quality": 0.91,
+                "anti_gaming_status": "pass",
+                "operational_reliability": 0.95,
+            },
+        }
+        embed = build_memory_embed(canary)
+        field_names = [f["name"] for f in embed["fields"]]
+        assert "Total Trades" not in field_names
+        assert "Net PnL" not in field_names
+        assert "Win Rate" not in field_names
+        assert "Max Drawdown" not in field_names
+
+    def test_missing_memory_metrics_shows_sentinel(self, tmp_path):
+        """When all memory metrics are None, shows MEMORY METRICS MISSING notice."""
+        data = {
+            "canary_id": "all-missing",
+            "name": "All Missing Canary",
+            "status": "running",
+            "canary_mode": "memory",
+            "metrics": {},
+            "description": "All fields missing",
+        }
+        path = tmp_path / "all-missing.json"
+        path.write_text(json.dumps(data))
+
+        with patch("glob.glob", return_value=[str(path)]):
+            from scripts.ops.canary_scoreboard_discord import (
+                build_memory_embed,
+                load_canary_json,
+            )
+
+            c = load_canary_json(str(path))
+            embed = build_memory_embed(c)
+            field_names = [f["name"] for f in embed["fields"]]
+            assert "MEMORY METRICS MISSING" in field_names
 
 
 # ── Discord Payload Tests ──────────────────────────────────────────────────

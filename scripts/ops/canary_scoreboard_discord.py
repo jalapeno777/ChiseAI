@@ -35,16 +35,27 @@ def load_canary_json(path):
 def select_schema(canary):
     """Select schema type based on canary_mode field.
 
+    Mode precedence (highest to lowest):
+      1. CANARY_SCOREBOARD_MODE env override  ("memory" or "trading")
+      2. canary.canary_mode payload field     ("memory" or "trading")
+      3. Safe default "memory" for rollout safety
+
     Returns:
         "memory"  - memory-domain metrics (recall_quality, context_cost, etc.)
         "trading" - trading-domain metrics (total_trades, net_profit, etc.)
-
-    Legacy behavior: if canary_mode is absent, defaults to "trading".
     """
+    # 1. Env override (highest priority)
+    env_mode = os.environ.get("CANARY_SCOREBOARD_MODE")
+    if env_mode in ("memory", "trading"):
+        return env_mode
+
+    # 2. Payload mode
     mode = canary.get("canary_mode")
-    if mode == "memory":
-        return "memory"
-    return "trading"
+    if mode in ("memory", "trading"):
+        return mode
+
+    # 3. Safe default is "memory" (not "trading") for rollout
+    return "memory"
 
 
 # ── Memory Schema ──────────────────────────────────────────────────────────
