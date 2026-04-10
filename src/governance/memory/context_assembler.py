@@ -96,7 +96,7 @@ def build_session_context(
     from src.config.feature_flags import FeatureFlags
 
     ff = FeatureFlags()
-    if not ff.is_memory_hybrid_enabled():
+    if not ff.is_memory_hybrid_enabled_for_session(session_id):
         # FALLBACK: Direct Qdrant retrieval (safe when flag is off)
         return _direct_retrieval_fallback(
             session_id=session_id,
