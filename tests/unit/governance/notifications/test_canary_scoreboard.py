@@ -1,12 +1,11 @@
 """Tests for canary scoreboard Discord notification."""
 
 from __future__ import annotations
-import json
-import os
-import pytest
-from unittest.mock import MagicMock, patch
-from pathlib import Path
 
+import json
+from unittest.mock import patch
+
+import pytest
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -114,9 +113,10 @@ class TestSchemaSelection:
         """When canary_mode=memory, memory schema fields are used."""
         # Patch glob to return our memory canary
         with patch("glob.glob", return_value=[memory_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_memory_embed
-            from scripts.ops.canary_scoreboard_discord import build_trading_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_memory_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(memory_canary)
             assert c.get("canary_mode") == "memory"
@@ -138,8 +138,10 @@ class TestSchemaSelection:
     def test_trading_mode_selects_trading_schema(self, trading_canary):
         """When canary_mode=trading, trading schema fields are used."""
         with patch("glob.glob", return_value=[trading_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_trading_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_trading_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(trading_canary)
             assert c.get("canary_mode") == "trading"
@@ -156,10 +158,11 @@ class TestSchemaSelection:
     def test_legacy_trading_defaults_to_trading_schema(self, legacy_trading_canary):
         """When canary_mode absent, default to trading schema (backward compat)."""
         with patch("glob.glob", return_value=[legacy_trading_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_trading_embed
-            from scripts.ops.canary_scoreboard_discord import build_memory_embed
-            from scripts.ops.canary_scoreboard_discord import select_schema
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_trading_embed,
+                load_canary_json,
+                select_schema,
+            )
 
             c = load_canary_json(legacy_trading_canary)
             # No canary_mode field
@@ -182,8 +185,10 @@ class TestMissingDataRendering:
     def test_missing_memory_fields_shows_missing_label(self, partial_memory_canary):
         """When memory fields are absent, field shows MISSING not zero."""
         with patch("glob.glob", return_value=[partial_memory_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_memory_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_memory_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(partial_memory_canary)
             embed = build_memory_embed(c)
@@ -220,8 +225,10 @@ class TestMissingDataRendering:
         path.write_text(json.dumps(data))
 
         with patch("glob.glob", return_value=[str(path)]):
-            from scripts.ops.canary_scoreboard_discord import build_memory_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_memory_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(str(path))
             embed = build_memory_embed(c)
@@ -238,8 +245,10 @@ class TestMissingDataRendering:
     def test_trading_zeros_not_shown_for_memory_canary(self, memory_canary):
         """Trading fields (PnL, Win Rate) are NOT shown at all for memory canary."""
         with patch("glob.glob", return_value=[memory_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_memory_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_memory_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(memory_canary)
             embed = build_memory_embed(c)
@@ -261,8 +270,10 @@ class TestDiscordPayload:
         """Memory embed contains: recall_quality, context_cost, token_efficiency,
         staleness_quality, anti_gaming_status, operational_reliability."""
         with patch("glob.glob", return_value=[memory_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_memory_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_memory_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(memory_canary)
             embed = build_memory_embed(c)
@@ -281,8 +292,10 @@ class TestDiscordPayload:
     def test_trading_embed_has_correct_fields(self, trading_canary):
         """Trading embed contains: Total Trades, Net PnL, Win Rate, Max Drawdown."""
         with patch("glob.glob", return_value=[trading_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_trading_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_trading_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(trading_canary)
             embed = build_trading_embed(c)
@@ -294,8 +307,10 @@ class TestDiscordPayload:
     def test_memory_embed_color_is_neutral_blue(self, memory_canary):
         """Memory embed uses neutral color (0x0088FF), not PnL-based."""
         with patch("glob.glob", return_value=[memory_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_memory_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_memory_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(memory_canary)
             embed = build_memory_embed(c)
@@ -305,8 +320,10 @@ class TestDiscordPayload:
     def test_trading_embed_color_is_pnl_based(self, trading_canary):
         """Trading embed uses green/red based on PnL."""
         with patch("glob.glob", return_value=[trading_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_trading_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_trading_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(trading_canary)
             embed = build_trading_embed(c)
@@ -325,8 +342,10 @@ class TestDiscordPayload:
     def test_memory_embed_uses_blue_not_green_red(self, memory_canary):
         """Memory embed never uses green/red even if all metrics are positive."""
         with patch("glob.glob", return_value=[memory_canary]):
-            from scripts.ops.canary_scoreboard_discord import build_memory_embed
-            from scripts.ops.canary_scoreboard_discord import load_canary_json
+            from scripts.ops.canary_scoreboard_discord import (
+                build_memory_embed,
+                load_canary_json,
+            )
 
             c = load_canary_json(memory_canary)
             embed = build_memory_embed(c)
