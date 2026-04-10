@@ -156,6 +156,14 @@ steps:
         echo "$code" > _bmad-output/ci/autonomy-cadence-daily.status
         exit 0
 
+  # CANARY-SCOREBOARD-FALLBACK-001:
+  #   This step is the Woodpecker-side fallback/heartbeat for the canary scoreboard.
+  #   PRIMARY path is scripts/ops/canary_scoreboard_discord.py run from the host/runtime
+  #   environment on a cadence managed outside of Woodpecker (e.g. systemd timer,
+  #   host cron, or container entrypoint).
+  #   This Woodpecker step provides compliance visibility only — it always exits 0
+  #   and emits DRY-RUN if the webhook is not available in the CI environment.
+  #   Architecture intent: runtime scheduler is authoritative; this is the watchdog.
   canary-scoreboard-discord:
     image: python:3.11
     when:
@@ -171,13 +179,8 @@ steps:
           set -euo pipefail
           pip install --no-cache-dir pyyaml requests redis
 
-          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
-            echo "DISCORD_WEBHOOK_URL not set, skipping scoreboard"
-            echo "DRY-RUN" > _bmad-output/ci/canary-scoreboard-discord.status
-            exit 0
-          fi
-
-          python3 scripts/ops/canary_scoreboard_discord.py
+          # CANARY-SCOREBOARD-FALLBACK-001: Pass --dry-run so CI never fails on missing webhook
+          python3 scripts/ops/canary_scoreboard_discord.py --dry-run
         ) > _bmad-output/ci/canary-scoreboard-discord.log 2>&1
         code=$?
         cat _bmad-output/ci/canary-scoreboard-discord.log
