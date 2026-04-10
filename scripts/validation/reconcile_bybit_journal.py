@@ -83,6 +83,8 @@ class JournalEntry:
         fees: Total fees
         entry_time: Entry timestamp
         signal_id: Associated signal ID
+        exchange_order_id: Native exchange order ID (from Bybit orderId)
+        exchange_fill_id: Native exchange fill/execution ID (from Bybit execId)
     """
 
     entry_id: str
@@ -93,6 +95,8 @@ class JournalEntry:
     fees: float
     entry_time: datetime
     signal_id: str
+    exchange_order_id: str | None = None
+    exchange_fill_id: str | None = None
 
     @property
     def total_qty(self) -> float:
@@ -355,7 +359,7 @@ class BybitJournalReconciler:
                 exec_qty=trade["qty"],
                 exec_fee=trade["fee"],
                 exec_time=exec_time,
-                exec_id=f"exec-{trade['order_id']}",
+                exec_id=f"exec-{trade['order_id']}",  # Native exec_id for matching
             )
             executions.append(execution)
 
@@ -381,7 +385,15 @@ class BybitJournalReconciler:
                 "entry_id": "entry-001",
                 "symbol": "BTCUSDT",
                 "side": "buy",
-                "fills": [{"price": 65000.0, "quantity": 0.5, "fill_id": "ord-001"}],
+                "fills": [
+                    {
+                        "price": 65000.0,
+                        "quantity": 0.5,
+                        "fill_id": "ord-001",
+                        "exchange_order_id": "ord-001",
+                        "exchange_fill_id": "exec-ord-001",
+                    }
+                ],
                 "realized_pnl": 0.0,
                 "fees": 1.5,
                 "signal_id": "sig-001",
@@ -390,7 +402,15 @@ class BybitJournalReconciler:
                 "entry_id": "entry-002",
                 "symbol": "BTCUSDT",
                 "side": "sell",
-                "fills": [{"price": 65500.0, "quantity": 0.5, "fill_id": "ord-002"}],
+                "fills": [
+                    {
+                        "price": 65500.0,
+                        "quantity": 0.5,
+                        "fill_id": "ord-002",
+                        "exchange_order_id": "ord-002",
+                        "exchange_fill_id": "exec-ord-002",
+                    }
+                ],
                 "realized_pnl": 250.0,
                 "fees": 1.55,
                 "signal_id": "sig-002",
@@ -399,7 +419,15 @@ class BybitJournalReconciler:
                 "entry_id": "entry-003",
                 "symbol": "ETHUSDT",
                 "side": "buy",
-                "fills": [{"price": 3500.0, "quantity": 2.0, "fill_id": "ord-003"}],
+                "fills": [
+                    {
+                        "price": 3500.0,
+                        "quantity": 2.0,
+                        "fill_id": "ord-003",
+                        "exchange_order_id": "ord-003",
+                        "exchange_fill_id": "exec-ord-003",
+                    }
+                ],
                 "realized_pnl": 0.0,
                 "fees": 0.7,
                 "signal_id": "sig-003",
@@ -408,7 +436,15 @@ class BybitJournalReconciler:
                 "entry_id": "entry-004",
                 "symbol": "ETHUSDT",
                 "side": "sell",
-                "fills": [{"price": 3520.0, "quantity": 2.0, "fill_id": "ord-004"}],
+                "fills": [
+                    {
+                        "price": 3520.0,
+                        "quantity": 2.0,
+                        "fill_id": "ord-004",
+                        "exchange_order_id": "ord-004",
+                        "exchange_fill_id": "exec-ord-004",
+                    }
+                ],
                 "realized_pnl": 40.0,
                 "fees": 0.704,
                 "signal_id": "sig-004",
@@ -418,7 +454,13 @@ class BybitJournalReconciler:
                 "symbol": "BTCUSDT",
                 "side": "buy",
                 "fills": [
-                    {"price": 64900.0, "quantity": 1.0, "fill_id": "ord-005"}
+                    {
+                        "price": 64900.0,
+                        "quantity": 1.0,
+                        "fill_id": "ord-005",
+                        "exchange_order_id": "ord-005",
+                        "exchange_fill_id": "exec-ord-005",
+                    }
                 ],  # Price mismatch (0.15%)
                 "realized_pnl": 0.0,
                 "fees": 3.24,
@@ -428,7 +470,15 @@ class BybitJournalReconciler:
                 "entry_id": "entry-phantom",
                 "symbol": "SOLUSDT",
                 "side": "buy",
-                "fills": [{"price": 150.0, "quantity": 10.0, "fill_id": "ord-phantom"}],
+                "fills": [
+                    {
+                        "price": 150.0,
+                        "quantity": 10.0,
+                        "fill_id": "ord-phantom",
+                        "exchange_order_id": "ord-phantom",
+                        "exchange_fill_id": "exec-ord-phantom",
+                    }
+                ],
                 "realized_pnl": 0.0,
                 "fees": 1.5,
                 "signal_id": "sig-phantom",
@@ -622,6 +672,15 @@ class BybitJournalReconciler:
                 # Normalize side
                 side = entry_data.get("side", "").lower()
 
+                # Extract native exchange IDs from fills
+                exchange_order_id: str | None = None
+                exchange_fill_id: str | None = None
+                for fill in entry_data.get("fills", []):
+                    if fill.get("exchange_order_id"):
+                        exchange_order_id = fill["exchange_order_id"]
+                    if fill.get("exchange_fill_id"):
+                        exchange_fill_id = fill["exchange_fill_id"]
+
                 journal_entry = JournalEntry(
                     entry_id=entry_id,
                     symbol=entry_data.get("symbol", ""),
@@ -631,6 +690,8 @@ class BybitJournalReconciler:
                     fees=entry_data.get("fees", 0.0),
                     entry_time=entry_time,
                     signal_id=entry_data.get("signal_id", ""),
+                    exchange_order_id=exchange_order_id,
+                    exchange_fill_id=exchange_fill_id,
                 )
                 entries.append(journal_entry)
 
@@ -678,50 +739,126 @@ class BybitJournalReconciler:
 
         report.pnl_diff = abs(report.bybit_total_pnl - report.journal_total_pnl)
 
-        # Build lookup maps
-        bybit_by_order: dict[str, BybitExecution] = {}
-        bybit_without_order_id: list[BybitExecution] = []
+        # Build lookup maps using native IDs when available
+        # Bybit: keyed by exec_id (most precise) and order_id
+        bybit_by_exec_id: dict[str, BybitExecution] = {}
+        bybit_by_order_id: dict[str, BybitExecution] = {}
+        bybit_without_ids: list[BybitExecution] = []
 
         for exec in bybit_execs:
+            if exec.exec_id:
+                bybit_by_exec_id[exec.exec_id] = exec
             if exec.order_id:
-                # Aggregate by order_id (multiple fills can have same order_id)
-                if exec.order_id not in bybit_by_order:
-                    bybit_by_order[exec.order_id] = exec
+                if exec.order_id not in bybit_by_order_id:
+                    bybit_by_order_id[exec.order_id] = exec
                 else:
                     # Aggregate quantities and fees for same order
-                    existing = bybit_by_order[exec.order_id]
+                    existing = bybit_by_order_id[exec.order_id]
                     existing.exec_qty += exec.exec_qty
                     existing.exec_fee += exec.exec_fee
-            else:
-                bybit_without_order_id.append(exec)
+            if not exec.exec_id and not exec.order_id:
+                bybit_without_ids.append(exec)
 
-        journal_by_entry: dict[str, JournalEntry] = {
+        # Journal: keyed by exchange_fill_id and exchange_order_id
+        journal_by_exec_id: dict[str, JournalEntry] = {}
+        journal_by_order_id: dict[str, JournalEntry] = {}
+        journal_by_fill_id: dict[str, JournalEntry] = {}  # fallback to fill_id
+        journal_by_entry_id: dict[str, JournalEntry] = {
             e.entry_id: e for e in journal_entries
         }
 
+        for entry in journal_entries:
+            if entry.exchange_fill_id:
+                journal_by_exec_id[entry.exchange_fill_id] = entry
+            if entry.exchange_order_id:
+                journal_by_order_id[entry.exchange_order_id] = entry
+            # Also index by fill_id as fallback
+            for fill in entry.fills:
+                fill_id = fill.get("fill_id", "")
+                if fill_id and fill_id not in journal_by_fill_id:
+                    journal_by_fill_id[fill_id] = entry
+
         # Track matched entries
-        matched_bybit_ids: set[str] = set()
-        matched_journal_ids: set[str] = set()
+        matched_bybit_exec_ids: set[str] = set()
+        matched_bybit_order_ids: set[str] = set()
+        matched_journal_exec_ids: set[str] = set()
+        matched_journal_order_ids: set[str] = set()
+        matched_journal_fill_ids: set[str] = set()
+        matched_journal_entry_ids: set[str] = set()
 
-        # Compare matches
-        for order_id, bybit_exec in bybit_by_order.items():
-            match_found = False
+        # Match on exchange_fill_id first (most precise)
+        for exec_id, bybit_exec in bybit_by_exec_id.items():
+            if exec_id in matched_bybit_exec_ids:
+                continue
 
-            for entry_id, journal_entry in journal_by_entry.items():
-                if entry_id in matched_journal_ids:
-                    continue
+            if exec_id in journal_by_exec_id:
+                journal_entry = journal_by_exec_id[exec_id]
+                entry_id = journal_entry.entry_id
 
-                # Check if fills contain order_id
-                fill_order_ids = [f.get("fill_id", "") for f in journal_entry.fills]
-
-                if order_id in fill_order_ids or self._is_match(
-                    bybit_exec, journal_entry
-                ):
-                    # Found potential match - validate details
+                if entry_id not in matched_journal_entry_ids:
+                    # Validate and record match
                     mismatches = self._validate_match(bybit_exec, journal_entry)
 
                     if mismatches:
-                        # Mismatch found
+                        report.mismatched_count += 1
+                        for mm in mismatches:
+                            report.mismatches.append(
+                                {
+                                    "order_id": bybit_exec.order_id,
+                                    "entry_id": entry_id,
+                                    "type": mm.match_type,
+                                    "bybit_value": mm.bybit_value,
+                                    "journal_value": mm.journal_value,
+                                    "diff": mm.diff,
+                                    "pct_diff": mm.pct_diff,
+                                    "tolerance": mm.tolerance,
+                                    "within_tolerance": mm.pct_diff <= mm.tolerance,
+                                    "match_method": "exchange_fill_id",
+                                }
+                            )
+                            if (
+                                mm.match_type in ("fee", "pnl")
+                                and mm.diff > self.tolerance_pnl
+                            ):
+                                report.critical_mismatches += 1
+                    else:
+                        report.matched_count += 1
+                        report.matched.append(
+                            {
+                                "order_id": bybit_exec.order_id,
+                                "entry_id": entry_id,
+                                "symbol": bybit_exec.symbol,
+                                "side": bybit_exec.side,
+                                "price_diff_pct": self._pct_diff(
+                                    bybit_exec.exec_price,
+                                    journal_entry.avg_fill_price
+                                    or bybit_exec.exec_price,
+                                ),
+                                "qty_diff_pct": self._pct_diff(
+                                    bybit_exec.exec_qty,
+                                    journal_entry.total_qty,
+                                ),
+                                "fee_diff": bybit_exec.exec_fee - journal_entry.fees,
+                            }
+                        )
+
+                    matched_bybit_exec_ids.add(exec_id)
+                    matched_journal_exec_ids.add(exec_id)
+                    matched_journal_entry_ids.add(entry_id)
+
+        # Match on exchange_order_id next
+        for order_id, bybit_exec in bybit_by_order_id.items():
+            if order_id in matched_bybit_order_ids:
+                continue
+
+            if order_id in journal_by_order_id:
+                journal_entry = journal_by_order_id[order_id]
+                entry_id = journal_entry.entry_id
+
+                if entry_id not in matched_journal_entry_ids:
+                    mismatches = self._validate_match(bybit_exec, journal_entry)
+
+                    if mismatches:
                         report.mismatched_count += 1
                         for mm in mismatches:
                             report.mismatches.append(
@@ -735,16 +872,15 @@ class BybitJournalReconciler:
                                     "pct_diff": mm.pct_diff,
                                     "tolerance": mm.tolerance,
                                     "within_tolerance": mm.pct_diff <= mm.tolerance,
+                                    "match_method": "exchange_order_id",
                                 }
                             )
-                            # Check if this is a critical mismatch (PnL-related)
                             if (
                                 mm.match_type in ("fee", "pnl")
                                 and mm.diff > self.tolerance_pnl
                             ):
                                 report.critical_mismatches += 1
                     else:
-                        # Perfect match
                         report.matched_count += 1
                         report.matched.append(
                             {
@@ -765,17 +901,145 @@ class BybitJournalReconciler:
                             }
                         )
 
-                    matched_bybit_ids.add(order_id)
-                    matched_journal_ids.add(entry_id)
-                    match_found = True
-                    break
+                    matched_bybit_order_ids.add(order_id)
+                    matched_journal_order_ids.add(order_id)
+                    matched_journal_entry_ids.add(entry_id)
 
-            if not match_found:
-                report.missing_in_journal.append(order_id)
+        # Fall back to fill_id matching for backward compatibility
+        for order_id, bybit_exec in bybit_by_order_id.items():
+            if order_id in matched_bybit_order_ids:
+                continue
+
+            # Check if order_id appears in any fill's fill_id
+            if order_id in journal_by_fill_id:
+                journal_entry = journal_by_fill_id[order_id]
+                entry_id = journal_entry.entry_id
+
+                if entry_id not in matched_journal_entry_ids:
+                    mismatches = self._validate_match(bybit_exec, journal_entry)
+
+                    if mismatches:
+                        report.mismatched_count += 1
+                        for mm in mismatches:
+                            report.mismatches.append(
+                                {
+                                    "order_id": order_id,
+                                    "entry_id": entry_id,
+                                    "type": mm.match_type,
+                                    "bybit_value": mm.bybit_value,
+                                    "journal_value": mm.journal_value,
+                                    "diff": mm.diff,
+                                    "pct_diff": mm.pct_diff,
+                                    "tolerance": mm.tolerance,
+                                    "within_tolerance": mm.pct_diff <= mm.tolerance,
+                                    "match_method": "fill_id",
+                                }
+                            )
+                            if (
+                                mm.match_type in ("fee", "pnl")
+                                and mm.diff > self.tolerance_pnl
+                            ):
+                                report.critical_mismatches += 1
+                    else:
+                        report.matched_count += 1
+                        report.matched.append(
+                            {
+                                "order_id": order_id,
+                                "entry_id": entry_id,
+                                "symbol": bybit_exec.symbol,
+                                "side": bybit_exec.side,
+                                "price_diff_pct": self._pct_diff(
+                                    bybit_exec.exec_price,
+                                    journal_entry.avg_fill_price
+                                    or bybit_exec.exec_price,
+                                ),
+                                "qty_diff_pct": self._pct_diff(
+                                    bybit_exec.exec_qty,
+                                    journal_entry.total_qty,
+                                ),
+                                "fee_diff": bybit_exec.exec_fee - journal_entry.fees,
+                            }
+                        )
+
+                    matched_bybit_order_ids.add(order_id)
+                    matched_journal_fill_ids.add(order_id)
+                    matched_journal_entry_ids.add(entry_id)
+                    continue
+
+            # Fall back to time-proximity matching
+            if self._is_match(bybit_exec, journal_entry):
+                # Find a journal entry that wasn't matched yet and has the same symbol/side
+                for entry_id, journal_entry in journal_by_entry_id.items():
+                    if entry_id in matched_journal_entry_ids:
+                        continue
+                    if (
+                        bybit_exec.symbol.upper() == journal_entry.symbol.upper()
+                        and bybit_exec.side.lower() == journal_entry.side.lower()
+                    ):
+                        mismatches = self._validate_match(bybit_exec, journal_entry)
+
+                        if mismatches:
+                            report.mismatched_count += 1
+                            for mm in mismatches:
+                                report.mismatches.append(
+                                    {
+                                        "order_id": order_id,
+                                        "entry_id": entry_id,
+                                        "type": mm.match_type,
+                                        "bybit_value": mm.bybit_value,
+                                        "journal_value": mm.journal_value,
+                                        "diff": mm.diff,
+                                        "pct_diff": mm.pct_diff,
+                                        "tolerance": mm.tolerance,
+                                        "within_tolerance": mm.pct_diff <= mm.tolerance,
+                                        "match_method": "time_proximity",
+                                    }
+                                )
+                                if (
+                                    mm.match_type in ("fee", "pnl")
+                                    and mm.diff > self.tolerance_pnl
+                                ):
+                                    report.critical_mismatches += 1
+                        else:
+                            report.matched_count += 1
+                            report.matched.append(
+                                {
+                                    "order_id": order_id,
+                                    "entry_id": entry_id,
+                                    "symbol": bybit_exec.symbol,
+                                    "side": bybit_exec.side,
+                                    "price_diff_pct": self._pct_diff(
+                                        bybit_exec.exec_price,
+                                        journal_entry.avg_fill_price
+                                        or bybit_exec.exec_price,
+                                    ),
+                                    "qty_diff_pct": self._pct_diff(
+                                        bybit_exec.exec_qty,
+                                        journal_entry.total_qty,
+                                    ),
+                                    "fee_diff": bybit_exec.exec_fee
+                                    - journal_entry.fees,
+                                }
+                            )
+
+                        matched_bybit_order_ids.add(order_id)
+                        matched_journal_entry_ids.add(entry_id)
+                        break
+
+        # Find unmatched Bybit executions
+        for exec_id, bybit_exec in bybit_by_exec_id.items():
+            if exec_id not in matched_bybit_exec_ids:
+                report.missing_in_journal.append(exec_id)
+
+        for order_id, bybit_exec in bybit_by_order_id.items():
+            if order_id not in matched_bybit_order_ids:
+                # Only add if not already reported via exec_id
+                if order_id not in matched_bybit_exec_ids:
+                    report.missing_in_journal.append(order_id)
 
         # Find journal entries not in Bybit
-        for entry_id, journal_entry in journal_by_entry.items():
-            if entry_id not in matched_journal_ids:
+        for entry_id in journal_by_entry_id:
+            if entry_id not in matched_journal_entry_ids:
                 report.missing_in_bybit.append(entry_id)
 
         # Determine overall result
