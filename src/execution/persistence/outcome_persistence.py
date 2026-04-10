@@ -389,6 +389,14 @@ class OutcomePersistence:
             )
 
             # Prepare data
+            # Extract exchange IDs from first fill if available
+            exchange_order_id = None
+            exchange_fill_id = None
+            if order.fills:
+                first_fill = order.fills[0]
+                exchange_order_id = getattr(first_fill, "exchange_order_id", None)
+                exchange_fill_id = getattr(first_fill, "exchange_fill_id", None)
+
             data = {
                 "order_id": order.order_id,
                 "symbol": order.symbol,
@@ -400,6 +408,9 @@ class OutcomePersistence:
                 "signal_id": signal_id,
                 "correlation_id": correlation_id,
                 "persisted_at": datetime.now(UTC).isoformat(),
+                # Native exchange IDs for reconciliation
+                "exchange_order_id": exchange_order_id,
+                "exchange_fill_id": exchange_fill_id,
             }
 
             # Persist to Redis

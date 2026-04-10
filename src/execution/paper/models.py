@@ -297,6 +297,9 @@ class PaperFill:
     price: float
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Native exchange IDs for reconciliation
+    exchange_order_id: str | None = None
+    exchange_fill_id: str | None = None
 
     def __post_init__(self) -> None:
         """Validate fill data."""
@@ -338,6 +341,8 @@ class PaperFill:
             "timestamp": self.timestamp.isoformat(),
             "notional_value": self.notional_value,
             "metadata": self.metadata,
+            "exchange_order_id": self.exchange_order_id,
+            "exchange_fill_id": self.exchange_fill_id,
         }
 
     @classmethod
@@ -359,6 +364,8 @@ class PaperFill:
             price=data["price"],
             timestamp=datetime.fromisoformat(data["timestamp"]),
             metadata=data.get("metadata", {}),
+            exchange_order_id=data.get("exchange_order_id"),
+            exchange_fill_id=data.get("exchange_fill_id"),
         )
 
 

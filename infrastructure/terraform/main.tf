@@ -695,6 +695,7 @@ resource "docker_container" "chiseai_paper_trading_executor" {
     "Z_AI_API_KEY=${var.z_ai_api_key}",
     "MINIMAX_API_KEY=${var.minimax_api_key}",
     "MINIMAX_ENABLED=${var.minimax_enabled}",
+    "BYBIT_FILL_PERSISTENCE_ENABLED=true",
     "PYTHONUNBUFFERED=1",
     "PYTHONPATH=/app:/app/src",
   ]

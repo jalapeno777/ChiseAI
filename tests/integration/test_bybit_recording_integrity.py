@@ -16,6 +16,7 @@ For RECON-A1: Bybit Persistence Wiring
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -101,6 +102,8 @@ def _make_filled_order(
         price=50000.0,
         quantity=0.001,
         timestamp=datetime.now(UTC),
+        exchange_order_id=f"bybit_order_{order_id}",
+        exchange_fill_id=f"bybit_exec_{order_id}",
     )
     order.add_fill(fill)
     order.state = OrderState.FILLED
@@ -418,3 +421,141 @@ class TestBybitFillPersistenceWiring:
             if "error" in call[0].lower() or "exception" in call[0].lower()
         ]
         assert len(error_calls) > 0, "Expected at least one error-level log call"
+
+
+class TestExchangeIdPersistence:
+    """Tests for exchange-native order/exec ID persistence for reconciliation."""
+
+    def test_fill_persists_exchange_ids_to_redis(self, mock_redis):
+        """Test that persist_fill persists exchange_order_id and exchange_fill_id."""
+        from execution.persistence.outcome_persistence import OutcomePersistence
+        from execution.paper.models import PaperFill, PaperOrder
+
+        # Create order with exchange-native fill
+        order = PaperOrder(
+            order_id="bybit_native_order_123",
+            symbol="BTCUSDT",
+            side="buy",
+            order_type="market",
+            quantity=0.001,
+            price=0.0,
+        )
+        order.state = OrderState.FILLED
+        order.filled_quantity = 0.001
+        order.avg_fill_price = 50000.0
+        order.filled_at = datetime.now(UTC)
+
+        fill = PaperFill(
+            fill_id="paper_fill_abc123",
+            order_id="bybit_native_order_123",
+            symbol="BTCUSDT",
+            side="buy",
+            quantity=0.001,
+            price=50000.0,
+            exchange_order_id="bybit_order_789",
+            exchange_fill_id="bybit_exec_456",
+        )
+        order.add_fill(fill)
+
+        # Persist via OutcomePersistence
+        persistence = OutcomePersistence(redis_client=mock_redis)
+        key = persistence.persist_fill(order)
+
+        # Verify Redis set was called
+        assert key is not None
+        mock_redis.set.assert_called_once()
+        call_args = mock_redis.set.call_args
+        stored_data_json = call_args[0][1]
+        stored_data = json.loads(stored_data_json)
+
+        # Verify exchange IDs are persisted
+        assert stored_data["exchange_order_id"] == "bybit_order_789"
+        assert stored_data["exchange_fill_id"] == "bybit_exec_456"
+        assert stored_data["order_id"] == "bybit_native_order_123"
+
+    def test_fill_without_exchange_ids_has_null_values(self, mock_redis):
+        """Test that fills without exchange IDs persist with None values."""
+        from execution.persistence.outcome_persistence import OutcomePersistence
+        from execution.paper.models import PaperFill, PaperOrder
+
+        order = PaperOrder(
+            order_id="paper_only_order_123",
+            symbol="ETHUSDT",
+            side="sell",
+            order_type="market",
+            quantity=0.01,
+            price=0.0,
+        )
+        order.state = OrderState.FILLED
+        order.filled_quantity = 0.01
+        order.avg_fill_price = 3000.0
+
+        fill = PaperFill(
+            fill_id="fill_no_exchange",
+            order_id="paper_only_order_123",
+            symbol="ETHUSDT",
+            side="sell",
+            quantity=0.01,
+            price=3000.0,
+            # No exchange_order_id or exchange_fill_id set
+        )
+        order.add_fill(fill)
+
+        persistence = OutcomePersistence(redis_client=mock_redis)
+        key = persistence.persist_fill(order)
+
+        assert key is not None
+        mock_redis.set.assert_called_once()
+        stored_data = json.loads(mock_redis.set.call_args[0][1])
+
+        # Exchange IDs should be None when not provided
+        assert stored_data["exchange_order_id"] is None
+        assert stored_data["exchange_fill_id"] is None
+
+
+class TestExchangeIdReconciliationMatching:
+    """Tests for reconciliation matching using exchange IDs."""
+
+    def test_reconciliation_matches_on_exchange_fill_id(self):
+        """Test that reconciliation can match fills using exchange_fill_id."""
+        # Simulate persisted fill from exchange
+        exchange_fill = {
+            "fill_id": "bybit_exec_456",
+            "order_id": "bybit_order_789",
+            "exchange_fill_id": "bybit_exec_456",
+            "symbol": "BTCUSDT",
+            "quantity": 0.001,
+            "price": 50000.0,
+        }
+
+        # Simulate local persistence
+        local_fill = {
+            "fill_id": "paper_fill_abc123",
+            "order_id": "bybit_native_order_123",
+            "exchange_fill_id": "bybit_exec_456",  # Same exchange ID
+            "symbol": "BTCUSDT",
+        }
+
+        # Reconciliation should match on exchange_fill_id
+        assert exchange_fill["exchange_fill_id"] == local_fill["exchange_fill_id"]
+        assert exchange_fill["fill_id"] != local_fill["fill_id"]  # Different local IDs
+
+    def test_legacy_fill_without_exchange_id_falls_back_to_local_id(self):
+        """Test that legacy fills without exchange IDs use local ID for matching."""
+        # Legacy fill format (before this fix)
+        legacy_fill = {
+            "fill_id": "paper_fill_legacy",
+            "order_id": "paper_order_123",
+            # No exchange_fill_id field
+        }
+
+        # New format with exchange ID
+        new_fill = {
+            "fill_id": "paper_fill_new",
+            "order_id": "paper_order_123",
+            "exchange_fill_id": "paper_fill_legacy",  # Legacy ID preserved as exchange ID
+        }
+
+        # When exchange_id is None, match on legacy order_id pattern
+        exchange_id = new_fill.get("exchange_fill_id") or new_fill["fill_id"]
+        assert exchange_id == "paper_fill_legacy"

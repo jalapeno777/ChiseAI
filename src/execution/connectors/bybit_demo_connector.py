@@ -1613,6 +1613,10 @@ class BybitDemoConnector:
                     price=exec_price,
                     quantity=exec_qty,
                     timestamp=datetime.now(UTC),
+                    exchange_order_id=order_id,  # Native exchange order_id
+                    exchange_fill_id=exec_id
+                    if exec_id
+                    else dedup_key,  # Native exchange exec_id
                 )
                 order.add_fill(fill)
                 await self._mark_processed_exec(dedup_key)
