@@ -495,7 +495,8 @@ class TestCompareExecutions:
         assert report.journal_trade_count == 0
         assert report.matched_count == 0
         assert len(report.missing_in_journal) == 1
-        assert report.missing_in_journal[0] == "order1"
+        # exec_id is reported as missing since it's the most precise identifier
+        assert report.missing_in_journal[0] == "exec1"
         assert report.overall_passed is False  # Fail-closed
 
     def test_compare_missing_in_bybit(self, reconciler):
