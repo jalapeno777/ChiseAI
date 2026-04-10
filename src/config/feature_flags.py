@@ -96,6 +96,15 @@ class FeatureFlags:
 
     # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
     KEY_MEMORY_HYBRID_ENABLED: ClassVar[str] = f"{REDIS_PREFIX}:memory_hybrid_enabled"
+    KEY_MEMORY_HYBRID_CANARY_PERCENTAGE: ClassVar[str] = (
+        f"{REDIS_PREFIX}:memory:canary_percentage"
+    )
+    KEY_MEMORY_HYBRID_ALLOWLIST: ClassVar[str] = (
+        f"{REDIS_PREFIX}:memory:canary_allowlist"
+    )
+
+    # Default canary percentage (0 = off by default)
+    DEFAULT_CANARY_PERCENTAGE: ClassVar[int] = 0
 
     # TTL for Redis flag storage (seconds) - 24 hours
     FLAG_TTL: ClassVar[int] = 86400
@@ -191,6 +200,70 @@ class FeatureFlags:
         except Exception as e:
             logger.warning(f"Redis error reading {key}: {e}")
             return default
+
+    def _get_redis_set(self, key: str) -> set[str]:
+        """Get a set value from Redis.
+
+        Args:
+            key: Redis key for the set
+
+        Returns:
+            Set of strings from Redis, or empty set if not found/error
+        """
+        client = self.redis_client
+        if client is None:
+            return set()
+        try:
+            value = client.smembers(key)
+            if value is None:
+                return set()
+            return set(value)
+        except Exception as e:
+            logger.warning(f"Redis error reading set {key}: {e}")
+            return set()
+
+    def _get_int(self, key: str, default: int) -> int:
+        """Get an integer value from Redis.
+
+        Args:
+            key: Redis key for the value
+            default: Default value if not in Redis
+
+        Returns:
+            Integer value from Redis or default
+        """
+        client = self.redis_client
+        if client is None:
+            return default
+        try:
+            value = client.get(key)
+            if value is None:
+                return default
+            return int(value)
+        except Exception as e:
+            logger.warning(f"Redis error reading {key}: {e}")
+            return default
+
+    def _set_int(self, key: str, value: int) -> bool:
+        """Set an integer value in Redis.
+
+        Args:
+            key: Redis key for the value
+            value: Integer value to set
+
+        Returns:
+            True if successfully set, False otherwise
+        """
+        client = self.redis_client
+        if client is None:
+            logger.warning("Redis not available, cannot set value")
+            return False
+        try:
+            client.setex(key, self.FLAG_TTL, str(value))
+            return True
+        except Exception as e:
+            logger.error(f"Redis error setting {key}: {e}")
+            return False
 
     def set_redis_value(self, key: str, value: bool, audit_log: bool = True) -> bool:
         """Set flag value in Redis with optional audit logging.
@@ -360,6 +433,79 @@ class FeatureFlags:
         """
         return self.get_redis_value(
             self.KEY_MEMORY_HYBRID_ENABLED, self.memory_hybrid_enabled
+        )
+
+    def is_memory_hybrid_enabled_for_session(self, session_id: str) -> bool:
+        """Deterministic hash-based canary routing for hybrid memory.
+
+        - Global disabled -> False (kill switch)
+        - Session in allowlist -> True (emergency override)
+        - Otherwise -> hash(session_id) % 100 < percentage
+
+        Args:
+            session_id: The session ID to check routing for.
+
+        Returns:
+            True if session should use hybrid context assembly.
+        """
+        if not self.is_memory_hybrid_enabled():
+            return False  # Kill switch
+
+        allowlist = self._get_redis_set(self.KEY_MEMORY_HYBRID_ALLOWLIST)
+        if session_id in allowlist:
+            return True
+
+        percentage = self._get_int(
+            self.KEY_MEMORY_HYBRID_CANARY_PERCENTAGE,
+            self.DEFAULT_CANARY_PERCENTAGE,
+        )
+        if percentage <= 0:
+            return False
+        if percentage >= 100:
+            return True
+
+        return hash(session_id) % 100 < percentage
+
+    def set_canary_percentage(self, percentage: int) -> bool:
+        """Set the canary routing percentage (0-100).
+
+        Args:
+            percentage: Percentage of sessions to route to hybrid (0-100).
+
+        Returns:
+            True if successfully set, False otherwise.
+        """
+        return self._set_int(self.KEY_MEMORY_HYBRID_CANARY_PERCENTAGE, percentage)
+
+    def add_canary_allowlist(self, session_id: str) -> bool:
+        """Add a session ID to the canary allowlist.
+
+        Args:
+            session_id: The session ID to add to allowlist.
+
+        Returns:
+            True if successfully added, False otherwise.
+        """
+        client = self.redis_client
+        if client is None:
+            logger.warning("Redis not available, cannot add to allowlist")
+            return False
+        try:
+            client.sadd(self.KEY_MEMORY_HYBRID_ALLOWLIST, session_id)
+            return True
+        except Exception as e:
+            logger.error(f"Redis error adding to allowlist: {e}")
+            return False
+
+    def get_canary_percentage(self) -> int:
+        """Get the current canary routing percentage.
+
+        Returns:
+            Current canary percentage (0-100).
+        """
+        return self._get_int(
+            self.KEY_MEMORY_HYBRID_CANARY_PERCENTAGE,
+            self.DEFAULT_CANARY_PERCENTAGE,
         )
 
     # Runtime flag setters (write to Redis)
