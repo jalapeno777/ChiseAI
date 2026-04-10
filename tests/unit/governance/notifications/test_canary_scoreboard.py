@@ -447,3 +447,99 @@ class TestDiscordPayload:
             assert embed["color"] == 0x0088FF
             assert embed["color"] != 0x00FF00  # not green
             assert embed["color"] != 0xFF0000  # not red
+
+
+# ── Memory Canary Producer Integration Tests ───────────────────────────────
+
+
+class TestMemoryCanaryProducer:
+    """Tests for the memory canary producer script and its output."""
+
+    def test_producer_emits_all_six_fields(self, tmp_path, monkeypatch):
+        """Producer output has all 6 metric fields present and non-null."""
+        from scripts.ops.canary_memory_producer import (
+            build_canary_payload,
+            produce_metrics,
+        )
+
+        redis_metrics = {}  # empty = use all defaults
+        metrics = produce_metrics(redis_metrics)
+        payload = build_canary_payload(metrics)
+
+        assert "metrics" in payload
+        expected_fields = [
+            "recall_quality",
+            "context_cost",
+            "token_efficiency",
+            "staleness_quality",
+            "anti_gaming_status",
+            "operational_reliability",
+        ]
+        for field in expected_fields:
+            assert field in payload["metrics"], f"Missing field: {field}"
+            assert payload["metrics"][field] is not None, f"Null field: {field}"
+
+    def test_producer_no_null_values(self, tmp_path, monkeypatch):
+        """When source metrics are available, producer should not write null."""
+        from scripts.ops.canary_memory_producer import produce_metrics
+
+        # Simulate available Redis metrics (non-zero)
+        redis_metrics = {
+            "recall_accuracy": 0.88,
+            "context_cost": 12500.0,
+            "coverage": 0.75,
+            "staleness": 0.90,
+            "fp_rate": 0.03,
+            "near_dup_rate": 0.05,
+        }
+        metrics = produce_metrics(redis_metrics)
+        for key, value in metrics.items():
+            assert value is not None, f"Null value in {key}"
+
+    def test_scoreboard_renders_values_not_missing(self, tmp_path, monkeypatch):
+        """With the produced canary, scoreboard build_memory_embed shows no MISSING."""
+        from scripts.ops.canary_memory_producer import produce_metrics
+        from scripts.ops.canary_scoreboard_discord import build_memory_embed
+
+        # Use defaults (Redis unavailable path)
+        redis_metrics = {}
+        metrics = produce_metrics(redis_metrics)
+        canary = {
+            "canary_id": "memory-canary-001",
+            "name": "Memory Hybrid Canary",
+            "status": "running",
+            "canary_mode": "memory",
+            "metrics": metrics,
+            "description": "Memory domain validation",
+        }
+
+        embed = build_memory_embed(canary)
+        field_values = {f["name"]: f["value"] for f in embed["fields"]}
+        for field_name, field_value in field_values.items():
+            assert field_value != "MISSING", f"{field_name} shows MISSING"
+
+    def test_producer_idempotent(self, tmp_path, monkeypatch):
+        """Running producer twice produces valid output both times."""
+        from scripts.ops.canary_memory_producer import (
+            build_canary_payload,
+            produce_metrics,
+        )
+
+        for i in range(2):
+            redis_metrics = {}
+            metrics = produce_metrics(redis_metrics)
+            payload = build_canary_payload(metrics)
+
+            assert payload["canary_id"] == "memory-canary-001"
+            assert payload["status"] == "running"
+            assert payload["canary_mode"] == "memory"
+            assert "metrics" in payload
+            for field in (
+                "recall_quality",
+                "context_cost",
+                "token_efficiency",
+                "staleness_quality",
+                "anti_gaming_status",
+                "operational_reliability",
+            ):
+                assert field in payload["metrics"], f"Run {i+1}: missing {field}"

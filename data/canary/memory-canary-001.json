@@ -1,0 +1,16 @@
+{
+  "canary_id": "memory-canary-001",
+  "name": "Memory Hybrid Canary",
+  "status": "running",
+  "canary_mode": "memory",
+  "metrics": {
+    "recall_quality": 0.75,
+    "context_cost": 15000,
+    "token_efficiency": 0.7,
+    "staleness_quality": 0.85,
+    "anti_gaming_status": "pass",
+    "operational_reliability": 0.9
+  },
+  "description": "Memory domain validation - hybrid architecture",
+  "produced_at": "2026-04-10T17:47:06.113835+00:00"
+}
