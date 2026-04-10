@@ -19,6 +19,44 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+
+class MockRedisClient:
+    """Mock Redis client for testing with proper data storage."""
+
+    def __init__(self):
+        self._data: dict[str, str] = {}
+        self._sets: dict[str, set[str]] = {}
+
+    def get(self, key: str) -> str | None:
+        return self._data.get(key)
+
+    def setex(self, key: str, ttl: int, value: str) -> None:
+        self._data[key] = value
+
+    def smembers(self, key: str) -> set[str]:
+        return self._sets.get(key, set())
+
+    def sadd(self, key: str, *values: str) -> int:
+        if key not in self._sets:
+            self._sets[key] = set()
+        for v in values:
+            self._sets[key].add(v)
+        return len(values)
+
+    def set_data(self, key: str, value: str) -> None:
+        self._data[key] = value
+
+    def set_set(self, key: str, values: set[str]) -> None:
+        self._sets[key] = values
+
+    def clear(self) -> None:
+        self._data.clear()
+        self._sets.clear()
+
+    def zrange(self, key: str, start: int, end: int) -> list:
+        return []
+
+
 # Import modules under test
 from src.governance.memory.context_assembler import (
     TOKEN_BUDGET_CAP,
@@ -506,7 +544,7 @@ class TestFeatureFlagToggle:
         domain=None when the feature flag is false.
         """
         mock_ff = MagicMock()
-        mock_ff.is_memory_hybrid_enabled.return_value = False
+        mock_ff.is_memory_hybrid_enabled_for_session.return_value = False
 
         with patch(
             "src.config.feature_flags.FeatureFlags",
@@ -533,7 +571,7 @@ class TestFeatureFlagToggle:
         domain potentially populated when the feature flag is true.
         """
         mock_ff = MagicMock()
-        mock_ff.is_memory_hybrid_enabled.return_value = True
+        mock_ff.is_memory_hybrid_enabled_for_session.return_value = True
 
         with patch(
             "src.config.feature_flags.FeatureFlags",
@@ -565,7 +603,7 @@ class TestFeatureFlagToggle:
         """
         # First call with flag=true
         mock_ff_true = MagicMock()
-        mock_ff_true.is_memory_hybrid_enabled.return_value = True
+        mock_ff_true.is_memory_hybrid_enabled_for_session.return_value = True
 
         with patch(
             "src.config.feature_flags.FeatureFlags",
@@ -579,7 +617,7 @@ class TestFeatureFlagToggle:
 
         # Second call with flag=false (fallback mode)
         mock_ff_false = MagicMock()
-        mock_ff_false.is_memory_hybrid_enabled.return_value = False
+        mock_ff_false.is_memory_hybrid_enabled_for_session.return_value = False
 
         with patch(
             "src.config.feature_flags.FeatureFlags",
@@ -767,14 +805,8 @@ class TestCanarySmoke:
 
     @pytest.fixture
     def mock_redis(self):
-        """Mock Redis client."""
-        redis = MagicMock()
-        redis.get.return_value = "true"
-        redis.zrange.return_value = [
-            '{"timestamp": "2026-04-09T10:00:00Z", "content": "L0 obs 1"}',
-        ]
-        redis.smembers.return_value = set()
-        return redis
+        """Mock Redis client using MockRedisClient for proper data storage."""
+        return MockRedisClient()
 
     @pytest.fixture
     def mock_qdrant(self):
