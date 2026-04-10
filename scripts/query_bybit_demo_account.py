@@ -441,35 +441,35 @@ def query_fills_48h() -> dict:
     """Query execution list (fills) for last 48 hours."""
     now_ms = int(time.time() * 1000)
     start_ms = now_ms - (48 * 60 * 60 * 1000)
-    
+
     all_fills = []
     cursor = ""
     limit = 50
     max_iterations = 20
-    
+
     for _ in range(max_iterations):
         params = {"category": "linear", "limit": limit}
         if cursor:
             params["cursor"] = cursor
-        
+
         data = make_signed_request("GET", "/v5/execution/list", params)
         result = data.get("result", {})
         list_data = result.get("list", [])
-        
+
         if not list_data:
             break
-        
+
         for fill in list_data:
             exec_time_ms = int(fill.get("execTime", 0))
             if exec_time_ms < start_ms:
                 # We've gone past the 48h window
                 return {"fills": all_fills, "truncated": True}
             all_fills.append(fill)
-        
+
         cursor = result.get("nextPageCursor", "")
         if not cursor:
             break
-    
+
     return {"fills": all_fills, "truncated": False}
 
 
@@ -477,24 +477,24 @@ def query_orders_48h() -> dict:
     """Query order history for last 48 hours."""
     now_ms = int(time.time() * 1000)
     start_ms = now_ms - (48 * 60 * 60 * 1000)
-    
+
     all_orders = []
     cursor = ""
     limit = 50
     max_iterations = 20
-    
+
     for _ in range(max_iterations):
         params = {"category": "linear", "limit": limit}
         if cursor:
             params["cursor"] = cursor
-        
+
         data = make_signed_request("GET", "/v5/order/history", params)
         result = data.get("result", {})
         list_data = result.get("list", [])
-        
+
         if not list_data:
             break
-        
+
         for order in list_data:
             updated_ms = int(order.get("updatedTime", 0))
             created_ms = int(order.get("createdTime", 0))
@@ -502,45 +502,48 @@ def query_orders_48h() -> dict:
             if latest_ms < start_ms:
                 return {"orders": all_orders, "truncated": True}
             all_orders.append(order)
-        
+
         cursor = result.get("nextPageCursor", "")
         if not cursor:
             break
-    
+
     return {"orders": all_orders, "truncated": False}
 
 
 def main() -> None:
     """Main entry point."""
     import sys
+
     if len(sys.argv) > 1 and sys.argv[1] == "--48h":
         # Focused 48h query mode
         sync_server_time()
-        
+
         print("[QUERY] Fetching fills for last 48h...")
         fills_result = query_fills_48h()
         fills = fills_result["fills"]
-        
+
         print("[QUERY] Fetching orders for last 48h...")
         orders_result = query_orders_48h()
         orders = orders_result["orders"]
-        
+
         # Compute stats
         newest_fill_ts = None
         if fills:
             newest_fill_ts = max(int(f.get("execTime", 0)) for f in fills)
-        
+
         sample_fill_ids = []
         for f in fills[:5]:
             sample_fill_ids.append(f.get("execId", ""))
-        
+
         # Output as JSON
         output = {
             "fills_count": len(fills),
             "orders_count": len(orders),
             "fills_truncated": fills_result["truncated"],
             "orders_truncated": orders_result["truncated"],
-            "newest_fill_utc": format_timestamp(newest_fill_ts) if newest_fill_ts else None,
+            "newest_fill_utc": (
+                format_timestamp(newest_fill_ts) if newest_fill_ts else None
+            ),
             "newest_fill_epoch_ms": newest_fill_ts,
             "sample_fill_ids": sample_fill_ids,
             "sample_fills": [
@@ -573,10 +576,10 @@ def main() -> None:
                 for o in orders[:5]
             ],
         }
-        
+
         print(json.dumps(output, indent=2))
         return
-    
+
     # Default: full account query
     print("=" * 70)
     print(" BYBIT DEMO ACCOUNT QUERY (READ-ONLY)")

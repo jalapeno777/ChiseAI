@@ -1468,7 +1468,7 @@ class BybitDemoConnector:
             logger.warning("Redis dedup check failed for exec_id=%s: %s", exec_id, exc)
             return False
 
-    def _get_outcome_persistence(self) -> "OutcomePersistence":  # type: ignore[misc]
+    def _get_outcome_persistence(self) -> OutcomePersistence:  # type: ignore[misc]
         """Get or create OutcomePersistence instance (lazy init)."""
         if (
             not hasattr(self, "_outcome_persistence")
@@ -1614,9 +1614,9 @@ class BybitDemoConnector:
                     quantity=exec_qty,
                     timestamp=datetime.now(UTC),
                     exchange_order_id=order_id,  # Native exchange order_id
-                    exchange_fill_id=exec_id
-                    if exec_id
-                    else dedup_key,  # Native exchange exec_id
+                    exchange_fill_id=(
+                        exec_id if exec_id else dedup_key
+                    ),  # Native exchange exec_id
                 )
                 order.add_fill(fill)
                 await self._mark_processed_exec(dedup_key)

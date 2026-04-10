@@ -428,8 +428,8 @@ class TestExchangeIdPersistence:
 
     def test_fill_persists_exchange_ids_to_redis(self, mock_redis):
         """Test that persist_fill persists exchange_order_id and exchange_fill_id."""
-        from execution.persistence.outcome_persistence import OutcomePersistence
         from execution.paper.models import PaperFill, PaperOrder
+        from execution.persistence.outcome_persistence import OutcomePersistence
 
         # Create order with exchange-native fill
         order = PaperOrder(
@@ -475,8 +475,8 @@ class TestExchangeIdPersistence:
 
     def test_fill_without_exchange_ids_has_null_values(self, mock_redis):
         """Test that fills without exchange IDs persist with None values."""
-        from execution.persistence.outcome_persistence import OutcomePersistence
         from execution.paper.models import PaperFill, PaperOrder
+        from execution.persistence.outcome_persistence import OutcomePersistence
 
         order = PaperOrder(
             order_id="paper_only_order_123",
