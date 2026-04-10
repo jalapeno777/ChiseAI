@@ -44,11 +44,13 @@ if "config" in sys.modules:
             del sys.modules[mod_name]
 
 from config.bootstrap import bootstrap
+from config.feature_flags import get_feature_flags
 from config.trading_mode import ModuleType, TradingMode, TradingModeConfig
 
 # Trading components
 from data_ingestion.ohlcv_fetcher import OHLCVFetcher
 from data_ingestion.timeframe_config import Timeframe
+from execution.connectors.bybit_demo_connector import BybitDemoConnector
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.outcome_capture.integration import OutcomeCaptureIntegration
 from execution.paper import (
@@ -157,11 +159,39 @@ class SignalConsumerRunner:
         logger.info("Signal generator initialized")
 
         # Initialize paper trading components
-        order_simulator = create_simulator()
+        # PAPER-RECON-001: Route to BybitDemoConnector when credentials available
+        # unless FORCE_SIMULATOR_MODE is enabled
+        flags = get_feature_flags()
+        force_simulator = flags.is_force_simulator_mode_enabled()
+
+        if force_simulator:
+            order_simulator = create_simulator()
+            logger.info(
+                "Paper trading components initialized: OrderSimulator "
+                "(FORCE_SIMULATOR_MODE=true)"
+            )
+        else:
+            # Try to use BybitDemoConnector when credentials available
+            try:
+                order_simulator = BybitDemoConnector.from_env()
+                logger.info(
+                    "Paper trading components initialized: BybitDemoConnector "
+                    "(authenticated demo execution)"
+                )
+            except Exception as exc:
+                logger.warning(
+                    "BybitDemoConnector init failed (%s); using local simulator fallback",
+                    exc,
+                )
+                order_simulator = create_simulator()
+                logger.info(
+                    "Paper trading components initialized: OrderSimulator "
+                    "(simulator fallback)"
+                )
+
         position_tracker = PaperPositionTracker()
         self._components["order_simulator"] = order_simulator
         self._components["position_tracker"] = position_tracker
-        logger.info("Paper trading components initialized")
 
         # Initialize risk management
         risk_config = RiskCheck(

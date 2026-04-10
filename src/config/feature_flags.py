@@ -94,6 +94,9 @@ class FeatureFlags:
         f"{REDIS_PREFIX}:reconciliation_auto_backfill"
     )
 
+    # PAPER-RECON-001: Force simulator mode for paper execution routing
+    KEY_FORCE_SIMULATOR_MODE: ClassVar[str] = f"{REDIS_PREFIX}:force_simulator_mode"
+
     # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
     KEY_MEMORY_HYBRID_ENABLED: ClassVar[str] = f"{REDIS_PREFIX}:memory_hybrid_enabled"
     KEY_MEMORY_HYBRID_CANARY_PERCENTAGE: ClassVar[str] = (
@@ -138,6 +141,11 @@ class FeatureFlags:
     # ST-FILL-007: Rollback safety
     fill_rollback_on_error_enabled: bool = False
     reconciliation_auto_backfill: bool = True
+
+    # PAPER-RECON-001: Force simulator mode
+    # When True: force use of OrderSimulator even if Bybit demo credentials available
+    # When False: prefer BybitDemoConnector when credentials available
+    force_simulator_mode: bool = False
 
     # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
     # Default False (opt-in for Phase 4)
@@ -422,6 +430,17 @@ class FeatureFlags:
             self.KEY_RECONCILIATION_AUTO_BACKFILL, self.reconciliation_auto_backfill
         )
 
+    # PAPER-RECON-001: Force simulator mode
+    def is_force_simulator_mode_enabled(self) -> bool:
+        """Check if force simulator mode is enabled (Redis or default).
+
+        When True: force use of OrderSimulator even if Bybit demo credentials available.
+        When False: prefer BybitDemoConnector when credentials available (default).
+        """
+        return self.get_redis_value(
+            self.KEY_FORCE_SIMULATOR_MODE, self.force_simulator_mode
+        )
+
     # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
     def is_memory_hybrid_enabled(self) -> bool:
         """Check if Phase 4 hybrid memory context assembly is enabled.
@@ -542,6 +561,15 @@ class FeatureFlags:
         """Enable or disable persona regression scheduling."""
         return self.set_redis_value(self.KEY_PERSONA_REGRESSION, enabled)
 
+    # PAPER-RECON-001: Force simulator mode
+    def set_force_simulator_mode_enabled(self, enabled: bool) -> bool:
+        """Enable or disable force simulator mode.
+
+        When True: force use of OrderSimulator even if Bybit demo credentials available.
+        When False: prefer BybitDemoConnector when credentials available.
+        """
+        return self.set_redis_value(self.KEY_FORCE_SIMULATOR_MODE, enabled)
+
     # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory Architecture
     def set_memory_hybrid_enabled(self, enabled: bool) -> bool:
         """Enable or disable Phase 4 hybrid memory context assembly.
@@ -649,6 +677,8 @@ class FeatureFlags:
             # ST-FILL-007: Rollback safety
             "fill_rollback_on_error_enabled": self.is_fill_rollback_on_error_enabled(),
             "reconciliation_auto_backfill": self.is_reconciliation_auto_backfill_enabled(),
+            # PAPER-RECON-001: Force simulator mode
+            "force_simulator_mode": self.is_force_simulator_mode_enabled(),
             # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory
             "memory_hybrid_enabled": self.is_memory_hybrid_enabled(),
         }
@@ -680,6 +710,8 @@ class FeatureFlags:
             # ST-FILL-007: Rollback safety
             "fill_rollback_on_error_enabled": self.fill_rollback_on_error_enabled,
             "reconciliation_auto_backfill": self.reconciliation_auto_backfill,
+            # PAPER-RECON-001: Force simulator mode
+            "force_simulator_mode": self.force_simulator_mode,
             # ST-MEMORY-CTX-002: Phase 4 Hybrid Memory
             "memory_hybrid_enabled": self.memory_hybrid_enabled,
         }
