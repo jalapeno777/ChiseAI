@@ -1,0 +1,368 @@
+{
+  "dashboard": {
+    "title": "Memory Hybrid Overview",
+    "uid": "memory-hybrid-overview",
+    "description": "Hybrid memory architecture audit metrics - Phase 4 Batch 2",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Recall Accuracy",
+        "type": "Gauge",
+        "description": "Recall accuracy v1.0.audit-batch2",
+        "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "recall_accuracy",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 70 },
+                { "color": "green", "value": 85 }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "alert": {
+          "name": "Recall Accuracy Alert",
+          "conditions": [
+            {
+              "evaluator": { "type": "lt", "params": [80] },
+              "operator": { "type": "and" },
+              "query": { "params": ["A"] },
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "frequency": "1m",
+          "noDataState": "no_data",
+          "execErrState": "alerting"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Context Loading Cost",
+        "type": "timeseries",
+        "description": "Context loading cost v1.0.audit-batch2",
+        "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "context_cost",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        },
+        "options": {
+          "lines": 1,
+          "linewidth": 1
+        },
+        "alert": null
+      },
+      {
+        "id": 3,
+        "title": "Compression Ratio",
+        "type": "timeseries",
+        "description": "Compression ratio v1.0.audit-batch2",
+        "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "compression_ratio",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 1,
+            "max": 50,
+            "unit": "short"
+          }
+        },
+        "options": {
+          "lines": 1,
+          "linewidth": 1
+        },
+        "alert": null
+      },
+      {
+        "id": 4,
+        "title": "Memory Coverage",
+        "type": "Gauge",
+        "description": "Memory coverage v1.0.audit-batch2",
+        "gridPos": { "x": 0, "y": 8, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "coverage",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 50 },
+                { "color": "green", "value": 75 }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "alert": null
+      },
+      {
+        "id": 5,
+        "title": "Staleness Rate",
+        "type": "Gauge",
+        "description": "Staleness rate v1.0.audit-batch2",
+        "gridPos": { "x": 8, "y": 8, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "staleness",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 40 },
+                { "color": "red", "value": 60 }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "alert": {
+          "name": "Staleness Rate Alert",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [60] },
+              "operator": { "type": "and" },
+              "query": { "params": ["A"] },
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "frequency": "1m",
+          "noDataState": "no_data",
+          "execErrState": "alerting"
+        }
+      },
+      {
+        "id": 6,
+        "title": "Processing Latency",
+        "type": "timeseries",
+        "description": "Processing latency p50/p95 v1.0.audit-batch2",
+        "gridPos": { "x": 16, "y": 8, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "processing_latency_p50",
+            "refId": "A"
+          },
+          {
+            "expr": "processing_latency_p95",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms"
+          }
+        },
+        "options": {
+          "lines": 1,
+          "linewidth": 1
+        },
+        "alert": null
+      },
+      {
+        "id": 7,
+        "title": "False Positive Rate",
+        "type": "Gauge",
+        "description": "False positive rate v1.0.audit-batch2",
+        "gridPos": { "x": 0, "y": 16, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "fp_rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 10,
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 3 },
+                { "color": "red", "value": 5 }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "alert": {
+          "name": "False Positive Rate Alert",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [5] },
+              "operator": { "type": "and" },
+              "query": { "params": ["A"] },
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "frequency": "1m",
+          "noDataState": "no_data",
+          "execErrState": "alerting"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Near-Duplicate Rate",
+        "type": "Gauge",
+        "description": "Near-duplicate rate v1.0.audit-batch2",
+        "gridPos": { "x": 8, "y": 16, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "near_dup_rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 30,
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 15 },
+                { "color": "red", "value": 25 }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "alert": {
+          "name": "Near-Duplicate Rate Alert",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [25] },
+              "operator": { "type": "and" },
+              "query": { "params": ["A"] },
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "frequency": "1m",
+          "noDataState": "no_data",
+          "execErrState": "alerting"
+        }
+      },
+      {
+        "id": 9,
+        "title": "Baseline Capture Age",
+        "type": "timeseries",
+        "description": "Baseline capture age v1.0.audit-batch2",
+        "gridPos": { "x": 16, "y": 16, "w": 8, "h": 8 },
+        "targets": [
+          {
+            "expr": "baseline_capture_age_hours",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "h",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 24 },
+                { "color": "red", "value": 48 }
+              ]
+            }
+          }
+        },
+        "options": {
+          "lines": 1,
+          "linewidth": 1
+        },
+        "alert": {
+          "name": "Baseline Capture Age Alert",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [48] },
+              "operator": { "type": "and" },
+              "query": { "params": ["A"] },
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "frequency": "5m",
+          "noDataState": "no_data",
+          "execErrState": "alerting"
+        }
+      },
+      {
+        "id": 10,
+        "title": "Metric Volatility Score",
+        "type": "timeseries",
+        "description": "Metric volatility score v1.0.audit-batch2",
+        "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+        "targets": [
+          {
+            "expr": "volatility_score",
+            "refId": "A"
+          },
+          {
+            "expr": "volatility_std_dev",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 0.5 },
+                { "color": "red", "value": 1.0 }
+              ]
+            }
+          }
+        },
+        "options": {
+          "lines": 1,
+          "linewidth": 1
+        },
+        "alert": {
+          "name": "Metric Volatility Score Alert",
+          "conditions": [
+            {
+              "evaluator": { "type": "gt", "params": [1.0] },
+              "operator": { "type": "and" },
+              "query": { "params": ["B"] },
+              "reducer": { "type": "avg" }
+            }
+          ],
+          "frequency": "5m",
+          "noDataState": "no_data",
+          "execErrState": "alerting"
+        }
+      }
+    ],
+    "schemaVersion": 30,
+    "version": 1
+  }
+}
