@@ -124,6 +124,62 @@ class TestExecutionSafetyGuard:
         assert result.allowed is False
         assert "demo credentials are available" in result.reason
 
+    def test_check_execution_path_with_order_simulator_force_simulator_mode_true(self):
+        """Test execution path check with OrderSimulator when FORCE_SIMULATOR_MODE=true.
+
+        PAPER-RECON-001: When FORCE_SIMULATOR_MODE=True, OrderSimulator should be
+        allowed even if demo credentials are available (rollback option).
+        """
+        mock_executor = MagicMock()
+        mock_executor.__class__.__name__ = "OrderSimulator"
+
+        mock_flags = MagicMock()
+        mock_flags.is_force_simulator_mode_enabled.return_value = True
+
+        with patch.dict(
+            "os.environ",
+            {
+                "BYBIT_DEMO_API_KEY": "test_key",
+                "BYBIT_DEMO_API_SECRET": "test_secret",
+            },
+        ):
+            with patch(
+                "config.feature_flags.get_feature_flags",
+                return_value=mock_flags,
+            ):
+                result = ExecutionSafetyGuard.check_execution_path(mock_executor)
+
+        assert result.allowed is True
+        assert "FORCE_SIMULATOR_MODE" in result.reason
+
+    def test_check_execution_path_with_order_simulator_force_simulator_mode_false(self):
+        """Test execution path check with OrderSimulator when FORCE_SIMULATOR_MODE=false.
+
+        PAPER-RECON-001: When FORCE_SIMULATOR_MODE=False and demo credentials are
+        available, OrderSimulator should be blocked.
+        """
+        mock_executor = MagicMock()
+        mock_executor.__class__.__name__ = "OrderSimulator"
+
+        mock_flags = MagicMock()
+        mock_flags.is_force_simulator_mode_enabled.return_value = False
+
+        with patch.dict(
+            "os.environ",
+            {
+                "BYBIT_DEMO_API_KEY": "test_key",
+                "BYBIT_DEMO_API_SECRET": "test_secret",
+            },
+        ):
+            with patch(
+                "config.feature_flags.get_feature_flags",
+                return_value=mock_flags,
+            ):
+                result = ExecutionSafetyGuard.check_execution_path(mock_executor)
+
+        assert result.allowed is False
+        assert "demo credentials are available" in result.reason
+
     def test_check_execution_path_with_unknown_executor(self):
         """Test execution path check with unknown executor type."""
         mock_executor = MagicMock()

@@ -63,6 +63,17 @@ class ExecutionSafetyGuard:
             and os.environ.get("BYBIT_DEMO_API_SECRET")
         )
 
+        # Check FORCE_SIMULATOR_MODE (PAPER-RECON-001)
+        # When True, OrderSimulator is allowed even if demo credentials exist
+        force_simulator_mode = False
+        try:
+            from config.feature_flags import get_feature_flags
+
+            flags = get_feature_flags()
+            force_simulator_mode = flags.is_force_simulator_mode_enabled()
+        except Exception:
+            pass  # If feature flags unavailable, use default behavior
+
         # Check if using BybitDemoConnector with demo credentials
         if executor_type == "BybitDemoConnector":
             if has_demo_creds:
@@ -88,6 +99,13 @@ class ExecutionSafetyGuard:
 
         # Check if using OrderSimulator
         elif executor_type == "OrderSimulator":
+            # Allow OrderSimulator if FORCE_SIMULATOR_MODE is enabled
+            if force_simulator_mode:
+                return ExecutionGuardResult(
+                    allowed=True,
+                    reason="OrderSimulator used with FORCE_SIMULATOR_MODE=true (rollback option)",
+                    recommendation="Execution approved - simulator forced via feature flag",
+                )
             if has_demo_creds and require_demo:
                 return ExecutionGuardResult(
                     allowed=False,
