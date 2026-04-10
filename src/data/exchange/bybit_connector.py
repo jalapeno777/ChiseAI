@@ -264,6 +264,7 @@ class BybitConnector:
         # Time synchronization for API authentication.
         self._time_offset_ms: int = 0
         self._last_time_sync: float = 0.0
+        self._time_sync_lock: asyncio.Lock = asyncio.Lock()
 
     @classmethod
     def from_env(cls, load_env: bool = True) -> BybitConnector:
@@ -475,8 +476,12 @@ class BybitConnector:
         payload = ""
 
         if signed:
-            if self._last_time_sync == 0 or (time.time() - self._last_time_sync) > 30:
-                await self._sync_server_time()
+            async with self._time_sync_lock:
+                if (
+                    self._last_time_sync == 0
+                    or (time.time() - self._last_time_sync) > 30
+                ):
+                    await self._sync_server_time()
 
             timestamp = self._get_timestamp()
             headers["X-BAPI-TIMESTAMP"] = timestamp
