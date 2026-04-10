@@ -1250,6 +1250,24 @@ class BybitConnector:
             "timestamp": time.time(),
         }
 
+    def get_timestamp_drift_ms(self) -> int:
+        """Get absolute timestamp drift between local time and Bybit server time.
+
+        Returns:
+            Absolute drift in milliseconds. Returns 0 if sync has not been performed.
+
+        Note:
+            The drift is computed as |local_time - exchange_time| based on the
+            last _sync_server_time() result stored in self._time_offset_ms.
+            A drift exceeding CHISEAI_TIMESTAMP_SYNC_THRESHOLD_MS (default 5000ms)
+            indicates a clock sync problem.
+        """
+        return (
+            abs(self._time_offset_ms)
+            if hasattr(self, "_time_offset_ms") and self._time_offset_ms
+            else 0
+        )
+
     # === Circuit Breaker Methods (ST-LAUNCH-002) ===
 
     def get_circuit_breaker_state(self) -> dict[str, Any] | None:
