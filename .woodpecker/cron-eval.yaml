@@ -55,10 +55,10 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml requests numpy scipy redis
-          
+
           echo "Running 6-hour KPI mini eval cycle..."
           python3 scripts/evaluation/kpi_scheduler.py --cycle 6h
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/brain-eval -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -87,10 +87,10 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml redis
-          
+
           echo "Running autonomy cadence controller for 6h jobs..."
           python3 scripts/evaluation/autonomy_cadence_controller.py --job-id ops.kpi_ingest_6h --force
-          
+
           # List autonomy artifacts
           echo "Autonomy artifacts produced:"
           find _bmad-output/autonomy-cadence -name "*.json" -type f 2>/dev/null || echo "No autonomy artifacts found"
@@ -113,10 +113,10 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml requests numpy scipy redis
-          
+
           echo "Running daily KPI trend cycle..."
           python3 scripts/evaluation/kpi_scheduler.py --cycle daily
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/brain-eval -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -141,19 +141,49 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml redis
-          
+
           echo "Running autonomy cadence controller for daily jobs..."
           python3 scripts/evaluation/autonomy_cadence_controller.py \
             --job-id ops.daily_trends \
             --job-id governance.daily_reflection \
             --force
-          
+
           echo "Autonomy artifacts produced:"
           find _bmad-output/autonomy-cadence -name "*.json" -type f 2>/dev/null || echo "No autonomy artifacts found"
         ) > _bmad-output/ci/autonomy-cadence-daily.log 2>&1
         code=$?
         cat _bmad-output/ci/autonomy-cadence-daily.log
         echo "$code" > _bmad-output/ci/autonomy-cadence-daily.status
+        exit 0
+
+  canary-scoreboard-discord:
+    image: python:3.11
+    when:
+      cron:
+        - 6h-eval
+        - daily-trends
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml requests redis
+
+          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+            echo "DISCORD_WEBHOOK_URL not set, skipping scoreboard"
+            echo "DRY-RUN" > _bmad-output/ci/canary-scoreboard-discord.status
+            exit 0
+          fi
+
+          python3 scripts/ops/canary_scoreboard_discord.py
+        ) > _bmad-output/ci/canary-scoreboard-discord.log 2>&1
+        code=$?
+        cat _bmad-output/ci/canary-scoreboard-discord.log
+        if [ ! -f _bmad-output/ci/canary-scoreboard-discord.status ]; then
+          echo "ERROR" > _bmad-output/ci/canary-scoreboard-discord.status
+        fi
         exit 0
 
   kpi-scheduler-weekly:
@@ -169,10 +199,10 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml requests numpy scipy redis
-          
+
           echo "Running weekly KPI reflection cycle..."
           python3 scripts/evaluation/kpi_scheduler.py --cycle weekly
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/brain-eval -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -197,13 +227,13 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml redis
-          
+
           echo "Running autonomy cadence controller for weekly jobs..."
           python3 scripts/evaluation/autonomy_cadence_controller.py \
             --job-id governance.metacog_weekly \
             --job-id strategy.canary_review_weekly \
             --force
-          
+
           echo "Autonomy artifacts produced:"
           find _bmad-output/autonomy-cadence -name "*.json" -type f 2>/dev/null || echo "No autonomy artifacts found"
         ) > _bmad-output/ci/autonomy-cadence-weekly.log 2>&1
@@ -282,7 +312,7 @@ steps:
         (
           set -euo pipefail
           CRON_MSG="${CI_COMMIT_MESSAGE:-}"
-          
+
           # Skip if already handled by specific steps
           case "$CRON_MSG" in
             cron:6h-eval|cron:daily-trends|cron:weekly-reflection)
@@ -292,7 +322,7 @@ steps:
           esac
 
           pip install --no-cache-dir pyyaml requests numpy scipy redis
-          
+
           # Try to extract cycle from message pattern
           CYCLE=""
           case "$CRON_MSG" in
@@ -310,10 +340,10 @@ steps:
               exit 0
               ;;
           esac
-          
+
           echo "Running KPI scheduler cycle: $CYCLE"
           python3 scripts/evaluation/kpi_scheduler.py --cycle "$CYCLE"
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/brain-eval -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
