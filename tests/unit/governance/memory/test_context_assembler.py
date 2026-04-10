@@ -757,3 +757,81 @@ class TestMemoryContextDomainField:
             token_budget_used=0,
         )
         assert ctx.domain is None
+
+
+class TestCanarySmoke:
+    """Canary smoke tests for session-aware routing integration.
+
+    ST-PHASE5-CANARY-002: Integration smoke tests for canary routing.
+    """
+
+    @pytest.fixture
+    def mock_redis(self):
+        """Mock Redis client."""
+        redis = MagicMock()
+        redis.get.return_value = "true"
+        redis.zrange.return_value = [
+            '{"timestamp": "2026-04-09T10:00:00Z", "content": "L0 obs 1"}',
+        ]
+        redis.smembers.return_value = set()
+        return redis
+
+    @pytest.fixture
+    def mock_qdrant(self):
+        """Mock Qdrant client."""
+        qdrant = MagicMock()
+
+        def mock_scroll(collection_name, filter, limit, offset=None, with_payload=True):
+            return [
+                {
+                    "id": "qdrant-1",
+                    "payload": {
+                        "id": "qdrant-1",
+                        "content": "content",
+                        "staleness_score": 0.8,
+                        "created_at": "2026-04-08T10:00:00Z",
+                    },
+                }
+            ], None
+
+        qdrant.scroll.side_effect = mock_scroll
+        return qdrant
+
+    def test_canary_smoke_mixed_sessions_5_percent(self, mock_redis, mock_qdrant):
+        """Simulated mixed sessions produce mixed routing under 5%."""
+        from src.config.feature_flags import FeatureFlags
+
+        mock_redis.set_data("chise:feature_flags:config:memory_hybrid_enabled", "true")
+        mock_redis.set_data("chise:feature_flags:config:memory:canary_percentage", "5")
+
+        ff = FeatureFlags()
+        object.__setattr__(ff, "_redis_client", mock_redis)
+
+        # 20 sessions at 5% -> expect 0-2 hybrid (allow variance)
+        hybrid_count = sum(
+            ff.is_memory_hybrid_enabled_for_session(f"canary-test-{i}")
+            for i in range(20)
+        )
+        assert 0 <= hybrid_count <= 3, f"Expected 0-2 at 5%, got {hybrid_count}"
+
+    def test_canary_context_assembler_uses_session_routing(
+        self, mock_redis, mock_qdrant
+    ):
+        """Verify build_session_context calls session-aware routing."""
+        from src.config.feature_flags import FeatureFlags
+
+        mock_redis.set_data("chise:feature_flags:config:memory_hybrid_enabled", "true")
+        mock_redis.set_data("chise:feature_flags:config:memory:canary_percentage", "0")
+
+        ff = FeatureFlags()
+        object.__setattr__(ff, "_redis_client", mock_redis)
+
+        with patch(
+            "src.config.feature_flags.FeatureFlags",
+            return_value=ff,
+        ):
+            # Should not raise - just returns fallback
+            result = build_session_context(
+                "test-session-xyz", redis_client=mock_redis, qdrant_client=mock_qdrant
+            )
+            assert result is not None

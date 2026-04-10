@@ -323,3 +323,60 @@ class TestCanaryRoutingEdgeCases:
         # Should not raise, should treat as empty allowlist
         result = ff._get_redis_set("any-key")
         assert result == set()
+
+
+class TestCanaryDistributionSanity:
+    """Distribution sanity tests for canary routing.
+
+    Verifies that hash-based routing produces statistically acceptable
+    distributions at various percentage levels.
+    """
+
+    @pytest.fixture
+    def mock_redis(self):
+        return MockRedisClient()
+
+    @pytest.fixture
+    def feature_flags(self, mock_redis):
+        from src.config.feature_flags import FeatureFlags
+
+        ff = FeatureFlags()
+        object.__setattr__(ff, "_redis_client", mock_redis)
+        return ff
+
+    def test_distribution_sanity_5_percent(self, feature_flags, mock_redis):
+        """5% of 1000 sessions -> roughly 40-60 hybrid (chi-squared acceptable)."""
+        mock_redis.set_data("chise:feature_flags:config:memory_hybrid_enabled", "true")
+        feature_flags.set_canary_percentage(5)
+
+        results = [
+            feature_flags.is_memory_hybrid_enabled_for_session(f"s{i}")
+            for i in range(1000)
+        ]
+        hybrid_count = sum(results)
+        # Expected: ~50, allow 35-65 range (3 std dev for binomial)
+        assert 35 <= hybrid_count <= 65, f"Expected ~50, got {hybrid_count}"
+
+    def test_distribution_sanity_10_percent(self, feature_flags, mock_redis):
+        """10% of 500 sessions -> roughly 40-60 hybrid."""
+        mock_redis.set_data("chise:feature_flags:config:memory_hybrid_enabled", "true")
+        feature_flags.set_canary_percentage(10)
+
+        results = [
+            feature_flags.is_memory_hybrid_enabled_for_session(f"t{i}")
+            for i in range(500)
+        ]
+        hybrid_count = sum(results)
+        assert 35 <= hybrid_count <= 65, f"Expected ~50, got {hybrid_count}"
+
+    def test_distribution_sanity_50_percent(self, feature_flags, mock_redis):
+        """50% of 200 sessions -> roughly 90-110 hybrid."""
+        mock_redis.set_data("chise:feature_flags:config:memory_hybrid_enabled", "true")
+        feature_flags.set_canary_percentage(50)
+
+        results = [
+            feature_flags.is_memory_hybrid_enabled_for_session(f"f{i}")
+            for i in range(200)
+        ]
+        hybrid_count = sum(results)
+        assert 90 <= hybrid_count <= 110, f"Expected ~100, got {hybrid_count}"
