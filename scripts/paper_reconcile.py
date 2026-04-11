@@ -6,7 +6,7 @@ Compares Redis index counts to Postgres outcome count and detects orphaned fills
 Monitors data integrity between operational (Redis) and durable (Postgres) stores.
 
 Usage:
-    python3 scripts/paper_reconcile.py [--since ISO_TIMESTAMP] [--json]
+    python3 scripts/paper_reconcile.py [--since ISO_TIMESTAMP] [--json] [--alert]
 
 Exit codes:
     0 - All systems consistent
@@ -51,6 +51,7 @@ REDIS_INDEXES = {
 class ReconcileResult:
     redis_counts: dict
     postgres_count: int
+    last_pg_outcome_time: datetime | None
     since: str
     orphaned_fills: list
     divergence: dict
@@ -79,22 +80,28 @@ async def get_postgres_count(since: datetime) -> int:
         await conn.close()
 
 
-def _scan_keys(r, pattern):
-    """Scan Redis keys matching pattern using SCAN (non-blocking)."""
-    keys = []
-    cursor = 0
-    while True:
-        cursor, batch = r.scan(cursor=cursor, match=pattern, count=500)
-        keys.extend(batch)
-        if cursor == 0:
-            break
-    return keys
+async def get_postgres_last_outcome_time() -> datetime | None:
+    """Get timestamp of most recent outcome in Postgres, or None if no outcomes exist."""
+    conn = await asyncpg.connect(
+        host=PG_DEFAULTS["host"],
+        port=PG_DEFAULTS["port"],
+        user=PG_DEFAULTS["user"],
+        password=PG_DEFAULTS["password"],
+        database=PG_DEFAULTS["database"],
+    )
+    try:
+        row = await conn.fetchrow(
+            "SELECT created_at FROM signal_outcomes ORDER BY created_at DESC LIMIT 1"
+        )
+        return row["created_at"] if row else None
+    finally:
+        await conn.close()
 
 
 def check_orphaned_fills(r: redis.Redis) -> list:
     """Find fills without matching orders."""
     # Get all order IDs from Redis
-    order_keys = _scan_keys(r, "paper:order:*")
+    order_keys = r.keys("paper:order:*")
     order_ids = set()
     for k in order_keys:
         parts = k.split(":")
@@ -102,7 +109,7 @@ def check_orphaned_fills(r: redis.Redis) -> list:
             order_ids.add(parts[-1])
 
     # Get all fill keys
-    fill_keys = _scan_keys(r, "paper:fill:*")
+    fill_keys = r.keys("paper:fill:*")
     orphaned = []
     for k in fill_keys:
         parts = k.split(":")
@@ -112,6 +119,32 @@ def check_orphaned_fills(r: redis.Redis) -> list:
                 orphaned.append(k)
 
     return orphaned
+
+
+def write_alert_key(result: ReconcileResult) -> str:
+    """Write reconciliation alert to Redis for Grafana alerting.
+
+    When divergence is detected, writes a JSON payload to the alert key
+    that Grafana can query to fire alerts.
+
+    Key: paper:reconcile:alert
+    TTL: 1 hour — if next reconcile doesn't run or clears the alert, it expires
+    """
+    r = get_redis_client()
+    alert_key = "paper:reconcile:alert"
+    alert_data = {
+        "status": result.status,
+        "exit_code": result.exit_code,
+        "divergence": result.divergence,
+        "orphaned_fills_count": len(result.orphaned_fills),
+        "postgres_outcomes": result.postgres_count,
+        "redis_outcomes": result.redis_counts.get("outcomes", 0),
+        "timestamp": datetime.now(UTC).isoformat(),
+    }
+    r.set(alert_key, json.dumps(alert_data))
+    # TTL: 1 hour — if next reconcile doesn't run, alert expires
+    r.expire(alert_key, 3600)
+    return alert_key
 
 
 def reconcile(since_iso: str) -> ReconcileResult:
@@ -128,6 +161,9 @@ def reconcile(since_iso: str) -> ReconcileResult:
     # Postgres count
     pg_count = asyncio.run(get_postgres_count(since_dt))
 
+    # Postgres last outcome time (for idle-system detection)
+    last_pg_outcome = asyncio.run(get_postgres_last_outcome_time())
+
     # Orphaned fills
     orphaned = check_orphaned_fills(r)
 
@@ -138,22 +174,29 @@ def reconcile(since_iso: str) -> ReconcileResult:
     # Check: Redis outcomes vs Postgres outcomes
     redis_outcomes = redis_counts["outcomes"]
     if redis_outcomes != pg_count:
-        divergence["postgres_mismatch"] = {
-            "redis_outcomes": redis_outcomes,
-            "postgres_outcomes": pg_count,
-            "gap": redis_outcomes - pg_count,
-        }
-        has_divergence = True
+        # Idle-system detection: if Redis count is 0 but Postgres has outcomes,
+        # check if the sorted set expired due to 7+ days of idle time.
+        # REDIS_INDEX_TTL = 604800 seconds = 7 days
+        IDLE_TTL_SECONDS = 604800
+        is_idle_system = False
+        if redis_outcomes == 0 and pg_count > 0 and last_pg_outcome is not None:
+            now = datetime.now(UTC)
+            idle_seconds = (now - last_pg_outcome.replace(tzinfo=UTC)).total_seconds()
+            if idle_seconds > IDLE_TTL_SECONDS:
+                is_idle_system = True
+                logger.info(
+                    f"Idle-system detected: Redis outcomes=0 but Postgres has {pg_count} outcomes. "
+                    f"Last Postgres outcome was {idle_seconds / 86400:.1f} days ago (>7 day TTL). "
+                    f"Sorted set likely expired — not flagging as divergence."
+                )
 
-    # Check: fills vs orders (fill count should be >= order count in normal operation)
-    if redis_counts["fills"] > redis_counts["orders"]:
-        divergence["fill_order_gap"] = {
-            "fills": redis_counts["fills"],
-            "orders": redis_counts["orders"],
-            "extra_fills": redis_counts["fills"] - redis_counts["orders"],
-        }
-        # This is expected if some orders have multiple fills, but flag if orphaned too
-        pass
+        if not is_idle_system:
+            divergence["postgres_mismatch"] = {
+                "redis_outcomes": redis_outcomes,
+                "postgres_outcomes": pg_count,
+                "gap": redis_outcomes - pg_count,
+            }
+            has_divergence = True
 
     # Orphaned fills = CRITICAL
     if orphaned:
@@ -166,6 +209,7 @@ def reconcile(since_iso: str) -> ReconcileResult:
     return ReconcileResult(
         redis_counts=redis_counts,
         postgres_count=pg_count,
+        last_pg_outcome_time=last_pg_outcome,
         since=since_iso,
         orphaned_fills=orphaned[:10],
         divergence=divergence,
@@ -175,9 +219,18 @@ def reconcile(since_iso: str) -> ReconcileResult:
 
 
 def main():
+    # Password guard
+    if not os.environ.get("POSTGRES_PASSWORD"):
+        raise SystemExit("ERROR: POSTGRES_PASSWORD required")
+
     parser = argparse.ArgumentParser(description="Paper canary reconciliation check")
     parser.add_argument("--since", default="2026-04-08T00:00:00Z")
     parser.add_argument("--json", action="store_true", help="Output JSON")
+    parser.add_argument(
+        "--alert",
+        action="store_true",
+        help="Write alert to Redis on divergence (for Grafana alerting)",
+    )
     args = parser.parse_args()
 
     try:
@@ -188,8 +241,24 @@ def main():
             print(json.dumps({"error": str(e), "exit_code": 2}))
         sys.exit(2)
 
+    # Write alert key if divergence detected and --alert flag is set
+    alert_key = None
+    if result.exit_code == 1 and args.alert:
+        alert_key = write_alert_key(result)
+        logger.warning(f"Divergence detected — alert written to Redis: {alert_key}")
+
+    # Cleanup alert key if reconciliation is clean
+    if result.exit_code == 0 and args.alert:
+        r = get_redis_client()
+        if r.exists("paper:reconcile:alert"):
+            r.delete("paper:reconcile:alert")
+            logger.info("Cleared stale alert key — reconciliation is clean")
+
     if args.json:
-        print(json.dumps(asdict(result), indent=2))
+        output = asdict(result)
+        if alert_key:
+            output["alert_key"] = alert_key
+        print(json.dumps(output, indent=2))
     else:
         print(f"\n{'=' * 50}")
         print(f"Paper Canary Reconciliation — {result.since}")
@@ -209,6 +278,8 @@ def main():
         else:
             print("\n✅ Status: CLEAN — no divergence")
         print(f"\nResult: {result.status.upper()} (exit {result.exit_code})")
+        if alert_key:
+            print(f"\n⚠️  ALERT written to Redis: {alert_key}")
 
     sys.exit(result.exit_code)
 
