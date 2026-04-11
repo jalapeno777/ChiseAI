@@ -162,6 +162,10 @@ class OutcomePersistence:
     async def _sync_outcome_to_postgres(self, outcome: SignalOutcome) -> bool:
         """Sync an outcome to PostgreSQL.
 
+        PAPER-RECON-001: Creates a fresh connection per call instead of caching
+        a pool on a potentially-destroyed event loop. Acceptable for paper
+        trading frequency.
+
         Args:
             outcome: Signal outcome to sync
 
@@ -172,10 +176,23 @@ class OutcomePersistence:
             return False
 
         try:
-            pool = await self._get_db_pool()
-            if pool is None:
-                return False
+            import asyncpg
 
+            db_host = os.getenv("DB_HOST", "host.docker.internal")
+            db_port = int(os.getenv("DB_PORT", "5434"))
+            db_name = os.getenv("DB_NAME", "chiseai")
+            db_user = os.getenv("DB_USER", "chiseai")
+            db_pass = os.getenv("DB_PASSWORD", "chiseai")
+
+            pool = await asyncpg.create_pool(
+                host=db_host,
+                port=db_port,
+                database=db_name,
+                user=db_user,
+                password=db_pass,
+                min_size=1,
+                max_size=5,
+            )
             async with pool.acquire() as conn:
                 await conn.execute(
                     """
@@ -234,56 +251,67 @@ class OutcomePersistence:
                 )
 
             logger.debug(f"Synced outcome {outcome.outcome_id} to PostgreSQL")
+            await pool.close()
             return True
 
         except Exception as e:
             logger.error(f"Failed to sync outcome to PostgreSQL: {e}")
             return False
 
-    def _sync_outcome_to_postgres_safe(self, outcome: SignalOutcome) -> None:
+    def _sync_outcome_to_postgres_safe(self, outcome: SignalOutcome) -> bool:
         """Safely sync an outcome to PostgreSQL from sync context.
 
-        PAPER-RECON-001: Replaces deprecated fire-and-forget asyncio pattern
-        with robust task handling that properly surfaces failures.
+        PAPER-RECON-001: Uses asyncio.run() which properly manages event loop
+        lifecycle without global side-effects. Non-blocking via done callback.
 
         Args:
             outcome: Signal outcome to sync
+
+        Returns:
+            True if sync was launched successfully, False otherwise
         """
         try:
             import asyncio
-            from concurrent.futures import ThreadPoolExecutor
+            from concurrent.futures import Future, ThreadPoolExecutor
 
-            def run_sync():
-                """Run the async sync in a new event loop."""
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+            def run_sync() -> bool:
+                """Run the async sync using asyncio.run()."""
                 try:
-                    return loop.run_until_complete(
-                        self._sync_outcome_to_postgres(outcome)
+                    return asyncio.run(self._sync_outcome_to_postgres(outcome))
+                except Exception as e:
+                    logger.error(
+                        f"PostgreSQL sync raised exception: {e} "
+                        f"(outcome_id={outcome.outcome_id}, order_id={outcome.order_id})"
                     )
-                finally:
-                    loop.close()
+                    return False
 
-            # Run async sync in thread pool to avoid blocking
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(run_sync)
-                success = future.result(timeout=30)  # 30s timeout
-                if not success:
-                    logger.warning(
-                        f"PostgreSQL sync returned False for outcome "
-                        f"{outcome.outcome_id}, order_id={outcome.order_id}"
+            def handle_result(future: Future[bool]) -> None:
+                """Callback to handle sync result or exception."""
+                try:
+                    success = future.result()
+                    if not success:
+                        logger.warning(
+                            f"PostgreSQL sync returned False for outcome "
+                            f"{outcome.outcome_id}, order_id={outcome.order_id}"
+                        )
+                except Exception as e:
+                    logger.error(
+                        f"PostgreSQL sync failed in callback: {e} "
+                        f"(outcome_id={outcome.outcome_id}, order_id={outcome.order_id})"
                     )
-        except TimeoutError:
-            logger.error(
-                f"PostgreSQL sync timed out for outcome "
-                f"{outcome.outcome_id}, order_id={outcome.order_id}"
-            )
+
+            # Run async sync in thread pool - non-blocking
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(run_sync)
+            future.add_done_callback(handle_result)
+            executor.shutdown(wait=False)
+            return True
         except Exception as e:
-            # Log at error level to surface failures properly (not just warning)
             logger.error(
-                f"Failed to sync outcome to PostgreSQL: {e} "
+                f"Failed to launch PostgreSQL sync: {e} "
                 f"(outcome_id={outcome.outcome_id}, order_id={outcome.order_id})"
             )
+            return False
 
     def persist_signal(
         self,
@@ -605,65 +633,69 @@ class OutcomePersistence:
                         order_id=result.order.order_id
                     )
                     redis = self._get_redis()
-                    existing_outcome_id = redis.get(order_outcome_key)
-                    if existing_outcome_id:
+
+                    # Extract direction from signal
+                    direction = "long"
+                    if result.signal:
+                        direction = getattr(result.signal, "direction", "long")
+                        if hasattr(direction, "value"):
+                            direction = direction.value
+
+                    outcome = SignalOutcome(
+                        outcome_id=str(uuid4()),
+                        signal_id=(result.signal.signal_id if result.signal else None),
+                        order_id=result.order.order_id,
+                        symbol=result.order.symbol,
+                        token=getattr(result.order, "token", None)
+                        or result.order.symbol,
+                        side=result.order.side.capitalize(),
+                        direction=direction,
+                        fill_price=result.order.avg_fill_price or 0,
+                        fill_quantity=result.order.filled_quantity or 0,
+                        fill_timestamp=result.order.filled_at or datetime.now(UTC),
+                        outcome_type=OutcomeType.UNKNOWN,
+                        status=SignalOutcomeStatus.FILLED,
+                        created_at=datetime.now(UTC),
+                        entry_price=result.order.avg_fill_price or 0,
+                        entry_time=result.order.created_at,
+                        position_size=result.order.filled_quantity or 0,
+                        leverage=Decimal("1.0"),
+                        confidence_score=(
+                            getattr(result.signal, "confidence", 0.0)
+                            if result.signal
+                            else 0.0
+                        ),
+                        signal_type=(
+                            getattr(result.signal, "signal_type", "")
+                            if result.signal
+                            else ""
+                        ),
+                        execution_venue="paper",
+                        execution_mode="paper",
+                        execution_source="canary",
+                    )
+
+                    # PAPER-RECON-001 MEDIUM fix: Atomic idempotency check-and-set.
+                    # Use nx=True so that only ONE worker can claim this order_id.
+                    # If another worker already claimed it, skip the sync.
+                    # The TTL ensures stale entries don't block forever.
+                    outcome_id_str = str(outcome.outcome_id)
+                    claimed = redis.set(
+                        order_outcome_key,
+                        outcome_id_str,
+                        nx=True,
+                        ex=self.ttl_seconds,
+                    )
+                    if not claimed:
+                        # Another worker already claimed this order_id
                         logger.debug(
                             f"Skipping duplicate outcome for order_id={result.order.order_id}, "
-                            f"existing outcome_id={existing_outcome_id}"
+                            f"outcome_id={outcome_id_str} (already claimed)"
                         )
                     else:
-                        # Extract direction from signal
-                        direction = "long"
-                        if result.signal:
-                            direction = getattr(result.signal, "direction", "long")
-                            if hasattr(direction, "value"):
-                                direction = direction.value
-
-                        outcome = SignalOutcome(
-                            outcome_id=str(uuid4()),
-                            signal_id=(
-                                result.signal.signal_id if result.signal else None
-                            ),
-                            order_id=result.order.order_id,
-                            symbol=result.order.symbol,
-                            token=getattr(result.order, "token", None)
-                            or result.order.symbol,
-                            side=result.order.side.capitalize(),
-                            direction=direction,
-                            fill_price=result.order.avg_fill_price or 0,
-                            fill_quantity=result.order.filled_quantity or 0,
-                            fill_timestamp=result.order.filled_at or datetime.now(UTC),
-                            outcome_type=OutcomeType.UNKNOWN,
-                            status=SignalOutcomeStatus.FILLED,
-                            created_at=datetime.now(UTC),
-                            entry_price=result.order.avg_fill_price or 0,
-                            entry_time=result.order.created_at,
-                            position_size=result.order.filled_quantity or 0,
-                            leverage=Decimal("1.0"),
-                            confidence_score=(
-                                getattr(result.signal, "confidence", 0.0)
-                                if result.signal
-                                else 0.0
-                            ),
-                            signal_type=(
-                                getattr(result.signal, "signal_type", "")
-                                if result.signal
-                                else ""
-                            ),
-                            execution_venue="paper",
-                            execution_mode="paper",
-                            execution_source="canary",
-                        )
-
-                        # Store order_id -> outcome_id mapping for idempotency
-                        redis.setex(
-                            order_outcome_key,
-                            self.ttl_seconds,
-                            str(outcome.outcome_id),
-                        )
-
+                        # We claimed the slot - launch async sync
                         # Sync outcome to Postgres using robust task handling
-                        # PAPER-RECON-001: Fixed deprecated fire-and-forget pattern
+                        # PAPER-RECON-001: Non-blocking fire-and-forget with error logging
                         self._sync_outcome_to_postgres_safe(outcome)
 
         return keys
