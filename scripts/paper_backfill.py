@@ -14,10 +14,10 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 import asyncpg
 import redis
@@ -25,15 +25,15 @@ import redis
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-REDIS_HOST = os.environ.get("REDIS_HOST", "host.docker.internal")
-REDIS_PORT = int(os.environ.get("REDIS_PORT", "6380"))
+REDIS_HOST = "host.docker.internal"
+REDIS_PORT = 6380
 
 POSTGRES_DEFAULTS = {
-    "host": os.environ.get("POSTGRES_HOST", "host.docker.internal"),
-    "port": int(os.environ.get("POSTGRES_PORT", "5434")),
-    "user": os.environ.get("POSTGRES_USER", "chiseai"),
-    "password": os.environ.get("POSTGRES_PASSWORD", ""),
-    "database": os.environ.get("POSTGRES_DB", "chiseai"),
+    "host": "host.docker.internal",
+    "port": 5434,
+    "user": "chiseai",
+    "password": "change-me",
+    "database": "chiseai",
 }
 
 ORDER_KEY_PATTERN = "paper:order:*"
@@ -83,13 +83,29 @@ def extract_order_id_from_key(key: str) -> str | None:
 async def upsert_outcome(conn, outcome_data: dict[str, Any]) -> bool:
     """Upsert a single outcome record to Postgres. Returns True if inserted/updated."""
     try:
-        from uuid import uuid4
-
         outcome_id = (
             outcome_data.get("outcome_id")
             or outcome_data.get("order_id")
-            or str(uuid4())
+            or f"unknown-{datetime.now(UTC).timestamp()}"
         )
+
+        # JSON fields passed as dict - asyncpg handles dict -> jsonb natively
+        metadata_val = outcome_data.get("metadata", {})
+        venue_metadata_val = outcome_data.get("venue_metadata", {})
+
+        # Parse timestamps from strings to datetime objects
+        fill_ts = outcome_data.get("fill_timestamp") or outcome_data.get("created_at")
+        if isinstance(fill_ts, str):
+            fill_ts = parse_timestamp(fill_ts)
+
+        created_at_val = outcome_data.get("created_at", datetime.now(UTC).isoformat())
+        if isinstance(created_at_val, str):
+            created_at_val = parse_timestamp(created_at_val) or datetime.now(UTC)
+
+        # Parse signal_id to UUID if string
+        signal_id_val = outcome_data.get("signal_id")
+        if signal_id_val and isinstance(signal_id_val, str):
+            signal_id_val = UUID(signal_id_val)
 
         await conn.execute(
             """
@@ -100,7 +116,7 @@ async def upsert_outcome(conn, outcome_data: dict[str, Any]) -> bool:
                 entry_price, exit_price, entry_time, exit_time,
                 leverage, entry_reason, position_size,
                 execution_venue, execution_mode, execution_source, venue_metadata
-            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
             ON CONFLICT (outcome_id) DO UPDATE SET
                 fill_price = EXCLUDED.fill_price,
                 fill_quantity = EXCLUDED.fill_quantity,
@@ -109,67 +125,48 @@ async def upsert_outcome(conn, outcome_data: dict[str, Any]) -> bool:
                 exit_price = EXCLUDED.exit_price,
                 exit_time = EXCLUDED.exit_time,
                 pnl = EXCLUDED.pnl,
-                metadata = EXCLUDED.metadata
+                metadata = EXCLUDED.metadata,
+                venue_metadata = EXCLUDED.venue_metadata
         """,
             outcome_id,
-            outcome_data.get("signal_id"),
+            signal_id_val,
             outcome_data.get("order_id", ""),
             outcome_data.get("symbol", ""),
             outcome_data.get("token", ""),
             outcome_data.get("side", ""),
             outcome_data.get("direction", ""),
-            (
-                float(outcome_data["fill_price"])
-                if outcome_data.get("fill_price") not in (None, "")
-                else None
-            ),
-            (
-                float(outcome_data["fill_quantity"])
-                if outcome_data.get("fill_quantity") not in (None, "")
-                else None
-            ),
-            outcome_data.get("fill_timestamp") or outcome_data.get("created_at"),
+            float(outcome_data.get("fill_price") or 0),
+            float(outcome_data.get("fill_quantity") or 0),
+            fill_ts,
             outcome_data.get("outcome_type", "unknown"),
             (
-                float(outcome_data["pnl"])
-                if outcome_data.get("pnl") not in (None, "")
+                float(outcome_data.get("pnl"))
+                if outcome_data.get("pnl") is not None
                 else None
             ),
             (
-                float(outcome_data["fee"])
-                if outcome_data.get("fee") not in (None, "")
+                float(outcome_data.get("fee"))
+                if outcome_data.get("fee") is not None
                 else None
             ),
             outcome_data.get("status", "filled"),
-            outcome_data.get("created_at", datetime.now(UTC).isoformat()),
-            json.dumps(outcome_data.get("metadata", {})),
+            created_at_val,
+            metadata_val,
+            float(outcome_data.get("entry_price") or 0),
             (
-                float(outcome_data["entry_price"])
-                if outcome_data.get("entry_price") not in (None, "")
-                else None
-            ),
-            (
-                float(outcome_data["exit_price"])
-                if outcome_data.get("exit_price") not in (None, "")
+                float(outcome_data.get("exit_price"))
+                if outcome_data.get("exit_price") is not None
                 else None
             ),
             outcome_data.get("entry_time"),
             outcome_data.get("exit_time"),
-            (
-                float(outcome_data["leverage"])
-                if outcome_data.get("leverage") not in (None, "")
-                else None
-            ),
+            float(outcome_data.get("leverage") or 1.0),
             outcome_data.get("entry_reason", ""),
-            (
-                float(outcome_data["position_size"])
-                if outcome_data.get("position_size") not in (None, "")
-                else None
-            ),
+            float(outcome_data.get("position_size") or 0),
             outcome_data.get("execution_venue", "paper"),
             outcome_data.get("execution_mode", "paper"),
             outcome_data.get("execution_source", "canary_backfill"),
-            json.dumps(outcome_data.get("venue_metadata", {})),
+            venue_metadata_val,
         )
         return True
     except Exception as e:
@@ -193,13 +190,15 @@ def read_order_data(r: redis.Redis, key: str) -> dict[str, Any] | None:
 def construct_outcome_from_order_fill(
     order_data: dict, fill_data: dict | None
 ) -> dict[str, Any]:
-    """Construct an outcome dict from order + optional fill data."""
+    """Construct an outcome dict from order + optional fill data.
+
+    Returns a dict with ONLY the 28 columns that exist in signal_outcomes.
+    Does NOT include confidence_score, signal_type, or is_test.
+    """
     from uuid import uuid4
 
     outcome = {
-        "outcome_id": order_data.get("outcome_id")
-        or order_data.get("order_id")
-        or str(uuid4()),
+        "outcome_id": str(uuid4()),
         "order_id": order_data.get("order_id", ""),
         "symbol": order_data.get("symbol", ""),
         "token": order_data.get("token") or order_data.get("symbol", ""),
@@ -214,10 +213,10 @@ def construct_outcome_from_order_fill(
 
     if fill_data:
         outcome["fill_price"] = fill_data.get("avg_fill_price") or fill_data.get(
-            "fill_price"
+            "fill_price", 0
         )
         outcome["fill_quantity"] = fill_data.get("filled_quantity") or fill_data.get(
-            "fill_quantity"
+            "fill_quantity", 0
         )
         outcome["fill_timestamp"] = fill_data.get("filled_at") or fill_data.get(
             "fill_timestamp"
@@ -225,8 +224,8 @@ def construct_outcome_from_order_fill(
         outcome["pnl"] = fill_data.get("pnl")
         outcome["fee"] = fill_data.get("fee")
     else:
-        outcome["fill_price"] = order_data.get("price")
-        outcome["fill_quantity"] = order_data.get("quantity")
+        outcome["fill_price"] = order_data.get("price", 0)
+        outcome["fill_quantity"] = order_data.get("quantity", 0)
         outcome["fill_timestamp"] = order_data.get("filled_at")
 
     outcome["outcome_type"] = "fill" if fill_data else "order"
