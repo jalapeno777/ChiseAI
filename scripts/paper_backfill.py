@@ -17,7 +17,7 @@ import logging
 import sys
 from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import asyncpg
 import redis
@@ -83,29 +83,59 @@ def extract_order_id_from_key(key: str) -> str | None:
 async def upsert_outcome(conn, outcome_data: dict[str, Any]) -> bool:
     """Upsert a single outcome record to Postgres. Returns True if inserted/updated."""
     try:
-        outcome_id = (
-            outcome_data.get("outcome_id")
-            or outcome_data.get("order_id")
-            or f"unknown-{datetime.now(UTC).timestamp()}"
-        )
+        # HIGH-1: outcome_id must be UUID for Postgres uuid column
+        outcome_id_raw = outcome_data.get("outcome_id") or str(uuid4())
+        if isinstance(outcome_id_raw, str):
+            try:
+                outcome_id = UUID(outcome_id_raw)
+            except ValueError:
+                outcome_id = uuid4()  # fallback to new valid UUID
+        else:
+            outcome_id = outcome_id_raw
 
-        # JSON fields passed as dict - asyncpg handles dict -> jsonb natively
+        # HIGH-1: signal_id must be UUID or None for Postgres uuid column
+        signal_id_raw = outcome_data.get("signal_id")
+        if signal_id_raw and isinstance(signal_id_raw, str):
+            try:
+                signal_id = UUID(signal_id_raw)
+            except ValueError:
+                signal_id = None
+        else:
+            signal_id = signal_id_raw  # None or UUID object
+
+        # HIGH-1: fill_timestamp must be datetime for Postgres timestamptz column
+        fill_ts_raw = outcome_data.get("fill_timestamp") or outcome_data.get(
+            "created_at"
+        )
+        if isinstance(fill_ts_raw, str):
+            fill_timestamp = parse_timestamp(fill_ts_raw)
+        else:
+            fill_timestamp = fill_ts_raw
+
+        # HIGH-1: created_at must be datetime for Postgres timestamptz column
+        created_at_raw = outcome_data.get("created_at", datetime.now(UTC).isoformat())
+        if isinstance(created_at_raw, str):
+            created_at = parse_timestamp(created_at_raw)
+        else:
+            created_at = created_at_raw
+
+        # HIGH-1: entry_time must be datetime or None
+        entry_time_raw = outcome_data.get("entry_time")
+        if entry_time_raw and isinstance(entry_time_raw, str):
+            entry_time = parse_timestamp(entry_time_raw)
+        else:
+            entry_time = entry_time_raw
+
+        # HIGH-1: exit_time must be datetime or None
+        exit_time_raw = outcome_data.get("exit_time")
+        if exit_time_raw and isinstance(exit_time_raw, str):
+            exit_time = parse_timestamp(exit_time_raw)
+        else:
+            exit_time = exit_time_raw
+
+        # asyncpg handles dict -> jsonb natively; no json.dumps() needed
         metadata_val = outcome_data.get("metadata", {})
         venue_metadata_val = outcome_data.get("venue_metadata", {})
-
-        # Parse timestamps from strings to datetime objects
-        fill_ts = outcome_data.get("fill_timestamp") or outcome_data.get("created_at")
-        if isinstance(fill_ts, str):
-            fill_ts = parse_timestamp(fill_ts)
-
-        created_at_val = outcome_data.get("created_at", datetime.now(UTC).isoformat())
-        if isinstance(created_at_val, str):
-            created_at_val = parse_timestamp(created_at_val) or datetime.now(UTC)
-
-        # Parse signal_id to UUID if string
-        signal_id_val = outcome_data.get("signal_id")
-        if signal_id_val and isinstance(signal_id_val, str):
-            signal_id_val = UUID(signal_id_val)
 
         await conn.execute(
             """
@@ -125,11 +155,10 @@ async def upsert_outcome(conn, outcome_data: dict[str, Any]) -> bool:
                 exit_price = EXCLUDED.exit_price,
                 exit_time = EXCLUDED.exit_time,
                 pnl = EXCLUDED.pnl,
-                metadata = EXCLUDED.metadata,
-                venue_metadata = EXCLUDED.venue_metadata
+                metadata = EXCLUDED.metadata
         """,
             outcome_id,
-            signal_id_val,
+            signal_id,
             outcome_data.get("order_id", ""),
             outcome_data.get("symbol", ""),
             outcome_data.get("token", ""),
@@ -137,29 +166,29 @@ async def upsert_outcome(conn, outcome_data: dict[str, Any]) -> bool:
             outcome_data.get("direction", ""),
             float(outcome_data.get("fill_price") or 0),
             float(outcome_data.get("fill_quantity") or 0),
-            fill_ts,
+            fill_timestamp,
             outcome_data.get("outcome_type", "unknown"),
             (
-                float(outcome_data.get("pnl"))
+                float(outcome_data.get("pnl") or 0)
                 if outcome_data.get("pnl") is not None
                 else None
             ),
             (
-                float(outcome_data.get("fee"))
+                float(outcome_data.get("fee") or 0)
                 if outcome_data.get("fee") is not None
                 else None
             ),
             outcome_data.get("status", "filled"),
-            created_at_val,
+            created_at,
             metadata_val,
             float(outcome_data.get("entry_price") or 0),
             (
-                float(outcome_data.get("exit_price"))
-                if outcome_data.get("exit_price") is not None
+                float(outcome_data.get("exit_price") or 0)
+                if outcome_data.get("exit_price")
                 else None
             ),
-            outcome_data.get("entry_time"),
-            outcome_data.get("exit_time"),
+            entry_time,
+            exit_time,
             float(outcome_data.get("leverage") or 1.0),
             outcome_data.get("entry_reason", ""),
             float(outcome_data.get("position_size") or 0),
@@ -190,13 +219,7 @@ def read_order_data(r: redis.Redis, key: str) -> dict[str, Any] | None:
 def construct_outcome_from_order_fill(
     order_data: dict, fill_data: dict | None
 ) -> dict[str, Any]:
-    """Construct an outcome dict from order + optional fill data.
-
-    Returns a dict with ONLY the 28 columns that exist in signal_outcomes.
-    Does NOT include confidence_score, signal_type, or is_test.
-    """
-    from uuid import uuid4
-
+    """Construct an outcome dict from order + optional fill data."""
     outcome = {
         "outcome_id": str(uuid4()),
         "order_id": order_data.get("order_id", ""),
@@ -269,7 +292,8 @@ async def run_backfill(since: datetime, dry_run: bool = False):
 
             # Try to find matching fill
             fill_key = f"paper:fill:*:{order_id}"
-            fill_keys = r.keys(fill_key)
+            # HIGH-2: Use scan_iter instead of keys() for production safety
+            fill_keys = list(r.scan_iter(match=fill_key, count=1000))
             fill_data = None
             if fill_keys:
                 try:

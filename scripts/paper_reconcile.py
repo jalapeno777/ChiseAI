@@ -81,7 +81,8 @@ async def get_postgres_count(since: datetime) -> int:
 def check_orphaned_fills(r: redis.Redis) -> list:
     """Find fills without matching orders."""
     # Get all order IDs from Redis
-    order_keys = r.keys("paper:order:*")
+    # HIGH-2: Use scan_iter instead of keys() for production safety
+    order_keys = list(r.scan_iter(match="paper:order:*", count=1000))
     order_ids = set()
     for k in order_keys:
         parts = k.split(":")
@@ -89,7 +90,8 @@ def check_orphaned_fills(r: redis.Redis) -> list:
             order_ids.add(parts[-1])
 
     # Get all fill keys
-    fill_keys = r.keys("paper:fill:*")
+    # HIGH-2: Use scan_iter instead of keys() for production safety
+    fill_keys = list(r.scan_iter(match="paper:fill:*", count=1000))
     orphaned = []
     for k in fill_keys:
         parts = k.split(":")
@@ -139,6 +141,7 @@ def reconcile(since_iso: str) -> ReconcileResult:
         redis_counts[name] = count
 
     # Postgres count
+    # HIGH-3: asyncio.run() is safe here since this is always called from __main__ (sync CLI entrypoint)
     pg_count = asyncio.run(get_postgres_count(since_dt))
 
     # Orphaned fills
