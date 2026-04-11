@@ -77,6 +77,9 @@ class OutcomePersistence:
     FILL_INDEX_KEY = "paper:index:fills"
     OUTCOME_INDEX_KEY = "paper:index:outcomes"
 
+    # Idempotency key for order_id -> outcome_id mapping (PAPER-RECON-001)
+    ORDER_OUTCOME_KEY_PATTERN = "paper:outcome:order:{order_id}"
+
     # Stream keys for event-driven consumption (REPO-PAPER-003-S4)
     SIGNAL_STREAM_KEY = "paper:signals:stream"
 
@@ -236,6 +239,51 @@ class OutcomePersistence:
         except Exception as e:
             logger.error(f"Failed to sync outcome to PostgreSQL: {e}")
             return False
+
+    def _sync_outcome_to_postgres_safe(self, outcome: SignalOutcome) -> None:
+        """Safely sync an outcome to PostgreSQL from sync context.
+
+        PAPER-RECON-001: Replaces deprecated fire-and-forget asyncio pattern
+        with robust task handling that properly surfaces failures.
+
+        Args:
+            outcome: Signal outcome to sync
+        """
+        try:
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
+
+            def run_sync():
+                """Run the async sync in a new event loop."""
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    return loop.run_until_complete(
+                        self._sync_outcome_to_postgres(outcome)
+                    )
+                finally:
+                    loop.close()
+
+            # Run async sync in thread pool to avoid blocking
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(run_sync)
+                success = future.result(timeout=30)  # 30s timeout
+                if not success:
+                    logger.warning(
+                        f"PostgreSQL sync returned False for outcome "
+                        f"{outcome.outcome_id}, order_id={outcome.order_id}"
+                    )
+        except TimeoutError:
+            logger.error(
+                f"PostgreSQL sync timed out for outcome "
+                f"{outcome.outcome_id}, order_id={outcome.order_id}"
+            )
+        except Exception as e:
+            # Log at error level to surface failures properly (not just warning)
+            logger.error(
+                f"Failed to sync outcome to PostgreSQL: {e} "
+                f"(outcome_id={outcome.outcome_id}, order_id={outcome.order_id})"
+            )
 
     def persist_signal(
         self,
@@ -551,60 +599,72 @@ class OutcomePersistence:
                         SignalOutcomeStatus,
                     )
 
-                    # Extract direction from signal
-                    direction = "long"
-                    if result.signal:
-                        direction = getattr(result.signal, "direction", "long")
-                        if hasattr(direction, "value"):
-                            direction = direction.value
-
-                    outcome = SignalOutcome(
-                        outcome_id=str(uuid4()),
-                        signal_id=result.signal.signal_id if result.signal else None,
-                        order_id=result.order.order_id,
-                        symbol=result.order.symbol,
-                        token=getattr(result.order, "token", None)
-                        or result.order.symbol,
-                        side=result.order.side.capitalize(),
-                        direction=direction,
-                        fill_price=result.order.avg_fill_price or 0,
-                        fill_quantity=result.order.filled_quantity or 0,
-                        fill_timestamp=result.order.filled_at or datetime.now(UTC),
-                        outcome_type=OutcomeType.UNKNOWN,
-                        status=SignalOutcomeStatus.FILLED,
-                        created_at=datetime.now(UTC),
-                        entry_price=result.order.avg_fill_price or 0,
-                        entry_time=result.order.created_at,
-                        position_size=result.order.filled_quantity or 0,
-                        leverage=Decimal("1.0"),
-                        confidence_score=(
-                            getattr(result.signal, "confidence", 0.0)
-                            if result.signal
-                            else 0.0
-                        ),
-                        signal_type=(
-                            getattr(result.signal, "signal_type", "")
-                            if result.signal
-                            else ""
-                        ),
-                        execution_venue="paper",
-                        execution_mode="paper",
-                        execution_source="canary",
+                    # PAPER-RECON-001: Idempotency check - skip if outcome for
+                    # this order_id already exists to prevent duplicate outcomes
+                    order_outcome_key = self.ORDER_OUTCOME_KEY_PATTERN.format(
+                        order_id=result.order.order_id
                     )
+                    redis = self._get_redis()
+                    existing_outcome_id = redis.get(order_outcome_key)
+                    if existing_outcome_id:
+                        logger.debug(
+                            f"Skipping duplicate outcome for order_id={result.order.order_id}, "
+                            f"existing outcome_id={existing_outcome_id}"
+                        )
+                    else:
+                        # Extract direction from signal
+                        direction = "long"
+                        if result.signal:
+                            direction = getattr(result.signal, "direction", "long")
+                            if hasattr(direction, "value"):
+                                direction = direction.value
 
-                    # Fire-and-forget the async Postgres sync from sync context
-                    try:
-                        import asyncio
+                        outcome = SignalOutcome(
+                            outcome_id=str(uuid4()),
+                            signal_id=result.signal.signal_id
+                            if result.signal
+                            else None,
+                            order_id=result.order.order_id,
+                            symbol=result.order.symbol,
+                            token=getattr(result.order, "token", None)
+                            or result.order.symbol,
+                            side=result.order.side.capitalize(),
+                            direction=direction,
+                            fill_price=result.order.avg_fill_price or 0,
+                            fill_quantity=result.order.filled_quantity or 0,
+                            fill_timestamp=result.order.filled_at or datetime.now(UTC),
+                            outcome_type=OutcomeType.UNKNOWN,
+                            status=SignalOutcomeStatus.FILLED,
+                            created_at=datetime.now(UTC),
+                            entry_price=result.order.avg_fill_price or 0,
+                            entry_time=result.order.created_at,
+                            position_size=result.order.filled_quantity or 0,
+                            leverage=Decimal("1.0"),
+                            confidence_score=(
+                                getattr(result.signal, "confidence", 0.0)
+                                if result.signal
+                                else 0.0
+                            ),
+                            signal_type=(
+                                getattr(result.signal, "signal_type", "")
+                                if result.signal
+                                else ""
+                            ),
+                            execution_venue="paper",
+                            execution_mode="paper",
+                            execution_source="canary",
+                        )
 
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            asyncio.create_task(self._sync_outcome_to_postgres(outcome))
-                        else:
-                            loop.run_until_complete(
-                                self._sync_outcome_to_postgres(outcome)
-                            )
-                    except Exception as e:
-                        logger.warning(f"Failed to sync outcome to PostgreSQL: {e}")
+                        # Store order_id -> outcome_id mapping for idempotency
+                        redis.setex(
+                            order_outcome_key,
+                            self.ttl_seconds,
+                            str(outcome.outcome_id),
+                        )
+
+                        # Sync outcome to Postgres using robust task handling
+                        # PAPER-RECON-001: Fixed deprecated fire-and-forget pattern
+                        self._sync_outcome_to_postgres_safe(outcome)
 
         return keys
 

@@ -514,6 +514,9 @@ class TestPersistTradeResultPostgresSync:
         mock.ping = MagicMock(return_value=True)
         mock.hset = MagicMock(return_value=True)
         mock.hmset = MagicMock(return_value=True)
+        # Default get to return None (falsy) so idempotency check passes
+        # Tests can override this by patching mock_redis.get directly
+        mock.get = MagicMock(return_value=None)
         return mock
 
     @pytest.fixture
@@ -570,55 +573,53 @@ class TestPersistTradeResultPostgresSync:
     def test_persist_trade_result_syncs_outcome_to_postgres_when_filled(
         self, persistence, mock_redis
     ):
-        """persist_trade_result should call _sync_outcome_to_postgres when order is filled."""
+        """persist_trade_result should call _sync_outcome_to_postgres_safe when order is filled.
+
+        PAPER-RECON-001: Updated to test new robust task handling.
+        """
         signal = self._make_signal()
         order = self._make_order()
         result = self._make_trade_result(signal=signal, order=order)
 
-        mock_loop = MagicMock()
-        mock_loop.is_running.return_value = False
-        mock_loop.run_until_complete = MagicMock()
+        with patch.object(
+            persistence, "_sync_outcome_to_postgres_safe"
+        ) as mock_sync_safe:
+            keys = persistence.persist_trade_result(result)
 
-        with patch("asyncio.get_event_loop", return_value=mock_loop):
-            with patch.object(
-                persistence, "_sync_outcome_to_postgres", new_callable=AsyncMock
-            ) as mock_sync:
-                keys = persistence.persist_trade_result(result)
+            # Verify fill was persisted
+            assert keys["fill"] is not None
 
-                # Verify fill was persisted
-                assert keys["fill"] is not None
-
-                # Verify Postgres sync was called
-                mock_sync.assert_called_once()
-                call_arg = mock_sync.call_args[0][0]
-                assert call_arg.order_id == order.order_id
-                assert call_arg.symbol == order.symbol
-                assert call_arg.fill_price == order.avg_fill_price
-                assert call_arg.status == SignalOutcomeStatus.FILLED
-                assert call_arg.execution_venue == "paper"
-                assert call_arg.execution_mode == "paper"
-                assert call_arg.execution_source == "canary"
+            # Verify Postgres sync was called via the safe wrapper
+            mock_sync_safe.assert_called_once()
+            call_arg = mock_sync_safe.call_args[0][0]
+            assert call_arg.order_id == order.order_id
+            assert call_arg.symbol == order.symbol
+            assert call_arg.fill_price == order.avg_fill_price
+            assert call_arg.status == SignalOutcomeStatus.FILLED
+            assert call_arg.execution_venue == "paper"
+            assert call_arg.execution_mode == "paper"
+            assert call_arg.execution_source == "canary"
 
     def test_persist_trade_result_skips_postgres_sync_when_not_filled(
         self, persistence, mock_redis
     ):
-        """persist_trade_result should NOT call _sync_outcome_to_postgres when order is not filled."""
+        """persist_trade_result should NOT call _sync_outcome_to_postgres_safe when order is not filled."""
         order = self._make_order(filled=False)
         result = self._make_trade_result(order=order)
 
         with patch.object(
-            persistence, "_sync_outcome_to_postgres", new_callable=AsyncMock
-        ) as mock_sync:
+            persistence, "_sync_outcome_to_postgres_safe"
+        ) as mock_sync_safe:
             keys = persistence.persist_trade_result(result)
 
             # Verify fill was NOT persisted
             assert keys["fill"] is None
 
             # Verify Postgres sync was NOT called
-            mock_sync.assert_not_called()
+            mock_sync_safe.assert_not_called()
 
     def test_persist_trade_result_skips_postgres_sync_when_disabled(self, mock_redis):
-        """persist_trade_result should NOT call _sync_outcome_to_postgres when enable_postgres_sync=False."""
+        """persist_trade_result should NOT call _sync_outcome_to_postgres_safe when enable_postgres_sync=False."""
         persistence = OutcomePersistence(
             redis_client=mock_redis, enable_postgres_sync=False
         )
@@ -627,42 +628,37 @@ class TestPersistTradeResultPostgresSync:
         result = self._make_trade_result(signal=signal, order=order)
 
         with patch.object(
-            persistence, "_sync_outcome_to_postgres", new_callable=AsyncMock
-        ) as mock_sync:
+            persistence, "_sync_outcome_to_postgres_safe"
+        ) as mock_sync_safe:
             keys = persistence.persist_trade_result(result)
 
             # Fill should still be persisted even when sync is disabled
             assert keys["fill"] is not None
-            mock_sync.assert_not_called()
+            mock_sync_safe.assert_not_called()
 
-    def test_persist_trade_result_handles_async_loop_running(
+    def test_persist_trade_result_uses_thread_pool_executor(
         self, persistence, mock_redis
     ):
-        """persist_trade_result should use create_task when event loop is already running.
+        """persist_trade_result should use ThreadPoolExecutor for robust async handling.
 
-        Note: This test verifies the code path when is_running() returns True.
-        Since we can't actually have a running loop in a sync test, we verify
-        that the code attempts to call create_task by patching asyncio.create_task.
+        PAPER-RECON-001: Updated to test new robust task handling using ThreadPoolExecutor
+        instead of fire-and-forget asyncio.create_task.
         """
         signal = self._make_signal()
         order = self._make_order()
         result = self._make_trade_result(signal=signal, order=order)
 
-        mock_loop = MagicMock()
-        mock_loop.is_running.return_value = True
+        with patch.object(
+            persistence, "_sync_outcome_to_postgres_safe"
+        ) as mock_sync_safe:
+            keys = persistence.persist_trade_result(result)
 
-        mock_task = MagicMock()
-        mock_create_task = MagicMock(return_value=mock_task)
-
-        with patch("asyncio.get_event_loop", return_value=mock_loop):
-            with patch("asyncio.create_task", mock_create_task):
-                with patch.object(
-                    persistence, "_sync_outcome_to_postgres", new_callable=AsyncMock
-                ):
-                    keys = persistence.persist_trade_result(result)
-
-                    assert keys["fill"] is not None
-                    mock_create_task.assert_called_once()
+            assert keys["fill"] is not None
+            # _sync_outcome_to_postgres_safe should be called via ThreadPoolExecutor
+            mock_sync_safe.assert_called_once()
+            # Verify the outcome passed has the correct order_id
+            call_arg = mock_sync_safe.call_args[0][0]
+            assert call_arg.order_id == order.order_id
 
 
 if __name__ == "__main__":
