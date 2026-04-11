@@ -18,6 +18,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -28,15 +29,15 @@ import redis
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-REDIS_HOST = "host.docker.internal"
-REDIS_PORT = 6380
+REDIS_HOST = os.environ.get("REDIS_HOST", "host.docker.internal")
+REDIS_PORT = int(os.environ.get("REDIS_PORT", "6380"))
 
 PG_DEFAULTS = {
-    "host": "host.docker.internal",
-    "port": 5434,
-    "user": "chiseai",
-    "password": "change-me",
-    "database": "chiseai",
+    "host": os.environ.get("POSTGRES_HOST", "host.docker.internal"),
+    "port": int(os.environ.get("POSTGRES_PORT", "5434")),
+    "user": os.environ.get("POSTGRES_USER", "chiseai"),
+    "password": os.environ.get("POSTGRES_PASSWORD", ""),
+    "database": os.environ.get("POSTGRES_DB", "chiseai"),
 }
 
 REDIS_INDEXES = {
@@ -78,10 +79,22 @@ async def get_postgres_count(since: datetime) -> int:
         await conn.close()
 
 
+def _scan_keys(r, pattern):
+    """Scan Redis keys matching pattern using SCAN (non-blocking)."""
+    keys = []
+    cursor = 0
+    while True:
+        cursor, batch = r.scan(cursor=cursor, match=pattern, count=500)
+        keys.extend(batch)
+        if cursor == 0:
+            break
+    return keys
+
+
 def check_orphaned_fills(r: redis.Redis) -> list:
     """Find fills without matching orders."""
     # Get all order IDs from Redis
-    order_keys = r.keys("paper:order:*")
+    order_keys = _scan_keys(r, "paper:order:*")
     order_ids = set()
     for k in order_keys:
         parts = k.split(":")
@@ -89,7 +102,7 @@ def check_orphaned_fills(r: redis.Redis) -> list:
             order_ids.add(parts[-1])
 
     # Get all fill keys
-    fill_keys = r.keys("paper:fill:*")
+    fill_keys = _scan_keys(r, "paper:fill:*")
     orphaned = []
     for k in fill_keys:
         parts = k.split(":")
