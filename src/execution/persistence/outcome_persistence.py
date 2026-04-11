@@ -621,9 +621,9 @@ class OutcomePersistence:
 
                         outcome = SignalOutcome(
                             outcome_id=str(uuid4()),
-                            signal_id=result.signal.signal_id
-                            if result.signal
-                            else None,
+                            signal_id=(
+                                result.signal.signal_id if result.signal else None
+                            ),
                             order_id=result.order.order_id,
                             symbol=result.order.symbol,
                             token=getattr(result.order, "token", None)
