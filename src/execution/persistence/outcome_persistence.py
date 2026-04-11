@@ -59,7 +59,7 @@ class OutcomePersistence:
     Attributes:
         redis_client: Redis client for persistence
         key_prefix: Prefix for all keys (default: "paper")
-        ttl_seconds: TTL for persisted data (default: 7 days)
+        ttl_seconds: TTL for persisted data (default: 14 days)
         db_pool: Optional PostgreSQL connection pool for sync
         enable_postgres_sync: Whether to sync outcomes to PostgreSQL
     """
@@ -83,7 +83,7 @@ class OutcomePersistence:
         self,
         redis_client: Any | None = None,
         key_prefix: str = "paper",
-        ttl_seconds: int = 604800,  # 7 days
+        ttl_seconds: int = 1209600,  # 14 days
         db_pool: Any | None = None,
         enable_postgres_sync: bool = True,
     ):
