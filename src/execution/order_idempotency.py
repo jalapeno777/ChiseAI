@@ -56,6 +56,16 @@ class RedisClient(Protocol):
         """Get value by key."""
         ...
 
+    async def setnx(self, key: str, value: str, ex: int | None = None) -> bool:
+        """Set key with NX flag (only if not exists). Returns True if set, False if key exists."""
+        ...
+
+    async def set(
+        self, key: str, value: str, nx: bool = False, ex: int | None = None
+    ) -> bool:
+        """Set key. If nx=True, only set if not exists. Returns True if set, False otherwise."""
+        ...
+
     async def setex(self, key: str, seconds: int, value: str) -> bool:
         """Set key with expiration in seconds."""
         ...
@@ -278,10 +288,10 @@ class IdempotencyStore:
         symbol: str,
         client_order_id: str,
     ) -> None:
-        """Validate order is not duplicate and mark it as submitted.
+        """Validate order is not duplicate and mark it as submitted atomically.
 
-        This is a convenience method that combines check_duplicate and
-        mark_submitted. Raises DuplicateOrderException if duplicate.
+        Uses Redis SET NX for atomic check-and-set to prevent TOCTOU races.
+        Raises DuplicateOrderException if duplicate.
 
         Args:
             symbol: Trading pair symbol
@@ -290,11 +300,33 @@ class IdempotencyStore:
         Raises:
             DuplicateOrderException: If order is a duplicate
         """
-        is_duplicate = await self.check_duplicate(symbol, client_order_id)
+        key = build_idempotency_key(symbol, client_order_id, self.config.key_prefix)
 
+        if self.redis:
+            try:
+                # Atomic SET NX: only sets if key doesn't exist
+                was_set = await self.redis.set(
+                    key,
+                    "1",
+                    nx=True,
+                    ex=self.config.ttl_seconds,
+                )
+                if not was_set:
+                    # Key already existed - duplicate order
+                    raise DuplicateOrderException(client_order_id, symbol)
+                # Success - key was set atomically, proceed with order
+                return
+            except DuplicateOrderException:
+                # Re-raise duplicate detection - don't fall through to local store
+                raise
+            except Exception as e:
+                logger.warning(f"Redis set failed, falling back to local store: {e}")
+                # Fall through to local store fallback
+
+        # Local fallback mode (with acknowledged race condition for non-Redis)
+        is_duplicate = await self.check_duplicate(symbol, client_order_id)
         if is_duplicate:
             raise DuplicateOrderException(client_order_id, symbol)
-
         await self.mark_submitted(symbol, client_order_id)
 
     async def remove(self, symbol: str, client_order_id: str) -> bool:
