@@ -275,9 +275,9 @@ class TestOutcomePersistenceKeyPatterns:
         assert persistence.OUTCOME_INDEX_KEY == "paper:index:outcomes"
 
     def test_default_ttl(self):
-        """Test default TTL is 7 days."""
+        """Test default TTL is 14 days."""
         persistence = OutcomePersistence()
-        assert persistence.ttl_seconds == 604800  # 7 days in seconds
+        assert persistence.ttl_seconds == 1209600  # 14 days in seconds
 
     def test_custom_ttl(self):
         """Test custom TTL can be set."""
