@@ -312,6 +312,7 @@ class TestIdempotencyStoreWithRedis:
         """Create a mock Redis client."""
         redis = AsyncMock()
         redis.get = AsyncMock(return_value=None)
+        redis.set = AsyncMock(return_value=True)  # True = key was set (not duplicate)
         redis.setex = AsyncMock(return_value=True)
         redis.delete = AsyncMock(return_value=1)
         redis.exists = AsyncMock(return_value=0)
@@ -383,6 +384,63 @@ class TestIdempotencyStoreWithRedis:
         # Should still succeed via local fallback
         result = await store.mark_submitted("BTCUSDT", "test_id")
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_validate_and_mark_uses_atomic_set(self, store, mock_redis):
+        """Test that validate_and_mark uses atomic SET NX (not check+mark)."""
+        # Should not raise - set returns True (key set successfully)
+        await store.validate_and_mark("BTCUSDT", "new_order_123")
+
+        # Verify set was called with nx=True (not exists+setex)
+        mock_redis.set.assert_called_once()
+        call_args = mock_redis.set.call_args
+        # Key should contain symbol and client_order_id
+        assert "BTCUSDT" in call_args[0][0]
+        assert "new_order_123" in call_args[0][0]
+        # nx should be True
+        assert call_args[1]["nx"] is True
+        # ex (TTL) should be from config
+        assert call_args[1]["ex"] == IDEMPOTENCY_TTL_SECONDS
+
+    @pytest.mark.asyncio
+    async def test_validate_and_mark_duplicate_via_set(self, store, mock_redis):
+        """Test that duplicate detection works via SET NX returning False."""
+
+        # set with nx=True returns False when key already exists (key exists)
+        async def mock_set_false(*args, **kwargs):
+            return False  # Indicates key already exists - duplicate
+
+        mock_redis.set.side_effect = mock_set_false
+
+        with pytest.raises(DuplicateOrderException) as exc_info:
+            await store.validate_and_mark("BTCUSDT", "duplicate_order")
+
+        assert exc_info.value.client_order_id == "duplicate_order"
+        assert exc_info.value.symbol == "BTCUSDT"
+
+    @pytest.mark.asyncio
+    async def test_validate_and_mark_set_failure_fallback(self, store, mock_redis):
+        """Test fallback when Redis SET fails - set, exists, and setex all fail."""
+
+        async def mock_set_fail(*args, **kwargs):
+            raise Exception("Redis connection failed")
+
+        async def mock_exists_fail(*args, **kwargs):
+            raise Exception("Redis connection failed")
+
+        async def mock_setex_fail(*args, **kwargs):
+            raise Exception("Redis connection failed")
+
+        mock_redis.set.side_effect = mock_set_fail
+        mock_redis.exists.side_effect = mock_exists_fail
+        mock_redis.setex.side_effect = mock_setex_fail
+
+        # Should fallback to local store and succeed
+        await store.validate_and_mark("BTCUSDT", "fallback_order")
+
+        # Verify it was marked in local store (via local fallback)
+        is_dup = await store.check_duplicate("BTCUSDT", "fallback_order")
+        assert is_dup is True
 
 
 class TestIdempotencyStoreConcurrency:
