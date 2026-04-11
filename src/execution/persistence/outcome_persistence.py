@@ -14,6 +14,7 @@ import json
 import logging
 import os
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -539,6 +540,71 @@ class OutcomePersistence:
                 keys["fill"] = self.persist_fill(
                     result.order, signal_id, correlation_id
                 )
+
+                # Sync outcome to Postgres if enabled
+                if self.enable_postgres_sync:
+                    from uuid import uuid4
+
+                    from ml.models.signal_outcome import (
+                        OutcomeType,
+                        SignalOutcome,
+                        SignalOutcomeStatus,
+                    )
+
+                    # Extract direction from signal
+                    direction = "long"
+                    if result.signal:
+                        direction = getattr(result.signal, "direction", "long")
+                        if hasattr(direction, "value"):
+                            direction = direction.value
+
+                    outcome = SignalOutcome(
+                        outcome_id=str(uuid4()),
+                        signal_id=result.signal.signal_id if result.signal else None,
+                        order_id=result.order.order_id,
+                        symbol=result.order.symbol,
+                        token=getattr(result.order, "token", None)
+                        or result.order.symbol,
+                        side=result.order.side.capitalize(),
+                        direction=direction,
+                        fill_price=result.order.avg_fill_price or 0,
+                        fill_quantity=result.order.filled_quantity or 0,
+                        fill_timestamp=result.order.filled_at or datetime.now(UTC),
+                        outcome_type=OutcomeType.UNKNOWN,
+                        status=SignalOutcomeStatus.FILLED,
+                        created_at=datetime.now(UTC),
+                        entry_price=result.order.avg_fill_price or 0,
+                        entry_time=result.order.created_at,
+                        position_size=result.order.filled_quantity or 0,
+                        leverage=Decimal("1.0"),
+                        confidence_score=(
+                            getattr(result.signal, "confidence", 0.0)
+                            if result.signal
+                            else 0.0
+                        ),
+                        signal_type=(
+                            getattr(result.signal, "signal_type", "")
+                            if result.signal
+                            else ""
+                        ),
+                        execution_venue="paper",
+                        execution_mode="paper",
+                        execution_source="canary",
+                    )
+
+                    # Fire-and-forget the async Postgres sync from sync context
+                    try:
+                        import asyncio
+
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            asyncio.create_task(self._sync_outcome_to_postgres(outcome))
+                        else:
+                            loop.run_until_complete(
+                                self._sync_outcome_to_postgres(outcome)
+                            )
+                    except Exception as e:
+                        logger.warning(f"Failed to sync outcome to PostgreSQL: {e}")
 
         return keys
 

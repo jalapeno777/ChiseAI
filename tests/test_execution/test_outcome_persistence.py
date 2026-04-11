@@ -9,15 +9,17 @@ import json
 import numbers
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import uuid4
 
 import pytest
 from src.execution.outcome_capture.integration import OutcomeCaptureIntegration
+from src.execution.paper.models import PaperOrder, PaperTradeResult
 from src.execution.persistence.outcome_persistence import OutcomePersistence
 from src.ml.models.signal_outcome import (
     OutcomeType,
     SignalOutcome,
+    SignalOutcomeStatus,
 )
 
 
@@ -497,6 +499,170 @@ class TestMetadataOutcomeClassification:
         outcome = capture._create_outcome_from_position(pos, realized_pnl=2000.0)
 
         assert outcome.metadata == md
+
+
+class TestPersistTradeResultPostgresSync:
+    """Test that persist_trade_result wires Postgres sync correctly."""
+
+    @pytest.fixture
+    def mock_redis(self):
+        """Create a mock Redis client."""
+        mock = MagicMock()
+        mock.set = MagicMock(return_value=True)
+        mock.expire = MagicMock(return_value=True)
+        mock.zadd = MagicMock(return_value=True)
+        mock.ping = MagicMock(return_value=True)
+        mock.hset = MagicMock(return_value=True)
+        mock.hmset = MagicMock(return_value=True)
+        return mock
+
+    @pytest.fixture
+    def persistence(self, mock_redis):
+        """Create OutcomePersistence with mock Redis and Postgres sync enabled."""
+        pers = OutcomePersistence(redis_client=mock_redis, enable_postgres_sync=True)
+        return pers
+
+    def _make_signal(self):
+        """Create a mock signal."""
+        signal = MagicMock()
+        signal.signal_id = str(uuid4())
+        signal.token = "BTCUSDT"
+        signal.direction = MagicMock(value="long")
+        signal.confidence = 0.85
+        signal.signal_type = "OPEN"
+        return signal
+
+    def _make_order(self, order_id: str = "test-order-1", filled: bool = True):
+        """Create a mock paper order."""
+        order = MagicMock(spec=PaperOrder)
+        order.order_id = order_id
+        order.symbol = "BTCUSDT"
+        order.token = "BTC"
+        order.side = "buy"
+        order.order_type = "market"
+        order.quantity = 0.001
+        order.price = 50000.0
+        order.state = MagicMock()
+        order.state.value = "filled" if filled else "pending"
+        order.filled_quantity = 0.001
+        order.avg_fill_price = 50000.0
+        order.created_at = datetime.now(UTC)
+        order.filled_at = datetime.now(UTC)
+        order.metadata = {}
+        order.fills = []
+        return order
+
+    def _make_trade_result(
+        self,
+        signal=None,
+        order=None,
+        filled: bool = True,
+        correlation_id: str = "test-corr",
+    ):
+        """Create a mock paper trade result."""
+        result = MagicMock(spec=PaperTradeResult)
+        result.signal = signal
+        result.order = order
+        result.position = None
+        result.correlation_id = correlation_id
+        return result
+
+    def test_persist_trade_result_syncs_outcome_to_postgres_when_filled(
+        self, persistence, mock_redis
+    ):
+        """persist_trade_result should call _sync_outcome_to_postgres when order is filled."""
+        signal = self._make_signal()
+        order = self._make_order()
+        result = self._make_trade_result(signal=signal, order=order)
+
+        mock_loop = MagicMock()
+        mock_loop.is_running.return_value = False
+        mock_loop.run_until_complete = MagicMock()
+
+        with patch("asyncio.get_event_loop", return_value=mock_loop):
+            with patch.object(
+                persistence, "_sync_outcome_to_postgres", new_callable=AsyncMock
+            ) as mock_sync:
+                keys = persistence.persist_trade_result(result)
+
+                # Verify fill was persisted
+                assert keys["fill"] is not None
+
+                # Verify Postgres sync was called
+                mock_sync.assert_called_once()
+                call_arg = mock_sync.call_args[0][0]
+                assert call_arg.order_id == order.order_id
+                assert call_arg.symbol == order.symbol
+                assert call_arg.fill_price == order.avg_fill_price
+                assert call_arg.status == SignalOutcomeStatus.FILLED
+                assert call_arg.execution_venue == "paper"
+                assert call_arg.execution_mode == "paper"
+                assert call_arg.execution_source == "canary"
+
+    def test_persist_trade_result_skips_postgres_sync_when_not_filled(
+        self, persistence, mock_redis
+    ):
+        """persist_trade_result should NOT call _sync_outcome_to_postgres when order is not filled."""
+        order = self._make_order(filled=False)
+        result = self._make_trade_result(order=order)
+
+        with patch.object(
+            persistence, "_sync_outcome_to_postgres", new_callable=AsyncMock
+        ) as mock_sync:
+            keys = persistence.persist_trade_result(result)
+
+            # Verify fill was NOT persisted
+            assert keys["fill"] is None
+
+            # Verify Postgres sync was NOT called
+            mock_sync.assert_not_called()
+
+    def test_persist_trade_result_skips_postgres_sync_when_disabled(self, mock_redis):
+        """persist_trade_result should NOT call _sync_outcome_to_postgres when enable_postgres_sync=False."""
+        persistence = OutcomePersistence(
+            redis_client=mock_redis, enable_postgres_sync=False
+        )
+        signal = self._make_signal()
+        order = self._make_order()
+        result = self._make_trade_result(signal=signal, order=order)
+
+        with patch.object(
+            persistence, "_sync_outcome_to_postgres", new_callable=AsyncMock
+        ) as mock_sync:
+            keys = persistence.persist_trade_result(result)
+
+            # Fill should still be persisted even when sync is disabled
+            assert keys["fill"] is not None
+            mock_sync.assert_not_called()
+
+    def test_persist_trade_result_handles_async_loop_running(
+        self, persistence, mock_redis
+    ):
+        """persist_trade_result should use create_task when event loop is already running.
+
+        Note: This test verifies the code path when is_running() returns True.
+        Since we can't actually have a running loop in a sync test, we verify
+        that the code attempts to call create_task by patching asyncio.create_task.
+        """
+        signal = self._make_signal()
+        order = self._make_order()
+        result = self._make_trade_result(signal=signal, order=order)
+
+        mock_loop = MagicMock()
+        mock_loop.is_running.return_value = True
+
+        mock_task = MagicMock()
+        mock_create_task = MagicMock(return_value=mock_task)
+
+        with patch("asyncio.get_event_loop", return_value=mock_loop):
+            with patch("asyncio.create_task", mock_create_task):
+                with patch.object(
+                    persistence, "_sync_outcome_to_postgres", new_callable=AsyncMock
+                ):
+                    keys = persistence.persist_trade_result(result)
+
+                    assert keys["fill"] is not None
+                    mock_create_task.assert_called_once()
 
 
 if __name__ == "__main__":
