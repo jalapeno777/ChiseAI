@@ -2,14 +2,13 @@
 """Tests for paper_backfill.py script."""
 
 from datetime import UTC, datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-
 from scripts.paper_backfill import (
-    parse_timestamp,
-    extract_order_id_from_key,
     construct_outcome_from_order_fill,
+    extract_order_id_from_key,
+    parse_timestamp,
     run_backfill,
 )
 

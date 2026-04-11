@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """Tests for paper_reconcile.py script."""
 
-from dataclasses import asdict
-from datetime import UTC, datetime
-from unittest.mock import patch, MagicMock
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from scripts.paper_reconcile import (
     ReconcileResult,
