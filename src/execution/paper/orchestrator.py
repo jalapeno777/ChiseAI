@@ -724,6 +724,24 @@ class PaperTradingOrchestrator:
                         self._metrics["gate_g1_throttle_count"],
                         correlation_id,
                     )
+                    # Error rate tracking: G1_THROTTLE
+                    try:
+                        from execution.alerts.error_rate_integration import (
+                            ErrorCategory,
+                            ErrorRateTracker,
+                        )
+
+                        ErrorRateTracker().record_operation(
+                            ErrorCategory.VALIDATION,
+                            success=False,
+                            error_details={
+                                "gate": "G1_THROTTLE",
+                                "symbol": signal.token,
+                                "reason": "per_symbol_cadence",
+                            },
+                        )
+                    except Exception as ert_exc:
+                        logger.debug("ErrorRateTracker G1_THROTTLE failed: %s", ert_exc)
                     # ST-ICT-Q3: Record signal rejection at throttle gate
                     if self.outcome_capture:
                         try:
@@ -770,6 +788,25 @@ class PaperTradingOrchestrator:
                         self._metrics["gate_g2_paper_kill_count"],
                         correlation_id,
                     )
+                    # Error rate tracking: G2_PAPER_KILL
+                    try:
+                        from execution.alerts.error_rate_integration import (
+                            ErrorCategory,
+                            ErrorRateTracker,
+                        )
+
+                        ErrorRateTracker().record_operation(
+                            ErrorCategory.EXECUTION,
+                            success=False,
+                            error_details={
+                                "gate": "G2_PAPER_KILL",
+                                "reason": paper_kill_status.reason,
+                            },
+                        )
+                    except Exception as ert_exc:
+                        logger.debug(
+                            "ErrorRateTracker G2_PAPER_KILL failed: %s", ert_exc
+                        )
                     # ST-ICT-Q3: Record signal rejection at paper kill gate
                     if self.outcome_capture:
                         try:
@@ -805,6 +842,23 @@ class PaperTradingOrchestrator:
                     self._metrics["gate_g3_live_kill_count"],
                     correlation_id,
                 )
+                # Error rate tracking: G3_LIVE_KILL
+                try:
+                    from execution.alerts.error_rate_integration import (
+                        ErrorCategory,
+                        ErrorRateTracker,
+                    )
+
+                    ErrorRateTracker().record_operation(
+                        ErrorCategory.EXECUTION,
+                        success=False,
+                        error_details={
+                            "gate": "G3_LIVE_KILL",
+                            "reason": "kill_switch_triggered",
+                        },
+                    )
+                except Exception as ert_exc:
+                    logger.debug("ErrorRateTracker G3_LIVE_KILL failed: %s", ert_exc)
                 # ST-ICT-Q3: Record signal rejection at live kill gate
                 if self.outcome_capture:
                     try:
@@ -878,6 +932,24 @@ class PaperTradingOrchestrator:
                         self._metrics["gate_g4_no_price_count"],
                         correlation_id,
                     )
+                    # Error rate tracking: G4_NO_PRICE
+                    try:
+                        from execution.alerts.error_rate_integration import (
+                            ErrorCategory,
+                            ErrorRateTracker,
+                        )
+
+                        ErrorRateTracker().record_operation(
+                            ErrorCategory.VALIDATION,
+                            success=False,
+                            error_details={
+                                "gate": "G4_NO_PRICE",
+                                "symbol": signal.token,
+                                "reason": "no_market_price",
+                            },
+                        )
+                    except Exception as ert_exc:
+                        logger.debug("ErrorRateTracker G4_NO_PRICE failed: %s", ert_exc)
                     # ST-ICT-Q3: Record signal rejection at no-price gate
                     if self.outcome_capture:
                         try:
@@ -956,6 +1028,26 @@ class PaperTradingOrchestrator:
                             self._metrics["gate_g7_same_dir_skip_count"],
                             correlation_id,
                         )
+                        # Error rate tracking: G7_SAME_DIR_SKIP (success=True)
+                        try:
+                            from execution.alerts.error_rate_integration import (
+                                ErrorCategory,
+                                ErrorRateTracker,
+                            )
+
+                            ErrorRateTracker().record_operation(
+                                ErrorCategory.VALIDATION,
+                                success=True,
+                                error_details={
+                                    "gate": "G7_SAME_DIR_SKIP",
+                                    "symbol": signal.token,
+                                    "side": signal.direction.value,
+                                },
+                            )
+                        except Exception as ert_exc:
+                            logger.debug(
+                                "ErrorRateTracker G7_SAME_DIR_SKIP failed: %s", ert_exc
+                            )
                         # ST-ICT-Q3: Record signal skip at same-dir gate
                         if self.outcome_capture:
                             try:
@@ -1011,6 +1103,26 @@ class PaperTradingOrchestrator:
                             self._metrics["gate_g6_llm_reject_count"],
                             correlation_id,
                         )
+                        # Error rate tracking: G6_LLM_REJECT
+                        try:
+                            from execution.alerts.error_rate_integration import (
+                                ErrorCategory,
+                                ErrorRateTracker,
+                            )
+
+                            ErrorRateTracker().record_operation(
+                                ErrorCategory.VALIDATION,
+                                success=False,
+                                error_details={
+                                    "gate": "G6_LLM_REJECT",
+                                    "reason": enhanced.rationale,
+                                    "provider": enhanced.provider,
+                                },
+                            )
+                        except Exception as ert_exc:
+                            logger.debug(
+                                "ErrorRateTracker G6_LLM_REJECT failed: %s", ert_exc
+                            )
                         # ST-ICT-Q3: Record signal rejection at LLM gate
                         if self.outcome_capture:
                             try:
@@ -1124,6 +1236,23 @@ class PaperTradingOrchestrator:
                     self._metrics["gate_g5_risk_reject_count"],
                     correlation_id,
                 )
+                # Error rate tracking: G5_RISK_REJECT
+                try:
+                    from execution.alerts.error_rate_integration import (
+                        ErrorCategory,
+                        ErrorRateTracker,
+                    )
+
+                    ErrorRateTracker().record_operation(
+                        ErrorCategory.VALIDATION,
+                        success=False,
+                        error_details={
+                            "gate": "G5_RISK_REJECT",
+                            "violations": [v.message for v in assessment.violations],
+                        },
+                    )
+                except Exception as ert_exc:
+                    logger.debug("ErrorRateTracker G5_RISK_REJECT failed: %s", ert_exc)
                 # ST-ICT-Q3: Record signal rejection at risk gate
                 if self.outcome_capture:
                     try:
@@ -1316,6 +1445,26 @@ class PaperTradingOrchestrator:
                     f"Trade executed: {signal.token} position={position.position_id} "
                     f"latency={total_latency_ms:.1f}ms (correlation_id={correlation_id})"
                 )
+
+                # ErrorRateTracker: record successful order execution
+                try:
+                    from execution.alerts.error_rate_tracker import (
+                        ErrorCategory,
+                        ErrorRateTracker,
+                    )
+
+                    ErrorRateTracker().record_operation(
+                        ErrorCategory.EXECUTION,
+                        success=True,
+                        error_details={
+                            "symbol": signal.token,
+                            "order_id": filled_order.order_id,
+                        },
+                    )
+                except Exception as ert_exc:
+                    logger.debug(
+                        "ErrorRateTracker ORDER_EXECUTION_SUCCESS failed: %s", ert_exc
+                    )
 
                 # PAPER-FORENSIC-001: Log connector type and provenance on each trade
                 prov = self._connector_provenance
