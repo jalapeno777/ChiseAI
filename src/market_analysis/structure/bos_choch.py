@@ -38,6 +38,17 @@ class BOSCHoCHType(Enum):
     NONE = "none"
 
 
+class TrendDirection(Enum):
+    """Direction of the current trend.
+
+    Used to distinguish BOS (break in trend direction) from CHoCH (break against trend).
+    """
+
+    BULLISH = "bullish"
+    BEARISH = "bearish"
+    UNDEFINED = "undefined"
+
+
 @dataclass
 class StructureLevel:
     """Represents a structure level (swing high or low).
@@ -98,6 +109,7 @@ class BOSCHoCHClassificationResult:
         current_structure_high: Current active structure high level
         current_structure_low: Current active structure low level
         last_bos_direction: Last detected BOS direction (or None)
+        trend_direction: Current tracked trend state (BULLISH, BEARISH, or UNDEFINED)
     """
 
     events: list[BOSCHoCH]
@@ -108,6 +120,7 @@ class BOSCHoCHClassificationResult:
     current_structure_high: StructureLevel | None
     current_structure_low: StructureLevel | None
     last_bos_direction: str | None
+    trend_direction: TrendDirection = TrendDirection.UNDEFINED
 
 
 class BOSCHoCHClassifier:
@@ -160,6 +173,16 @@ class BOSCHoCHClassifier:
     ) -> BOSCHoCHClassificationResult:
         """Classify BOS and CHoCH events from swing pivots.
 
+        Implements the design doc algorithm:
+        1. Build structure levels from swing pivots
+        2. For each candle, check if close exceeds active structure levels
+        3. Classify break as BOS or CHoCH based on trend direction
+        4. Update state on BOS detection
+
+        BOS (Break of Structure): Break in SAME direction as trend.
+        CHoCH (Change of Character): Break in OPPOSITE direction of trend.
+        BOS takes priority over CHoCH when both could apply.
+
         Args:
             pivot_result: Result from SwingPivotDetector
             data: Original OHLCV data
@@ -176,77 +199,185 @@ class BOSCHoCHClassifier:
         bullish_choch: list[BOSCHoCH] = []
         bearish_choch: list[BOSCHoCH] = []
 
-        # Track current structure levels
-        current_high: StructureLevel | None = None
-        current_low: StructureLevel | None = None
+        # Track active structure levels (updated per design doc algorithm)
+        active_structure_high: StructureLevel | None = None
+        active_structure_low: StructureLevel | None = None
+
+        # Track current trend direction (UNDEFINED initially)
+        trend_direction: TrendDirection = TrendDirection.UNDEFINED
+
+        # Track last BOS direction for backwards compatibility
         last_bos_dir: str | None = None
 
         # Track detected break pairs to avoid duplicates
-        # Key: (current_swing_index, broken_level_pivot_index)
         detected_breaks: set[tuple[int, int]] = set()
 
-        # Get swings in order
         swings = pivot_result.pivots
 
         for i in range(1, len(swings)):
-            prev_swings = swings[:i]
-            current_swings = swings[i:]
+            current = swings[i]
+            candle = data[current.index]
 
-            # Check for breaks
-            for current in current_swings:
-                if current.pivot_type.value == "swing_high":
-                    # Check if this breaks a previous swing high (BOS in uptrend)
-                    # or breaks a previous swing low (CHoCH)
-                    break_result = self._check_bullish_break(current, prev_swings, data)
-                    if break_result is not None:
-                        event, is_bos = break_result
-                        # Check for duplicate
-                        pair = (current.index, event.broken_level.pivot.index)
-                        if pair not in detected_breaks:
-                            detected_breaks.add(pair)
-                            events.append(event)
-                            if event.event_type == BOSCHoCHType.BULLISH_BOS:
-                                bullish_bos.append(event)
-                                last_bos_dir = "bullish"
-                                # Update structure high
-                                current_high = StructureLevel(
-                                    pivot=current,
-                                    price=current.price,
-                                )
+            # Determine if this swing breaks the active structure level
+            break_detected = False
+
+            if current.pivot_type.value == "swing_high":
+                # Check bullish break against active structure high
+                if active_structure_high is not None:
+                    if self._is_level_broken(
+                        current, active_structure_high.pivot, data, is_bullish=True
+                    ):
+                        strength = self._calculate_strength(
+                            candle.close_price,
+                            active_structure_high.price,
+                            is_bullish=True,
+                        )
+                        if strength >= self.min_strength_ratio:
+                            # Determine BOS vs CHoCH based on trend
+                            if trend_direction == TrendDirection.BULLISH:
+                                # Break of structure in bullish direction = BOS
+                                event_type = BOSCHoCHType.BULLISH_BOS
+                                is_bos = True
+                                new_trend = TrendDirection.BULLISH
+                            elif trend_direction == TrendDirection.UNDEFINED:
+                                # No established trend - treat as BOS (first break)
+                                event_type = BOSCHoCHType.BULLISH_BOS
+                                is_bos = True
+                                new_trend = TrendDirection.BULLISH
                             else:
-                                bullish_choch.append(event)
-                                # CHoCH updates structure in opposite direction
-                                current_low = StructureLevel(
-                                    pivot=current,
-                                    price=current.price,
+                                # trend_direction == BEARISH
+                                # Break of structure against bearish trend = CHoCH
+                                event_type = BOSCHoCHType.BULLISH_CHOCH
+                                is_bos = False
+                                new_trend = (
+                                    trend_direction  # CHoCH doesn't change trend
                                 )
 
-                elif current.pivot_type.value == "swing_low":
-                    # Check if this breaks a previous swing low (BOS in downtrend)
-                    # or breaks a previous swing high (CHoCH)
-                    break_result = self._check_bearish_break(current, prev_swings, data)
-                    if break_result is not None:
-                        event, is_bos = break_result
-                        # Check for duplicate
-                        pair = (current.index, event.broken_level.pivot.index)
-                        if pair not in detected_breaks:
-                            detected_breaks.add(pair)
-                            events.append(event)
-                            if event.event_type == BOSCHoCHType.BEARISH_BOS:
-                                bearish_bos.append(event)
-                                last_bos_dir = "bearish"
-                                # Update structure low
-                                current_low = StructureLevel(
-                                    pivot=current,
-                                    price=current.price,
+                            # Check for duplicate
+                            pair = (current.index, active_structure_high.pivot.index)
+                            if pair not in detected_breaks:
+                                detected_breaks.add(pair)
+                                break_detected = True
+
+                                event = BOSCHoCH(
+                                    event_type=event_type,
+                                    broken_level=active_structure_high,
+                                    break_index=current.index,
+                                    break_price=candle.close_price,
+                                    timestamp=current.timestamp,
+                                    confirmation_index=current.index
+                                    + self.confirmation_bars,
+                                    is_bos=is_bos,
+                                    strength=strength,
                                 )
+                                events.append(event)
+
+                                if is_bos:
+                                    bullish_bos.append(event)
+                                    last_bos_dir = "bullish"
+                                    trend_direction = new_trend
+                                    # BOS updates active structure in SAME direction
+                                    active_structure_high = StructureLevel(
+                                        pivot=current,
+                                        price=current.price,
+                                    )
+                                else:
+                                    bullish_choch.append(event)
+                                    # CHoCH doesn't change trend, updates opposite structure
+                                    active_structure_low = StructureLevel(
+                                        pivot=current,
+                                        price=current.price,
+                                    )
+
+                # Update active structure high if no break (per design doc)
+                if not break_detected:
+                    if (
+                        active_structure_high is None
+                        or current.price > active_structure_high.price
+                    ):
+                        active_structure_high = StructureLevel(
+                            pivot=current,
+                            price=current.price,
+                        )
+
+            elif current.pivot_type.value == "swing_low":
+                # Check bearish break against active structure low
+                if active_structure_low is not None:
+                    if self._is_level_broken(
+                        current, active_structure_low.pivot, data, is_bullish=False
+                    ):
+                        strength = self._calculate_strength(
+                            candle.close_price,
+                            active_structure_low.price,
+                            is_bullish=False,
+                        )
+                        if strength >= self.min_strength_ratio:
+                            # Determine BOS vs CHoCH based on trend
+                            if trend_direction == TrendDirection.BEARISH:
+                                # Break of structure in bearish direction = BOS
+                                event_type = BOSCHoCHType.BEARISH_BOS
+                                is_bos = True
+                                new_trend = TrendDirection.BEARISH
+                            elif trend_direction == TrendDirection.UNDEFINED:
+                                # No established trend - treat as BOS (first break)
+                                event_type = BOSCHoCHType.BEARISH_BOS
+                                is_bos = True
+                                new_trend = TrendDirection.BEARISH
                             else:
-                                bearish_choch.append(event)
-                                # CHoCH updates structure in opposite direction
-                                current_high = StructureLevel(
-                                    pivot=current,
-                                    price=current.price,
+                                # trend_direction == BULLISH
+                                # Break of structure against bullish trend = CHoCH
+                                event_type = BOSCHoCHType.BEARISH_CHOCH
+                                is_bos = False
+                                new_trend = (
+                                    trend_direction  # CHoCH doesn't change trend
                                 )
+
+                            # Check for duplicate
+                            pair = (current.index, active_structure_low.pivot.index)
+                            if pair not in detected_breaks:
+                                detected_breaks.add(pair)
+                                break_detected = True
+
+                                event = BOSCHoCH(
+                                    event_type=event_type,
+                                    broken_level=active_structure_low,
+                                    break_index=current.index,
+                                    break_price=candle.close_price,
+                                    timestamp=current.timestamp,
+                                    confirmation_index=current.index
+                                    + self.confirmation_bars,
+                                    is_bos=is_bos,
+                                    strength=strength,
+                                )
+                                events.append(event)
+
+                                if is_bos:
+                                    bearish_bos.append(event)
+                                    last_bos_dir = "bearish"
+                                    trend_direction = new_trend
+                                    # BOS updates active structure in SAME direction
+                                    active_structure_low = StructureLevel(
+                                        pivot=current,
+                                        price=current.price,
+                                    )
+                                else:
+                                    bearish_choch.append(event)
+                                    # CHoCH doesn't change trend, updates opposite structure
+                                    active_structure_high = StructureLevel(
+                                        pivot=current,
+                                        price=current.price,
+                                    )
+
+                # Update active structure low if no break (per design doc)
+                if not break_detected:
+                    if (
+                        active_structure_low is None
+                        or current.price < active_structure_low.price
+                    ):
+                        active_structure_low = StructureLevel(
+                            pivot=current,
+                            price=current.price,
+                        )
 
         return BOSCHoCHClassificationResult(
             events=events,
@@ -254,9 +385,10 @@ class BOSCHoCHClassifier:
             bearish_bos_events=bearish_bos,
             bullish_choch_events=bullish_choch,
             bearish_choch_events=bearish_choch,
-            current_structure_high=current_high,
-            current_structure_low=current_low,
+            current_structure_high=active_structure_high,
+            current_structure_low=active_structure_low,
             last_bos_direction=last_bos_dir,
+            trend_direction=trend_direction,
         )
 
     def _check_bullish_break(
@@ -403,81 +535,6 @@ class BOSCHoCHClassifier:
 
         return None
 
-    def _check_bearish_break(
-        self,
-        swing: SwingPivot,
-        prev_swings: list[SwingPivot],
-        data: list[OHLCVData],
-    ) -> tuple[BOSCHoCH, bool] | None:
-        """Check if a bearish break (BOS or CHoCH) occurred.
-
-        BOS (Break of Structure) takes priority over CHoCH.
-        BOS = bearish break of previous swing_low
-        CHoCH = bearish break of previous swing_high
-
-        Returns:
-            Tuple of (event, is_bos) or None if no break
-        """
-        # Find the most recent swing_low and swing_high in prev_swings
-        most_recent_swing_low: SwingPivot | None = None
-        most_recent_swing_high: SwingPivot | None = None
-
-        for prev in prev_swings:
-            if prev.pivot_type.value == "swing_low":
-                most_recent_swing_low = prev
-            elif prev.pivot_type.value == "swing_high":
-                most_recent_swing_high = prev
-
-        # Check for bearish BOS first (breaks most recent swing_low)
-        if most_recent_swing_low is not None:
-            if self._is_level_broken(
-                swing, most_recent_swing_low, data, is_bullish=False
-            ):
-                strength = self._calculate_strength(
-                    swing.price, most_recent_swing_low.price, is_bullish=False
-                )
-                if strength >= self.min_strength_ratio:
-                    event = BOSCHoCH(
-                        event_type=BOSCHoCHType.BEARISH_BOS,
-                        broken_level=StructureLevel(
-                            pivot=most_recent_swing_low,
-                            price=most_recent_swing_low.price,
-                        ),
-                        break_index=swing.index,
-                        break_price=swing.price,
-                        timestamp=swing.timestamp,
-                        confirmation_index=swing.index + self.confirmation_bars,
-                        is_bos=True,
-                        strength=strength,
-                    )
-                    return (event, True)
-
-        # Check for bearish CHoCH (breaks most recent swing_high)
-        if most_recent_swing_high is not None:
-            if self._is_level_broken(
-                swing, most_recent_swing_high, data, is_bullish=False
-            ):
-                strength = self._calculate_strength(
-                    swing.price, most_recent_swing_high.price, is_bullish=False
-                )
-                if strength >= self.min_strength_ratio:
-                    event = BOSCHoCH(
-                        event_type=BOSCHoCHType.BEARISH_CHOCH,
-                        broken_level=StructureLevel(
-                            pivot=most_recent_swing_high,
-                            price=most_recent_swing_high.price,
-                        ),
-                        break_index=swing.index,
-                        break_price=swing.price,
-                        timestamp=swing.timestamp,
-                        confirmation_index=swing.index + self.confirmation_bars,
-                        is_bos=False,
-                        strength=strength,
-                    )
-                    return (event, False)
-
-        return None
-
     def _is_level_broken(
         self,
         swing: SwingPivot,
@@ -571,6 +628,7 @@ class BOSCHoCHClassifier:
             current_structure_high=None,
             current_structure_low=None,
             last_bos_direction=None,
+            trend_direction=TrendDirection.UNDEFINED,
         )
 
     def get_metadata(self) -> dict[str, Any]:
