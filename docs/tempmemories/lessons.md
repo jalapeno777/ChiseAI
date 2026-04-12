@@ -1139,9 +1139,9 @@ Evidence: INC-2026-0406-ICT-S1A-1
 
 ## LESSON: Adding Validation to Model Constructors Requires Test Fixture Audit (2026-04-08)
 
-- Context: SignalOutcome.__post_init__ added UUID validation, but 6 tests still passed non-UUID strings as signal_id
+- Context: SignalOutcome.**post_init** added UUID validation, but 6 tests still passed non-UUID strings as signal_id
 - Trigger: Integration verification found 6 test failures with "badly formed hexadecimal UUID string"
-- Rule: When adding validation to any model __post_init__, immediately grep all test files for that class name and verify test data conforms.
+- Rule: When adding validation to any model **post_init**, immediately grep all test files for that class name and verify test data conforms.
 - Applies_to: dev, quickdev, critic
 - Expected_outcome: Zero test failures from new validation; test fixtures audited in same story
 - Evidence_ref: SAFETY-001 T-06 (tests/validation/test_data_collection.py UUID fix)
@@ -1168,6 +1168,7 @@ Evidence: INC-2026-0406-ICT-S1A-1
 - Added_utc: 2026-04-08T00:00:00Z
 
 LESSON
+
 - id: LESSON-20260409-single-dep-source
 - context: requirements.txt and pyproject.toml dependency lists diverged, causing missing packages in Docker images. Containers crashed with ModuleNotFoundError.
 - trigger: Signal pipeline activation failure — signal_generator.py couldn't import config.bootstrap
@@ -1181,6 +1182,7 @@ LESSON
 - added_utc: 2026-04-09T02:00:00Z
 
 LESSON
+
 - id: LESSON-20260409-compose-service-required
 - context: chiseai-ohlcv-ingestion had a Dockerfile but no docker-compose service entry. Container was never deployed via docker-compose up.
 - trigger: All 36 data sources stale — no OHLCV data flowing to InfluxDB for 6+ weeks
@@ -1194,6 +1196,7 @@ LESSON
 - added_utc: 2026-04-09T02:00:00Z
 
 LESSON
+
 - id: LESSON-20260409-influxdb-org-required
 - context: InfluxDB v2 API requires explicit `org` parameter on write() and query() calls. Missing org causes silent write failures — logs show "stored" but data never persists.
 - trigger: Grafana dashboard showing is_stale=1 despite ingestion logging successful cycles
@@ -1206,6 +1209,7 @@ LESSON
 - added_utc: 2026-04-09T14:00:00Z
 
 LESSON
+
 - id: LESSON-20260409-pgrep-healthcheck
 - context: Docker HEALTHCHECK using pgrep fails silently when procps package is not installed in the container image. Container reports UNHEALTHY even when application is running correctly.
 - trigger: Both chiseai-signal-supervisor and chiseai-ohlcv-ingestion showing UNHEALTHY despite functioning applications
@@ -1275,4 +1279,110 @@ LESSON
 - expected_outcome: No false CRITICAL blocking on legitimate paper orphaned fills; real signal gaps still caught
 - evidence_ref: PAPER-RECON epic
 - added_utc: 2026-04-11T01:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260412-hygiene-branch-fresh-main
+- context: PR #1010 had CI infrastructure drift because the hygiene branch was created from a stale branch, not fresh main
+- trigger: Hygiene branch modifying only docs/bmm-workflow-status.yaml created from stale base
+- actionable_rule: Always create hygiene/doc-only branches from fresh main checkout. Run git fetch origin && git checkout main && git pull origin main before creating hygiene branches.
+- applies_to:
+  - jarvis
+  - quickdev
+  - dev
+  - senior-dev
+- expected_outcome: No CI drift from stale base branches; hygiene branches always start from current main
+- evidence_ref: PR #1010, branch hygiene cleanup
+- added_utc: 2026-04-12T00:00:00Z
+
+LESSON
+- id: LESSON-20260412-direct-commit-docs
+- context: Workflow status YAML updates don't need full PR cycle but were going through PR workflow unnecessarily
+- trigger: Single-file docs-only changes taking longer due to PR workflow overhead
+- actionable_rule: For single-file docs-only changes (especially docs/bmm-workflow-status.yaml), use direct commit to main when CI drift risk exists. Full PR workflow is unnecessary overhead for non-code changes.
+- applies_to:
+  - jarvis
+  - senior-dev
+- expected_outcome: Efficient handling of docs-only changes; no unnecessary PR overhead
+- evidence_ref: PR #1010 closed via direct push
+- added_utc: 2026-04-12T00:00:00Z
+
+LESSON
+- id: LESSON-20260412-auto-branch-cleanup
+- context: 16 open branches found, 14 were already merged via prior PRs but branches never deleted
+- trigger: Post-merge branch deletion was manual and therefore neglected consistently
+- actionable_rule: Post-merge hook to auto-delete feature branches after successful merge. Consider adding this to merge automation scripts.
+- applies_to:
+  - jarvis
+  - merlin
+- expected_outcome: No stale merged branches left behind; automated cleanup on merge
+- evidence_ref: Branch reconciliation 2026-04-12, 14 branches cleaned
+- added_utc: 2026-04-12T00:00:00Z
+
+LESSON
+- id: LESSON-20260412-rebased-branch-naming
+- context: BYBIT-TIMESTAMP-SYNC was rebased but original wasn't deleted until explicitly identified
+- trigger: Rebased branch name didn't distinguish it from original, causing confusion during cleanup
+- actionable_rule: When rebasing a branch, use -rebased suffix (e.g., feature/BYBIT-TIMESTAMP-SYNC-rebased) to distinguish from original. Delete the original after confirming rebased version is correct.
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Clear distinction between original and rebased branches; no confusion during cleanup
+- evidence_ref: BYBIT-TIMESTAMP-SYNC branch cleanup
+- added_utc: 2026-04-12T00:00:00Z
+
+LESSON
+- id: LESSON-20260412-redis-port-6380
+- context: Stale price data caused fallback to defaults because price key was empty on port 6380
+- trigger: Canary emitter reads prices from chiseai-redis port 6380, but price data was being written to wrong port
+- actionable_rule: When writing price data for canary emitter, ensure correct Redis port (6380 for chiseai-redis, not 6379 for host Redis). HSET paper:market:prices on port 6380 specifically.
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: Correct Redis port used for canary price data; no stale price fallbacks
+- evidence_ref: HSET paper:market:prices on port 6380 fix
+- added_utc: 2026-04-12T00:00:00Z
+
+LESSON
+- id: LESSON-20260412-workers-no-direct-main-commit
+- context: Batch 3 workers committed test fixes directly to main instead of feature branches
+- trigger: Workers bypassed feature branch workflow for test-only changes
+- actionable_rule: Workers must NOT commit directly to main — always use feature branches. Enforce session.py start + branch creation in worker contracts for all code changes.
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: All code changes go through feature branch workflow; no direct main commits
+- evidence_ref: Batch 3 test fix commits (P2 process violation)
+- added_utc: 2026-04-12T00:00:00Z
+- severity: P2
+
+LESSON
+- id: LESSON-20260412-bos-choch-close-confirmation
+- context: Wick-only penetration (high/low beyond level but close not) does NOT trigger break detection
+- trigger: Test data had high/low beyond level but close didn't confirm, causing incorrect break signals
+- actionable_rule: BOS/CHoCH break detection requires candle close confirmation: for bullish break, BOTH high AND close must be beyond level; for bearish break, BOTH low AND close must be below level. Wick-only penetration is NOT a valid break.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Accurate BOS/CHoCH detection requiring close confirmation; no false signals from wick-only
+- evidence_ref: BL-BOS-CHOCH-001 implementation
+- added_utc: 2026-04-12T00:00:00Z
+
+LESSON
+- id: LESSON-20260412-option-a-poc-mtf-phase3
+- context: BOS/CHoCH redesign had three options; Option (c) MTF was recommended but adds HTF infrastructure dependency
+- trigger: Option (c) MTF would require significant HTF infrastructure work for Phase 3
+- actionable_rule: Option (a) explicit structure level tracking is sufficient for POC. Defer Option (c) MTF to Phase 3 when HTF infrastructure is ready. Don't add complexity prematurely.
+- applies_to:
+  - jarvis
+  - aria
+- expected_outcome: POC delivered with Option (a); Option (c) MTF planned for Phase 3
+- evidence_ref: AD-BATCH3-20260412T150000Z decision, BL-BOS-CHOCH-001
+- added_utc: 2026-04-12T00:00:00Z
 ```

@@ -1,0 +1,46 @@
+{
+  "story_id": "RECON-DIAG-001",
+  "captured_at": "2026-04-11T12:30:42.867394+00:00",
+  "redis_indexes": {
+    "paper:index:signals": {
+      "count": 600,
+      "ttl_seconds": 437168
+    },
+    "paper:index:orders": {
+      "count": 4,
+      "ttl_seconds": 526995
+    },
+    "paper:index:fills": {
+      "count": 7,
+      "ttl_seconds": 576133
+    },
+    "paper:index:outcomes": {
+      "count": 4,
+      "ttl_seconds": 526995
+    }
+  },
+  "postgres": {
+    "total_rows": 65,
+    "max_created_at": "2026-03-30T07:09:46.351292+00:00",
+    "rows_since_2026-04-08": 0
+  },
+  "orphaned_fills": {
+    "count": 2,
+    "keys": [
+      "paper:fill:20260411043022:BTCUSDT:4c5be78c-2bc7-4aec-a03e-692f35741240",
+      "paper:fill:20260411043154:BTCUSDT:521d855b-0ff4-4465-9c18-1266d1216560"
+    ]
+  },
+  "ttl_analysis": {
+    "index_ttl_days": 6.7,
+    "oldest_key_timestamp": "2026-04-09T18:33:34.258377+00:00",
+    "days_until_first_expiry": 5.1
+  },
+  "recommendations": [
+    "CRITICAL: Postgres has ZERO rows since 2026-04-08 while Redis has fills through 2026-04-11 \u2014 signal_outcomes table is not being populated",
+    "2 orphaned fills detected (fills without corresponding order keys) \u2014 possible order/fill race condition or incomplete write pipeline",
+    "Redis TTL on indexes ranges 5.1-6.7 days; oldest data expires 2026-04-14-2026-04-16 window \u2014 high risk of data loss if not drained first",
+    "Gap between Postgres max (2026-03-30) and Redis oldest fill (2026-04-09) spans ~10 days \u2014 indicates pipeline broken pre-TTL decision",
+    "Recommend: drain Redis fills to Postgres before index TTL expiry; fix fill/outcome write path; investigate why paper exchange is not writing to Postgres"
+  ]
+}
