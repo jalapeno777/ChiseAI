@@ -51,17 +51,36 @@ class ReconcileResult:
     redis_counts: dict
     postgres_count: int
     since: str
-    orphaned_fills: list
+    orphaned_fills: list  # Redis fills without matching orders (reported, not blocking)
     divergence: dict
     status: str  # 'clean' | 'divergence'
     exit_code: int
+    # Postgres-level orphaned fill tracking (PAPER-RECON-ORPHANED-POLICY)
+    pg_orphaned_fills: int = 0  # fills with NULL signal_id (expected in paper mode)
+    pg_missing_signal_fills: int = (
+        0  # fills that SHOULD have signals but don't (anomaly)
+    )
+    has_warning: bool = (
+        False  # non-blocking warning (orphaned fills) for Grafana visibility
+    )
 
 
 def get_redis_client():
     return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 
-async def get_postgres_count(since: datetime) -> int:
+async def get_postgres_counts(since: datetime) -> tuple[int, int, int]:
+    """Get all Postgres counts in a single connection.
+
+    Returns:
+        Tuple of (outcome_count, orphaned_fills, missing_signal_fills)
+        - outcome_count: total signal_outcomes since timestamp
+        - orphaned_fills: fills with signal_id IS NULL (expected in paper mode)
+        - missing_signal_fills: fills with signal_id NOT NULL but signal doesn't exist (anomaly)
+
+    Note: missing_signal_fills requires a signals table to check existence.
+    If signals table doesn't exist, we can only count orphaned fills.
+    """
     conn = await asyncpg.connect(
         host=PG_DEFAULTS["host"],
         port=PG_DEFAULTS["port"],
@@ -70,10 +89,95 @@ async def get_postgres_count(since: datetime) -> int:
         database=PG_DEFAULTS["database"],
     )
     try:
+        # Get outcome count
         row = await conn.fetchrow(
             "SELECT COUNT(*) as cnt FROM signal_outcomes WHERE created_at >= $1", since
         )
-        return row["cnt"]
+        outcome_count = row["cnt"]
+
+        # Get orphaned fills (signal_id IS NULL)
+        orphaned_row = await conn.fetchrow(
+            """
+            SELECT COUNT(*) as cnt
+            FROM signal_outcomes
+            WHERE outcome_type = 'fill' AND signal_id IS NULL AND created_at >= $1
+            """,
+            since,
+        )
+        orphaned_fills = orphaned_row["cnt"]
+
+        # Try to get missing signal fills (signal_id NOT NULL but signal doesn't exist)
+        missing_signal_fills = 0
+        try:
+            missing_row = await conn.fetchrow(
+                """
+                SELECT COUNT(*) as cnt
+                FROM signal_outcomes so
+                WHERE so.outcome_type = 'fill'
+                  AND so.signal_id IS NOT NULL
+                  AND so.created_at >= $1
+                  AND NOT EXISTS (SELECT 1 FROM signals s WHERE s.signal_id = so.signal_id)
+                """,
+                since,
+            )
+            missing_signal_fills = missing_row["cnt"]
+        except asyncpg.UndefinedTableError:
+            # signals table doesn't exist - can't check for missing signals
+            pass
+
+        return (outcome_count, orphaned_fills, missing_signal_fills)
+    finally:
+        await conn.close()
+    """Get orphaned fill counts from Postgres.
+
+    Returns:
+        Tuple of (orphaned_fills, missing_signal_fills)
+        - orphaned_fills: fills with signal_id IS NULL (expected in paper mode)
+        - missing_signal_fills: fills with signal_id NOT NULL but signal doesn't exist (anomaly)
+
+    Note: missing_signal_fills requires a signals table to check existence.
+    If signals table doesn't exist, we can only count orphaned fills.
+    """
+    conn = await asyncpg.connect(
+        host=PG_DEFAULTS["host"],
+        port=PG_DEFAULTS["port"],
+        user=PG_DEFAULTS["user"],
+        password=PG_DEFAULTS["password"],
+        database=PG_DEFAULTS["database"],
+    )
+    try:
+        # First get orphaned fills (signal_id IS NULL)
+        orphaned_row = await conn.fetchrow(
+            """
+            SELECT COUNT(*) as cnt
+            FROM signal_outcomes
+            WHERE outcome_type = 'fill' AND signal_id IS NULL AND created_at >= $1
+            """,
+            since,
+        )
+        orphaned_fills = orphaned_row["cnt"]
+
+        # Try to get missing signal fills (signal_id NOT NULL but signal doesn't exist)
+        # This requires the signals table to exist
+        missing_signal_fills = 0
+        try:
+            missing_row = await conn.fetchrow(
+                """
+                SELECT COUNT(*) as cnt
+                FROM signal_outcomes so
+                WHERE so.outcome_type = 'fill'
+                  AND so.signal_id IS NOT NULL
+                  AND so.created_at >= $1
+                  AND NOT EXISTS (SELECT 1 FROM signals s WHERE s.signal_id = so.signal_id)
+                """,
+                since,
+            )
+            missing_signal_fills = missing_row["cnt"]
+        except Exception:
+            # signals table doesn't exist - can't check for missing signals
+            pass
+
+        return (orphaned_fills, missing_signal_fills)
     finally:
         await conn.close()
 
@@ -121,6 +225,9 @@ def write_alert_key(result: ReconcileResult) -> str:
         "orphaned_fills_count": len(result.orphaned_fills),
         "postgres_outcomes": result.postgres_count,
         "redis_outcomes": result.redis_counts.get("outcomes", 0),
+        # PAPER-RECON-ORPHANED-POLICY: Postgres-level orphaned fill tracking
+        "pg_orphaned_fills": result.pg_orphaned_fills,
+        "pg_missing_signal_fills": result.pg_missing_signal_fills,
         "timestamp": datetime.now(UTC).isoformat(),
     }
     r.set(alert_key, json.dumps(alert_data))
@@ -140,16 +247,19 @@ def reconcile(since_iso: str) -> ReconcileResult:
         count = r.zcard(key)
         redis_counts[name] = count
 
-    # Postgres count
-    # HIGH-3: asyncio.run() is safe here since this is always called from __main__ (sync CLI entrypoint)
-    pg_count = asyncio.run(get_postgres_count(since_dt))
+    # Postgres counts (HIGH-2: combined into single connection)
+    # Returns (outcome_count, orphaned_fills, missing_signal_fills)
+    pg_count, pg_orphaned, pg_missing_signal = asyncio.run(
+        get_postgres_counts(since_dt)
+    )
 
-    # Orphaned fills
+    # Orphaned fills (Redis-level: fills without matching orders)
     orphaned = check_orphaned_fills(r)
 
     # Divergence analysis
     divergence = {}
     has_divergence = False
+    has_warning = False  # CRITICAL-1: non-blocking warning for Grafana visibility
 
     # Check: Redis outcomes vs Postgres outcomes
     redis_outcomes = redis_counts["outcomes"]
@@ -171,13 +281,37 @@ def reconcile(since_iso: str) -> ReconcileResult:
         # This is expected if some orders have multiple fills, but flag if orphaned too
         pass
 
-    # Orphaned fills = CRITICAL
+    # Redis-level orphaned fills (fills without orders) = CRITICAL-1: non-blocking but visible
+    # Use has_warning to trigger alert-key writing without blocking (exit_code stays 0)
     if orphaned:
         divergence["orphaned_fills"] = {
             "count": len(orphaned),
+            "severity": "WARNING",  # Changed from CRITICAL - these are Redis-level only
+            "note": "Redis fills without matching orders - investigate Redis data integrity",
+        }
+        has_warning = (
+            True  # CRITICAL-1: Make visible in Grafana via alert key (non-blocking)
+        )
+
+    # Postgres-level missing signal fills = ANOMALY (should have signal but doesn't)
+    # This is different from orphaned fills (signal_id IS NULL is expected)
+    if pg_missing_signal > 0:
+        divergence["missing_signal_fills"] = {
+            "count": pg_missing_signal,
             "severity": "CRITICAL",
+            "note": "Fills with signal_id but no corresponding signal - data anomaly",
         }
         has_divergence = True
+
+    # Orphaned fills (signal_id IS NULL) are EXPECTED in paper mode - report but don't block
+    # These represent manual fills, exchange repositioning, etc.
+    # Only add to divergence if we want to track it (not as blocking)
+    if pg_orphaned > 0:
+        divergence["pg_orphaned_fills"] = {
+            "count": pg_orphaned,
+            "severity": "INFO",
+            "note": "Orphaned fills (signal_id IS NULL) - expected in paper mode for manual/exchange fills",
+        }
 
     return ReconcileResult(
         redis_counts=redis_counts,
@@ -187,6 +321,9 @@ def reconcile(since_iso: str) -> ReconcileResult:
         divergence=divergence,
         status="divergence" if has_divergence else "clean",
         exit_code=1 if has_divergence else 0,
+        pg_orphaned_fills=pg_orphaned,
+        pg_missing_signal_fills=pg_missing_signal,
+        has_warning=has_warning,
     )
 
 
@@ -209,9 +346,10 @@ def main():
             print(json.dumps({"error": str(e), "exit_code": 2}))
         sys.exit(2)
 
-    # Write alert key if divergence detected and --alert flag is set
+    # Write alert key if divergence detected (or has_warning) and --alert flag is set
+    # CRITICAL-1: has_warning ensures orphaned fills are visible in Grafana even when non-blocking
     alert_key = None
-    if result.exit_code == 1 and args.alert:
+    if (result.exit_code == 1 or result.has_warning) and args.alert:
         alert_key = write_alert_key(result)
         logger.warning(f"Divergence detected — alert written to Redis: {alert_key}")
 
@@ -228,7 +366,22 @@ def main():
         for k, v in result.redis_counts.items():
             print(f"  {k}: {v}")
         print(f"\nPostgres outcomes (since {result.since}): {result.postgres_count}")
-        print(f"\nOrphaned fills: {len(result.orphaned_fills)}")
+        # PAPER-RECON-ORPHANED-POLICY: Report Postgres-level orphaned fills
+        print(
+            f"\nPostgres Orphaned Fills (signal_id IS NULL): {result.pg_orphaned_fills}"
+        )
+        if result.pg_orphaned_fills > 0:
+            print(
+                "  ℹ️  These are EXPECTED in paper mode (manual fills, exchange repositioning)"
+            )
+        print(
+            f"Postgres Missing Signal Fills (anomaly): {result.pg_missing_signal_fills}"
+        )
+        if result.pg_missing_signal_fills > 0:
+            print("  ⚠️  These indicate a DATA ANOMALY - requires investigation")
+        print(
+            f"\nRedis Orphaned Fills (fills without orders): {len(result.orphaned_fills)}"
+        )
         if result.orphaned_fills:
             for f in result.orphaned_fills[:5]:
                 print(f"  ! {f}")
