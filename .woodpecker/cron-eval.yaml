@@ -32,6 +32,9 @@ when:
     - daily-trends
     - weekly-reflection
     - persona-weekly
+    - autocog-heartbeat
+    - autocog-weekly
+    - autocog-monthly
 
 clone:
   git:
@@ -354,6 +357,84 @@ steps:
         code=$?
         cat _bmad-output/ci/kpi-scheduler-auto.log
         echo "$code" > _bmad-output/ci/kpi-scheduler-auto.status
+        exit 0
+
+  # AUTOCOG-REMEDIATION-C4: Heartbeat for autocog cognition oversight (every 6 hours)
+  autocog-heartbeat:
+    image: python:3.11
+    when:
+      cron:
+        - autocog-heartbeat
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml redis requests
+
+          echo "Running autocog heartbeat..."
+          python3 scripts/autocog/heartbeat.py
+
+          echo "Heartbeat artifacts produced:"
+          find _bmad-output -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
+        ) > _bmad-output/ci/autocog-heartbeat.log 2>&1
+        code=$?
+        cat _bmad-output/ci/autocog-heartbeat.log
+        echo "$code" > _bmad-output/ci/autocog-heartbeat.status
+        exit 0
+
+  # AUTOCOG-REMEDIATION-C4: Weekly autocog review (Monday 09:00 America/Toronto)
+  autocog-weekly:
+    image: python:3.11
+    when:
+      cron:
+        - autocog-weekly
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml redis requests
+
+          echo "Running autocog weekly review..."
+          python3 scripts/autocog/weekly_review.py
+
+          echo "Weekly review artifacts produced:"
+          find _bmad-output -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
+        ) > _bmad-output/ci/autocog-weekly.log 2>&1
+        code=$?
+        cat _bmad-output/ci/autocog-weekly.log
+        echo "$code" > _bmad-output/ci/autocog-weekly.status
+        exit 0
+
+  # AUTOCOG-REMEDIATION-C4: Monthly autocog audit (first Monday of month 10:00 America/Toronto)
+  autocog-monthly:
+    image: python:3.11
+    when:
+      cron:
+        - autocog-monthly
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml redis requests
+
+          echo "Running autocog monthly audit..."
+          python3 scripts/autocog/monthly_audit.py
+
+          echo "Monthly audit artifacts produced:"
+          find _bmad-output -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
+        ) > _bmad-output/ci/autocog-monthly.log 2>&1
+        code=$?
+        cat _bmad-output/ci/autocog-monthly.log
+        echo "$code" > _bmad-output/ci/autocog-monthly.status
         exit 0
 
   ci-gate:
