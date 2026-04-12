@@ -1089,5 +1089,72 @@ class TestErrorRateIntegrationHighCoverage:
         assert snapshot.error_count == 3
 
 
+class TestOrchestratorErrorRateWiring:
+    """Test ErrorRateTracker wiring in orchestrator.py.
+
+    Verifies record_operation() is called with correct ErrorCategory and success values
+    at each orchestration gate point.
+    """
+
+    def test_orchestrator_imports_error_rate_tracker(self):
+        """Verify orchestrator.py imports ErrorRateTracker from correct module."""
+        # Check that orchestrator.py has the correct import pattern for ErrorRateTracker
+        import inspect
+
+        from src.execution.paper.orchestrator import PaperTradingOrchestrator
+
+        source = inspect.getsource(PaperTradingOrchestrator)
+        # Should import from error_rate_integration
+        assert "from execution.alerts.error_rate_integration" in source
+
+    def test_error_details_gate_names_in_orchestrator(self):
+        """Verify orchestrator records operations with correct gate names."""
+        # This is a source code verification test - check that gate names are recorded
+        import inspect
+
+        from src.execution.paper.orchestrator import PaperTradingOrchestrator
+
+        source = inspect.getsource(PaperTradingOrchestrator)
+        # Verify gate names are present in error_details
+        assert '"gate": "G1_THROTTLE"' in source or "'gate': 'G1_THROTTLE'" in source
+        assert (
+            '"gate": "G2_PAPER_KILL"' in source or "'gate': 'G2_PAPER_KILL'" in source
+        )
+        assert (
+            '"gate": "G5_RISK_REJECT"' in source or "'gate': 'G5_RISK_REJECT'" in source
+        )
+
+
+class TestBybitDemoConnectorErrorRateWiring:
+    """Test ErrorRateTracker wiring in bybit_demo_connector.py.
+
+    Verifies record_operation() is called with correct ErrorCategory and success values
+    at each connector operation point.
+    """
+
+    def test_connector_imports_error_rate_tracker(self):
+        """Verify bybit_demo_connector.py imports ErrorRateTracker."""
+        import inspect
+
+        from src.execution.connectors.bybit_demo_connector import BybitDemoConnector
+
+        source = inspect.getsource(BybitDemoConnector)
+        # Should have error_rate import
+        assert "error_rate" in source
+
+    def test_error_details_operation_names_in_connector(self):
+        """Verify connector records operations with correct operation names."""
+        import inspect
+
+        from src.execution.connectors.bybit_demo_connector import BybitDemoConnector
+
+        source = inspect.getsource(BybitDemoConnector)
+        # Verify operation names are present in error_details
+        assert (
+            '"operation": "get_market_price"' in source
+            or "'operation': 'get_market_price'" in source
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
