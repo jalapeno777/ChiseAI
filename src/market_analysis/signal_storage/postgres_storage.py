@@ -129,20 +129,58 @@ class PostgresSignalStorage(SignalStorageInterface):
                 """)
 
             # Create signal_outcomes table
+            # ST-PAPER-RECON-008: Extended schema to match SignalOutcome dataclass
+            # and outcome_persistence.py INSERT requirements
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS signal_outcomes (
                     id SERIAL PRIMARY KEY,
-                    signal_id UUID NOT NULL REFERENCES signals(signal_id)
-                        ON DELETE CASCADE,
-                    exit_timestamp BIGINT NOT NULL,
-                    is_win BOOLEAN NOT NULL,
-                    pnl REAL NOT NULL,
-                    exit_price REAL NOT NULL,
-                    duration_hours REAL NOT NULL,
+                    -- Core identification
+                    outcome_id UUID NOT NULL,
+                    signal_id UUID REFERENCES signals(signal_id) ON DELETE SET NULL,
+                    order_id VARCHAR(100),
+                    symbol VARCHAR(20),
+                    token VARCHAR(20),
+                    -- Trade direction
+                    side VARCHAR(10),
+                    direction VARCHAR(10),
+                    -- Fill data
+                    fill_price REAL,
+                    fill_quantity REAL,
+                    fill_timestamp TIMESTAMP,
+                    -- Outcome classification
                     outcome_type VARCHAR(20) NOT NULL,
-                    note TEXT,
+                    -- Financials
+                    pnl REAL,
+                    fee REAL,
+                    -- Status and timestamps
+                    status VARCHAR(20),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(signal_id)
+                    -- Metadata
+                    metadata JSONB,
+                    -- RECON-001: Canonical trade outcome fields
+                    entry_price REAL,
+                    exit_price REAL,
+                    entry_time TIMESTAMP,
+                    exit_time TIMESTAMP,
+                    leverage REAL DEFAULT 1.0,
+                    entry_reason VARCHAR(50),
+                    position_size REAL,
+                    -- DISCORD-TRADING-001: Test trade labeling
+                    is_test BOOLEAN DEFAULT FALSE,
+                    -- ST-VENUE-001: Venue provenance fields
+                    execution_venue VARCHAR(50),
+                    execution_mode VARCHAR(20),
+                    execution_source VARCHAR(100),
+                    venue_metadata JSONB,
+                    -- ST-PIPELINE-Q2: Signal-to-outcome correlation fields
+                    confidence_score REAL DEFAULT 0.0,
+                    signal_type VARCHAR(20),
+                    -- Legacy compatibility fields (deprecated but kept for migration)
+                    exit_timestamp BIGINT,
+                    is_win BOOLEAN,
+                    duration_hours REAL,
+                    note TEXT,
+                    UNIQUE(outcome_id)
                 )
                 """)
 
