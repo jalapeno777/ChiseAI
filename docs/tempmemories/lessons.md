@@ -1216,3 +1216,63 @@ LESSON
 - expected_outcome: No false UNHEALTHY container status from missing procps
 - evidence_ref: PR #972 (commit 9ba13d3), PR #974 (Redis-based healthcheck)
 - added_utc: 2026-04-09T15:00:00Z
+
+```text
+LESSON
+- id: LESSON-20260411-squash-merge-credential-history
+- context: PAPER-RECON epic — squash merge required when credential commits exist in branch history to prevent exposure in main git history
+- trigger: Regular merge of a branch containing credential commits exposes secrets permanently in main git history
+- actionable_rule: Squash merge REQUIRED when ANY credential, hardcoded secret, or API key commit exists in branch history. Regular merge to main is forbidden in this case — squash first.
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - merlin
+- expected_outcome: Zero credential exposure in main git history
+- evidence_ref: PAPER-RECON epic
+- added_utc: 2026-04-11T01:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260411-asyncio-run-pattern
+- context: PAPER-RECON epic — manual event loop management (new_event_loop + set_event_loop) creates global side-effects that corrupt event loop state
+- trigger: asyncio.run() properly manages lifecycle vs manual loop management which corrupts process-wide loop state
+- actionable_rule: Use asyncio.run() for one-shot async from sync context. Never use new_event_loop() + set_event_loop() together — this creates global side-effects that corrupt event loop state across the process.
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+- expected_outcome: Clean async lifecycle with no global event loop side-effects
+- evidence_ref: PAPER-RECON epic
+- added_utc: 2026-04-11T01:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260411-atomic-redis-set-nx
+- context: PAPER-RECON epic — TOCTOU race in concurrent order handling eliminated via atomic SET NX
+- trigger: SELECT-then-INSERT pattern has time-of-check-time-of-use race condition under concurrent load
+- actionable_rule: Use redis.set(key, value, nx=True, ex=ttl) for check-and-set operations. Never use SELECT-then-INSERT pattern — the nx=True flag ensures atomic set-if-not-exists, eliminating concurrent order handling races.
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: No TOCTOU races in Redis-based idempotency operations
+- evidence_ref: PAPER-RECON epic
+- added_utc: 2026-04-11T01:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260411-paper-orphaned-fills-policy
+- context: PAPER-RECON epic — orphaned fills (exchange-generated without signal linkage) were incorrectly treated as CRITICAL blocking
+- trigger: Paper trading generates fills from manual exchange activity that legitimately have no signal linkage
+- actionable_rule: In paper mode: (1) Orphaned fills with signal_id=NULL are INFO/WARNING non-blocking — manual exchange fills are valid paper activity; (2) Fills that SHOULD have had a signal but don't are CRITICAL blocking — indicates data loss.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: No false CRITICAL blocking on legitimate paper orphaned fills; real signal gaps still caught
+- evidence_ref: PAPER-RECON epic
+- added_utc: 2026-04-11T01:00:00Z
+```
