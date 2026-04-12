@@ -20,7 +20,9 @@ class TestPaperReconcileScript:
         assert hasattr(scripts.paper_reconcile, "reconcile")
         assert hasattr(scripts.paper_reconcile, "check_orphaned_fills")
         assert hasattr(scripts.paper_reconcile, "ReconcileResult")
-        assert hasattr(scripts.paper_reconcile, "get_postgres_orphaned_fill_counts")
+        assert hasattr(
+            scripts.paper_reconcile, "get_postgres_counts"
+        )  # HIGH-2: combined function
 
     # -------------------------------------------------------------------------
     # Unit tests for check_orphaned_fills
@@ -138,8 +140,8 @@ class TestPaperReconcileScript:
             patch("scripts.paper_reconcile.get_redis_client", return_value=mock_r),
             patch("scripts.paper_reconcile.asyncio.run") as mock_asyncio_run,
         ):
-            # First call returns pg_count, second call returns (orphaned=3, missing=0)
-            mock_asyncio_run.side_effect = [10, (3, 0)]
+            # HIGH-2: Single call returns (outcome_count, orphaned, missing)
+            mock_asyncio_run.side_effect = [(10, 3, 0)]
 
             result = reconcile("2026-04-08T00:00:00Z")
 
@@ -165,8 +167,8 @@ class TestPaperReconcileScript:
             patch("scripts.paper_reconcile.get_redis_client", return_value=mock_r),
             patch("scripts.paper_reconcile.asyncio.run") as mock_asyncio_run,
         ):
-            # First call returns pg_count, second call returns (orphaned=0, missing=2)
-            mock_asyncio_run.side_effect = [10, (0, 2)]
+            # HIGH-2: Single call returns (outcome_count, orphaned, missing)
+            mock_asyncio_run.side_effect = [(10, 0, 2)]
 
             result = reconcile("2026-04-08T00:00:00Z")
 
@@ -188,8 +190,8 @@ class TestPaperReconcileScript:
             patch("scripts.paper_reconcile.get_redis_client", return_value=mock_r),
             patch("scripts.paper_reconcile.asyncio.run") as mock_asyncio_run,
         ):
-            # First call returns pg_count, second call returns (orphaned=4, missing=1)
-            mock_asyncio_run.side_effect = [10, (4, 1)]
+            # HIGH-2: Single call returns (outcome_count, orphaned, missing)
+            mock_asyncio_run.side_effect = [(10, 4, 1)]
 
             result = reconcile("2026-04-08T00:00:00Z")
 
@@ -221,14 +223,17 @@ class TestPaperReconcileScript:
             patch("scripts.paper_reconcile.get_redis_client", return_value=mock_r),
             patch("scripts.paper_reconcile.asyncio.run") as mock_asyncio_run,
         ):
-            # No Postgres mismatch, orphaned fills in Postgres = 0
-            mock_asyncio_run.side_effect = [10, (0, 0)]
+            # HIGH-2: Single call returns (outcome_count, orphaned, missing)
+            mock_asyncio_run.side_effect = [(10, 0, 0)]
 
             result = reconcile("2026-04-08T00:00:00Z")
 
         # Redis orphaned fills are WARNING (not blocking by themselves)
         assert result.status == "clean"
         assert result.exit_code == 0
+        assert (
+            result.has_warning == True
+        )  # CRITICAL-1: orphaned fills trigger has_warning
         assert len(result.orphaned_fills) == 1
         assert result.divergence["orphaned_fills"]["severity"] == "WARNING"
 
@@ -246,8 +251,8 @@ class TestPaperReconcileScript:
             patch("scripts.paper_reconcile.get_redis_client", return_value=mock_r),
             patch("scripts.paper_reconcile.asyncio.run") as mock_asyncio_run,
         ):
-            # First call returns pg_count, second returns (orphaned=0, missing=0)
-            mock_asyncio_run.side_effect = [10, (0, 0)]
+            # HIGH-2: Single call returns (outcome_count, orphaned, missing)
+            mock_asyncio_run.side_effect = [(10, 0, 0)]
 
             result = reconcile("2026-04-08T00:00:00Z")
 
@@ -264,8 +269,8 @@ class TestPaperReconcileScript:
             patch("scripts.paper_reconcile.get_redis_client", return_value=mock_r),
             patch("scripts.paper_reconcile.asyncio.run") as mock_asyncio_run,
         ):
-            # First call returns pg_count=8 (mismatch), second returns (0, 0)
-            mock_asyncio_run.side_effect = [8, (0, 0)]
+            # HIGH-2: Single call returns (outcome_count, orphaned, missing)
+            mock_asyncio_run.side_effect = [(8, 0, 0)]  # pg_count=8 (mismatch)
 
             result = reconcile("2026-04-08T00:00:00Z")
 
@@ -294,8 +299,8 @@ class TestPaperReconcileScript:
             patch("scripts.paper_reconcile.get_redis_client", return_value=mock_r),
             patch("scripts.paper_reconcile.asyncio.run") as mock_asyncio_run,
         ):
-            # No Postgres mismatch, no missing signal fills
-            mock_asyncio_run.side_effect = [10, (0, 0)]
+            # HIGH-2: Single call returns (outcome_count, orphaned, missing)
+            mock_asyncio_run.side_effect = [(10, 0, 0)]
 
             result = reconcile("2026-04-08T00:00:00Z")
 
@@ -305,3 +310,6 @@ class TestPaperReconcileScript:
         # Status is clean because no blocking divergence
         assert result.status == "clean"
         assert result.exit_code == 0
+        assert (
+            result.has_warning == True
+        )  # CRITICAL-1: orphaned fills trigger has_warning
