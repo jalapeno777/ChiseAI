@@ -6,7 +6,7 @@ metadata:
   status_notes:
   - 'LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324
     tests passing)'
-  - 'R2a Canary: ACTIVE (started 2026-04-08, emitter PID 1559035, expected end 2026-04-29)'
+  - 'R2a Canary: ACTIVE (restarted 2026-04-12 via CANARY-CLOCK-RESTART; checkpoints: Day-7=Apr19, Day-14=Apr26, Day-21=May03)'
   - 'MiniMax: DISABLED per PAPER-LLM-DIAG-001 (initialization delays)'
   - 'Phase 4 Neuro-Symbolic Runtime Integration: CODE COMPLETE (2026-03-28)'
   - Git divergence incident resolved 2026-03-28 - local main reset to origin/main
@@ -28,7 +28,7 @@ metadata:
   - 'Docker healthcheck procps fix merged (PR #972): chiseai-signal-supervisor and
      chiseai-ohlcv-ingestion now healthy'
   - 'PAPER-RECON epic completed (2026-04-12): 8 branches merged, orphan fills policy
-     implemented, 60-min validation PASS. Canary in HOLD state pending schema alignment.'
+     implemented, 60-min validation PASS. R2a canary restarted after schema alignment (ST-PAPER-RECON-008).'
 completed:
 - archive_ref: ARCH-20260406-023722-EP-LOCAL-CI-001
   id: EP-LOCAL-CI-001
