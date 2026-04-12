@@ -231,9 +231,7 @@ class TestPaperReconcileScript:
         # Redis orphaned fills are WARNING (not blocking by themselves)
         assert result.status == "clean"
         assert result.exit_code == 0
-        assert (
-            result.has_warning == True
-        )  # CRITICAL-1: orphaned fills trigger has_warning
+        assert result.has_warning  # CRITICAL-1: orphaned fills trigger has_warning
         assert len(result.orphaned_fills) == 1
         assert result.divergence["orphaned_fills"]["severity"] == "WARNING"
 
@@ -310,6 +308,4 @@ class TestPaperReconcileScript:
         # Status is clean because no blocking divergence
         assert result.status == "clean"
         assert result.exit_code == 0
-        assert (
-            result.has_warning == True
-        )  # CRITICAL-1: orphaned fills trigger has_warning
+        assert result.has_warning  # CRITICAL-1: orphaned fills trigger has_warning
