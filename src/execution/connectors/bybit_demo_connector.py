@@ -740,6 +740,25 @@ class BybitDemoConnector:
                 symbol=symbol,
                 details={"price": price, "bybit_symbol": bybit_symbol},
             )
+            # ErrorRateTracker: record successful price fetch
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=True,
+                    error_details={
+                        "operation": "get_market_price",
+                        "symbol": symbol,
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug(
+                    "ErrorRateTracker GET_MARKET_PRICE_SUCCESS failed: %s", ert_exc
+                )
             return price
 
         except BybitAPIError as exc:
@@ -748,6 +767,26 @@ class BybitDemoConnector:
                 symbol=symbol,
                 details={"operation": "get_market_price", "error": str(exc)},
             )
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=False,
+                    error_details={
+                        "operation": "get_market_price",
+                        "symbol": symbol,
+                        "error": str(exc),
+                        "error_code": getattr(exc, "error_code", None),
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug(
+                    "ErrorRateTracker GET_MARKET_PRICE_FAIL failed: %s", ert_exc
+                )
             logger.warning(
                 "Failed to fetch live Bybit market price for %s: %s", symbol, exc
             )
@@ -758,6 +797,25 @@ class BybitDemoConnector:
                 symbol=symbol,
                 details={"operation": "get_market_price", "error": str(exc)},
             )
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=False,
+                    error_details={
+                        "operation": "get_market_price",
+                        "symbol": symbol,
+                        "error": str(exc),
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug(
+                    "ErrorRateTracker GET_MARKET_PRICE_FAIL failed: %s", ert_exc
+                )
             logger.warning(
                 "Failed to fetch live Bybit market price for %s: %s", symbol, exc
             )
@@ -941,6 +999,27 @@ class BybitDemoConnector:
                 len(order.fills),
             )
 
+            # ErrorRateTracker: record successful order placement
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=True,
+                    error_details={
+                        "operation": "place_order",
+                        "order_id": order.order_id,
+                        "symbol": symbol,
+                        "side": side,
+                        "order_type": order_type,
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug("ErrorRateTracker PLACE_ORDER_SUCCESS failed: %s", ert_exc)
+
             return order
 
         except BybitAPIError as exc:
@@ -965,6 +1044,25 @@ class BybitDemoConnector:
                     "retryable": exc.retryable,
                 },
             )
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=False,
+                    error_details={
+                        "operation": "place_order",
+                        "order_id": order.order_id,
+                        "symbol": symbol,
+                        "error": str(exc),
+                        "error_code": getattr(exc, "error_code", None),
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug("ErrorRateTracker PLACE_ORDER_FAIL failed: %s", ert_exc)
             return order
 
         except Exception as exc:
@@ -986,6 +1084,24 @@ class BybitDemoConnector:
                 symbol=symbol,
                 details={"error": str(exc)},
             )
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=False,
+                    error_details={
+                        "operation": "place_order",
+                        "order_id": order.order_id,
+                        "symbol": symbol,
+                        "error": str(exc),
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug("ErrorRateTracker PLACE_ORDER_FAIL failed: %s", ert_exc)
             return order
 
     def _sanitize_trading_stops(
@@ -1118,6 +1234,27 @@ class BybitDemoConnector:
                         "attempt": attempt,
                     },
                 )
+                # ErrorRateTracker: record successful TP/SL attachment
+                try:
+                    from execution.alerts.error_rate_tracker import (
+                        ErrorCategory,
+                        ErrorRateTracker,
+                    )
+
+                    ErrorRateTracker().record_operation(
+                        ErrorCategory.API,
+                        success=True,
+                        error_details={
+                            "operation": "attach_trading_stops",
+                            "order_id": order_id,
+                            "symbol": symbol,
+                            "attempt": attempt,
+                        },
+                    )
+                except Exception as ert_exc:
+                    logger.debug(
+                        "ErrorRateTracker ATTACH_STOPS_SUCCESS failed: %s", ert_exc
+                    )
                 return
             except Exception as exc:
                 last_error = exc
@@ -1152,6 +1289,27 @@ class BybitDemoConnector:
                 "attempts": self._retry_config.max_retries,
             },
         )
+
+        # ErrorRateTracker: record failed TP/SL attachment
+        try:
+            from execution.alerts.error_rate_tracker import (
+                ErrorCategory,
+                ErrorRateTracker,
+            )
+
+            ErrorRateTracker().record_operation(
+                ErrorCategory.API,
+                success=False,
+                error_details={
+                    "operation": "attach_trading_stops",
+                    "order_id": order_id,
+                    "symbol": symbol,
+                    "error": str(last_error),
+                    "attempts": self._retry_config.max_retries,
+                },
+            )
+        except Exception as ert_exc:
+            logger.debug("ErrorRateTracker ATTACH_STOPS_FAIL failed: %s", ert_exc)
 
         try:
             from execution.incident_reporter import publish_execution_incident
@@ -1216,6 +1374,27 @@ class BybitDemoConnector:
                 symbol=order.symbol,
             )
 
+            # ErrorRateTracker: record successful order cancellation
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=True,
+                    error_details={
+                        "operation": "cancel_order",
+                        "order_id": order_id,
+                        "symbol": order.symbol,
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug(
+                    "ErrorRateTracker CANCEL_ORDER_SUCCESS failed: %s", ert_exc
+                )
+
             logger.info(
                 "DEMO EXECUTION: Order %s cancelled via Bybit demo API",
                 order_id,
@@ -1232,6 +1411,25 @@ class BybitDemoConnector:
                 symbol=order.symbol,
                 details={"error_code": exc.error_code, "error": str(exc)},
             )
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=False,
+                    error_details={
+                        "operation": "cancel_order",
+                        "order_id": order_id,
+                        "symbol": order.symbol,
+                        "error": str(exc),
+                        "error_code": getattr(exc, "error_code", None),
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug("ErrorRateTracker CANCEL_ORDER_FAIL failed: %s", ert_exc)
             return False
 
         except Exception as exc:
@@ -1242,6 +1440,24 @@ class BybitDemoConnector:
                 symbol=order.symbol,
                 details={"error": str(exc)},
             )
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=False,
+                    error_details={
+                        "operation": "cancel_order",
+                        "order_id": order_id,
+                        "symbol": order.symbol,
+                        "error": str(exc),
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug("ErrorRateTracker CANCEL_ORDER_FAIL failed: %s", ert_exc)
             return False
 
     def get_order(self, order_id: str) -> PaperOrder | None:
@@ -1372,6 +1588,27 @@ class BybitDemoConnector:
                 },
             )
 
+            # ErrorRateTracker: record successful wallet balance fetch
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=True,
+                    error_details={
+                        "operation": "get_wallet_balance",
+                        "account_type": account_type,
+                        "coin": coin,
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug(
+                    "ErrorRateTracker GET_WALLET_BALANCE_SUCCESS failed: %s", ert_exc
+                )
+
             return balance
 
         except BybitAPIError as exc:
@@ -1379,6 +1616,27 @@ class BybitDemoConnector:
                 ProvenanceEventType.ERROR,
                 details={"operation": "get_wallet_balance", "error": str(exc)},
             )
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=False,
+                    error_details={
+                        "operation": "get_wallet_balance",
+                        "account_type": account_type,
+                        "coin": coin,
+                        "error": str(exc),
+                        "error_code": getattr(exc, "error_code", None),
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug(
+                    "ErrorRateTracker GET_WALLET_BALANCE_FAIL failed: %s", ert_exc
+                )
             raise
 
         except Exception as exc:
@@ -1386,6 +1644,26 @@ class BybitDemoConnector:
                 ProvenanceEventType.ERROR,
                 details={"operation": "get_wallet_balance", "error": str(exc)},
             )
+            try:
+                from execution.alerts.error_rate_tracker import (
+                    ErrorCategory,
+                    ErrorRateTracker,
+                )
+
+                ErrorRateTracker().record_operation(
+                    ErrorCategory.API,
+                    success=False,
+                    error_details={
+                        "operation": "get_wallet_balance",
+                        "account_type": account_type,
+                        "coin": coin,
+                        "error": str(exc),
+                    },
+                )
+            except Exception as ert_exc:
+                logger.debug(
+                    "ErrorRateTracker GET_WALLET_BALANCE_FAIL failed: %s", ert_exc
+                )
             raise
 
     def get_provenance(self) -> DemoProvenance:
