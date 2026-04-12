@@ -78,7 +78,9 @@ class Reflector:
         redis_client: Optional pre-configured Redis client.
         qdrant_client: Optional pre-configured Qdrant client.
         llm_client: Optional injectable LLM client for consolidation.
-        threshold: Token count threshold for triggering consolidation (default 40000).
+        threshold: Consolidation batch size in tokens (default 40000).
+            Note: This is NOT the trigger threshold. should_trigger() uses
+            Observer's threshold (30000) as the trigger condition.
     """
 
     def __init__(
@@ -94,7 +96,9 @@ class Reflector:
             redis_client: Optional pre-configured Redis client.
             qdrant_client: Optional pre-configured Qdrant client.
             llm_client: Optional injectable LLM client for consolidation.
-            threshold: Token count threshold for triggering consolidation.
+            threshold: Consolidation batch size in tokens.
+                The trigger condition uses Observer's threshold (30000);
+                this value controls how much the Reflector processes per run.
         """
         self._redis_client = redis_client
         self._qdrant_client = qdrant_client
@@ -492,8 +496,11 @@ class Reflector:
         1. Observer threshold met (token_count >= 30000) AND
         2. (active_observations_count >= 10 OR 24h since last consolidation)
 
-        Note: The Reflector's threshold is 40000 tokens, but it also checks
-        the Observer's threshold of 30000 tokens as a minimum condition.
+        Design: Uses Observer's threshold (30000) as the trigger condition,
+        not Reflector's consolidation batch size (self.threshold = 40000).
+        The Reflector's 40000 threshold controls the batch size for LLM
+        consolidation, while the 30000 Observer threshold determines when
+        consolidation is eligible to run.
 
         Args:
             session_id: The session ID to check.
@@ -510,7 +517,10 @@ class Reflector:
         observations = self._get_active_observations(session_id)
         token_count = self._get_token_count_from_observations(observations)
 
-        # Check Observer threshold (30000) - minimum condition
+        # Check Observer threshold (30000) - minimum condition.
+        # Design: The Reflector's self.threshold (40000) is the consolidation
+        # batch size, NOT the trigger threshold. The trigger uses Observer's
+        # threshold (30000) so that consolidation starts before the batch fills.
         OBSERVER_THRESHOLD = 30000
         if token_count < OBSERVER_THRESHOLD:
             logger.debug(
