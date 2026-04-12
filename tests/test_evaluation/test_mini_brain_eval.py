@@ -535,11 +535,19 @@ class TestMiniBrainEval:
         assert len(calls) > 0  # Redis set was called
 
     def test_collect_kpis_no_evaluator(self) -> None:
-        """Test KPI collection without BrainEvaluator."""
+        """Test KPI collection without BrainEvaluator uses fallback signals."""
         evaluator = MiniBrainEval()
         kpis = evaluator.collect_kpis()
 
-        assert kpis["status"] == "no_evaluator"
+        # When brain_evaluator is None, collect_kpis should use fallback
+        # controller signals and produce real dimension scores
+        assert kpis["status"] == "ok"
+        assert "memory_health" in kpis
+        assert "infrastructure_health" in kpis
+        assert "safety_alignment" in kpis
+        assert "adaptive_learning_readiness" in kpis
+        assert "overall_score" in kpis
+        assert kpis["kpi_source"] in ("self_assessment_redis", "lightweight_fallback")
 
     def test_collect_kpis_with_evaluator(self) -> None:
         """Test KPI collection with BrainEvaluator."""

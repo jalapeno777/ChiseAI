@@ -289,7 +289,7 @@ class MiniBrainEval:
         return result
 
     def collect_kpis(self) -> dict[str, Any]:
-        """Collect KPIs from existing BrainEvaluator.
+        """Collect KPIs from existing BrainEvaluator or fallback to controller signals.
 
         Returns:
             Dictionary of KPI values
@@ -329,10 +329,173 @@ class MiniBrainEval:
                 logger.error(f"Failed to collect KPIs from BrainEvaluator: {e}")
                 kpis["error"] = str(e)
         else:
-            logger.warning("No BrainEvaluator configured, skipping KPI collection")
-            kpis["status"] = "no_evaluator"
+            # Fallback: use AutonomousCognitionController signals as KPIs
+            logger.info(
+                "No BrainEvaluator configured, using controller signals as fallback"
+            )
+            kpis = self._collect_controller_signals_as_kpis()
 
         return kpis
+
+    def _collect_controller_signals_as_kpis(self) -> dict[str, Any]:
+        """Collect AutonomousCognitionController signals as fallback KPIs.
+
+        Uses the same signal collection and dimension scoring logic as
+        AutonomousCognitionController to produce real dimension-level evaluations
+        when BrainEvaluator is not available.
+
+        Returns:
+            Dictionary of KPI values with dimension scores
+        """
+        import json
+
+        kpis: dict[str, Any] = {}
+
+        # Try to get latest self-assessment from Redis
+        self_assessment_key = "bmad:chiseai:autocog:self_assessment:latest"
+        try:
+            if self.redis_client:
+                payload = self.redis_client.get(self_assessment_key)
+                if payload:
+                    data = json.loads(payload)
+                    dimensions = data.get("dimensions", {})
+                    kpis["memory_health"] = dimensions.get("memory_health", 0.0)
+                    kpis["infrastructure_health"] = dimensions.get(
+                        "infrastructure_health", 0.0
+                    )
+                    kpis["safety_alignment"] = dimensions.get("safety_alignment", 0.0)
+                    kpis["adaptive_learning_readiness"] = dimensions.get(
+                        "adaptive_learning_readiness", 0.0
+                    )
+                    kpis["overall_score"] = data.get("overall_score", 0.0)
+                    kpis["status"] = data.get("status", "ok")
+                    kpis["kpi_source"] = "self_assessment_redis"
+                    return kpis
+        except Exception as e:
+            logger.warning(f"Failed to get self-assessment from Redis: {e}")
+
+        # Fallback: collect signals directly and compute dimension scores
+        # This mirrors AutonomousCognitionController._collect_signals and
+        # _score_dimensions logic
+        signals = self._collect_lightweight_signals()
+        dimensions = self._score_fallback_dimensions(signals)
+
+        kpis["memory_health"] = dimensions["memory_health"]
+        kpis["infrastructure_health"] = dimensions["infrastructure_health"]
+        kpis["safety_alignment"] = dimensions["safety_alignment"]
+        kpis["adaptive_learning_readiness"] = dimensions["adaptive_learning_readiness"]
+        kpis["overall_score"] = round(
+            sum(dimensions.values()) / max(len(dimensions), 1), 2
+        )
+        kpis["status"] = "ok"
+        kpis["kpi_source"] = "lightweight_fallback"
+
+        return kpis
+
+    def _collect_lightweight_signals(self) -> dict[str, Any]:
+        """Collect lightweight signals for fallback KPI scoring.
+
+        Mirrors the signal collection logic from
+        AutonomousCognitionController._collect_signals.
+
+        Returns:
+            Dictionary of signal values
+        """
+        import os
+
+        # Check if daily sweep is enabled via config
+        memory_daily_sweep_enabled = False
+        config_path = Path("config/autocog.yaml")
+        if config_path.exists():
+            try:
+                import yaml
+
+                with open(config_path) as f:
+                    config = yaml.safe_load(f)
+                    memory_daily_sweep_enabled = (
+                        config.get("memory", {})
+                        .get("daily_sweep", {})
+                        .get("enabled", False)
+                    )
+            except Exception:
+                pass
+
+        # Check Redis availability
+        redis_available = False
+        try:
+            if self.redis_client:
+                self.redis_client.ping()
+                redis_available = True
+        except Exception:
+            pass
+
+        # Check Qdrant availability
+        qdrant_available = False
+        try:
+            if self.qdrant_client:
+                self.qdrant_client.collection_exists("test")
+                qdrant_available = True
+        except Exception:
+            pass
+
+        # Check Qdrant write enablement
+        config_qdrant_write = False
+        config_path = Path("config/autocog.yaml")
+        if config_path.exists():
+            try:
+                import yaml
+
+                with open(config_path) as f:
+                    config = yaml.safe_load(f)
+                    config_qdrant_write = config.get("qdrant", {}).get(
+                        "write_enabled", False
+                    )
+            except Exception:
+                pass
+
+        env_qdrant_write = (
+            os.getenv("CHISEAI_ENABLE_QDRANT_WRITE", "false").lower().strip() == "true"
+        )
+        qdrant_write_enabled = config_qdrant_write or env_qdrant_write
+
+        return {
+            "memory_daily_sweep_enabled": memory_daily_sweep_enabled,
+            "redis_available": redis_available,
+            "qdrant_available": qdrant_available,
+            "qdrant_write_enabled": qdrant_write_enabled,
+        }
+
+    def _score_fallback_dimensions(self, signals: dict[str, Any]) -> dict[str, float]:
+        """Score cognition dimensions for fallback KPIs.
+
+        Mirrors the dimension scoring logic from
+        AutonomousCognitionController._score_dimensions.
+
+        Args:
+            signals: Dictionary of signal values
+
+        Returns:
+            Dictionary of dimension scores (0.0-1.0)
+        """
+        memory_score = 1.0 if signals.get("memory_daily_sweep_enabled") else 0.35
+        infra_score = (
+            1.0
+            if signals.get("redis_available") and signals.get("qdrant_available")
+            else 0.45
+        )
+        safety_score = 1.0 if signals.get("memory_daily_sweep_enabled") else 0.7
+        adaptation_score = (
+            0.9
+            if signals.get("qdrant_write_enabled") and signals.get("qdrant_available")
+            else 0.5
+        )
+
+        return {
+            "memory_health": round(memory_score, 2),
+            "infrastructure_health": round(infra_score, 2),
+            "safety_alignment": round(safety_score, 2),
+            "adaptive_learning_readiness": round(adaptation_score, 2),
+        }
 
     def check_data_freshness(self) -> dict[str, str]:
         """Check data freshness for all data sources.
