@@ -1,58 +1,62 @@
-# Go/No-Go Decision Report
+# Go/No-Go Decision Report — R2a Canary
 
 **Story:** ST-LAUNCH-017
-**Generated:** 2026-02-22T13:36:29.779342Z
+**Generated:** [TO BE FILLED]
+**Checkpoint:** Day-14 (Apr 26, 2026)
+**Status:** DRAFT — PENDING EVIDENCE COLLECTION
 
 ## Decision
 
-### ★ GO ★
+**[TO BE DETERMINED]**
 
-**System is approved for production launch.**
+## Part A: Infrastructure Validation (Feb 26 Baseline)
 
-**Verdict:** GO
-**Rationale:** All 11 checklist items and 6 success criteria passed
+| ID  | Criterion                     | Target                 | Actual         | Status             |
+| --- | ----------------------------- | ---------------------- | -------------- | ------------------ |
+| A1  | Signal Generation Performance | 1000 signals/hour      | [TO BE FILLED] | [TO BE DETERMINED] |
+| A2  | Database Performance          | 10000 inserts/hour     | [TO BE FILLED] | [TO BE DETERMINED] |
+| A3  | WebSocket Connections         | 500+ concurrent        | [TO BE FILLED] | [TO BE DETERMINED] |
+| A4  | ML Pipeline Latency           | <5min per cycle        | [TO BE FILLED] | [TO BE DETERMINED] |
+| A5  | Safety Runbook Execution      | Kill switch <30s       | [TO BE FILLED] | [TO BE DETERMINED] |
+| A6  | Rollback Procedures           | <5min completion       | [TO BE FILLED] | [TO BE DETERMINED] |
+| A7  | On-Call Response              | <15min acknowledgment  | [TO BE FILLED] | [TO BE DETERMINED] |
+| A8  | Test Coverage                 | ≥80%                   | [TO BE FILLED] | [TO BE DETERMINED] |
+| A9  | CI Checks                     | All passing            | [TO BE FILLED] | [TO BE DETERMINED] |
+| A10 | Documentation Complete        | All docs present       | [TO BE FILLED] | [TO BE DETERMINED] |
+| A11 | Circuit Breaker Functional    | 3 consecutive failures | [TO BE FILLED] | [TO BE DETERMINED] |
 
-## Launch Readiness Checklist
+## Part B: Canary Live-Trading Criteria
 
-| Item | Name | Status | Details |
-|------|------|--------|---------|
-| 1 | Signal Generation Performance | ✓ PASS | 1200 signals/hour, 850ms P99 latency |
-| 2 | Database Performance | ✓ PASS | 12000/h, insert 35ms, query 75ms |
-| 3 | WebSocket Performance | ✓ PASS | 1000 concurrent connections, circuit breaker functional |
-| 4 | ML Pipeline Performance | ✓ PASS | ECE update 3.5min, training within SLA |
-| 5 | Safety Runbook SLA | ✓ PASS | Kill switch 15s, circuit breaker 30s |
-| 6 | ML Operations Runbook | ✓ PASS | Retraining pipeline validated, promotion gates functional |
-| 7 | Rollback Procedures | ✓ PASS | Rollback completes in 3.0 minutes |
-| 8 | On-Call Procedures | ✓ PASS | Alert acknowledgment 8.0min, escalation functional |
-| 9 | Test Coverage | ✓ PASS | 83.0% coverage (target: ≥80%) |
-| 10 | CI Checks | ✓ PASS | All CI checks passing |
-| 11 | Documentation | ✓ PASS | All 4 required documents present |
+| ID  | Criterion                  | Target             | Hard/Soft | Actual         | Status             |
+| --- | -------------------------- | ------------------ | --------- | -------------- | ------------------ |
+| B1  | OHLCV Data Ingestion       | 95%+ uptime        | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B2  | Trade Execution Rate       | >95%               | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B3  | Signal Latency             | <1 hour            | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B4  | Daily ECE Updates          | Daily at 00:00 UTC | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B5  | System Uptime              | >99.5%             | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B6  | False Positive Kill-Switch | <5%                | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B7  | P99 Latency                | <500ms             | SOFT      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B8  | Error Rate                 | <1%                | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B9  | Data Freshness             | <5min lag          | SOFT      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B10 | Risk Limit Compliance      | 100%               | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B11 | Position Limit Compliance  | 100%               | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B12 | Drawdown Limit             | <10% daily         | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B13 | Canary Budget Adherence    | 100%               | HARD      | [TO BE FILLED] | [TO BE DETERMINED] |
+| B14 | Alert Escalation           | <10min             | SOFT      | [TO BE FILLED] | [TO BE DETERMINED] |
 
-## Success Criteria
+## Evidence Collection
 
-| Criterion | Target | Actual | Status |
-|-----------|--------|--------|--------|
-| Trade Execution Rate | >95% | 97.5% | ✓ PASS |
-| Signal-to-Outcome Latency | <1h | 45 minutes | ✓ PASS |
-| Daily ECE Updates | Daily | Daily at 00:00 UTC | ✓ PASS |
-| Uptime | >99.5% | 99.8% | ✓ PASS |
-| False Positive Kill-Switch | <5% | 2.1% | ✓ PASS |
-| Test Coverage | 80%+ | 83.0% | ✓ PASS |
+Run evidence collection commands from `docs/governance/ST-LAUNCH-017-GO-NO-GO-FRAMEWORK.md` Part E.
 
-## Summary
+## Sign-Off
 
-- **Checklist Items Passed:** 11/11
-- **Success Criteria Met:** 6/6
-
-## Stakeholder Sign-Off
-
-| Field | Value |
-|-------|-------|
-| Name | |
-| Role | |
-| Date | |
-| Signature | |
+| Field     | Value          |
+| --------- | -------------- |
+| Name      | [TO BE FILLED] |
+| Role      | [TO BE FILLED] |
+| Date      | [TO BE FILLED] |
+| Signature | [TO BE FILLED] |
 
 ---
 
-*Generated by Go/No-Go checklist for ST-LAUNCH-017*
+_Generated by ST-LAUNCH-017: Go/No-Go Framework Preparation_
