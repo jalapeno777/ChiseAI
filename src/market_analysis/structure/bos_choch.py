@@ -413,8 +413,9 @@ class BOSCHoCHClassifier:
             if prev.pivot_type.value == "swing_high":
                 # BOS: swing_high breaks a previous swing_high level
                 if self._is_level_broken(swing, prev, data, is_bullish=True):
+                    break_price = data[swing.index].close_price
                     strength = self._calculate_strength(
-                        swing.price, prev.price, is_bullish=True
+                        break_price, prev.price, is_bullish=True
                     )
                     if strength >= self.min_strength_ratio:
                         bos_candidates.append((prev, strength))
@@ -422,8 +423,9 @@ class BOSCHoCHClassifier:
             elif prev.pivot_type.value == "swing_low":
                 # CHoCH: swing_high breaks a previous swing_low level
                 if self._is_level_broken(swing, prev, data, is_bullish=True):
+                    break_price = data[swing.index].close_price
                     strength = self._calculate_strength(
-                        swing.price, prev.price, is_bullish=True
+                        break_price, prev.price, is_bullish=True
                     )
                     if strength >= self.min_strength_ratio:
                         choch_candidates.append((prev, strength))
@@ -438,7 +440,7 @@ class BOSCHoCHClassifier:
                 event_type=BOSCHoCHType.BULLISH_BOS,
                 broken_level=StructureLevel(pivot=prev, price=prev.price),
                 break_index=swing.index,
-                break_price=swing.price,
+                break_price=data[swing.index].close_price,
                 timestamp=swing.timestamp,
                 confirmation_index=swing.index + self.confirmation_bars,
                 is_bos=True,
@@ -454,7 +456,7 @@ class BOSCHoCHClassifier:
                 event_type=BOSCHoCHType.BULLISH_CHOCH,
                 broken_level=StructureLevel(pivot=prev, price=prev.price),
                 break_index=swing.index,
-                break_price=swing.price,
+                break_price=data[swing.index].close_price,
                 timestamp=swing.timestamp,
                 confirmation_index=swing.index + self.confirmation_bars,
                 is_bos=False,
@@ -486,8 +488,9 @@ class BOSCHoCHClassifier:
             if prev.pivot_type.value == "swing_low":
                 # BOS: swing_low breaks a previous swing_low level
                 if self._is_level_broken(swing, prev, data, is_bullish=False):
+                    break_price = data[swing.index].close_price
                     strength = self._calculate_strength(
-                        swing.price, prev.price, is_bullish=False
+                        break_price, prev.price, is_bullish=False
                     )
                     if strength >= self.min_strength_ratio:
                         bos_candidates.append((prev, strength))
@@ -495,8 +498,9 @@ class BOSCHoCHClassifier:
             elif prev.pivot_type.value == "swing_high":
                 # CHoCH: swing_low breaks a previous swing_high level
                 if self._is_level_broken(swing, prev, data, is_bullish=False):
+                    break_price = data[swing.index].close_price
                     strength = self._calculate_strength(
-                        swing.price, prev.price, is_bullish=False
+                        break_price, prev.price, is_bullish=False
                     )
                     if strength >= self.min_strength_ratio:
                         choch_candidates.append((prev, strength))
@@ -509,7 +513,7 @@ class BOSCHoCHClassifier:
                 event_type=BOSCHoCHType.BEARISH_BOS,
                 broken_level=StructureLevel(pivot=prev, price=prev.price),
                 break_index=swing.index,
-                break_price=swing.price,
+                break_price=data[swing.index].close_price,
                 timestamp=swing.timestamp,
                 confirmation_index=swing.index + self.confirmation_bars,
                 is_bos=True,
@@ -525,7 +529,7 @@ class BOSCHoCHClassifier:
                 event_type=BOSCHoCHType.BEARISH_CHOCH,
                 broken_level=StructureLevel(pivot=prev, price=prev.price),
                 break_index=swing.index,
-                break_price=swing.price,
+                break_price=data[swing.index].close_price,
                 timestamp=swing.timestamp,
                 confirmation_index=swing.index + self.confirmation_bars,
                 is_bos=False,
