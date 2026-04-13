@@ -166,6 +166,18 @@ completed:
   completion_date: '2026-03-25'
   merge_commit: cc63689b
   pr_number: 633
+- id: BL-CI-PR-AUTOMERGE-FIX
+  title: Fix pr-automerge Woodpecker step Canceled status
+  description: pr-automerge step shows Canceled in Woodpecker CI (likely missing tea
+    CLI in python:3.11-slim image). Merges complete via Gitea server-side automerge
+    but CI status is misleading. Investigate and fix if pattern recurs.
+  status: completed
+  priority: P3
+  story_points: 1
+  owner: ops-team
+  completion_date: '2026-04-13'
+  merge_commit: 5fc297ce98d7484526f21cc75b13d6538e3f83c0
+  pr_number: '~'
 in_progress:
 - id: AUTOCOG-ROUTINE-001
   title: 3-Tier Autocog Routine Automation
@@ -687,15 +699,6 @@ backlog:
   decision_debt: DD-BOS-CHOCH-REDESIGN
   due: '2026-04-21'
   owner: ml-signal-engineering
-- id: BL-CI-PR-AUTOMERGE-FIX
-  title: Fix pr-automerge Woodpecker step Canceled status
-  description: pr-automerge step shows Canceled in Woodpecker CI (likely missing tea
-    CLI in python:3.11-slim image). Merges complete via Gitea server-side automerge
-    but CI status is misleading. Investigate and fix if pattern recurs.
-  status: planned
-  priority: P3
-  story_points: 1
-  owner: ops-team
 - acceptance_criteria:
   - ORM model columns aligned with Postgres schema
   - 'OR: migration added for new columns (confidence_score, signal_type, is_test)'
