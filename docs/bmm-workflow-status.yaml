@@ -3310,7 +3310,7 @@ epics:
   - src/autonomous_control_plane/components/circuit_breaker_registry.py
   - tests/test_execution/test_bybit_ws_circuit_breaker.py
   sprint_id: LAUNCH-SPRINT-1
-  status: planned
+  status: completed
   story_points: 3
   test_strategy:
     chaos: pytest tests/chaos/test_websocket_resilience.py -v
@@ -3350,7 +3350,7 @@ epics:
   - src/execution/order_idempotency.py
   - tests/test_execution/test_order_idempotency.py
   sprint_id: LAUNCH-SPRINT-1
-  status: planned
+  status: completed
   story_points: 3
   test_strategy:
     e2e: pytest tests/e2e/test_duplicate_order_prevention.py -v
@@ -3480,7 +3480,7 @@ epics:
   - src/ml/calibration/ece_updater.py
   - tests/test_ml/test_ece_calculator.py
   sprint_id: LAUNCH-SPRINT-2
-  status: planned
+  status: completed
   story_points: 3
   test_results:
     coverage: 84%
@@ -3536,7 +3536,7 @@ epics:
   - src/ml/calibration/threshold_guardrails.py
   - tests/test_ml/test_dynamic_threshold.py
   sprint_id: LAUNCH-SPRINT-2
-  status: planned
+  status: completed
   story_points: 3
   test_results:
     coverage: 94%

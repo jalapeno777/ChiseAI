@@ -51,11 +51,100 @@ Woodpecker uses standard cron syntax with 5 fields:
 
 ### Cron Job Reference
 
-| Job Name | Cron Expression | Description |
-|----------|----------------|-------------|
-| `6h-mini-eval` | `0 */6 * * *` | Every 6 hours at minute 0 (00:00, 06:00, 12:00, 18:00 UTC) |
-| `daily-trends` | `15 0 * * *` | Daily at 00:15 UTC |
-| `weekly-reflection` | `0 1 * * 1` | Weekly on Monday at 01:00 UTC |
+| Job Name                       | Cron Expression                             | Description                                                |
+| ------------------------------ | ------------------------------------------- | ---------------------------------------------------------- |
+| `6h-mini-eval`                 | `0 */6 * * *`                               | Every 6 hours at minute 0 (00:00, 06:00, 12:00, 18:00 UTC) |
+| `daily-trends`                 | `15 0 * * *`                                | Daily at 00:15 UTC                                         |
+| `weekly-reflection`            | `0 1 * * 1`                                 | Weekly on Monday at 01:00 UTC                              |
+| `autocog-hourly`               | `0 * * * *`                                 | Hourly belief consistency check                            |
+| `autocog-improvement-daily`    | `0 2 * * *`                                 | Daily at 02:00 UTC - Strategy improvement cycle            |
+| `autocog-constitution-daily`   | `0 3 * * *`                                 | Daily at 03:00 UTC - Constitution audit                    |
+| `autocog-calibration-weekly`   | `0 1 * * 1`                                 | Weekly Monday 01:00 UTC - Calibration                      |
+| `autocog-autonomy-tune-weekly` | `0 2 * * 1`                                 | Weekly Monday 02:00 UTC - Autonomy tuning                  |
+| `autocog-heartbeat`            | `0 * * * *`                                 | Hourly heartbeat (from cron-eval.yaml)                     |
+| `autocog-weekly`               | Monday 09:00 America/Toronto                | Weekly review                                              |
+| `autocog-monthly`              | First Monday of month 10:00 America/Toronto | Monthly audit                                              |
+
+---
+
+## Autocog Cron Jobs (2026-04-13)
+
+### Overview
+
+The autocog cron jobs use `.woodpecker/autocog-scheduler.yaml` (not `cron-eval.yaml`). These jobs manage autonomous cognition cycles including belief consistency checks, strategy improvement, constitution audits, and calibration.
+
+### Autocog API Setup Script
+
+```bash
+#!/bin/bash
+# Woodpecker Autocog Cron Setup Script
+# Requires: WOODPECKER_TOKEN environment variable
+
+WOODPECKER_URL="http://host.docker.internal:8012"
+REPO_ID=1  # craig/ChiseAI
+
+# Create autocog-hourly cron
+curl -s -X POST \
+  -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"autocog-hourly","schedule":"0 * * * *","branch":"main","commit_message":"cron:autocog-hourly"}' \
+  "${WOODPECKER_URL}/api/repos/${REPO_ID}/cron"
+
+# Create autocog-improvement-daily cron
+curl -s -X POST \
+  -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"autocog-improvement-daily","schedule":"0 2 * * *","branch":"main","commit_message":"cron:autocog-improvement-daily"}' \
+  "${WOODPECKER_URL}/api/repos/${REPO_ID}/cron"
+
+# Create autocog-constitution-daily cron
+curl -s -X POST \
+  -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"autocog-constitution-daily","schedule":"0 3 * * *","branch":"main","commit_message":"cron:autocog-constitution-daily"}' \
+  "${WOODPECKER_URL}/api/repos/${REPO_ID}/cron"
+
+# Create autocog-calibration-weekly cron
+curl -s -X POST \
+  -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"autocog-calibration-weekly","schedule":"0 1 * * 1","branch":"main","commit_message":"cron:autocog-calibration-weekly"}' \
+  "${WOODPECKER_URL}/api/repos/${REPO_ID}/cron"
+
+# Create autocog-autonomy-tune-weekly cron
+curl -s -X POST \
+  -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"autocog-autonomy-tune-weekly","schedule":"0 2 * * 1","branch":"main","commit_message":"cron:autocog-autonomy-tune-weekly"}' \
+  "${WOODPECKER_URL}/api/repos/${REPO_ID}/cron"
+
+# Create autocog-heartbeat cron
+curl -s -X POST \
+  -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"autocog-heartbeat","schedule":"0 * * * *","branch":"main","commit_message":"cron:autocog-heartbeat"}' \
+  "${WOODPECKER_URL}/api/repos/${REPO_ID}/cron"
+
+# Create autocog-weekly cron (Monday 09:00 America/Toronto)
+curl -s -X POST \
+  -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"autocog-weekly","schedule":"0 9 * * 1","branch":"main","commit_message":"cron:autocog-weekly"}' \
+  "${WOODPECKER_URL}/api/repos/${REPO_ID}/cron"
+
+# Create autocog-monthly cron (First Monday of month 10:00 America/Toronto)
+curl -s -X POST \
+  -H "Authorization: Bearer ${WOODPECKER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"autocog-monthly","schedule":"0 10 1-7 * 1","branch":"main","commit_message":"cron:autocog-monthly"}' \
+  "${WOODPECKER_URL}/api/repos/${REPO_ID}/cron"
+
+echo "Autocog cron jobs created successfully!"
+```
+
+### Pipeline File
+
+> **Note:** These autocog crons use `.woodpecker/autocog-scheduler.yaml` (not `cron-eval.yaml`).
 
 ---
 
@@ -149,7 +238,6 @@ Navigate to: `http://localhost:8012/repos/craig/ChiseAI/settings/cron`
 
 1. Click **+ New Cron** button
 2. Fill in the form:
-
    - **Name:** `6h-mini-eval`
    - **Schedule:** `0 */6 * * *`
    - **Branch:** `main`
@@ -164,7 +252,6 @@ Navigate to: `http://localhost:8012/repos/craig/ChiseAI/settings/cron`
 
 1. Click **+ New Cron** button
 2. Fill in the form:
-
    - **Name:** `daily-trends`
    - **Schedule:** `15 0 * * *`
    - **Branch:** `main`
@@ -179,7 +266,6 @@ Navigate to: `http://localhost:8012/repos/craig/ChiseAI/settings/cron`
 
 1. Click **+ New Cron** button
 2. Fill in the form:
-
    - **Name:** `weekly-reflection`
    - **Schedule:** `0 1 * * 1`
    - **Branch:** `main`
@@ -194,11 +280,11 @@ Navigate to: `http://localhost:8012/repos/craig/ChiseAI/settings/cron`
 
 After creating all three cron jobs, verify the cron job list shows:
 
-| Name | Schedule | Branch | Commit Message | Next Run |
-|------|----------|--------|----------------|----------|
-| `6h-mini-eval` | `0 */6 * * *` | `main` | `cron:6h-eval` | [calculated time] |
-| `daily-trends` | `15 0 * * *` | `main` | `cron:daily-trends` | [calculated time] |
-| `weekly-reflection` | `0 1 * * 1` | `main` | `cron:weekly-reflection` | [calculated time] |
+| Name                | Schedule      | Branch | Commit Message           | Next Run          |
+| ------------------- | ------------- | ------ | ------------------------ | ----------------- |
+| `6h-mini-eval`      | `0 */6 * * *` | `main` | `cron:6h-eval`           | [calculated time] |
+| `daily-trends`      | `15 0 * * *`  | `main` | `cron:daily-trends`      | [calculated time] |
+| `weekly-reflection` | `0 1 * * 1`   | `main` | `cron:weekly-reflection` | [calculated time] |
 
 ---
 
@@ -251,6 +337,7 @@ After creating all three cron jobs, verify the cron job list shows:
 4. Monitor the pipeline execution
 
 **Expected Behavior:**
+
 - Pipeline starts immediately
 - Job status updates from "Pending" → "Running" → "Success/Failure"
 - Artifacts are produced in `_bmad-output/brain-eval/`
@@ -259,13 +346,13 @@ After creating all three cron jobs, verify the cron job list shows:
 
 After a successful cron job run, the following artifacts should be produced:
 
-| Artifact Path | Description |
-|---------------|-------------|
-| `_bmad-output/brain-eval/kpi-6h-*.json` | 6h mini eval KPI results |
-| `_bmad-output/brain-eval/kpi-daily-*.json` | Daily trends KPI results |
+| Artifact Path                               | Description                   |
+| ------------------------------------------- | ----------------------------- |
+| `_bmad-output/brain-eval/kpi-6h-*.json`     | 6h mini eval KPI results      |
+| `_bmad-output/brain-eval/kpi-daily-*.json`  | Daily trends KPI results      |
 | `_bmad-output/brain-eval/kpi-weekly-*.json` | Weekly reflection KPI results |
-| `_bmad-output/ci/kpi-scheduler-*.log` | Pipeline execution logs |
-| `_bmad-output/ci/kpi-scheduler-*.status` | Step exit codes |
+| `_bmad-output/ci/kpi-scheduler-*.log`       | Pipeline execution logs       |
+| `_bmad-output/ci/kpi-scheduler-*.status`    | Step exit codes               |
 
 ### Checking Logs
 
@@ -314,6 +401,7 @@ KEYS bmad:chiseai:kpi:*
    - Validate YAML syntax: `python3 -c "import yaml; yaml.safe_load(open('.woodpecker/cron-eval.yaml'))"`
 
 2. **Woodpecker Server Not Running**
+
    ```bash
    # Check Woodpecker server status
    docker ps | grep woodpecker
@@ -345,6 +433,7 @@ KEYS bmad:chiseai:kpi:*
    - Check file path and spelling
 
 4. **Woodpecker Agent Not Running**
+
    ```bash
    # Check agent status
    docker ps | grep woodpecker-agent
@@ -365,6 +454,7 @@ KEYS bmad:chiseai:kpi:*
    - Check script syntax: `python3 -m py_compile scripts/evaluation/kpi_scheduler.py`
 
 2. **Redis Connectivity Issue**
+
    ```bash
    # From Woodpecker container, test Redis connection
    docker exec woodpecker-agent python3 -c "import redis; r=redis.Redis(host='chiseai-redis', port=6380); print(r.ping())"
@@ -433,14 +523,14 @@ KEYS bmad:chiseai:kpi:*
 
 ### Appendix A: Cron Expression Examples
 
-| Expression | Description |
-|------------|-------------|
-| `0 */6 * * *` | Every 6 hours (00:00, 06:00, 12:00, 18:00) |
-| `15 0 * * *` | Daily at 00:15 UTC |
-| `0 1 * * 1` | Weekly on Monday at 01:00 UTC |
-| `*/30 * * * *` | Every 30 minutes |
-| `0 0 * * 0` | Weekly on Sunday at 00:00 UTC |
-| `0 9 * * 1-5` | Weekdays at 09:00 UTC |
+| Expression     | Description                                |
+| -------------- | ------------------------------------------ |
+| `0 */6 * * *`  | Every 6 hours (00:00, 06:00, 12:00, 18:00) |
+| `15 0 * * *`   | Daily at 00:15 UTC                         |
+| `0 1 * * 1`    | Weekly on Monday at 01:00 UTC              |
+| `*/30 * * * *` | Every 30 minutes                           |
+| `0 0 * * 0`    | Weekly on Sunday at 00:00 UTC              |
+| `0 9 * * 1-5`  | Weekdays at 09:00 UTC                      |
 
 ### Appendix B: Pipeline File Structure
 
@@ -451,6 +541,7 @@ The `.woodpecker/cron-eval.yaml` pipeline expects:
 - **Event:** `cron`
 
 Pipeline steps:
+
 - `kpi-scheduler-6h`: Runs 6-hour mini eval
 - `kpi-scheduler-daily`: Runs daily trends
 - `kpi-scheduler-weekly`: Runs weekly reflection
@@ -469,7 +560,7 @@ Woodpecker containers need access to:
 ### Appendix D: Woodpecker Docker Compose Configuration
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   woodpecker-server:
@@ -535,16 +626,19 @@ curl http://localhost:8012/api/repos/craig/ChiseAI/crons \
 ### Appendix F: Contact & Support
 
 **For Issues:**
+
 - Check Woodpecker logs first
 - Review this runbook's troubleshooting section
 - Verify all prerequisites are met
 
 **Related Documentation:**
+
 - Woodpecker Documentation: https://woodpecker-ci.org/docs/
 - Cron Expression Help: https://crontab.guru/
 - ChiseAI AGENTS.md: `/home/tacopants/projects/ChiseAI/AGENTS.md`
 
 **Related Stories:**
+
 - ST-KPI-005: Scheduler Integration (original cron pipeline story)
 - ST-KPI-RUNBOOK-001: This runbook creation story
 
