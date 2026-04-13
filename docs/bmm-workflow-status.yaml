@@ -942,9 +942,13 @@ backlog:
     cleanup archived 2,251 duplicates. Root cause: run_autonomous_self_assessment.py
     or the writer it calls doesn''t deduplicate by date before writing.'
   priority: P3
-  status: planned
+  status: merged
   story_points: 1
   epic_id: EP-AUTOCOG-005
+  completion_date: '2026-04-13'
+  merge_commit: 3b9dbce25e17de86aa8a7c6d239bd0c3b4105937
+  pr_number: '1027'
+  branch: feature/AUTOCOG-DEDUP-001-fix
   acceptance_criteria:
   - Self-assessment writer checks for existing file with same date prefix before writing
   - If exists, overwrites/updates instead of creating new file
