@@ -270,7 +270,13 @@ def ensure_prs(cfg: Config) -> int:
         is_stale = False
         stale_reason = ""
         if cfg.source_branch and name == cfg.source_branch:
-            is_stale, stale_reason = _branch_is_behind_main(cfg, name, cfg.default_base)
+            try:
+                is_stale, stale_reason = _branch_is_behind_main(
+                    cfg, name, cfg.default_base
+                )
+            except Exception as e:
+                # If API check fails, skip the staleness comment rather than blocking
+                stale_reason = f"staleness check unavailable: {e}"
         open_pr = _open_pr_for_head(cfg, name)
         if open_pr:
             if is_stale:

@@ -14,26 +14,8 @@ when:
     branch: [feature/**]
 
 steps:
-  - name: pre-pr-merge-check
-    image: woodpeckerci/plugin-git
-    commands:
-      - |
-        set -euo pipefail
-        echo "pre-pr-merge-check: Verifying branch is up-to-date with main..."
-        git fetch origin main
-        if git merge-base --is-ancestor origin/main HEAD; then
-          echo "pre-pr-merge-check: Branch is up-to-date with main"
-          exit 0
-        else
-          echo "pre-pr-merge-check: WARN - Branch is behind main"
-          echo "NOT_MERGEABLE: branch is behind main"
-          # Non-blocking: still create/update PR so recovery tooling can act.
-          exit 0
-        fi
-
   - name: auto-pr
     image: python:3.11-slim
-    depends_on: [pre-pr-merge-check]
     commands:
       - python3 scripts/pr_lifecycle/auto_pr_merge.py ensure-prs
     environment:
