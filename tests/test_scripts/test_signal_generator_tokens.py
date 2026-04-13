@@ -4,7 +4,9 @@ This module verifies that the continuous signal generator
 includes all required tokens in its symbol list.
 """
 
+import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -195,3 +197,74 @@ class TestSignalGeneratorIntegration:
                 assert (
                     min_price <= price <= max_price
                 ), f"{token} price {price} outside expected range ({min_price}-{max_price})"
+
+
+class TestInfluxDBConfig:
+    """Tests for scripts/continuous_signal_generator.py InfluxDB config."""
+
+    def test_get_influxdb_config_parses_url_with_port(self):
+        """Verify host and port are correctly extracted from INFLUXDB_URL with port."""
+        # Patch StorageConfig to capture the arguments
+        from scripts.continuous_signal_generator import get_influxdb_config
+
+        with patch.dict(
+            os.environ,
+            {
+                "INFLUXDB_URL": "http://chiseai-influxdb:18087",
+                "INFLUXDB_BUCKET": "testdb",
+                "INFLUXDB_ORG": "testorg",
+                "INFLUXDB_TOKEN": "testtoken",
+            },
+        ):
+            config = get_influxdb_config()
+            assert (
+                config.host == "chiseai-influxdb"
+            ), f"Expected host 'chiseai-influxdb', got '{config.host}'"
+            assert config.port == 18087, f"Expected port 18087, got {config.port}"
+
+    def test_get_influxdb_config_parses_https_url(self):
+        """Verify host and port are correctly extracted from HTTPS URL."""
+        from scripts.continuous_signal_generator import get_influxdb_config
+
+        with patch.dict(
+            os.environ,
+            {
+                "INFLUXDB_URL": "https://influxdb.example.com:443",
+                "INFLUXDB_BUCKET": "testdb",
+            },
+        ):
+            config = get_influxdb_config()
+            assert (
+                config.host == "influxdb.example.com"
+            ), f"Expected host 'influxdb.example.com', got '{config.host}'"
+            assert config.port == 443, f"Expected port 443, got {config.port}"
+
+    def test_get_influxdb_config_defaults_when_url_missing(self):
+        """Verify defaults are used when INFLUXDB_URL is not set."""
+        from scripts.continuous_signal_generator import get_influxdb_config
+
+        # Create clean environment without INFLUXDB_URL
+        clean_env = {k: v for k, v in os.environ.items() if k != "INFLUXDB_URL"}
+        with patch.dict(os.environ, clean_env, clear=True):
+            config = get_influxdb_config()
+            assert (
+                config.host == "localhost"
+            ), f"Expected default host 'localhost', got '{config.host}'"
+            assert config.port == 8086, f"Expected default port 8086, got {config.port}"
+
+    def test_get_influxdb_config_parses_url_without_port(self):
+        """Verify host defaults to localhost and port to 8086 when URL has no port."""
+        from scripts.continuous_signal_generator import get_influxdb_config
+
+        with patch.dict(
+            os.environ,
+            {
+                "INFLUXDB_URL": "http://localhost",
+                "INFLUXDB_BUCKET": "testdb",
+            },
+        ):
+            config = get_influxdb_config()
+            assert (
+                config.host == "localhost"
+            ), f"Expected host 'localhost', got '{config.host}'"
+            assert config.port == 8086, f"Expected default port 8086, got {config.port}"

@@ -14,6 +14,7 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
+from urllib.parse import urlparse
 
 # Set Redis connection
 os.environ["REDIS_HOST"] = "host.docker.internal"
@@ -54,11 +55,11 @@ LIVE_TIMEFRAMES = [
 
 def get_influxdb_config() -> StorageConfig:
     """Build InfluxDB config from environment variables."""
+    url = os.environ.get("INFLUXDB_URL", "http://localhost:8086")
+    parsed = urlparse(url)
     return StorageConfig(
-        host=os.environ.get("INFLUXDB_URL", "localhost")
-        .replace("http://", "")
-        .replace("https://", ""),
-        port=int(os.environ.get("INFLUXDB_PORT", "8086")),
+        host=parsed.hostname or "localhost",
+        port=parsed.port or 8086,
         database=os.environ.get("INFLUXDB_BUCKET", "ohlcv"),
         username=os.environ.get("INFLUXDB_ORG", "-"),
         password=os.environ.get("INFLUXDB_TOKEN", ""),
