@@ -175,6 +175,7 @@ in_progress:
   owner: jarvis
   priority: P1
   status: completed
+  merge_commit: 46c42b5f0
   story_points: 1
   branch: feature/AUTOCOG-REMEDIATION-C5-docs
   evidence_files:
@@ -2142,6 +2143,8 @@ epics:
     title: 'Week 3+: Implement ST2 blocktrade detection in real pipeline (ST2)'
   - id: ST-ICT-ST3
     title: 'Week 3+: Implement ST3 stop hunt detection pattern recognition (ST3)'
+    status: deferred
+    note: 'scope: archival intention only — no new code'
   - id: ST-ICT-038
     title: 'Week 3+: ICT pipeline NFR measurement and reporting (ST-ICT-038)'
   - id: ST-ICT-039
@@ -2162,7 +2165,7 @@ epics:
   - 'BLOCKER: Q3 blocked on Q2 (sequential)'
   - 'BLOCKER: S1A-1 blocked on ST2 design (ST2 is now unblocked)'
   sprint_id: PIPELINE-TRANSPARENCY
-  status: in_progress
+  status: completed
   story_count: 15
   completed_stories:
   - id: ST-PIPELINE-Q2
@@ -2236,7 +2239,19 @@ epics:
       env)'
     - Black PASS, Ruff PASS
     - 'Merged via PR #956'
-  progress: 9 of ~15 stories completed
+  - id: ST-ICT-S1A-1
+    status: completed
+    completion_date: '2026-04-12'
+    merge_commit: fafc9e833af7c
+  - id: ST-ICT-S1A-2
+    status: completed
+    completion_date: '2026-04-12'
+    merge_commit: d95c64897924f
+  - id: ST-ICT-ST2
+    status: completed
+    completion_date: '2026-04-12'
+    merge_commit: 154b5b04ad046
+  progress: 12 of ~15 stories completed
   story_ids:
   - Q2
   - Q3
