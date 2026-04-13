@@ -145,3 +145,49 @@ class TestPreviousScorePath:
 
         # Parse failure returns None
         assert previous is None
+
+    def test_persist_artifact_uses_date_only_filename(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Filename should be date-only (e.g., self_assessment_2026-04-13.json)."""
+        from datetime import datetime as dt_class
+
+        # Mock datetime to return a known date
+        class FakeDatetime:
+            @staticmethod
+            def now(tz=None):
+                if tz is not None:
+                    return dt_class(2026, 4, 13, 10, 0, 0, tzinfo=tz)
+                return dt_class(2026, 4, 13, 10, 0, 0)
+
+            @staticmethod
+            def fromisoformat(data):
+                return dt_class.fromisoformat(data)
+
+        # Patch datetime and disable redis_state_get_client fallback
+        monkeypatch.setattr(controller_module, "datetime", FakeDatetime)
+        monkeypatch.setattr(controller_module, "redis_state_get_client", lambda: None)
+
+        mock_redis = MagicMock()
+        mock_redis.get.return_value = None  # No previous score
+        mock_qdrant = MagicMock()
+
+        controller = controller_module.AutonomousCognitionController(
+            artifacts_dir=tmp_path,
+            redis_client=mock_redis,
+            qdrant_client=mock_qdrant,
+        )
+
+        # Run assessment
+        artifact, artifact_path = controller.run_daily_self_assessment()
+
+        # Verify path is not None and filename follows date-only pattern
+        assert artifact_path is not None, "Expected artifact_path to be written"
+
+        filename = artifact_path.name
+        # Date-only pattern: self_assessment_YYYY-MM-DD.json
+        assert (
+            filename == "self_assessment_2026-04-13.json"
+        ), f"Expected date-only filename, got: {filename}"
+        assert "sa-" not in filename, f"UUID fragment found in filename: {filename}"
+        assert artifact_path.exists()
