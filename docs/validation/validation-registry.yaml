@@ -2291,7 +2291,7 @@ validations:
     title: Runbook Validation
     epic_id: EP-LAUNCH-004
     story_id: ST-LAUNCH-016
-    status: planned
+    status: validated
     description: Validate operational runbooks for safety and ML operations
     acceptance_criteria:
       - Safety runbook resolves issues within SLA
@@ -2301,6 +2301,8 @@ validations:
       - All runbook steps validated and documented
     test_method: manual
     owner: ops-team
+    evidence:
+      - docs/validation/runbook_validation_results.md
 
   - id: V-LAUNCH-017
     title: Launch Readiness Go/No-Go Validation

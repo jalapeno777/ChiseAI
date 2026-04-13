@@ -578,6 +578,19 @@ in_progress:
     title: Pipeline Transparency Completion
     status: merged
     merge_commit: 1d4c4ae881d05da5c920d8c128334b549f77bddc
+  - id: ST-LAUNCH-016
+    title: Runbook Validation & Documentation
+    description: Validate operational runbooks for safety and ML operations
+    epic_id: EP-LAUNCH-004
+    owner: ops-team
+    priority: P1
+    status: completed
+    story_points: 2
+    completion_date: '2026-04-12'
+    notes:
+    - 8/8 ACs passed — runbook validation complete
+    evidence_files:
+    - docs/validation/runbook_validation_results.md
   notes:
   - 12 stories completed in 2 days
   - 'Batch 1A: burn-in + guard + signal confidence'
@@ -1386,7 +1399,7 @@ epics:
   id: EP-LAUNCH-004
   name: Launch Readiness & Validation
   notes:
-  - 1 of 3 stories completed (ST-LAUNCH-015 done; ST-LAUNCH-016, 017 pending)
+  - 2 of 3 stories completed (ST-LAUNCH-015, ST-LAUNCH-016 done; ST-LAUNCH-017 pending)
   - Final validation: Pending execution
   - Extended timeline per Option A decision (Mar 14, 2026)
   - ST-LAUNCH-015 completed - readiness validation framework operational
@@ -1399,7 +1412,7 @@ epics:
   - 'InfluxDB org parameter fix merged (PR #971): OHLCV data now persists correctly'
   sprint_id: LAUNCH-SPRINT-3
   status: in_progress
-  stories_completed: 1
+  stories_completed: 2
   story_count: 3
   story_ids:
   - ST-LAUNCH-015
