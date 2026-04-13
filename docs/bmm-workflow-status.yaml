@@ -2167,8 +2167,14 @@ epics:
     note: 'scope: archival intention only — no new code'
   - id: ST-ICT-038
     title: 'Week 3+: ICT pipeline NFR measurement and reporting (ST-ICT-038)'
+    status: deferred
+    deferred_reason: 'Low priority P3 — not required for current POC phase. Revisit only if pipeline observability becomes critical for canary validation or production launch.'
+    deferred_date: '2026-04-13'
   - id: ST-ICT-039
     title: 'Week 3+: ICT pipeline documentation and runbook (ST-ICT-039)'
+    status: deferred
+    deferred_reason: 'Low priority P3 — not required for current POC phase. Revisit only if pipeline observability becomes critical for canary validation or production launch.'
+    deferred_date: '2026-04-13'
 - description: 'Pipeline transparency: signal-to-outcome correlation (SignalOutcome
     wiring), per-gate metrics, signal type tracking, confidence thresholds, ICT pipeline
     quality filters, and archive/mock cleanup. Goal is full observability of the execution
