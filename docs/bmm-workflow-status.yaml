@@ -713,15 +713,13 @@ backlog:
       closing beyond established swing H/L) instead of trivially true swing price comparisons.
       Requires architecture review. See docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md
       for 3 redesign options.
-    status: completed
+    status: in_progress
     priority: P2
     story_points: 5
     depends_on:
       - EP-ICT-007
     decision_debt: DD-BOS-CHOCH-REDESIGN
-    completion_date: "2026-04-13"
-    merge_commit: pending
-    pr_number: pending
+    pr_number: 1029
     owner: ml-signal-engineering
     evidence_files:
       - docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md
