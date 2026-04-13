@@ -1397,4 +1397,20 @@ LESSON
 - expected_outcome: Accurate BOS/CHoCH break detection requiring candle close confirmation; no false signals from wick-only penetration
 - evidence_ref: commit 05d384e26, tests/unit/market_analysis/structure/test_bos_choch.py
 - added_utc: 2026-04-13T00:00:00Z
+
+LESSON
+- id: LESSON-20260413-influxdb-url-parsing
+- context: Signal generator crashed on startup with InfluxDB URL parsing bug — naive replace('http://', '') left :port attached to hostname when INFLUXDB_URL=http://chiseai-influxdb:18087
+- failure_or_win: win
+- actionable_rule: Always use urllib.parse.urlparse() for URL parsing in infrastructure config, never naive string replacement. String replace cannot handle host:port extraction correctly.
+- evidence_ref: commit a18f9da9, scripts/continuous_signal_generator.py, PR #1031
+- added_utc: 2026-04-13T00:00:00Z
+
+LESSON
+- id: LESSON-20260413-ci-git-binary
+- context: CI pre-pr-merge-check step used python:3.11-slim Docker image which has no git binary, causing 'git merge-base --is-ancestor' to fail silently
+- failure_or_win: win
+- actionable_rule: Never use python:3.11-slim for CI steps that require git operations. Either use a full Python image, install git in the step, or use plugin-git image. Better: eliminate redundant git checks in CI that duplicate API-based checks.
+- evidence_ref: commit 5fc297ce, .woodpecker/pr-auto-flow.yaml, PR BL-CI-PR-AUTOMERGE-FIX
+- added_utc: 2026-04-13T00:00:00Z
 ```
