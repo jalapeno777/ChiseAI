@@ -911,6 +911,22 @@ backlog:
   - Low risk: adding tracking calls is non-invasive
   - Safety gate prevents false alerts even if wiring is incomplete
   related_incident: false-positive-discord-error-rate-alert-2026-04-08
+- id: AUTOCOG-DEDUP-001
+  title: Fix self-assessment writer dedup bug
+  description: Self-assessment writer creates a new JSON file per run instead of deduplicating by date. This caused 2,753 files to accumulate (2,251 duplicates). Fix the writer to check for existing same-date files and overwrite/update instead of creating new ones.
+  context: >-
+    Discovered during 2026-04-12 autocog drift remediation. Self-assessment cleanup archived 2,251 duplicates. Root cause: run_autonomous_self_assessment.py or the writer it calls doesn't deduplicate by date before writing.
+  priority: P3
+  status: planned
+  story_points: 1
+  epic_id: EP-AUTOCOG-005
+  acceptance_criteria:
+  - Self-assessment writer checks for existing file with same date prefix before writing
+  - If exists, overwrites/updates instead of creating new file
+  - No more than 1 self-assessment JSON per date after fix
+  - Existing tests still pass
+  - New test added to verify dedup behavior
+
 current_phase:
   note: 'ACTIVATED on 2026-02-22. Paper trading now fully autonomous. All launch flags
     enabled. Target launch date: March 14, 2026.'
