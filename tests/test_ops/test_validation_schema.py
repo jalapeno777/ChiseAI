@@ -19,7 +19,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-
 SKILL_PATH = Path(".opencode/skills/chiseai-validation/SKILL.md")
 SKILL_EVALS_PATH = Path(".opencode/skills/chiseai-validation/evals/evals.json")
 STATUS_GUARD_PATH = Path("scripts/governance/status_guard.py")
@@ -113,8 +112,7 @@ backlog: []
 current_phase:
   phase: active
   status: active
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
 
@@ -167,14 +165,14 @@ def test_validation_skill_documents_status_sync():
     skill_text = SKILL_PATH.read_text(encoding="utf-8")
 
     # Should mention status sync validation
-    assert "status sync" in skill_text.lower() or "status_sync" in skill_text.lower(), (
-        "Validation skill should document status sync process"
-    )
+    assert (
+        "status sync" in skill_text.lower() or "status_sync" in skill_text.lower()
+    ), "Validation skill should document status sync process"
 
     # Should reference the validation script
-    assert "validate_status_sync" in skill_text or "scripts/validate" in skill_text, (
-        "Validation skill should reference validation scripts"
-    )
+    assert (
+        "validate_status_sync" in skill_text or "scripts/validate" in skill_text
+    ), "Validation skill should reference validation scripts"
 
 
 def test_validation_skill_documents_ci_gates():

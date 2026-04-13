@@ -16,7 +16,6 @@ from pathlib import Path
 
 import pytest
 
-
 SKILL_PATH = Path(".opencode/skills/chiseai-worker-contracts/SKILL.md")
 SKILL_EVALS_PATH = Path(".opencode/skills/chiseai-worker-contracts/evals/evals.json")
 

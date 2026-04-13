@@ -16,7 +16,6 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
 
 class FakeRedis:
@@ -156,8 +155,7 @@ backlog:
 current_phase:
   phase: active
   status: active
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
 
