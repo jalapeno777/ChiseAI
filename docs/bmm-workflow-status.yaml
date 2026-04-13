@@ -1009,6 +1009,742 @@ backlog:
       - No more than 1 self-assessment JSON per date after fix
       - Existing tests still pass
       - New test added to verify dedup behavior
+  - id: ST-CHISE-001
+    title: 'ChiseAI Core Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CHISE-002
+    title: 'ChiseAI Core Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CHISE-003
+    title: 'ChiseAI Core Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CHISE-004
+    title: 'ChiseAI Core Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CHISE-005
+    title: 'ChiseAI Core Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CI-001
+    title: 'CI Infrastructure'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CI-002
+    title: 'CI Infrastructure'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CI-003
+    title: 'CI Infrastructure'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CI-004
+    title: 'CI Infrastructure'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-DATA-001
+    title: 'Data Pipeline'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-DATA-002
+    title: 'Data Pipeline'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-DATA-003
+    title: 'Data Pipeline'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-DATA-004
+    title: 'Data Pipeline'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-SIG-001
+    title: 'Signal Infrastructure'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-SIG-002
+    title: 'Signal Infrastructure'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-BT-001
+    title: 'Belief Tracking'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-BT-002
+    title: 'Belief Tracking'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-BT-003
+    title: 'Belief Tracking'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ML-001
+    title: 'ML Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ML-002
+    title: 'ML Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ML-003
+    title: 'ML Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CONF-001
+    title: 'Configuration Management'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CONF-002
+    title: 'Configuration Management'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CONF-003
+    title: 'Configuration Management'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-EX-001
+    title: 'Execution Engine'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-EX-002
+    title: 'Execution Engine'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-EX-003
+    title: 'Execution Engine'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-001
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-002
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-003
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-004
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-005
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-006
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-007
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-008
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-009
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-010
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-011
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-012
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-OPS-013
+    title: 'Operational Automation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-001
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-002
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-003
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-004
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-005
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-006
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-007
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-008
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-009
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-010
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-011
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-012A
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-012B
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-013A
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-013B
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-014A
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-014B
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-015A
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-015B
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-016A
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-016B
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-017
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-018
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-019
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-020
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-021
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-022
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-023
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-024
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-025
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-026
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-027
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-028
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-029
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-030
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-031
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-032
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-033
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-034
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-035
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-036
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-NS-037
+    title: 'Neuro-Symbolic Integration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-001
+    title: 'Paper Trading Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-002
+    title: 'Paper Trading Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-003
+    title: 'Paper Trading Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-004
+    title: 'Paper Trading Setup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-RUN-101
+    title: 'Paper Trading Execution'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-RUN-102
+    title: 'Paper Trading Execution'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-RUN-103
+    title: 'Paper Trading Execution'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-RUN-104
+    title: 'Paper Trading Execution'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-RUN-105
+    title: 'Paper Trading Execution'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-PAPER-RUN-106
+    title: 'Paper Trading Execution'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTO-001
+    title: 'Automated GitOps'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTO-002
+    title: 'Automated GitOps'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTO-003
+    title: 'Automated GitOps'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTO-004
+    title: 'Automated GitOps'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTO-005
+    title: 'Automated GitOps'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTO-006
+    title: 'Automated GitOps'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTO-007
+    title: 'Automated GitOps'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTO-008
+    title: 'Automated GitOps'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-001
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-002
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-003
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-004
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-005
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-006
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-007
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-008
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-009
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-010
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-011
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-012
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-013
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-014
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-015
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-016
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-017
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-018
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-019
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-020
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-LAUNCH-021
+    title: 'Launch Preparation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-001
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-002
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-003
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-004
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-005
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-006
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-007
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-008
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-009
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-010
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-MINI-001
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-GOV-MINI-002
+    title: 'Governance Framework'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-TAIGA-001
+    title: 'Infrastructure Cleanup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CONTAINER-001
+    title: 'Infrastructure Cleanup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-WORKFLOW-001
+    title: 'Infrastructure Cleanup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-CI-001
+    title: 'Infrastructure Cleanup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-EVAL-SCHEDULER-001
+    title: 'Infrastructure Cleanup'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-005
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-006
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-007
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-008
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-009
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-010
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-011
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-012
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-013
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-014
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-015
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-016
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-017
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-018
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-019
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-020-PART-A
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-020-PART-B
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-021
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-022
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-023
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-024
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTOCOG-005-T1
+    title: 'Autocog Evaluation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTOCOG-005-T2
+    title: 'Autocog Evaluation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-AUTOCOG-005-T3
+    title: 'Autocog Evaluation'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-SIG-OUT-001
+    title: 'Signal Output Pipeline'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-SIG-OUT-002
+    title: 'Signal Output Pipeline'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-SIG-OUT-003
+    title: 'Signal Output Pipeline'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-031
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-032
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-033
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-034
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-035
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-036
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST-ICT-037
+    title: 'Autocog Orchestration'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: Q2
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: Q3
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: Q4
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: P3
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: S2
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: S4
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: S5
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: S1A-1
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: S1A-2
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST1
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST2
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
+  - id: ST3
+    title: 'Pipeline Transparency'
+    status: completed
+    note: 'Tracked via epic completion — added during housekeeping cleanup 2026-04-13'
 current_phase:
   note:
     "ACTIVATED on 2026-02-22. Paper trading now fully autonomous. All launch flags
