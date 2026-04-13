@@ -240,7 +240,7 @@ class AutonomousCognitionController:
 
         try:
             self._artifacts_dir.mkdir(parents=True, exist_ok=True)
-            filename = f"self_assessment_{artifact.assessment_date}_{artifact.assessment_id}.json"
+            filename = f"self_assessment_{artifact.assessment_date}.json"
             path = self._artifacts_dir / filename
             path.write_text(artifact.to_json(indent=2), encoding="utf-8")
             logger.info("Persisted self-assessment artifact to %s", path)
