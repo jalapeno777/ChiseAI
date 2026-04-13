@@ -4213,7 +4213,8 @@ validations:
     title: Real ICT Pipeline - H/L/H-OLD/L-OLD Decomposition
     epic_id: EP-PIPELINE-TRANSPARENCY
     story_id: S1A-2
-    status: planned
+    status: validated
+    completion_date: "2026-04-12"
     description: |
       Validate real ICT signal pipeline for H, L, H-OLD, L-OLD decomposition.
     acceptance_criteria:
@@ -4221,6 +4222,8 @@ validations:
       - L (low) signals generated from real market data
       - H-OLD and L-OLD signals generated for old highs/lows
       - signals are real (not mock data)
+    evidence:
+      - "merge_commit: d95c64897924f"
     test_method: automated
     owner: senior-dev
   - id: V-PIPELINE-ST1
@@ -4239,7 +4242,8 @@ validations:
     title: ICT Detection Priority Order
     epic_id: EP-PIPELINE-TRANSPARENCY
     story_id: ST2
-    status: planned
+    status: validated
+    completion_date: "2026-04-12"
     description: |
       Validate priority ordering for ICT detection types.
     acceptance_criteria:
@@ -4247,13 +4251,16 @@ validations:
       - when BOS/CHoCH and another detection fire simultaneously, BOS/CHoCH wins
       - when Order Blocks and FVG fire simultaneously, Order Blocks wins
       - when all four fire, BOS/CHoCH wins
+    evidence:
+      - "merge_commit: 154b5b04ad046"
     test_method: automated
     owner: dev
   - id: V-PIPELINE-ST3
     title: Archive Mock ICT Pipeline
     epic_id: EP-PIPELINE-TRANSPARENCY
     story_id: ST3
-    status: planned
+    status: deprecated
+    deferred_note: "scope: archival intention only — no new code"
     description: |
       Validate mock ICT pipeline is archived and only real pipeline remains.
     acceptance_criteria:
