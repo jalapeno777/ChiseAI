@@ -1385,4 +1385,16 @@ LESSON
 - expected_outcome: POC delivered with Option (a); Option (c) MTF planned for Phase 3
 - evidence_ref: AD-BATCH3-20260412T150000Z decision, BL-BOS-CHOCH-001
 - added_utc: 2026-04-12T00:00:00Z
+
+LESSON
+- id: LESSON-20260413-ict-candle-close-vs-pivot
+- context: BL-EP-ICT-007-P2-BOS-CHOCH-REDESIGN — CHoCH break detection was using swing.price (swing bar's high/low extreme) instead of candle close_price for break validation
+- trigger: swing.price is always true for any bar that touches the level — even a wick-only touch that doesn't close beyond the level incorrectly triggered break detection
+- actionable_rule: In ICT structure analysis, always use candle close_price for break validation and strength calculation, never the pivot price (which is the extreme high/low of the swing bar). For bullish break: close must be above level (not just the wick). For bearish break: close must be below level (not just the wick).
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: Accurate BOS/CHoCH break detection requiring candle close confirmation; no false signals from wick-only penetration
+- evidence_ref: commit 05d384e26, tests/unit/market_analysis/structure/test_bos_choch.py
+- added_utc: 2026-04-13T00:00:00Z
 ```
