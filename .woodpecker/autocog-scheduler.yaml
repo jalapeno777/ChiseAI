@@ -61,7 +61,7 @@ steps:
           echo "Running autocog belief consistency check..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
 
-          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
+          export PYTHONPATH="$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode belief_consistency \
             --notify-discord
@@ -97,7 +97,7 @@ steps:
           echo "Running autocog improvement cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
 
-          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
+          export PYTHONPATH="$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode improvement_cycle \
             --notify-discord
@@ -133,7 +133,7 @@ steps:
           echo "Running autocog constitution audit..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
 
-          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
+          export PYTHONPATH="$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode constitution_audit \
             --notify-discord
@@ -170,7 +170,7 @@ steps:
           echo "Running autocog calibration cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
 
-          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
+          export PYTHONPATH="$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode calibration \
             --notify-discord
@@ -207,7 +207,7 @@ steps:
           echo "Running autocog autonomy tune cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
 
-          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
+          export PYTHONPATH="$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode autonomy_tune \
             --notify-discord
@@ -241,7 +241,7 @@ steps:
 
           echo "Running autocog manual trigger with mode: $MODE"
 
-          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
+          export PYTHONPATH="$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode "$MODE" \
             --notify-discord
