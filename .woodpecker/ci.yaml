@@ -392,6 +392,13 @@ steps:
             echo "0" > "$${CI_STATUS_DIR}/local-ci.status"
             exit 0
           fi
+          # Skip on cron events — autocog-scheduler validates its own pipeline;
+          # full local-ci suite is redundant and triggers Docker socket timeout
+          if [ "$${EVENT}" = "cron" ]; then
+            echo "local-ci: SKIPPED (cron event, autocog-scheduler handles its own validation)"
+            echo "0" > "$${CI_STATUS_DIR}/local-ci.status"
+            exit 0
+          fi
           # PHASE 3: Performance monitoring start
           START_TIME=$(date +%s)
           echo "local-ci: Starting at $(date -Iseconds)"
