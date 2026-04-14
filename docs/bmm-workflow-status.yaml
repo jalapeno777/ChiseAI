@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: '2026-04-13'
+  last_updated: '2026-04-14'
   managed_by: merlin
   status_notes:
   - 'LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324
@@ -31,6 +31,10 @@ metadata:
   - 'PAPER-RECON epic completed (2026-04-12): 8 branches merged, orphan fills policy
     implemented, 60-min validation PASS. R2a canary restarted after schema alignment
     (ST-PAPER-RECON-008).'
+  - 'Autocog runtime wiring completed (2026-04-14): 5 Woodpecker cron schedules configured
+    (IDs 7-11), Dockerfile.ci-autocog created, pipeline verified GREEN.'
+  - 'Skill verification tests completed (2026-04-14): 18 tests across 3 skill domains
+    (autonomy, worker-contracts, validation), all passing.'
 completed:
 - archive_ref: ARCH-20260406-023722-EP-LOCAL-CI-001
   id: EP-LOCAL-CI-001
@@ -982,6 +986,32 @@ backlog:
   - No more than 1 self-assessment JSON per date after fix
   - Existing tests still pass
   - New test added to verify dedup behavior
+- id: AUTOCOG-RUNTIME-001
+  title: Autocog Runtime Wiring — Cron Schedules + Docker Image
+  description: Wire the autocog evaluation→review→action loop into Woodpecker scheduled
+    execution. Created Dockerfile.ci-autocog with full project deps, configured 5 Woodpecker
+    cron schedules (IDs 7-11), fixed ci-gate stale status file bug, fixed PYTHONPATH unset
+    variable bug. Pipeline verified GREEN on Pipeline 4026+.
+  context: Deferred item from autocog phase 5 runtime_wiring (deadline 2026-04-30). Resolved
+    ahead of schedule during canary wait period.
+  priority: P2
+  status: completed
+  story_points: 3
+  completion_date: '2026-04-14'
+  commits:
+  - 61d4b7c27
+  - c0599b2d8
+  - 645e2f9e1c
+  acceptance_criteria:
+  - Woodpecker cron schedules created for all 5 autocog modes
+  - Dedicated Docker image with full project dependencies
+  - Pipeline runs GREEN on manual trigger
+  - Runbook documentation created
+  evidence:
+  - 5 cron schedules confirmed (IDs 7-11)
+  - Docker image chiseai-ci-autocog:py311-20260414 built and registered
+  - Pipeline GREEN: autocog-belief-consistency-hourly SUCCESS, ci-gate SUCCESS
+  - docs/runbooks/autocog-runtime-operations.md (452 lines)
 - id: ST-CHISE-001
   title: ChiseAI Core Setup
   status: completed

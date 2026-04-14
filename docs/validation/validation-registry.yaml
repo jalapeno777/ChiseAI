@@ -4022,6 +4022,22 @@ validations:
       - |
         FAST_REQUIRED/status-file alignment verified - all 25 status files in ci_gate.FAST_REQUIRED
         have corresponding step producers in ci.yaml.
+  - id: V-AUTOCOG-RUNTIME-001
+    title: Autocog Runtime Wiring - Cron Schedules + Docker Image
+    epic_id: EP-AUTOCOG-005
+    story_id: AUTOCOG-RUNTIME-001
+    status: validated
+    description:
+      Validate autocog runtime wiring with Woodpecker cron schedules, dedicated
+      Docker image, and pipeline execution verified GREEN.
+    acceptance_criteria:
+      - 5 Woodpecker cron schedules created and triggerable
+      - Dedicated Docker image (chiseai-ci-autocog) with full project dependencies
+      - Pipeline runs GREEN on manual trigger
+      - Runbook documentation exists
+      - No stale status file contamination between cron runs
+    test_method: automated
+    owner: aria
   - id: V-SIG-OUT-001
     title: Signal-to-Outcome Correlation Linkage
     epic_id: EP-SIG-OUT-001
