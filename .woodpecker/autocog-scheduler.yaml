@@ -49,6 +49,8 @@ steps:
         set -euo pipefail
         mkdir -p _bmad-output/autocog/cycles
         mkdir -p _bmad-output/ci
+      - rm -f _bmad-output/ci/autocog-*.status
+      - |
         set +e
         (
           set -euo pipefail
@@ -84,6 +86,8 @@ steps:
         set -euo pipefail
         mkdir -p _bmad-output/autocog/cycles
         mkdir -p _bmad-output/ci
+      - rm -f _bmad-output/ci/autocog-*.status
+      - |
         set +e
         (
           set -euo pipefail
@@ -118,6 +122,8 @@ steps:
         set -euo pipefail
         mkdir -p _bmad-output/autocog/cycles
         mkdir -p _bmad-output/ci
+      - rm -f _bmad-output/ci/autocog-*.status
+      - |
         set +e
         (
           set -euo pipefail
@@ -152,6 +158,8 @@ steps:
         set -euo pipefail
         mkdir -p _bmad-output/autocog/cycles
         mkdir -p _bmad-output/ci
+      - rm -f _bmad-output/ci/autocog-*.status
+      - |
         set +e
         (
           set -euo pipefail
@@ -187,6 +195,8 @@ steps:
         set -euo pipefail
         mkdir -p _bmad-output/autocog/cycles
         mkdir -p _bmad-output/ci
+      - rm -f _bmad-output/ci/autocog-*.status
+      - |
         set +e
         (
           set -euo pipefail
@@ -222,6 +232,8 @@ steps:
         set -euo pipefail
         mkdir -p _bmad-output/autocog/cycles
         mkdir -p _bmad-output/ci
+      - rm -f _bmad-output/ci/autocog-*.status
+      - |
         set +e
         (
           set -euo pipefail
