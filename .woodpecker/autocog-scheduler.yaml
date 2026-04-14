@@ -40,7 +40,7 @@ clone:
 steps:
   # Hourly: Belief Consistency Check
   autocog-belief-consistency-hourly:
-    image: python:3.11
+    image: chiseai-ci-autocog:py311-20260414
     when:
       cron:
         - autocog-hourly
@@ -52,21 +52,18 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml redis requests
-          
-          # Generate idempotency key: autocog.belief_consistency.hourly:{date}:{hour}
           HOUR=$(date -u +%H)
           DATE=$(date -u +%Y-%m-%d)
           IDEMPOTENCY_KEY="autocog.belief_consistency.hourly:${DATE}:${HOUR}"
-          
+
           echo "Running autocog belief consistency check..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
-          
+
           export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode belief_consistency \
             --notify-discord
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/autocog/cycles -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -78,7 +75,7 @@ steps:
 
   # Daily: Improvement Cycle (runs at 02:00 UTC)
   autocog-improvement-cycle-daily:
-    image: python:3.11
+    image: chiseai-ci-autocog:py311-20260414
     when:
       cron:
         - autocog-improvement-daily
@@ -90,20 +87,17 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml redis requests
-          
-          # Generate idempotency key: autocog.improvement_cycle.daily:{date}
           DATE=$(date -u +%Y-%m-%d)
           IDEMPOTENCY_KEY="autocog.improvement_cycle.daily:${DATE}"
-          
+
           echo "Running autocog improvement cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
-          
+
           export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode improvement_cycle \
             --notify-discord
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/autocog/cycles -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -115,7 +109,7 @@ steps:
 
   # Daily: Constitution Audit (runs at 03:00 UTC)
   autocog-constitution-audit-daily:
-    image: python:3.11
+    image: chiseai-ci-autocog:py311-20260414
     when:
       cron:
         - autocog-constitution-daily
@@ -127,20 +121,17 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml redis requests
-          
-          # Generate idempotency key: autocog.constitution_audit.daily:{date}
           DATE=$(date -u +%Y-%m-%d)
           IDEMPOTENCY_KEY="autocog.constitution_audit.daily:${DATE}"
-          
+
           echo "Running autocog constitution audit..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
-          
+
           export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode constitution_audit \
             --notify-discord
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/autocog/cycles -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -152,7 +143,7 @@ steps:
 
   # Weekly: Calibration (runs Monday at 01:00 UTC)
   autocog-calibration-weekly:
-    image: python:3.11
+    image: chiseai-ci-autocog:py311-20260414
     when:
       cron:
         - autocog-calibration-weekly
@@ -164,21 +155,18 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml redis requests
-          
-          # Generate idempotency key: autocog.calibration.weekly:{week}
           WEEK=$(date -u +%V)
           YEAR=$(date -u +%Y)
           IDEMPOTENCY_KEY="autocog.calibration.weekly:${YEAR}-W${WEEK}"
-          
+
           echo "Running autocog calibration cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
-          
+
           export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode calibration \
             --notify-discord
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/autocog/cycles -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -190,7 +178,7 @@ steps:
 
   # Weekly: Autonomy Tune (runs Monday at 02:00 UTC)
   autocog-autonomy-tune-weekly:
-    image: python:3.11
+    image: chiseai-ci-autocog:py311-20260414
     when:
       cron:
         - autocog-autonomy-tune-weekly
@@ -202,21 +190,18 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml redis requests
-          
-          # Generate idempotency key: autocog.autonomy_tune.weekly:{week}
           WEEK=$(date -u +%V)
           YEAR=$(date -u +%Y)
           IDEMPOTENCY_KEY="autocog.autonomy_tune.weekly:${YEAR}-W${WEEK}"
-          
+
           echo "Running autocog autonomy tune cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
-          
+
           export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode autonomy_tune \
             --notify-discord
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/autocog/cycles -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -228,7 +213,7 @@ steps:
 
   # Manual trigger fallback for testing
   autocog-manual-trigger:
-    image: python:3.11
+    image: chiseai-ci-autocog:py311-20260414
     when:
       event:
         - manual
@@ -240,18 +225,15 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml redis requests
-          
-          # Extract mode from CI_COMMIT_MESSAGE if provided
           MODE="${AUTOCOG_MODE:-belief_consistency}"
-          
+
           echo "Running autocog manual trigger with mode: $MODE"
-          
+
           export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode "$MODE" \
             --notify-discord
-          
+
           # List produced artifacts
           echo "Artifacts produced:"
           find _bmad-output/autocog/cycles -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
@@ -263,11 +245,10 @@ steps:
 
   # CI Gate: Single authoritative failure point
   ci-gate:
-    image: python:3.11
+    image: chiseai-ci-autocog:py311-20260414
     commands:
       - |
         set -euo pipefail
-        pip install --no-cache-dir requests
 
         # Check status files and fail if any non-zero
         FAILED=0

@@ -49,6 +49,7 @@ declare -A DOCKERFILE_MAP=(
     ["chiseai-ci-brain-eval"]="infrastructure/docker/Dockerfile.ci-brain-eval"
     ["chiseai-ci-pre-eval-ingestion"]="infrastructure/docker/Dockerfile.ci-pre-eval-ingestion"
     ["chiseai-ci-performance-gate"]="infrastructure/docker/Dockerfile.ci-performance-gate"
+    ["chiseai-ci-autocog"]="infrastructure/docker/Dockerfile.ci-autocog"
 )
 
 usage() {
@@ -166,6 +167,7 @@ WOODPECKER_CONFIGS=(
     "${REPO_ROOT}/.woodpecker/ci.yaml"
     "${REPO_ROOT}/.woodpecker/push.yaml"
     "${REPO_ROOT}/.woodpecker/cron-security.yaml"
+    "${REPO_ROOT}/.woodpecker/autocog-scheduler.yaml"
 )
 
 # Dry run output
