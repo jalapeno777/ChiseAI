@@ -62,6 +62,7 @@ steps:
           echo "Running autocog belief consistency check..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
           
+          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode belief_consistency \
             --notify-discord
@@ -98,6 +99,7 @@ steps:
           echo "Running autocog improvement cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
           
+          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode improvement_cycle \
             --notify-discord
@@ -134,6 +136,7 @@ steps:
           echo "Running autocog constitution audit..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
           
+          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode constitution_audit \
             --notify-discord
@@ -171,6 +174,7 @@ steps:
           echo "Running autocog calibration cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
           
+          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode calibration \
             --notify-discord
@@ -208,6 +212,7 @@ steps:
           echo "Running autocog autonomy tune cycle..."
           echo "Idempotency key: $IDEMPOTENCY_KEY"
           
+          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode autonomy_tune \
             --notify-discord
@@ -242,6 +247,7 @@ steps:
           
           echo "Running autocog manual trigger with mode: $MODE"
           
+          export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$(pwd)"
           python3 scripts/ops/run_autonomous_full_cycle.py \
             --mode "$MODE" \
             --notify-discord
@@ -262,11 +268,13 @@ steps:
       - |
         set -euo pipefail
         pip install --no-cache-dir requests
-        
+
         # Check status files and fail if any non-zero
         FAILED=0
+        HAS_STATUS_FILES=0
         for status_file in _bmad-output/ci/autocog-*.status; do
           if [ -f "$status_file" ]; then
+            HAS_STATUS_FILES=1
             code=$(cat "$status_file")
             name=$(basename "$status_file" .status)
             if [ "$code" != "0" ]; then
@@ -277,7 +285,14 @@ steps:
             fi
           fi
         done
-        
+
+        # No-op if no autocog steps ran (no status files)
+        if [ "$HAS_STATUS_FILES" = "0" ]; then
+          echo "No autocog steps ran"
+          echo "AutoCog scheduler pipeline PASSED (no-op)"
+          exit 0
+        fi
+
         # Summary of artifacts
         echo ""
         echo "=== Artifact Summary ==="
@@ -286,13 +301,13 @@ steps:
             echo "Artifact: $f"
           done
         fi
-        
+
         if [ "$FAILED" = "1" ]; then
           echo ""
           echo "AutoCog scheduler pipeline FAILED"
           exit 1
         fi
-        
+
         echo ""
         echo "AutoCog scheduler pipeline PASSED"
         exit 0
