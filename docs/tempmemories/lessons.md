@@ -1414,3 +1414,74 @@ LESSON
 - evidence_ref: commit 5fc297ce, .woodpecker/pr-auto-flow.yaml, PR BL-CI-PR-AUTOMERGE-FIX
 - added_utc: 2026-04-13T00:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260414-pythonpath-bin-sh
+- context: When using `set -u` (nounset) in /bin/sh subshells inside Woodpecker pipelines, ${VAR:+$VAR:} expansion fails when VAR is unset
+- trigger: PYTHONPATH expansion in .woodpecker/ci.yaml step using ${PYTHONPATH:+$PYTHONPATH:} pattern caused pipeline failures on cron events
+- actionable_rule: Do NOT use ${VAR:+$VAR:} expansion for PYTHONPATH in /bin/sh subshells when using set -u. Use `export PYTHONPATH="$(pwd)"` instead. This is a /bin/sh vs bash difference.
+- applies_to:
+  - senior-dev
+  - merlin
+- expected_outcome: No PYTHONPATH-related pipeline failures due to unset variable expansion in /bin/sh
+- evidence_ref: .woodpecker/ci.yaml cron events, PYTHONPATH in set -u /bin/sh
+- added_utc: 2026-04-14T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260414-ci-status-file-cleanup
+- context: Woodpecker ci-gate glob patterns can match stale status files from previous pipeline runs
+- trigger: False CI failures caused by _bmad-output/ci/step-*.status files from prior runs being picked up by glob patterns
+- actionable_rule: Always run `rm -f _bmad-output/ci/step-*.status` at the start of each pipeline step before running ci-gate validation. This prevents stale files from causing false failures.
+- applies_to:
+  - senior-dev
+  - merlin
+- expected_outcome: No false CI failures from stale status files; ci-gate only sees current-run status files
+- evidence_ref: .woodpecker/ci.yaml pipeline steps
+- added_utc: 2026-04-14T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260414-ci-docker-base-images
+- context: Inline `pip install` in Woodpecker pipeline YAML is fragile, slow, and fails when transitive deps are needed
+- trigger: CI steps using inline pip install for dependencies that require transitive dependencies failed
+- actionable_rule: When creating Docker images for CI pipeline steps, use a project-requirements base image (e.g., Dockerfile.ci-autocog pattern) instead of inline pip install in pipeline YAML. This ensures consistent, fast, reliable dependency resolution.
+- applies_to:
+  - senior-dev
+  - merlin
+- expected_outcome: CI steps use pre-built base images with all dependencies; no inline pip install in pipeline YAML for complex deps
+- evidence_ref: infrastructure/docker/Dockerfile.ci-* patterns, .woodpecker/ci.yaml
+- added_utc: 2026-04-14T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260414-skip-local-ci-on-cron
+- context: Woodpecker runs two workflows on cron events: the targeted scheduler workflow AND the full ci workflow. The ci workflow's local-ci step triggers FULL_MODE on cron, causing Docker socket timeouts.
+- trigger: Cron events causing Docker socket timeouts due to local-ci step running in FULL_MODE unnecessarily
+- actionable_rule: Skip local-ci step on cron events. The targeted scheduler workflow (e.g., autocog-scheduler) validates its own pipeline and is the authoritative validation path for cron events. local-ci is only needed for PR-triggered runs.
+- applies_to:
+  - senior-dev
+  - merlin
+- expected_outcome: No Docker socket timeouts on cron events; scheduler workflow is sole validation path for cron
+- evidence_ref: .woodpecker/ci.yaml local-ci step, cron event handling
+- added_utc: 2026-04-14T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260414-pre-existing-ci-failures-cron
+- context: The ci workflow has pre-existing failures on cron events due to bare images (missing redis, jsonschema, src module). These are NOT caused by scheduler changes.
+- trigger: Incorrect attribution of CI failures on cron to scheduler changes when the failures are pre-existing infrastructure issues
+- actionable_rule: When CI fails on cron events, diagnose root cause before attributing to recent changes. The targeted scheduler workflow (e.g., autocog-scheduler) is the authoritative validation path for cron events, not the ci workflow with pre-existing failures.
+- applies_to:
+  - jarvis
+  - senior-dev
+  - merlin
+- expected_outcome: CI failures on cron are correctly attributed; pre-existing infrastructure issues are not blamed on scheduler changes
+- evidence_ref: .woodpecker/ci.yaml cron events, bare image failures (redis, jsonschema, src module)
+- added_utc: 2026-04-14T00:00:00Z
+```
