@@ -423,6 +423,71 @@ class LearningStore:
             )
             return False
 
+    def get_learning(self, learning_id: str) -> LearningRecord | None:
+        """Retrieve a learning record from Qdrant by its record_id.
+
+        This method enables write-back verification to confirm that data
+        was actually persisted to Qdrant.
+
+        Args:
+            learning_id: The record_id of the learning to retrieve
+
+        Returns:
+            LearningRecord if found, None otherwise
+        """
+        qdrant_client = self._get_qdrant_client()
+        if qdrant_client is None:
+            logger.debug("Qdrant unavailable for get_learning: %s", learning_id)
+            return None
+
+        try:
+            point_id = hashlib.sha256(learning_id.encode("utf-8")).hexdigest()[:32]
+
+            result = qdrant_client.retrieve(
+                collection_name=self.qdrant_collection,
+                ids=[point_id],
+                with_payload=True,
+                with_vectors=False,
+            )
+
+            if not result:
+                logger.debug("Learning not found in Qdrant: %s", learning_id)
+                return None
+
+            point = result[0]
+            payload = point.payload
+
+            if payload is None:
+                return None
+
+            # Reconstruct LearningRecord from payload
+            record = LearningRecord(
+                record_id=payload.get("record_id", learning_id),
+                record_type=payload.get("record_type", "unknown"),
+                content=payload.get("content", ""),
+                metadata=payload.get("metadata", {}),
+                created_at=(
+                    datetime.fromisoformat(payload["created_at"])
+                    if "created_at" in payload
+                    else datetime.now(UTC)
+                ),
+            )
+
+            logger.debug(
+                "Retrieved learning from Qdrant: %s (%s)",
+                record.record_id,
+                record.record_type,
+            )
+            return record
+
+        except Exception as e:
+            logger.warning(
+                "Failed to retrieve learning %s from Qdrant: %s",
+                learning_id,
+                e,
+            )
+            return None
+
 
 # Module-level convenience instance for simple usage
 _default_store: LearningStore | None = None
