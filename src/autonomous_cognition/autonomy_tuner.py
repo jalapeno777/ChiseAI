@@ -35,7 +35,9 @@ class AutonomyLevel(str, Enum):
 # Default escalation thresholds from constitution
 DEFAULT_ECE_UPPER = 0.15  # ECE > 15% triggers regression guardrail
 DEFAULT_ECE_LOWER = 0.08  # ECE < 8% sustained enables progression
-DEFAULT_INCIDENT_THRESHOLD = 0  # Any incident triggers regression
+DEFAULT_INCIDENT_THRESHOLD = (
+    1  # >1 incident triggers regression (allows single transient incident)
+)
 DEFAULT_HEALTH_SCORE_THRESHOLD = 50  # Health score < 50 triggers escalation
 
 
@@ -327,11 +329,13 @@ class AutonomyTuner:
             else:
                 new_idx = idx
                 reason = "building_stability"
-        # Hold level
+        # Hold level - ECE is in the "middle band" (between lower and upper)
+        # Do NOT reset stability counter here: the agent is stable, just not
+        # yet below the lower threshold. Resetting would punish agents that
+        # hover near the lower threshold and create oscillation.
         else:
             new_idx = idx
             reason = "hold_level"
-            self._stability_counter = 0
 
         # Enforce max level cap
         max_idx = self._LEVELS.index(self._config.max_level)

@@ -49,7 +49,7 @@ class TestAutonomyTuner:
         assert summary["min_stability_required"] == 5
         assert summary["ece_thresholds"]["upper"] == 0.15
         assert summary["ece_thresholds"]["lower"] == 0.08
-        assert summary["incident_threshold"] == 0
+        assert summary["incident_threshold"] == 1
         assert summary["max_level"] == "autonomous"
 
     def test_custom_config(self):
@@ -82,18 +82,31 @@ class TestAutonomyTuner:
         assert decision.ece == 0.20
 
     def test_tune_regression_on_incident(self):
-        """Any incident triggers regression."""
+        """Incidents exceeding threshold trigger regression."""
         tuner = AutonomyTuner()
         decision = tuner.tune(
             current_level="assisted",
             ece=0.05,
-            incident_count=1,  # Above 0 threshold
+            incident_count=2,  # Above threshold of 1
             constitution_compliant=True,
         )
 
         assert decision.previous_level == "assisted"
         assert decision.new_level == "bounded"
         assert decision.reason == "regression_guardrail_triggered"
+
+    def test_single_incident_does_not_trigger_regression(self):
+        """A single transient incident does not trigger regression."""
+        tuner = AutonomyTuner()
+        decision = tuner.tune(
+            current_level="assisted",
+            ece=0.05,
+            incident_count=1,  # At threshold of 1, not exceeding
+            constitution_compliant=True,
+        )
+
+        assert decision.previous_level == "assisted"
+        assert decision.new_level == "assisted"
 
     def test_tune_regression_on_constitution_violation(self):
         """Constitution violation triggers two-level regression."""
