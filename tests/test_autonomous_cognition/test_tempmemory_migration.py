@@ -102,6 +102,14 @@ Actual content.
 class TestTempmemoryMigrator:
     """Tests for TempmemoryMigrator class."""
 
+    def setUp(self):
+        """Reset singleton before each test to ensure isolation."""
+        import src.autonomous_cognition.learning_store as ls_module
+        import src.autonomous_cognition.tempmemory_migration as tm_module
+
+        ls_module._default_store = None
+        tm_module._default_migrator = None
+
     def test_initialization_default(self):
         """Test initialization with defaults."""
         migrator = TempmemoryMigrator()
@@ -176,6 +184,8 @@ Migration content.
         file_path.write_text(content)
 
         migrator = TempmemoryMigrator(tempmemory_dir=tmp_path)
+        # Patch the instance's _qdrant_client to ensure mock is used
+        migrator.learning_store._qdrant_client = mock_client
         success, record_id = migrator.migrate_file(file_path)
 
         assert success is True
@@ -299,6 +309,14 @@ Content.
 class TestTempmemoryMigratorIntegration:
     """Integration-style tests for tempmemory migration."""
 
+    def setUp(self):
+        """Reset singleton before each test to ensure isolation."""
+        import src.autonomous_cognition.learning_store as ls_module
+        import src.autonomous_cognition.tempmemory_migration as tm_module
+
+        ls_module._default_store = None
+        tm_module._default_migrator = None
+
     @patch.object(LearningStore, "_get_qdrant_client")
     def test_full_migration_with_real_store(self, mock_get_qdrant, tmp_path: Path):
         """Test complete migration flow using real LearningStore."""
@@ -323,6 +341,8 @@ Content for {story_id}.
 
         # Run migration
         migrator = TempmemoryMigrator(tempmemory_dir=tmp_path)
+        # Patch the instance's _qdrant_client to ensure mock is used
+        migrator.learning_store._qdrant_client = mock_client
         result = migrator.migrate_all(create_backups=False)
 
         # Verify results
@@ -350,6 +370,8 @@ Detailed decision content here.
         file_path.write_text(content)
 
         migrator = TempmemoryMigrator(tempmemory_dir=tmp_path)
+        # Patch the instance's _qdrant_client to ensure mock is used
+        migrator.learning_store._qdrant_client = mock_client
         migrator.migrate_file(file_path)
 
         # Get the upsert call

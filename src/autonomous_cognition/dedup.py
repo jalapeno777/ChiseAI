@@ -284,3 +284,40 @@ class DeduplicationEngine:
     def get_config(self) -> DeduplicationConfig:
         """Get current configuration."""
         return self._config
+
+    def daily_sweep(self, dry_run: bool | None = None) -> DeduplicationStats:
+        """
+        Run daily sweep of memory stores for deduplication.
+
+        This is a convenience method that runs deduplication with settings
+        appropriate for daily maintenance. It wraps the governance engine's
+        deduplicate method with proper error handling.
+
+        Args:
+            dry_run: Override config dry_run setting.
+
+        Returns:
+            DeduplicationStats with results of the sweep.
+        """
+        try:
+            logger.info("Starting daily dedup sweep")
+            stats = self.deduplicate(
+                scope=None,
+                dry_run=dry_run if dry_run is not None else self._config.dry_run,
+            )
+            logger.info(
+                "Daily dedup sweep completed",
+                extra={
+                    "entries_scanned": stats.entries_scanned,
+                    "duplicate_groups": stats.duplicate_groups,
+                    "entries_removed": stats.entries_removed,
+                    "was_dry_run": stats.was_dry_run,
+                },
+            )
+            return stats
+        except Exception as e:
+            logger.exception("Daily dedup sweep failed: %s", e)
+            return DeduplicationStats(
+                was_dry_run=True,
+                error=f"Daily sweep failed: {e}",
+            )

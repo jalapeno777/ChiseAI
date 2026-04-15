@@ -5,6 +5,7 @@ Validates real Qdrant write operations and graceful degradation.
 
 from __future__ import annotations
 
+import hashlib
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
@@ -282,3 +283,131 @@ class TestLearningStoreIntegration:
         # Different content should differ
         different_embedding = store.generate_embedding("Different content")
         assert embedding1 != different_embedding
+
+
+class TestLearningStoreReadBackVerification:
+    """Tests verifying end-to-end write → read cycle."""
+
+    @patch.object(LearningStore, "_get_qdrant_client")
+    def test_get_learning_returns_stored_record(self, mock_get_qdrant):
+        """Test that get_learning retrieves what store_learning wrote."""
+        mock_client = MagicMock()
+        mock_get_qdrant.return_value = mock_client
+
+        store = LearningStore()
+        record = LearningRecord(
+            record_id="verify-001",
+            record_type="prediction",
+            content="Test verification content",
+            metadata={"confidence": 0.9},
+            created_at=datetime(2026, 3, 27, 12, 0, 0, tzinfo=UTC),
+        )
+
+        # First store the record
+        store_result = store.store_learning(record)
+        assert store_result is True
+
+        # Now retrieve it
+        expected_point_id = hashlib.sha256(b"verify-001").hexdigest()[:32]
+        mock_client.retrieve.return_value = [
+            MagicMock(
+                payload={
+                    "record_id": "verify-001",
+                    "record_type": "prediction",
+                    "content": "Test verification content",
+                    "metadata": {"confidence": 0.9},
+                    "created_at": "2026-03-27T12:00:00+00:00",
+                }
+            )
+        ]
+
+        retrieved = store.get_learning("verify-001")
+
+        assert retrieved is not None
+        assert retrieved.record_id == "verify-001"
+        assert retrieved.record_type == "prediction"
+        assert retrieved.content == "Test verification content"
+        assert retrieved.metadata["confidence"] == 0.9
+
+        # Verify retrieve was called with correct point_id
+        mock_client.retrieve.assert_called_once()
+        call_args = mock_client.retrieve.call_args
+        assert call_args.kwargs["collection_name"] == LEARNING_COLLECTION
+        assert expected_point_id in call_args.kwargs["ids"]
+
+    @patch.object(LearningStore, "_get_qdrant_client")
+    def test_get_learning_returns_none_when_not_found(self, mock_get_qdrant):
+        """Test that get_learning returns None for nonexistent records."""
+        mock_client = MagicMock()
+        mock_get_qdrant.return_value = mock_client
+        mock_client.retrieve.return_value = []
+
+        store = LearningStore()
+        result = store.get_learning("nonexistent-id")
+
+        assert result is None
+
+    @patch.object(LearningStore, "_get_qdrant_client")
+    def test_get_learning_returns_none_when_qdrant_unavailable(self, mock_get_qdrant):
+        """Test that get_learning returns None when Qdrant is unavailable."""
+        mock_get_qdrant.return_value = None
+
+        store = LearningStore()
+        result = store.get_learning("any-id")
+
+        assert result is None
+
+    @patch.object(LearningStore, "_get_qdrant_client")
+    def test_write_read_cycle_full_integration(self, mock_get_qdrant):
+        """Test complete write → read cycle verifying data persistence."""
+        mock_client = MagicMock()
+        mock_get_qdrant.return_value = mock_client
+
+        store = LearningStore()
+
+        # Create a prediction record
+        pred_record = LearningRecord(
+            record_id="cycle-pred-001",
+            record_type="prediction",
+            content="Market will trend upward",
+            metadata={
+                "prediction_type": "trend_direction",
+                "confidence": 0.85,
+            },
+        )
+
+        # Store the prediction
+        store.store_prediction(
+            prediction_id="cycle-pred-001",
+            prediction_type="trend_direction",
+            confidence=0.85,
+            context={"symbol": "BTC", "timeframe": "1d"},
+        )
+
+        # Simulate retrieve returning the stored data
+        mock_client.retrieve.return_value = [
+            MagicMock(
+                payload={
+                    "record_id": hashlib.sha256(b"cycle-pred-001").hexdigest()[:32],
+                    "record_type": "prediction",
+                    "content": "Prediction: cycle-pred-001 | Type: trend_direction | Confidence: 0.85",
+                    "metadata": {
+                        "prediction_type": "trend_direction",
+                        "confidence": 0.85,
+                        "context": {"symbol": "BTC", "timeframe": "1d"},
+                    },
+                    "created_at": "2026-03-27T12:00:00+00:00",
+                }
+            )
+        ]
+
+        # The write was successful (verified by mock)
+        assert mock_client.upsert.called
+
+        # Read it back
+        retrieved = store.get_learning("cycle-pred-001")
+
+        # Verify the full cycle succeeded
+        assert retrieved is not None
+        assert retrieved.record_type == "prediction"
+        assert "trend_direction" in retrieved.metadata["prediction_type"]
