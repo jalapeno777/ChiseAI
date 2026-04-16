@@ -203,7 +203,7 @@ class TestStaleDetector:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from stale_detector import StaleDetector
+        from scripts.pr_lifecycle.stale_detector import StaleDetector
 
         # Create a new branch from old main
         subprocess.run(
@@ -224,7 +224,7 @@ class TestStaleDetector:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from stale_detector import StaleDetector
+        from scripts.pr_lifecycle.stale_detector import StaleDetector
 
         # Checkout main which should have all commits
         subprocess.run(["git", "checkout", "main"], cwd=mock_git_repo, check=True)
@@ -240,7 +240,7 @@ class TestStaleDetector:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from stale_detector import StaleDetector
+        from scripts.pr_lifecycle.stale_detector import StaleDetector
 
         detector = StaleDetector()
 
@@ -308,13 +308,15 @@ class TestAutoRebaseEngine:
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
 
-        with patch("recovery_handlers._redis_cli") as mock_redis_cli:
+        with patch(
+            "scripts.pr_lifecycle.recovery_handlers._redis_cli"
+        ) as mock_redis_cli:
             mock_redis_cli.return_value = MagicMock(
                 returncode=0,
                 stdout="1",  # 1 rebase used
             )
 
-            from recovery_handlers import AutoRebaseEngine
+            from scripts.pr_lifecycle.recovery_handlers import AutoRebaseEngine
 
             engine = AutoRebaseEngine()
             # Note: This test would need proper mocking of the redis calls
@@ -324,9 +326,9 @@ class TestAutoRebaseEngine:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from recovery_handlers import AutoRebaseEngine
+        from scripts.pr_lifecycle.recovery_handlers import AutoRebaseEngine
 
-        with patch("recovery_handlers._redis_cli"):
+        with patch("scripts.pr_lifecycle.recovery_handlers._redis_cli"):
             engine = AutoRebaseEngine()
             is_safe, reason = engine.is_safe_to_rebase(
                 branch="feature/test", mergeable=True, is_draft=False
@@ -340,9 +342,9 @@ class TestAutoRebaseEngine:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from recovery_handlers import AutoRebaseEngine
+        from scripts.pr_lifecycle.recovery_handlers import AutoRebaseEngine
 
-        with patch("recovery_handlers._redis_cli"):
+        with patch("scripts.pr_lifecycle.recovery_handlers._redis_cli"):
             engine = AutoRebaseEngine()
             is_safe, reason = engine.is_safe_to_rebase(
                 branch="feature/test", mergeable=True, is_draft=True
@@ -356,9 +358,9 @@ class TestAutoRebaseEngine:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from recovery_handlers import AutoRebaseEngine
+        from scripts.pr_lifecycle.recovery_handlers import AutoRebaseEngine
 
-        with patch("recovery_handlers._redis_cli"):
+        with patch("scripts.pr_lifecycle.recovery_handlers._redis_cli"):
             engine = AutoRebaseEngine()
             is_safe, reason = engine.is_safe_to_rebase(
                 branch="feature/test",
@@ -374,9 +376,9 @@ class TestAutoRebaseEngine:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from recovery_handlers import AutoRebaseEngine
+        from scripts.pr_lifecycle.recovery_handlers import AutoRebaseEngine
 
-        with patch("recovery_handlers._redis_cli"):
+        with patch("scripts.pr_lifecycle.recovery_handlers._redis_cli"):
             engine = AutoRebaseEngine()
             is_safe, reason = engine.is_safe_to_rebase(
                 branch="main", mergeable=True, is_draft=False
@@ -394,7 +396,10 @@ class TestRateLimiting:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from recovery_handlers import MAX_REBASES_PER_WINDOW, REBASE_BUDGET_KEY
+        from scripts.pr_lifecycle.recovery_handlers import (
+            MAX_REBASES_PER_WINDOW,
+            REBASE_BUDGET_KEY,
+        )
 
         # The budget key should use current window
         window = int(time.time() // 300)  # 5 minute windows
@@ -423,7 +428,7 @@ class TestRedisLocking:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from recovery_handlers import REBASE_LOCK_PREFIX
+        from scripts.pr_lifecycle.recovery_handlers import REBASE_LOCK_PREFIX
 
         lock_key = f"{REBASE_LOCK_PREFIX}:123"
 
@@ -502,7 +507,7 @@ class TestIntegration:
         sys.path.insert(
             0, str(Path(__file__).parent.parent.parent / "scripts/pr_lifecycle")
         )
-        from stale_detector import StaleDetector
+        from scripts.pr_lifecycle.stale_detector import StaleDetector
 
         detector = StaleDetector(repo_path=str(repo_path))
         is_behind, commits_behind = detector.is_behind_main("feature/test")
