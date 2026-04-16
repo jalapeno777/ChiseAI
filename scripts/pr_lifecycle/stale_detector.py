@@ -124,10 +124,9 @@ class StaleDetector:
         commits_behind = 0
         if is_behind:
             count_result = self._run_git(
-                "log",
-                "--oneline",
-                f"{branch}..main",
+                "rev-list",
                 "--count",
+                f"{branch}..main",
             )
             if count_result.returncode == 0:
                 try:

@@ -172,6 +172,19 @@ class TestStaleDetector:
 
         # Go back to main and add new commits
         subprocess.run(["git", "checkout", "main"], cwd=repo_path, check=True)
+
+        # Create feature/old-feature BEFORE main advances
+        # This branch will be behind main once we add the new commit
+        subprocess.run(
+            ["git", "checkout", "-b", "feature/old-feature"],
+            cwd=repo_path,
+            check=True,
+            capture_output=True,
+        )
+
+        # Switch back to main to add new commits
+        subprocess.run(["git", "checkout", "main"], cwd=repo_path, check=True)
+
         new_file = repo_path / "new_main.txt"
         new_file.write_text("new main content")
         subprocess.run(["git", "add", "new_main.txt"], cwd=repo_path, check=True)
@@ -208,14 +221,9 @@ class TestStaleDetector:
         )
         from scripts.pr_lifecycle.stale_detector import StaleDetector
 
-        # Create a new branch from old main
-        subprocess.run(
-            ["git", "checkout", "-b", "feature/old-feature"],
-            cwd=mock_git_repo,
-            check=True,
-            capture_output=True,
-        )
-
+        # The fixture created feature/old-feature BEFORE main advanced with new commits.
+        # feature/old-feature is at the old commit (A) while main is at (A+C).
+        # This branch IS behind main because main has diverged.
         detector = StaleDetector(repo_path=str(mock_git_repo))
         is_behind, commits_behind = detector.is_behind_main("feature/old-feature")
 
