@@ -148,6 +148,9 @@ class TestStaleDetector:
             capture_output=True,
         )
 
+        # Switch to main branch (git init creates master by default)
+        subprocess.run(["git", "checkout", "-b", "main"], cwd=repo_path, check=True)
+
         # Create a feature branch
         subprocess.run(
             ["git", "checkout", "-b", "feature/test-branch"],
@@ -486,6 +489,9 @@ class TestIntegration:
         (repo_path / "main.txt").write_text("v1")
         subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
         subprocess.run(["git", "commit", "-m", "v1"], cwd=repo_path, check=True)
+
+        # Switch to main branch (git init creates master by default)
+        subprocess.run(["git", "checkout", "-b", "main"], cwd=repo_path, check=True)
 
         # Create feature branch
         subprocess.run(
