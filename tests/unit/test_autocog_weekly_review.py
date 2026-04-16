@@ -697,7 +697,6 @@ class TestCLIArgs(unittest.TestCase):
     """Tests for CLI argument parsing."""
 
     def test_default_args(self):
-
         # Just verify main() returns 0 with --help or no args
         # (actual parsing tested by running the script)
         pass
@@ -716,7 +715,6 @@ class TestCLIArgs(unittest.TestCase):
             ],
             capture_output=True,
             text=True,
-            cwd="/tmp/worktrees/AUTOCOG-REMEDIATION-C2-dev",
             timeout=10,
         )
         self.assertEqual(result.returncode, 1)
@@ -735,7 +733,6 @@ class TestCLIArgs(unittest.TestCase):
             ],
             capture_output=True,
             text=True,
-            cwd="/tmp/worktrees/AUTOCOG-REMEDIATION-C2-dev",
             timeout=30,
         )
         # Should succeed (exit 0) even if Redis is unavailable
@@ -756,7 +753,6 @@ class TestCLIArgs(unittest.TestCase):
             [sys.executable, "-m", "scripts.autocog.weekly_review", "--force"],
             capture_output=True,
             text=True,
-            cwd="/tmp/worktrees/AUTOCOG-REMEDIATION-C2-dev",
             timeout=30,
         )
         self.assertEqual(result.returncode, 0)

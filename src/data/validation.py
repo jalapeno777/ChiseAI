@@ -180,29 +180,29 @@ class NullValidator(DataValidator):
         fields_to_check = self.fields if self.fields else data.keys()
 
         for _field in fields_to_check:
-            if field not in data:
+            if _field not in data:
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is missing",
+                        f"Field '{_field}' is missing",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                     )
                 )
-            elif data[field] is None:
+            elif data[_field] is None:
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is null",
+                        f"Field '{_field}' is null",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                     )
                 )
-            elif not self.allow_empty and data[field] == "":
+            elif not self.allow_empty and data[_field] == "":
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is empty",
+                        f"Field '{_field}' is empty",
                         ValidationSeverity.WARNING,
-                        field=field,
-                        value=data[field],
+                        field=_field,
+                        value=data[_field],
                         suggestion="Consider allowing empty or provide default value",
                     )
                 )

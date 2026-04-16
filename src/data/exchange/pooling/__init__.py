@@ -11,7 +11,6 @@ from data.exchange.pooling.connection_pool import (
     ExchangeConnectionPool,
     PooledConnection,
     PoolMetrics,
-    TokenBucketRateLimiter,
 )
 from data.exchange.pooling.health_monitor import (
     ConnectionLifecycleEvent,
@@ -32,6 +31,7 @@ from data.exchange.pooling.rate_limiter import (
     RateLimitConfig,
     RateLimitState,
     SlidingWindowRateLimiter,
+    TokenBucketRateLimiter,
 )
 
 __all__ = [
