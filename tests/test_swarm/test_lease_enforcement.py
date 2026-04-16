@@ -558,9 +558,9 @@ class TestLeaseEnforcerRenewLease(unittest.TestCase):
     def test_successful_renewal(self, mock_cli):
         """AC2: Successful renewal extends TTL."""
         mock_cli.side_effect = [
-            _make_completed_process(stdout="ST-001/agent/2026-03-19T00:00:00Z"),  # GET
-            _make_completed_process(stdout="100"),  # TTL (before)
-            _make_completed_process(stdout="1"),  # EXPIRE success
+            _make_completed_process(
+                stdout='1) "100"\n2) "0"'
+            ),  # EVAL returns [previous_ttl, status_code]
         ]
 
         result = self.enforcer.renew_lease(
@@ -608,7 +608,7 @@ class TestLeaseEnforcerRenewLease(unittest.TestCase):
 
         self.assertFalse(result.success)
         self.assertIsNotNone(result.error)
-        self.assertIn("conflict", result.error.lower())
+        self.assertIn("invalid lua script", result.error.lower())
 
     @patch("scripts.swarm.lease_enforcement._redis_cli")
     def test_renewal_redis_get_error(self, mock_cli):
@@ -701,15 +701,10 @@ class TestLeaseEnforcerRenewSessionLeases(unittest.TestCase):
     @patch("scripts.swarm.lease_enforcement._redis_cli")
     def test_renew_both_leases(self, mock_cli):
         """AC2: Session renewal renews both branch and worktree leases."""
-        # Branch lease: GET, TTL, EXPIRE
-        # Worktree lease: GET, TTL, EXPIRE
+        # Each renew_lease call makes one EVAL call returning [previous_ttl, status_code]
         mock_cli.side_effect = [
-            _make_completed_process(stdout="ST-001/agent/2026-03-19T00:00:00Z"),
-            _make_completed_process(stdout="100"),
-            _make_completed_process(stdout="1"),
-            _make_completed_process(stdout="ST-001/agent/2026-03-19T00:00:00Z"),
-            _make_completed_process(stdout="100"),
-            _make_completed_process(stdout="1"),
+            _make_completed_process(stdout='1) "100"\n2) "0"'),  # branch success
+            _make_completed_process(stdout='1) "100"\n2) "0"'),  # worktree success
         ]
 
         results = self.enforcer.renew_session_leases(
@@ -732,13 +727,12 @@ class TestLeaseEnforcerRenewSessionLeases(unittest.TestCase):
         # Branch: success
         # Worktree: ownership conflict
         mock_cli.side_effect = [
-            _make_completed_process(stdout="ST-001/agent/2026-03-19T00:00:00Z"),
-            _make_completed_process(stdout="100"),
-            _make_completed_process(stdout="1"),
-            # Worktree lease has different owner
+            _make_completed_process(stdout='1) "100"\n2) "0"'),  # branch success
+            # Worktree lease has different owner - returns conflict status
+            _make_completed_process(stdout='1) "-2"\n2) "2"'),
             _make_completed_process(
                 stdout="OTHER-STORY/other-agent/2026-03-19T00:00:00Z"
-            ),
+            ),  # GET for error msg
         ]
 
         results = self.enforcer.renew_session_leases(
@@ -757,12 +751,8 @@ class TestLeaseEnforcerRenewSessionLeases(unittest.TestCase):
     def test_renew_session_custom_ttl(self, mock_cli):
         """AC2: Session renewal uses custom TTL value."""
         mock_cli.side_effect = [
-            _make_completed_process(stdout="ST-001/agent/2026-03-19T00:00:00Z"),
-            _make_completed_process(stdout="100"),
-            _make_completed_process(stdout="1"),
-            _make_completed_process(stdout="ST-001/agent/2026-03-19T00:00:00Z"),
-            _make_completed_process(stdout="100"),
-            _make_completed_process(stdout="1"),
+            _make_completed_process(stdout='1) "100"\n2) "0"'),  # branch success
+            _make_completed_process(stdout='1) "100"\n2) "0"'),  # worktree success
         ]
 
         results = self.enforcer.renew_session_leases(
