@@ -182,14 +182,15 @@ class TestHumanGateInitialization:
 
     def test_default_initialization(self):
         """Test initialization with default parameters."""
-        gate = HumanGate()
+        with patch.dict(os.environ, {}, clear=True):
+            gate = HumanGate()
 
-        assert gate.redis is None
-        assert gate.discord_webhook_url is None
-        assert gate.emergency_approvers == set()
-        assert gate.approval_timeout_hours == 48
-        assert gate.reminder_interval_hours == 4
-        assert gate.dry_run is False
+            assert gate.redis is None
+            assert gate.discord_webhook_url is None
+            assert gate.emergency_approvers == set()
+            assert gate.approval_timeout_hours == 48
+            assert gate.reminder_interval_hours == 4
+            assert gate.dry_run is False
 
     def test_custom_initialization(self):
         """Test initialization with custom parameters."""
@@ -638,17 +639,18 @@ class TestDiscordNotifications:
     @pytest.mark.asyncio
     async def test_send_discord_notification_no_webhook(self):
         """Test that missing webhook returns False."""
-        gate = HumanGate(dry_run=False, discord_webhook_url=None)
+        with patch.dict(os.environ, {}, clear=True):
+            gate = HumanGate(dry_run=False, discord_webhook_url=None)
 
-        result = await gate._send_discord_notification(
-            pr_number=123,
-            pr_title="Test PR",
-            pr_author="developer1",
-            pr_url="https://example.com/pr/123",
-            files=["file1.py"],
-        )
+            result = await gate._send_discord_notification(
+                pr_number=123,
+                pr_title="Test PR",
+                pr_author="developer1",
+                pr_url="https://example.com/pr/123",
+                files=["file1.py"],
+            )
 
-        assert result is False
+            assert result is False
 
     @pytest.mark.asyncio
     async def test_send_reminder(self, gate):
