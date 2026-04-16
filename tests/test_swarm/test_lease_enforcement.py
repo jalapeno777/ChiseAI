@@ -589,7 +589,7 @@ class TestLeaseEnforcerRenewLease(unittest.TestCase):
 
         self.assertFalse(result.success)
         self.assertIsNotNone(result.error)
-        self.assertIn("missing", result.error.lower())
+        self.assertIn("invalid lua script", result.error.lower())
 
     @patch("scripts.swarm.lease_enforcement._redis_cli")
     def test_renewal_ownership_conflict(self, mock_cli):
