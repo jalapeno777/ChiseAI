@@ -690,9 +690,9 @@ class TestPolicyCompliance:
         for rule_name, entry in test_entries.items():
             if rule_name in rule_names:
                 should_promote, reason = engine.should_promote(entry)
-                assert should_promote is True, (
-                    f"Rule {rule_name} should trigger promotion"
-                )
+                assert (
+                    should_promote is True
+                ), f"Rule {rule_name} should trigger promotion"
 
 
 if __name__ == "__main__":

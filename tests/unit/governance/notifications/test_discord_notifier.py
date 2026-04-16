@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-
 from unittest.mock import MagicMock, patch
 
 from src.governance.notifications.digest_store import DigestStore
