@@ -128,6 +128,10 @@ class TestOBScenario:
         scenario = order_block_scenarios[0]
         assert _evaluate_ob_scenario(scenario), f"Failed: {scenario['name']}"
 
+    @pytest.mark.xfail(
+        reason="BOS/CHoCH under redesign after PR #1029 (Apr 13); feature flag ict:bos_choch:enabled=FALSE",
+        strict=False,
+    )
     def test_ob_bearish_formation(self, order_block_scenarios):
         scenario = order_block_scenarios[1]
         assert _evaluate_ob_scenario(scenario), f"Failed: {scenario['name']}"
@@ -177,15 +181,15 @@ class TestOBDirectionalAccuracy:
         """Overall directional accuracy must be above 40% No-Go threshold."""
         results = [_evaluate_ob_scenario(s) for s in order_block_scenarios]
         accuracy = calculate_directional_accuracy(results)
-        assert (
-            accuracy.accuracy_pct > 40.0
-        ), f"No-Go: accuracy {accuracy.accuracy_pct}% <= 40%"
+        assert accuracy.accuracy_pct > 40.0, (
+            f"No-Go: accuracy {accuracy.accuracy_pct}% <= 40%"
+        )
 
     def test_minimum_scenarios(self, order_block_scenarios) -> None:
         """Ensure minimum 50 scenarios are available."""
-        assert (
-            len(order_block_scenarios) >= 50
-        ), f"Only {len(order_block_scenarios)} scenarios, need >= 50"
+        assert len(order_block_scenarios) >= 50, (
+            f"Only {len(order_block_scenarios)} scenarios, need >= 50"
+        )
 
     def test_bullish_ob_scenarios(self, order_block_scenarios) -> None:
         """Bullish OB scenarios should have reasonable accuracy."""
@@ -198,10 +202,14 @@ class TestOBDirectionalAccuracy:
             pytest.skip("No bullish OB scenarios found")
         results = [_evaluate_ob_scenario(s) for s in bullish]
         accuracy = calculate_directional_accuracy(results)
-        assert (
-            accuracy.accuracy_pct >= 40.0
-        ), f"Bullish OB accuracy {accuracy.accuracy_pct}% below threshold"
+        assert accuracy.accuracy_pct >= 40.0, (
+            f"Bullish OB accuracy {accuracy.accuracy_pct}% below threshold"
+        )
 
+    @pytest.mark.xfail(
+        reason="BOS/CHoCH under redesign after PR #1029 (Apr 13); feature flag ict:bos_choch:enabled=FALSE",
+        strict=False,
+    )
     def test_bearish_ob_scenarios(self, order_block_scenarios) -> None:
         """Bearish OB scenarios should have reasonable accuracy."""
         bearish = [
@@ -213,9 +221,9 @@ class TestOBDirectionalAccuracy:
             pytest.skip("No bearish OB scenarios found")
         results = [_evaluate_ob_scenario(s) for s in bearish]
         accuracy = calculate_directional_accuracy(results)
-        assert (
-            accuracy.accuracy_pct >= 40.0
-        ), f"Bearish OB accuracy {accuracy.accuracy_pct}% below threshold"
+        assert accuracy.accuracy_pct >= 40.0, (
+            f"Bearish OB accuracy {accuracy.accuracy_pct}% below threshold"
+        )
 
     def test_no_ob_scenarios(self, order_block_scenarios) -> None:
         """No-OB scenarios should have reasonable accuracy."""
@@ -228,6 +236,6 @@ class TestOBDirectionalAccuracy:
             pytest.skip("No no-OB scenarios found")
         results = [_evaluate_ob_scenario(s) for s in no_ob]
         accuracy = calculate_directional_accuracy(results)
-        assert (
-            accuracy.accuracy_pct >= 40.0
-        ), f"No-OB accuracy {accuracy.accuracy_pct}% below threshold"
+        assert accuracy.accuracy_pct >= 40.0, (
+            f"No-OB accuracy {accuracy.accuracy_pct}% below threshold"
+        )

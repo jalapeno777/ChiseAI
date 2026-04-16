@@ -16,6 +16,16 @@ import pytest
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
+# Check if sentence-transformers model is available for embedding-dependent tests
+try:
+    from governance.tempmemory.deduplication import EmbeddingGenerator
+
+    _gen = EmbeddingGenerator()
+    _ST_MODEL_AVAILABLE = _gen._model_available
+    del _gen
+except Exception:
+    _ST_MODEL_AVAILABLE = False
+
 from governance.tempmemory.deduplication import (
     DEFAULT_SIMILARITY_THRESHOLD,
     DeduplicationAction,
@@ -82,6 +92,10 @@ class TestEmbeddingGenerator:
         # Different content should have lower similarity
         assert 0.0 <= similarity < 0.9
 
+    @pytest.mark.skipif(
+        not _ST_MODEL_AVAILABLE,
+        reason="sentence-transformers model not available; fallback embeddings produce low similarity",
+    )
     def test_compute_similarity_similar_content(self):
         """Test similarity of similar content."""
         gen = EmbeddingGenerator()
@@ -277,6 +291,10 @@ class TestDeduplicationEngine:
         """Test default similarity threshold."""
         assert DEFAULT_SIMILARITY_THRESHOLD == 0.92
 
+    @pytest.mark.skipif(
+        not _ST_MODEL_AVAILABLE,
+        reason="sentence-transformers model not available; fallback embeddings produce low similarity",
+    )
     def test_check_duplicate_with_similar_content(self, engine, mock_redis):
         """Test detecting similar content as duplicate."""
         # First index some content

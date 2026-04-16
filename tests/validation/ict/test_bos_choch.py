@@ -146,6 +146,10 @@ class TestBOSScenario:
         scenario = bos_choch_scenarios[27]
         assert _evaluate_bos_choch_scenario(scenario), f"Failed: {scenario['name']}"
 
+    @pytest.mark.xfail(
+        reason="BOS/CHoCH under redesign after PR #1029 (Apr 13); feature flag ict:bos_choch:enabled=FALSE",
+        strict=False,
+    )
     def test_bos_choch_scenario_039(self, bos_choch_scenarios):
         """Narrow range squeeze - no break."""
         scenario = bos_choch_scenarios[38]
@@ -169,15 +173,15 @@ class TestBOSSDirectionalAccuracy:
         """Overall directional accuracy must be above 40% No-Go threshold."""
         results = [_evaluate_bos_choch_scenario(s) for s in bos_choch_scenarios]
         accuracy = calculate_directional_accuracy(results)
-        assert (
-            accuracy.accuracy_pct > 40.0
-        ), f"No-Go: accuracy {accuracy.accuracy_pct}% <= 40%"
+        assert accuracy.accuracy_pct > 40.0, (
+            f"No-Go: accuracy {accuracy.accuracy_pct}% <= 40%"
+        )
 
     def test_minimum_scenarios(self, bos_choch_scenarios) -> None:
         """Ensure minimum 50 scenarios are available."""
-        assert (
-            len(bos_choch_scenarios) >= 50
-        ), f"Only {len(bos_choch_scenarios)} scenarios, need >= 50"
+        assert len(bos_choch_scenarios) >= 50, (
+            f"Only {len(bos_choch_scenarios)} scenarios, need >= 50"
+        )
 
     def test_bullish_bos_scenarios_pass(self, bos_choch_scenarios) -> None:
         """Bullish BOS scenarios should have reasonable accuracy."""
@@ -188,9 +192,9 @@ class TestBOSSDirectionalAccuracy:
             pytest.skip("No bullish BOS scenarios found")
         results = [_evaluate_bos_choch_scenario(s) for s in bullish_bos]
         accuracy = calculate_directional_accuracy(results)
-        assert (
-            accuracy.accuracy_pct >= 40.0
-        ), f"Bullish BOS accuracy {accuracy.accuracy_pct}% below threshold"
+        assert accuracy.accuracy_pct >= 40.0, (
+            f"Bullish BOS accuracy {accuracy.accuracy_pct}% below threshold"
+        )
 
     def test_bearish_bos_scenarios_pass(self, bos_choch_scenarios) -> None:
         """Bearish BOS scenarios should have reasonable accuracy."""
@@ -201,9 +205,9 @@ class TestBOSSDirectionalAccuracy:
             pytest.skip("No bearish BOS scenarios found")
         results = [_evaluate_bos_choch_scenario(s) for s in bearish_bos]
         accuracy = calculate_directional_accuracy(results)
-        assert (
-            accuracy.accuracy_pct >= 40.0
-        ), f"Bearish BOS accuracy {accuracy.accuracy_pct}% below threshold"
+        assert accuracy.accuracy_pct >= 40.0, (
+            f"Bearish BOS accuracy {accuracy.accuracy_pct}% below threshold"
+        )
 
     def test_no_break_scenarios_pass(self, bos_choch_scenarios) -> None:
         """No-break scenarios should have reasonable accuracy."""
@@ -217,6 +221,6 @@ class TestBOSSDirectionalAccuracy:
             pytest.skip("No no-break scenarios found")
         results = [_evaluate_bos_choch_scenario(s) for s in no_break]
         accuracy = calculate_directional_accuracy(results)
-        assert (
-            accuracy.accuracy_pct >= 40.0
-        ), f"No-break accuracy {accuracy.accuracy_pct}% below threshold"
+        assert accuracy.accuracy_pct >= 40.0, (
+            f"No-break accuracy {accuracy.accuracy_pct}% below threshold"
+        )

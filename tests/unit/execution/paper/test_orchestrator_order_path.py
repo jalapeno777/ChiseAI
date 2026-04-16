@@ -15,6 +15,7 @@ import pytest
 
 from execution.paper.models import OrderState, PaperOrder, TradeStatus
 from execution.paper.orchestrator import PaperTradingOrchestrator
+from execution.paper.risk_models import RiskViolation
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
@@ -156,9 +157,7 @@ class TestSignalToOrderPath:
         result = await orchestrator.process_signal(sample_signal)
 
         # Verify order simulator was called (order creation path reached)
-        assert mock_dependencies[
-            "order_simulator"
-        ].place_order.called, (
+        assert mock_dependencies["order_simulator"].place_order.called, (
             "Order simulator place_order() was NOT called - order creation path broken!"
         )
 
@@ -187,9 +186,7 @@ class TestSignalToOrderPath:
         result = await orchestrator.process_signal(sample_signal)
 
         # Verify order simulator was NOT called
-        assert not mock_dependencies[
-            "order_simulator"
-        ].place_order.called, (
+        assert not mock_dependencies["order_simulator"].place_order.called, (
             "Order simulator should NOT be called when kill switch is triggered"
         )
 
@@ -221,9 +218,7 @@ class TestSignalToOrderPath:
         result = await orchestrator.process_signal(sample_signal)
 
         # Verify order simulator was NOT called
-        assert not mock_dependencies[
-            "order_simulator"
-        ].place_order.called, (
+        assert not mock_dependencies["order_simulator"].place_order.called, (
             "Order simulator should NOT be called when no market price"
         )
 
@@ -236,10 +231,21 @@ class TestSignalToOrderPath:
         self, mock_dependencies, sample_signal
     ):
         """Test that risk enforcer rejection blocks order creation."""
+        # After ORM schema drift (ST-PAPER-RECON-008), violations are
+        # RiskViolation objects, not plain strings.  The orchestrator's
+        # _emit_gate_outcomes method accesses v.rule and v.message, so
+        # the mock must provide proper RiskViolation instances.
+        violation = RiskViolation(
+            rule="position_limit",
+            severity="block",
+            message="Position limit exceeded",
+            current_value=1.0,
+            limit_value=1.0,
+        )
         mock_dependencies["risk_enforcer"].validate_order = AsyncMock(
             return_value=MagicMock(
                 approved=False,
-                violations=["Position limit exceeded"],
+                violations=[violation],
                 position_size=0.0,
             )
         )
@@ -257,15 +263,16 @@ class TestSignalToOrderPath:
         result = await orchestrator.process_signal(sample_signal)
 
         # Verify order simulator was NOT called
-        assert not mock_dependencies[
-            "order_simulator"
-        ].place_order.called, (
+        assert not mock_dependencies["order_simulator"].place_order.called, (
             "Order simulator should NOT be called when risk enforcer rejects"
         )
 
         # Verify rejection
         assert result.status == TradeStatus.REJECTED
-        assert "Position limit exceeded" in result.reject_reason
+        # reject_reason is set to assessment.violations (list[RiskViolation])
+        # so check that the violation message appears in the stringified reason
+        reason_text = str(result.reject_reason)
+        assert "Position limit exceeded" in reason_text
 
     @pytest.mark.asyncio
     async def test_full_signal_flow_simulation(self, mock_dependencies, sample_signal):
@@ -326,9 +333,7 @@ class TestSignalToOrderPath:
             await asyncio.sleep(0.1)
 
             # Verify order was placed
-            assert mock_dependencies[
-                "order_simulator"
-            ].place_order.called, (
+            assert mock_dependencies["order_simulator"].place_order.called, (
                 "Order simulator place_order() was NOT called in full flow!"
             )
 
@@ -361,9 +366,9 @@ class TestOrderCreationPathBlockers:
         assert hasattr(orchestrator, "submit_signal"), "Missing submit_signal method"
         assert hasattr(orchestrator, "process_signal"), "Missing process_signal method"
         assert hasattr(orchestrator, "_create_order"), "Missing _create_order method"
-        assert hasattr(
-            orchestrator, "_processing_loop"
-        ), "Missing _processing_loop method"
+        assert hasattr(orchestrator, "_processing_loop"), (
+            "Missing _processing_loop method"
+        )
 
         # Verify all dependencies are set
         assert orchestrator.order_simulator is not None, "order_simulator not set"
