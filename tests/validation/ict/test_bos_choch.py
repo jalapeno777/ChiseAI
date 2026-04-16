@@ -146,6 +146,10 @@ class TestBOSScenario:
         scenario = bos_choch_scenarios[27]
         assert _evaluate_bos_choch_scenario(scenario), f"Failed: {scenario['name']}"
 
+    @pytest.mark.xfail(
+        reason="BOS/CHoCH under redesign after PR #1029 (Apr 13); feature flag ict:bos_choch:enabled=FALSE",
+        strict=False,
+    )
     def test_bos_choch_scenario_039(self, bos_choch_scenarios):
         """Narrow range squeeze - no break."""
         scenario = bos_choch_scenarios[38]

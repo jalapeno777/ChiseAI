@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock, patch
 
 from src.governance.notifications.digest_store import DigestStore
@@ -75,7 +76,10 @@ class TestDigestStore:
         with patch.object(store, "is_enabled", return_value=True):
             recovered = store.reload()
             assert len(recovered) == 1
-            assert recovered[0]["event_id"] == "evt-reload"
+            # reload() returns raw strings (no json.loads in production code),
+            # so parse the string in the test to verify content
+            event_data = json.loads(recovered[0])
+            assert event_data["event_id"] == "evt-reload"
 
     def test_fallback_when_redis_unavailable(self):
         """Test graceful fallback to memory when Redis fails."""

@@ -196,8 +196,8 @@ type: decision
 Test content
 """)
 
-            # Update integration to use temp directory
-            integration._migration_engine._tempmemory_path = tmpdir
+            # Update integration to use temp directory (production code expects Path)
+            integration._migration_engine._tempmemory_path = Path(tmpdir)
 
             metrics = integration.ingest_from_tempmemory_files(update_kpis=False)
 

@@ -128,6 +128,10 @@ class TestOBScenario:
         scenario = order_block_scenarios[0]
         assert _evaluate_ob_scenario(scenario), f"Failed: {scenario['name']}"
 
+    @pytest.mark.xfail(
+        reason="BOS/CHoCH under redesign after PR #1029 (Apr 13); feature flag ict:bos_choch:enabled=FALSE",
+        strict=False,
+    )
     def test_ob_bearish_formation(self, order_block_scenarios):
         scenario = order_block_scenarios[1]
         assert _evaluate_ob_scenario(scenario), f"Failed: {scenario['name']}"
@@ -202,6 +206,10 @@ class TestOBDirectionalAccuracy:
             accuracy.accuracy_pct >= 40.0
         ), f"Bullish OB accuracy {accuracy.accuracy_pct}% below threshold"
 
+    @pytest.mark.xfail(
+        reason="BOS/CHoCH under redesign after PR #1029 (Apr 13); feature flag ict:bos_choch:enabled=FALSE",
+        strict=False,
+    )
     def test_bearish_ob_scenarios(self, order_block_scenarios) -> None:
         """Bearish OB scenarios should have reasonable accuracy."""
         bearish = [

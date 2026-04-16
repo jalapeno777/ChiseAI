@@ -15,6 +15,7 @@ import pytest
 
 from execution.paper.models import OrderState, PaperOrder, TradeStatus
 from execution.paper.orchestrator import PaperTradingOrchestrator
+from execution.paper.risk_models import RiskViolation
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
@@ -236,10 +237,21 @@ class TestSignalToOrderPath:
         self, mock_dependencies, sample_signal
     ):
         """Test that risk enforcer rejection blocks order creation."""
+        # After ORM schema drift (ST-PAPER-RECON-008), violations are
+        # RiskViolation objects, not plain strings.  The orchestrator's
+        # _emit_gate_outcomes method accesses v.rule and v.message, so
+        # the mock must provide proper RiskViolation instances.
+        violation = RiskViolation(
+            rule="position_limit",
+            severity="block",
+            message="Position limit exceeded",
+            current_value=1.0,
+            limit_value=1.0,
+        )
         mock_dependencies["risk_enforcer"].validate_order = AsyncMock(
             return_value=MagicMock(
                 approved=False,
-                violations=["Position limit exceeded"],
+                violations=[violation],
                 position_size=0.0,
             )
         )
@@ -265,7 +277,10 @@ class TestSignalToOrderPath:
 
         # Verify rejection
         assert result.status == TradeStatus.REJECTED
-        assert "Position limit exceeded" in result.reject_reason
+        # reject_reason is set to assessment.violations (list[RiskViolation])
+        # so check that the violation message appears in the stringified reason
+        reason_text = str(result.reject_reason)
+        assert "Position limit exceeded" in reason_text
 
     @pytest.mark.asyncio
     async def test_full_signal_flow_simulation(self, mock_dependencies, sample_signal):
