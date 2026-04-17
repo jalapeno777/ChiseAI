@@ -1007,7 +1007,7 @@ class BybitDemoConnector:
                 )
 
                 ErrorRateTracker().record_operation(
-                    ErrorCategory.API,
+                    ErrorCategory.EXECUTION,
                     success=True,
                     error_details={
                         "operation": "place_order",
@@ -1051,7 +1051,7 @@ class BybitDemoConnector:
                 )
 
                 ErrorRateTracker().record_operation(
-                    ErrorCategory.API,
+                    ErrorCategory.EXECUTION,
                     success=False,
                     error_details={
                         "operation": "place_order",
@@ -1091,7 +1091,7 @@ class BybitDemoConnector:
                 )
 
                 ErrorRateTracker().record_operation(
-                    ErrorCategory.API,
+                    ErrorCategory.EXECUTION,
                     success=False,
                     error_details={
                         "operation": "place_order",
@@ -1242,7 +1242,7 @@ class BybitDemoConnector:
                     )
 
                     ErrorRateTracker().record_operation(
-                        ErrorCategory.API,
+                        ErrorCategory.EXECUTION,
                         success=True,
                         error_details={
                             "operation": "attach_trading_stops",
@@ -1298,7 +1298,7 @@ class BybitDemoConnector:
             )
 
             ErrorRateTracker().record_operation(
-                ErrorCategory.API,
+                ErrorCategory.EXECUTION,
                 success=False,
                 error_details={
                     "operation": "attach_trading_stops",
@@ -1382,7 +1382,7 @@ class BybitDemoConnector:
                 )
 
                 ErrorRateTracker().record_operation(
-                    ErrorCategory.API,
+                    ErrorCategory.EXECUTION,
                     success=True,
                     error_details={
                         "operation": "cancel_order",
@@ -1418,7 +1418,7 @@ class BybitDemoConnector:
                 )
 
                 ErrorRateTracker().record_operation(
-                    ErrorCategory.API,
+                    ErrorCategory.EXECUTION,
                     success=False,
                     error_details={
                         "operation": "cancel_order",
@@ -1447,7 +1447,7 @@ class BybitDemoConnector:
                 )
 
                 ErrorRateTracker().record_operation(
-                    ErrorCategory.API,
+                    ErrorCategory.EXECUTION,
                     success=False,
                     error_details={
                         "operation": "cancel_order",

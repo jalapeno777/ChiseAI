@@ -1155,6 +1155,90 @@ class TestBybitDemoConnectorErrorRateWiring:
             or "'operation': 'get_market_price'" in source
         )
 
+    def test_place_order_uses_execution_category(self):
+        """Verify place_order() uses ErrorCategory.EXECUTION for order operations."""
+        import inspect
+
+        from src.execution.connectors.bybit_demo_connector import BybitDemoConnector
+
+        source = inspect.getsource(BybitDemoConnector)
+        # Find the place_order method source
+        place_order_start = source.find("def place_order(")
+        assert place_order_start != -1, "place_order method not found"
+
+        # Extract the place_order method (roughly)
+        place_order_end = source.find("\n    def ", place_order_start + 1)
+        if place_order_end == -1:
+            place_order_end = len(source)
+
+        place_order_source = source[place_order_start:place_order_end]
+
+        # Count EXECUTION vs API usage in place_order
+        execution_count = place_order_source.count("ErrorCategory.EXECUTION")
+        api_count = place_order_source.count("ErrorCategory.API")
+
+        # place_order should use EXECUTION for order operations
+        assert execution_count >= 3, (
+            f"place_order should use ErrorCategory.EXECUTION at least 3 times "
+            f"(success + 2 failure paths), found {execution_count}"
+        )
+        # get_market_price uses API but that's before place_order in the file
+        # We just verify EXECUTION is used in place_order context
+
+    def test_cancel_order_uses_execution_category(self):
+        """Verify cancel_order() uses ErrorCategory.EXECUTION for cancellation."""
+        import inspect
+
+        from src.execution.connectors.bybit_demo_connector import BybitDemoConnector
+
+        source = inspect.getsource(BybitDemoConnector)
+        # Find the cancel_order method source
+        cancel_order_start = source.find("async def cancel_order(")
+        assert cancel_order_start != -1, "cancel_order method not found"
+
+        # Extract the cancel_order method (roughly)
+        cancel_order_end = source.find("\n    async def ", cancel_order_start + 1)
+        if cancel_order_end == -1:
+            cancel_order_end = source.find("\n    def ", cancel_order_start + 1)
+        if cancel_order_end == -1:
+            cancel_order_end = len(source)
+
+        cancel_order_source = source[cancel_order_start:cancel_order_end]
+
+        # cancel_order should use EXECUTION for cancellation operations
+        execution_count = cancel_order_source.count("ErrorCategory.EXECUTION")
+        assert execution_count >= 3, (
+            f"cancel_order should use ErrorCategory.EXECUTION at least 3 times "
+            f"(success + 2 failure paths), found {execution_count}"
+        )
+
+    def test_attach_trading_stops_uses_execution_category(self):
+        """Verify _attach_trading_stops_with_retry uses ErrorCategory.EXECUTION."""
+        import inspect
+
+        from src.execution.connectors.bybit_demo_connector import BybitDemoConnector
+
+        source = inspect.getsource(BybitDemoConnector)
+        # Find the _attach_trading_stops_with_retry method source
+        attach_start = source.find("async def _attach_trading_stops_with_retry(")
+        assert attach_start != -1, "_attach_trading_stops_with_retry method not found"
+
+        # Extract the method (roughly)
+        attach_end = source.find("\n    async def ", attach_start + 1)
+        if attach_end == -1:
+            attach_end = source.find("\n    def ", attach_start + 1)
+        if attach_end == -1:
+            attach_end = len(source)
+
+        attach_source = source[attach_start:attach_end]
+
+        # Should use EXECUTION for TP/SL attachment
+        execution_count = attach_source.count("ErrorCategory.EXECUTION")
+        assert execution_count >= 2, (
+            f"_attach_trading_stops_with_retry should use ErrorCategory.EXECUTION "
+            f"at least 2 times (success + failure), found {execution_count}"
+        )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
