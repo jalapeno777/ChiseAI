@@ -197,7 +197,7 @@ completed:
       - opencode_autodispatch.render_prompt() flagged for future consideration
     owner: jarvis
     priority: P2
-    status: in_progress
+    status: completed
     story_points: 2
     title: ContextAssemblyBoundary Runtime Adoption Audit
   - acceptance_criteria:
