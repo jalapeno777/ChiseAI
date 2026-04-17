@@ -4330,6 +4330,20 @@ validations:
     test_method: automated
     owner: merlin
 
+  - id: V-CI-REMEDIATION-001
+    title: CI Test Suite Health Remediation
+    epic_id: null
+    story_id: ST-CI-REMEDIATION-BATCH5
+    status: validated
+    description: RemEDIATE ~293 pre-existing test failures across validation, governance, swarm, discord, execution, integration, and PR lifecycle suites. 5 batches merged. Remaining E2E tests mitigated by existing skip markers.
+    acceptance_criteria:
+      - All actionable CI test failures resolved or properly skipped
+      - No regressions in previously passing tests
+      - Production code bug in StaleDetector fixed
+      - CI pipeline passes green on all merge PRs
+    test_method: automated
+    owner: jarvis
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
