@@ -49,7 +49,7 @@ completed:
   story_points: 2
   completion_date: '2026-04-16'
   merge_commit: 8729d37c
-  pr_number: null
+  pr_number: '1042'
   branch: feature/BATCH-1-CI-FIXES
   notes:
   - Fixed _field loop variable shadowing in src/data/validation.py (25 tests)
@@ -66,7 +66,7 @@ completed:
   story_points: 2
   completion_date: '2026-04-16'
   merge_commit: 318664dc
-  pr_number: null
+  pr_number: '1038'
   branch: feature/BATCH-2-CI-FIXES
   notes:
   - Fixed governance severity mapping (2 tests)
@@ -86,7 +86,7 @@ completed:
   story_points: 3
   completion_date: '2026-04-16'
   merge_commit: 46b233bd
-  pr_number: null
+  pr_number: '1039'
   branch: feature/BATCH-3-CI-FIXES
   notes:
   - Fixed 2 collection errors (import paths)
@@ -836,6 +836,8 @@ backlog:
   story_points: 2
   title: PAPER ORM Schema Drift Remediation
   completion_date: '2026-04-12'
+  merge_commit: 9ab86188b
+  pr_number: '1009'
   completion_notes: 'Schema fix already on main. Verified: outcome_id, execution_venue, confidence_score columns present. R2a canary restarted 2026-04-12 with corrected schema.'
 - created_date: '2026-03-02'
   current_completion: 76%
@@ -1093,6 +1095,8 @@ backlog:
   status: completed
   story_points: 3
   completion_date: '2026-04-14'
+  merge_commit: 9ab86188b
+  pr_number: '1042'
   commits:
   - 61d4b7c27
   - c0599b2d8
