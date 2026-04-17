@@ -1051,7 +1051,7 @@ backlog:
     false-positive Discord alerts from stale data. A producer-safety gate was added
     (commit b835f4ad) to suppress alerts on stale data, but the tracker needs to be
     wired into the actual execution pipeline.
-  status: planned
+  status: in_progress
   priority: P2
   story_points: 3
   created_date: '2026-04-08'
