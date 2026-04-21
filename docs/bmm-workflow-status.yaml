@@ -24,8 +24,7 @@ metadata:
       exposure"
     - "I-PIPE-001 merged (PR #974): Durable signal storage replacing _store_signal()
       stub"
-    - ST-WIRE-ERROR-RATE-TRACKER deferred to post-Day-3-checkpoint (2026-04-11) — P2,
-      3SP
+    - "ST-WIRE-ERROR-RATE-TRACKER: completed before deferral deadline (2026-04-11)"
     - "Docker healthcheck procps fix merged (PR #972): chiseai-signal-supervisor and
       chiseai-ohlcv-ingestion now healthy"
     - "PAPER-RECON epic completed (2026-04-12): 8 branches merged, orphan fills policy

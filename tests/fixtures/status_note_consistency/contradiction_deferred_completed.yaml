@@ -1,0 +1,8 @@
+metadata:
+  status_notes:
+    - "ST-DEFERRED-TEST deferred to post-Day-3-checkpoint (2026-04-11) — P2, 3SP"
+backlog:
+  - id: ST-DEFERRED-TEST
+    title: Test Story
+    status: completed
+    priority: P2

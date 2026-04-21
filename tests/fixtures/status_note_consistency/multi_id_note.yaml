@@ -1,0 +1,10 @@
+metadata:
+  status_notes:
+    - "ST-001 and ST-002 deferred to backlog pending architecture review"
+backlog:
+  - id: ST-001
+    title: Test Story 1
+    status: completed
+  - id: ST-002
+    title: Test Story 2
+    status: deferred
