@@ -4307,17 +4307,19 @@ validations:
     story_id: ST-WIRE-ERROR-RATE-TRACKER
     status: validated
     description: |
-      Validate ErrorRateTracker is wired into execution pipeline with EXECUTION category
-      tracking. All order operations (place_order, cancel_order, attach_trading_stops) use
-      ErrorCategory.EXECUTION. ErrorRateMonitor can now read real data from Redis.
+      Status note consistency fix — note corrected from "deferred" to "completed before deferral deadline (2026-04-11)".
+      ErrorRateTracker wired into execution pipeline with EXECUTION category tracking.
+      All order operations (place_order, cancel_order, attach_trading_stops) use ErrorCategory.EXECUTION.
+      ErrorRateMonitor can now read real data from Redis.
     acceptance_criteria:
       - ErrorRateTracker.record_operation() called on every execution attempt
       - EXECUTION category in Redis reflects real-time error rates
       - Discord alerts fire only when genuine error rate thresholds exceeded
       - Existing tests pass + new unit tests cover integration points
       - No performance degradation from tracking overhead
+      - Status note no longer contradicts backlog item status
     test_method: automated
-    owner: dev
+    owner: ops-team
 
   # ============================================================
   # REPO-STORY-LINKAGE-001: Epic/Story Linkage Reconciliation
