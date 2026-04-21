@@ -130,6 +130,580 @@ completed:
       - Fixed git rev-list --count bug in StaleDetector production code (PR #1042)
       - E2E skip markers cancelled — existing skip markers + pytest-timeout sufficient
     test_results: 11 tests fixed
+  - id: AUTOCOG-ROUTINE-001
+    title: 3-Tier Autocog Routine Automation
+    description:
+      Document Autocog 3-tier routine automation — heartbeat (6h), weekly
+      review, and monthly audit cadences with manual triggers, feature flag disable,
+      drift thresholds, and alert routing.
+    owner: jarvis
+    priority: P1
+    status: completed
+    merge_commit: 46c42b5f0
+    story_points: 1
+    branch: feature/AUTOCOG-REMEDIATION-C5-docs
+    evidence_files:
+      - docs/evidence/AUTOCOG-ROUTINE-SCHEDULE.md
+    acceptance_criteria:
+      - Autocog 3-tier routine schedule documented (heartbeat/weekly/monthly)
+      - Manual trigger commands provided for all 3 cadences
+      - Disable mechanism documented (autocog:routine:enabled feature flag)
+      - Drift score thresholds documented (warning threshold 0.5, critical threshold 0.85)
+      - Alert channel routing documented (alerts channel for critical, autocog-log channel
+        for weekly)
+      - All script file locations documented
+  - id: LLM-PROVIDER-FIX-001
+    title: LLM Provider Infrastructure Remediation and Testing Framework (Phases A-E)
+    description:
+      Multi-phase LLM Provider Infrastructure Remediation and Testing Framework.
+      Phase A - Kimi adapter remediation. Phase B - Live smoke matrix across all providers.
+      Phase C - Lock-in reproducibility with runbooks and preflight checks. Phase D
+      - Latency study framework. Phase E - Final E2E validation framework. All credential
+      issues documented (KIMI key invalid, ZAI not configured, Zhipu quota exhausted).
+    owner: jarvis
+    priority: P0
+    status: merged
+    merge_commit: 8bf1c7b
+    pr_number: "383"
+    created_date: "2026-03-06"
+    merged_date: "2026-03-06"
+    story_points: 5
+    branch: feature/LLM-PROVIDER-FIX-001-consolidation
+    commit_sha: 758400c
+    phases:
+      - branch: feature/LLM-PROVIDER-FIX-001-ADAPTER-phase-a
+        commit: 6c99749
+        name: Phase A - Kimi Adapter Remediation
+        status: complete
+      - branch: feature/LLM-PROVIDER-FIX-001-SMOKE-phase-b
+        commit: docs/tempmemories/LLM-PROVIDER-FIX-001-smoke-matrix.json
+        name: Phase B - Smoke Matrix
+        status: complete
+      - branch: feature/LLM-PROVIDER-FIX-001-LOCKIN-phase-c
+        commit: 365de5c
+        name: Phase C - Lock-in Reproducibility
+        status: complete
+      - branch: feature/LLM-PROVIDER-FIX-001-LATENCY-phase-d
+        commit: 47ccdf8
+        name: Phase D - Latency Study
+        status: complete
+      - branch: feature/LLM-PROVIDER-FIX-001-E2E-phase-e
+        commit: dfcafb0
+        name: Phase E - Final E2E
+        status: complete
+    notes:
+      - "Phase A: Adapter infrastructure verified, kimi_model default updated to kimi-k2.5"
+      - "Phase B: Smoke matrix 0/4 at test time (2026-03-06), resolved via LLM-PROVIDER-FIX-003 (2026-03-09) - 313/324 tests passing (98.77%)"
+      - "Phase C: Runbooks and preflight script created for reproducible deployments"
+      - "Phase D: Latency study framework ready, 30s timeout recommended"
+      - "Phase E: E2E script ready, dry-run passed with full validation checklist"
+      - "Smoke Matrix: Kimi (401 invalid key), Z.ai (not configured), Zhipu (429 quota exhausted)"
+      - "Files: 9 new files, 2694 lines added across all phases"
+      - "Provider Status: Infrastructure OK, all providers blocked on credentials"
+      - "MERGED: All phases completed and merged to main via PR #383"
+    acceptance_criteria:
+      - "Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)"
+      - "Phase B: Smoke matrix completed (0/4 at test time 2026-03-06), resolved via LLM-PROVIDER-FIX-003 (2026-03-09) with 313/324 tests passing"
+      - "Phase C: Runbooks created (llm-provider-configuration.md, llm-provider-smoke-tests.md)"
+      - "Phase C: Preflight script created (llm_provider_check.sh) for pre-deployment validation"
+      - "Phase D: Latency study framework ready (30s timeout recommended per PAPER-LLM-TIMEOUT-001)"
+      - "Phase E: E2E test script ready (llm_provider_e2e.py) with full validation checklist"
+      - "All documentation committed and temp memory files preserved"
+      - "Merged to main via PR"
+  - id: AUDIT-DELTA-FIX-001
+    title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
+    description:
+      Remediation of PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI findings including
+      cross-branch verification guardrail, merge authority updates, and memory deduplication
+    owner: senior-dev
+    priority: P0-CRITICAL
+    status: completed
+    merge_commit: 48725e8068161d60222eaaf154a499781e00a268
+    merge_commits:
+      - 48725e8068161d60222eaaf154a499781e00a268
+      - 56fb76ee36cd9d900a5aec4870d47280334efe95
+      - 0ce77cf31d9fde4ae207fd755992ad67b5cb16e9
+    pr_number: "407"
+    created_date: "2026-03-07"
+    related_audit: PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI
+    evidence_commit: b238ebb645c761eb8ddd4e242628ca8e5645dfbc
+    evidence_files:
+      - docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md
+      - docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md
+    remediation_pr_numbers:
+      - 407
+      - 408
+      - 410
+    acceptance_criteria:
+      - Cross-branch verification guardrail implemented in AGENTS.md and agent files
+      - AUDIT-DELTA evidence files created and committed
+      - All three remediation PRs merged (#407, #408, #410)
+      - Workflow status updated with audit-delta disposition
+    notes:
+      - "Root cause: False merge claims in BrainEval CI audit"
+      - "Remediation: git branch --contains guardrail added to all agent docs"
+      - "Related audit: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md"
+      - "Evidence index: 574 lines documenting all remediation work"
+  - id: AUTOCOG-2026-03-27
+    title: AUTOCOG Sprint Closeout
+    description:
+      Sprint AUTOCOG-2026-03-27 closed with 13 of 16 stories merged. 2 stories
+      deferred to backlog for future scheduling (ST-AUTOCOG-007 completed via FIX-AUTOCOG-007-A/B).
+    sprint_id: AUTOCOG-2026-03-27
+    owner: jarvis
+    priority: P1
+    status: completed
+    story_count: 16
+    story_points: 48
+    completion_date: "2026-03-27"
+    closeout_date: "2026-03-27"
+    merge_commit: a0ddb8559b0c504d427b8d5a136fdbf7c5f07969
+    pr_number: "760"
+    rationale: Sprint closed at inception, items moved to backlog for future scheduling
+    completed_stories:
+      - id: ST-AUTOCOG-001
+        status: merged
+      - id: ST-AUTOCOG-004
+        status: merged
+      - id: ST-AUTOCOG-005-T2
+        status: merged
+      - id: ST-AUTOCOG-005-T3
+        status: merged
+      - id: ST-AUTOCOG-006
+        status: merged
+      - id: ST-AUTOCOG-008
+        status: merged
+      - id: ST-AUTOCOG-009
+        status: merged
+      - id: ST-AUTOCOG-010
+        status: merged
+      - id: ST-AUTOCOG-011
+        status: merged
+      - id: ST-AUTOCOG-012
+        status: merged
+      - id: ST-AUTOCOG-013
+        status: merged
+      - id: ST-AUTOCOG-015
+        status: merged
+      - id: ST-AUTOCOG-016
+        status: merged
+    deferred_sp: 6
+    deferred_stories:
+      - id: ST-AUTOCOG-003
+        title: sys.path Fix
+      - id: ST-AUTOCOG-014
+        title: Autonomy Tuning
+    notes:
+      - Sprint closed at inception - items moved to backlog for future scheduling
+      - 13 stories merged to main
+      - 2 stories deferred (6 SP)
+      - Module imports successfully - 312 tests passing
+      - "Critical fixes: Discord spam prevention, BeliefStore Redis persistence"
+      - "Deferred stories: ST-AUTOCOG-003, ST-AUTOCOG-014"
+      - ST-AUTOCOG-002 and ST-AUTOCOG-005-T1 completed per Critic review (2026-03-27)
+      - ST-AUTOCOG-007 (Belief Expansion) completed via FIX-AUTOCOG-007-A (2026-03-28, SHA 211de68) and FIX-AUTOCOG-007-B (registry update)
+  - id: FEATURE-FLAGS-REDIS-001
+    title: Feature Flag Persistence
+    description: Add Redis/DB persistence for feature flags that currently reset on restart
+    owner: dev
+    priority: P1
+    status: completed
+    story_points: 2
+    completion_date: "2026-03-28"
+    merge_commit: d1d7bc0b4
+    pr_number: "780"
+    acceptance_criteria:
+      - Feature flags persist across restart
+      - Flags can be toggled via Redis
+      - Backward compatible with existing usage
+    notes:
+      - Implemented in src/config/feature_flags.py
+      - 19 new tests added, all passing
+      - "Redis keys: chise:feature_flags:config:*"
+  - id: PAPER-008
+    title: Consolidate Startup Scripts
+    description: "Consolidate startup scripts by removing deprecated start_consumer.py which had hardcoded paths to /tmp/worktrees/PAPER-NOGO-REMEDIATION-002. The canonical launcher is run_signal_consumer.py which uses proper relative paths."
+    owner: senior-dev
+    priority: P2
+    status: completed
+    story_points: 2
+    completion_date: "2026-03-29"
+    merge_commit: e0c0fe69199bb91045838cf21147a4584358d90d
+    pr_number: "842"
+    acceptance_criteria:
+      - scripts/start_consumer.py removed (had hardcoded broken paths)
+      - scripts/run_signal_consumer.py confirmed as canonical launcher
+      - No hardcoded /tmp/worktrees/ paths in scripts/
+    notes:
+      - start_consumer.py removed - had hardcoded /tmp/worktrees/PAPER-NOGO-REMEDIATION-002 paths
+      - run_signal_consumer.py is the canonical launcher with relative paths
+      - No hardcoded worktree paths remain in scripts/
+  - id: SAFETY-MERGE-AUTHORITY-001
+    title: Remove Direct Merge Bypass from Scripts
+    description: 'P0 CRITICAL - Removed direct merge bypass ("Do": "merge") from 4 scripts that could bypass CI checks. Files modified: scripts/pr_lifecycle/auto_pr_merge.py, scripts/ops/merge_reconciler.py, scripts/pr_lifecycle/recovery_handlers.py, scripts/gitea_pr_automerge.py.'
+    owner: jarvis
+    priority: P0-CRITICAL
+    status: completed
+    story_points: 2
+    completion_date: "2026-03-29"
+    merge_commit: 60fe02b6ffc56e8ac31e6a23645c4bc658897dbd
+    merge_commits:
+      - 67f149e
+      - ef3b0f3
+      - 60fe02b
+    pr_number: "837"
+    notes:
+      - "PR #837 (partial), final fix via direct Merlin merge"
+      - "Files: auto_pr_merge.py, merge_reconciler.py, recovery_handlers.py, gitea_pr_automerge.py"
+  - id: REPO-AUDIT-001
+    title: Override-Force Audit Logging
+    description: New scripts/audit/override_audit.py module. 5 scripts instrumented with Redis audit logging for CHISE_ALLOW_NON_MERLIN_*, FORCE_DEPENDENCY_AUDIT, CI_FORCE_FULL, ALLOW_SIMULATOR_FALLBACK. 30-day TTL, stderr fallback.
+    owner: jarvis
+    priority: P1
+    status: completed
+    story_points: 1
+    completion_date: "2026-03-29"
+    pr_number: "~"
+    merge_commit: 7d2987a58ebe51081a957a37f1d10479e80ca156
+    notes:
+      - "New module: scripts/audit/override_audit.py"
+      - 5 scripts instrumented with Redis audit logging
+      - 30-day TTL with stderr fallback
+  - id: REPO-VERIFY-001
+    title: Post-Merge Verification Automation
+    description: New scripts/ops/post_merge_verify.sh (~500 lines) automating the 5-step reconcile loop from AGENTS.md. Supports --ci JSON mode, exit codes 0/1/2.
+    owner: jarvis
+    priority: P1
+    status: completed
+    story_points: 2
+    completion_date: "2026-03-29"
+    pr_number: "~"
+    merge_commit: 1ba19a8512c510d5004db76b543a0ed873ea29ff
+    notes:
+      - "New script: scripts/ops/post_merge_verify.sh (~500 lines)"
+      - Automates 5-step reconcile loop from AGENTS.md
+      - Supports --ci JSON mode with exit codes 0/1/2
+  - id: REPO-CI-001
+    title: CI Image Tag Drift Fix
+    description: scripts/ci/rebuild_ci_image.sh now updates ALL Woodpecker configs (ci.yaml, push.yaml, cron-security.yaml) via WOODPECKER_CONFIGS array. Added stale tag verification step.
+    owner: jarvis
+    priority: P1
+    status: completed
+    story_points: 1
+    completion_date: "2026-03-29"
+    pr_number: "~"
+    merge_commit: 4bc124e01bcfa51d2bcba86174c1771071ce927c
+    notes:
+      - "Script: scripts/ci/rebuild_ci_image.sh"
+      - Updates all Woodpecker configs via WOODPECKER_CONFIGS array
+      - Added stale tag verification step
+  - id: LESSONS-001
+    title: Lessons Normalization
+    description: '"12 free-text lessons converted to LESSON template format, 3 duplicate truth-gate lessons consolidated (canonical: LESSON-20260318-worker-verification). Total: 59 structured lessons. Added 4 new lessons and deprecated 5 old lessons."'
+    owner: jarvis
+    priority: P1
+    status: completed
+    story_points: 2
+    completion_date: "2026-03-29"
+    pr_number: "847"
+    merge_commit: 19253c50c1f33f2ce1b380f93e049ce22d790fea
+    notes:
+      - 12 free-text lessons converted to LESSON template format
+      - 3 duplicate truth-gate lessons consolidated
+      - "Canonical: LESSON-20260318-worker-verification"
+      - "Total: 59 structured lessons"
+      - Added 4 new lessons, deprecated 5 old lessons
+      - "Related commit: 282ed00c"
+  - id: EP-SIG-OUT-001
+    title: Signal-to-Outcome Pipeline
+    description: "Signal-to-outcome correlation linkage, outcome writer runtime path, and outcome type classification. Establishes the full pipeline from signal generation through outcome recording and categorization."
+    owner: jarvis
+    priority: P1
+    status: completed
+    story_points: 3
+    completion_date: "2026-03-30"
+    pr_number: "859"
+    merge_commit: 4694d21703dfebe838f51df7846f0089896034be
+    stories:
+      - id: ST-SIG-OUT-001
+        title: Signal-to-outcome correlation linkage
+        status: completed
+      - id: ST-SIG-OUT-002
+        title: Outcome writer runtime path
+        status: completed
+      - id: ST-SIG-OUT-003
+        title: Outcome type classification
+        status: completed
+    notes:
+      - "ST-SIG-OUT-001: Signal-to-outcome correlation linkage"
+      - "ST-SIG-OUT-002: Outcome writer runtime path"
+      - "ST-SIG-OUT-003: Outcome type classification"
+  - id: ST-SKILL-DR-001
+    title: Deep Research Skill Creation
+    description: Created chiseai-deep-research skill with systematic methodology, multi-source synthesis, evidence grading, and structured deliverables. Includes "When Not To Use" section, corrected skill references, and schema compliance fixes.
+    owner: merlin
+    priority: P1
+    status: completed
+    story_points: 2
+    completion_date: "2026-03-30"
+    pr_number: "872"
+    merge_commit: 9451226f9cfececcb718d5fb266e4e42339d6b7f
+    target_commit: 15921483bbd4e61033707a67a959f0d9091edaca
+    notes:
+      - "Skill: .opencode/skills/chiseai-deep-research/SKILL.md"
+      - "Fixes: description quoting, When Not To Use section, bmad-create-architecture refs"
+      - Merged via Merlin authority, feature branch deleted
+      - "REMEDIATION: SKILL.md replaced with approved 371-line V3 design on 2026-03-30 (original 157-line generic was incorrect)"
+  - id: SPRINT-MVP-PROVING-GROUND
+    title: MVP Proving Ground Sprint
+    description: MVP Proving Ground sprint — production hardening + observability + launch readiness. All 12 stories merged to main across 4 batches (Batch 1A, 1B, 2A, 2B).
+    owner: jarvis
+    priority: P1
+    status: completed
+    story_points: 25
+    completion_date: "2026-04-05"
+    merge_commit: 54760c7f309848b3da5a5d16f2c0b8991a891fee
+    stories:
+      - id: ST-PAPER-BURN-001
+        title: Burn-in Tracking System
+        status: merged
+        merge_commit: 3e8d89e496c5ee56cb43faf2169ce3228b13fc99
+      - id: ST-PAPER-GUARD-001
+        title: Burn-in Bypass Guard
+        status: merged
+        merge_commit: a034e9060a43d6f97a708824c94b3c222895bc39
+      - id: ST-ICT-S3
+        title: Signal Confidence Initialization
+        status: merged
+        merge_commit: c4f401102abbabb7cedadc9bd33d2b06907fa57f
+      - id: ST-PAPER-POS-001
+        title: Position Persistence Fix
+        status: merged
+        merge_commit: c545958ff205d04bbd013b7a17f2a574e07e9080
+      - id: ST-ICT-S2
+        title: Signal Quality Filter
+        status: merged
+        merge_commit: 64c0030f4ec677a28d1ec9ae977d51c731f34d3e
+      - id: ST-ICT-P4
+        title: Signal Dedup Wiring
+        status: merged
+        merge_commit: 5e5ff1cefc8b2cea9bc14740c8ed298803139da6
+      - id: ST-ICT-P1
+        title: Signal Outcome DB Backend
+        status: merged
+        merge_commit: 5756adb4766b3a2815c1a0c2744d219d1650b821
+      - id: ST-LAUNCH-KILL-001
+        title: Kill Switch E2E Tests
+        status: merged
+        merge_commit: 45624141d5a49366ffe190348be0a27fe4895521
+      - id: ST-PAPER-REPORT-001
+        title: Daily Paper Health Report
+        status: merged
+        merge_commit: 0123a173db6ae54b4f2226c0d17482de4d6502f8
+      - id: ST-LAUNCH-VAL-001
+        title: Launch Readiness Validation
+        status: merged
+        merge_commit: 722b244bb13564d9d1d9267ab2a33a286a0a319e
+      - id: ST-CI-OBS-001
+        title: CI Observability Report
+        status: merged
+        merge_commit: d3900ef1ee2a2370e9bf77d32f3549078114fce6
+      - id: ST-PIPELINE-COMPLETE-001
+        title: Pipeline Transparency Completion
+        status: merged
+        merge_commit: 1d4c4ae881d05da5c920d8c128334b549f77bddc
+      - id: ST-LAUNCH-016
+        title: Runbook Validation & Documentation
+        description: Validate operational runbooks for safety and ML operations
+        epic_id: EP-LAUNCH-004
+        owner: ops-team
+        priority: P1
+        status: completed
+        story_points: 2
+        completion_date: "2026-04-12"
+        notes:
+          - 8/8 ACs passed — runbook validation complete
+        evidence_files:
+          - docs/validation/runbook_validation_results.md
+    notes:
+      - 12 stories completed in 2 days
+      - "Batch 1A: burn-in + guard + signal confidence"
+      - "Batch 1B: position fix + quality filter + dedup wiring + outcome DB"
+      - "Batch 2A: kill switch E2E + health report + launch validation + CI observability"
+      - "Batch 2B: pipeline transparency completion + workflow status update"
+      - All commits verified on main via git branch --contains
+      - 4 new lessons captured in docs/tempmemories/lessons.md
+  - id: SESSION-CLEANUP-001
+    title: Repository Cleanup and Hygiene Maintenance
+    description: Repository cleanup and hygiene maintenance including branch pruning, worktree cleanup, stash management, and documentation updates
+    owner: jarvis
+    priority: P2
+    status: completed
+    story_points: 3
+    created_date: "2026-03-05"
+    completion_date: "2026-03-05"
+    handoff_document: docs/handoffs/session-handoff-2026-03-05.md
+    redis_iterlog_key: bmad:chiseai:iterlog:story:SESSION-CLEANUP-001
+    acceptance_criteria:
+      - All merged branches older than 7 days are pruned
+      - Stale worktrees are removed and tracked in Redis
+      - Stashes older than 14 days without active context are dropped
+      - Active branches and worktrees are documented with rationale
+      - Redis iterlog key contains complete audit trail
+    notes:
+      - "Branches pruned: 14 merged branches"
+      - "Stashes dropped: 11 (this session)"
+      - "Stashes retained: 1 (ST-KPI-FIX-002)"
+      - "Worktrees cleaned: Multiple stale worktrees"
+      - "Correction applied: 2026-03-05 - Corrected branch names, stash disposition, and counts"
+      - "Canonical iterlog: bmad:chiseai:iterlog:story:SESSION-CLEANUP-001"
+      - Superseded safety stash dropped (stash@{0}) - SAFETY-001 work merged
+  - id: BL-CI-PHASE3
+    title: CI Phase 3 Enhancements
+    description: Advanced CI enhancements beyond Phase 2 hardening
+    owner: ST-CI-001 continuation
+    priority: P2
+    status: completed
+    story_points: 3
+    created_date: "2026-03-02"
+    depends_on:
+      - ST-CI-001
+    acceptance_criteria: TBD
+    notes:
+      - "Phase 1 (Assessment) completed: 31 issues identified (P0:2, P1:6, P2:7)"
+      - "Phase 2 (Pipeline Hardening) completed: Epic status sync fixed, CI documentation updated"
+      - Phase 3 scope to be defined based on Phase 2 outcomes
+  - id: BL-EP-ICT-007-P2-BOS-CHOCH-REDESIGN
+    title: BOS/CHoCH Architecture Redesign for EP-ICT-007 Phase 2
+    description: Redesign CHoCH detection logic to compare structure level breaks (price closing beyond established swing H/L) instead of trivially true swing price comparisons. Requires architecture review. See docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md for 3 redesign options.
+    owner: ml-signal-engineering
+    priority: P2
+    status: completed
+    story_points: 5
+    completion_date: "2026-04-13"
+    depends_on:
+      - EP-ICT-007
+    decision_debt: DD-BOS-CHOCH-REDESIGN
+    merge_commit: 05d384e2609f1d2de265017629bd25fbaa32bde6
+    pr_number: "1029"
+    evidence_files:
+      - docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md
+    acceptance_criteria:
+      - CHoCH detection uses candle close_price instead of swing.price
+      - _check_bullish_break and _check_bearish_break fixed
+      - Unit tests cover close_price vs swing.price distinction
+      - Validation tests pass (except pre-existing scenario_039)
+      - Feature flag behavior unchanged
+      - No impact on other ICT signals (CVD, FVG, Order Block)
+    test_results:
+      validation_tests_passed: 14
+      validation_tests_total: 15
+      unit_tests_passed: 13
+      unit_tests_total: 13
+      pre_existing_failure: scenario_039
+    notes:
+      - Fix: swing.price replaced with data[swing.index].close_price in _check_bullish_break/_check_bearish_break
+      - Feature flag ict:bos_choch:enabled remains FALSE (unchanged)
+      - All directional accuracy tests pass
+      - Quality gates: black PASS, ruff PASS, mypy minor warning only
+  - id: ST-PAPER-RECON-008
+    title: PAPER ORM Schema Drift Remediation
+    description: "ORM model has 3 columns not in Postgres schema: confidence_score, signal_type, is_test. Model should either add migration or deprecate these fields."
+    owner: ST-CI-001 continuation
+    priority: P2
+    status: completed
+    story_points: 2
+    created_date: "2026-04-11"
+    completion_date: "2026-04-12"
+    merge_commit: 9ab86188b
+    pr_number: "1009"
+    evidence_files:
+      - docs/evidence/PAPER-RECON-ORM-SCHEMA-DRIFT.md
+    acceptance_criteria:
+      - ORM model columns aligned with Postgres schema
+      - "OR: migration added for new columns (confidence_score, signal_type, is_test)"
+      - "OR: deprecated fields removed from ORM model"
+      - Evidence document created at docs/evidence/PAPER-RECON-ORM-SCHEMA-DRIFT.md
+    completion_notes: "Schema fix already on main. Verified: outcome_id, execution_venue, confidence_score columns present. R2a canary restarted 2026-04-12 with corrected schema."
+  - id: BL-GOV-COMPLETION
+    title: Governance Epic Completion (EP-GOV-001)
+    description: Complete remaining governance features to reach 100% epic completion
+    owner: TBD
+    priority: P1
+    status: completed
+    created_date: "2026-03-02"
+    current_completion: 76%
+    target_completion: 100%
+    target_date: "2026-03-31"
+    total_remaining_points: 0
+    remaining_stories:
+      - id: ST-GOV-001
+        points: 5
+        status: completed
+        title: Memory Deduplication Engine
+        completed_date: "2026-03-22"
+        merge_commit: 0ce77cf31d9fde4ae207fd755992ad67b5cb16e9
+        pr_number: 410
+        completion_notes: Memory Deduplication Engine fully implemented with Qdrant integration, Redis hash caching, and audit trail. See src/governance/deduplication/
+      - id: ST-GOV-002
+        points: 8
+        status: completed
+        title: Agent Constitution Artifact
+        completed_date: "2026-03-22"
+        merge_commit: 3ab9c34
+        completion_notes: Agent Constitution Artifact v1.0.0 deployed with full API, violation detection, and enforcement. See docs/constitution/v1.0.0.md and src/governance/constitution/
+      - id: ST-GOV-MINI-001
+        points: 2
+        status: completed
+        title: Week 1 Audit Snapshot + Retrieval Baseline
+      - id: ST-GOV-MINI-002
+        points: 3
+        status: completed
+        title: Week 2 Optimization Feedback Loop
+  - id: AUTOCOG-DEDUP-001
+    title: Fix self-assessment writer dedup bug
+    description: Self-assessment writer creates a new JSON file per run instead of deduplicating by date. This caused 2,753 files to accumulate (2,251 duplicates). Fix the writer to check for existing same-date files and overwrite/update instead of creating new ones.
+    context: "Discovered during 2026-04-12 autocog drift remediation. Self-assessment cleanup archived 2,251 duplicates. Root cause: run_autonomous_self_assessment.py or the writer it calls doesn't deduplicate by date before writing."
+    owner: dev
+    priority: P3
+    status: merged
+    story_points: 1
+    epic_id: EP-AUTOCOG-005
+    completion_date: "2026-04-13"
+    merge_commit: 3b9dbce25e17de86aa8a7c6d239bd0c3b4105937
+    pr_number: "1027"
+    branch: feature/AUTOCOG-DEDUP-001-fix
+    acceptance_criteria:
+      - Self-assessment writer checks for existing file with same date prefix before writing
+      - If exists, overwrites/updates instead of creating new file
+      - No more than 1 self-assessment JSON per date after fix
+      - Existing tests still pass
+      - New test added to verify dedup behavior
+  - id: AUTOCOG-RUNTIME-001
+    title: Autocog Runtime Wiring — Cron Schedules + Docker Image
+    description: Wire the autocog evaluation→review→action loop into Woodpecker scheduled execution. Created Dockerfile.ci-autocog with full project deps, configured 5 Woodpecker cron schedules (IDs 7-11), fixed ci-gate stale status file bug, fixed PYTHONPATH unset variable bug. Pipeline verified GREEN on Pipeline 4026+.
+    context: Deferred item from autocog phase 5 runtime_wiring (deadline 2026-04-30). Resolved ahead of schedule during canary wait period.
+    owner: dev
+    priority: P2
+    status: completed
+    story_points: 3
+    completion_date: "2026-04-14"
+    merge_commit: 9ab86188b
+    pr_number: "1042"
+    commits:
+      - 61d4b7c27
+      - c0599b2d8
+      - 645e2f9e1c
+    acceptance_criteria:
+      - Woodpecker cron schedules created for all 5 autocog modes
+      - Dedicated Docker image with full project dependencies
+      - Pipeline runs GREEN on manual trigger
+      - Runbook documentation created
+    evidence:
+      - 5 cron schedules confirmed (IDs 7-11)
+      - Docker image chiseai-ci-autocog:py311-20260414 built and registered
+      - Pipeline GREEN: autocog-belief-consistency-hourly SUCCESS, ci-gate SUCCESS
+      - docs/runbooks/autocog-runtime-operations.md (452 lines)
   - archive_ref: ARCH-20260406-023722-EP-LOCAL-CI-001
     id: EP-LOCAL-CI-001
     status: archived
@@ -282,454 +856,6 @@ completed:
     merge_commit: 5fc297ce98d7484526f21cc75b13d6538e3f83c0
     pr_number: "~"
 in_progress:
-  - id: AUTOCOG-ROUTINE-001
-    title: 3-Tier Autocog Routine Automation
-    description:
-      Document Autocog 3-tier routine automation — heartbeat (6h), weekly
-      review, and monthly audit cadences with manual triggers, feature flag disable,
-      drift thresholds, and alert routing.
-    owner: jarvis
-    priority: P1
-    status: completed
-    merge_commit: 46c42b5f0
-    story_points: 1
-    branch: feature/AUTOCOG-REMEDIATION-C5-docs
-    evidence_files:
-      - docs/evidence/AUTOCOG-ROUTINE-SCHEDULE.md
-    acceptance_criteria:
-      - Autocog 3-tier routine schedule documented (heartbeat/weekly/monthly)
-      - Manual trigger commands provided for all 3 cadences
-      - Disable mechanism documented (autocog:routine:enabled feature flag)
-      - Drift score thresholds documented (warning threshold 0.5, critical threshold 0.85)
-      - Alert channel routing documented (alerts channel for critical, autocog-log channel
-        for weekly)
-      - All script file locations documented
-  - acceptance_criteria:
-      - Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)
-      - Phase B:
-          Smoke matrix completed (0/4 at test time 2026-03-06), resolved via LLM-PROVIDER-FIX-003
-          (2026-03-09) with 313/324 tests passing
-      - Phase C: Runbooks created (llm-provider-configuration.md, llm-provider-smoke-tests.md)
-      - Phase C: Preflight script created (llm_provider_check.sh) for pre-deployment validation
-      - Phase D: Latency study framework ready (30s timeout recommended per PAPER-LLM-TIMEOUT-001)
-      - Phase E: E2E test script ready (llm_provider_e2e.py) with full validation checklist
-      - All documentation committed and temp memory files preserved
-      - Merged to main via PR
-    branch: feature/LLM-PROVIDER-FIX-001-consolidation
-    commit_sha: 758400c
-    merge_commit: 8bf1c7b
-    pr_number: 383
-    created_date: "2026-03-06"
-    merged_date: "2026-03-06"
-    description:
-      Multi-phase LLM Provider Infrastructure Remediation and Testing Framework.
-      Phase A - Kimi adapter remediation. Phase B - Live smoke matrix across all providers.
-      Phase C - Lock-in reproducibility with runbooks and preflight checks. Phase D
-      - Latency study framework. Phase E - Final E2E validation framework. All credential
-      issues documented (KIMI key invalid, ZAI not configured, Zhipu quota exhausted).
-    id: LLM-PROVIDER-FIX-001
-    notes:
-      - "Phase A: Adapter infrastructure verified, kimi_model default updated to kimi-k2.5"
-      - "Phase B: Smoke matrix 0/4 at test time (2026-03-06), resolved via LLM-PROVIDER-FIX-003
-        (2026-03-09) - 313/324 tests passing (98.77%)"
-      - "Phase C: Runbooks and preflight script created for reproducible deployments"
-      - "Phase D: Latency study framework ready, 30s timeout recommended"
-      - "Phase E: E2E script ready, dry-run passed with full validation checklist"
-      - "Smoke Matrix: Kimi (401 invalid key), Z.ai (not configured), Zhipu (429 quota
-        exhausted)"
-      - "Files: 9 new files, 2694 lines added across all phases"
-      - "Provider Status: Infrastructure OK, all providers blocked on credentials"
-      - "MERGED: All phases completed and merged to main via PR #383"
-    owner: jarvis
-    phases:
-      - branch: feature/LLM-PROVIDER-FIX-001-ADAPTER-phase-a
-        commit: 6c99749
-        name: Phase A - Kimi Adapter Remediation
-        status: complete
-      - branch: feature/LLM-PROVIDER-FIX-001-SMOKE-phase-b
-        commit: docs/tempmemories/LLM-PROVIDER-FIX-001-smoke-matrix.json
-        name: Phase B - Smoke Matrix
-        status: complete
-      - branch: feature/LLM-PROVIDER-FIX-001-LOCKIN-phase-c
-        commit: 365de5c
-        name: Phase C - Lock-in Reproducibility
-        status: complete
-      - branch: feature/LLM-PROVIDER-FIX-001-LATENCY-phase-d
-        commit: 47ccdf8
-        name: Phase D - Latency Study
-        status: complete
-      - branch: feature/LLM-PROVIDER-FIX-001-E2E-phase-e
-        commit: dfcafb0
-        name: Phase E - Final E2E
-        status: complete
-    priority: P0
-    status: merged
-    title: LLM Provider Infrastructure Remediation and Testing Framework (Phases A-E)
-  - acceptance_criteria:
-      - Cross-branch verification guardrail implemented in AGENTS.md and agent files
-      - AUDIT-DELTA evidence files created and committed
-      - All three remediation PRs merged (#407,
-      - Workflow status updated with audit-delta disposition
-    branch: feature/GOV-BATCH-003-workflow-update
-    commit_sha: 2513cc6
-    created_date: "2026-03-07"
-    description:
-      Remediation of PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI findings including
-      cross-branch verification guardrail, merge authority updates, and memory deduplication
-    evidence_commit: b238ebb645c761eb8ddd4e242628ca8e5645dfbc
-    evidence_files:
-      - docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md
-      - docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md
-    id: AUDIT-DELTA-FIX-001
-    pr_number: "407"
-    merge_commit: 48725e8068161d60222eaaf154a499781e00a268
-    merge_commits:
-      - 48725e8068161d60222eaaf154a499781e00a268
-      - 56fb76ee36cd9d900a5aec4870d47280334efe95
-      - 0ce77cf31d9fde4ae207fd755992ad67b5cb16e9
-    notes:
-      - "Root cause: False merge claims in BrainEval CI audit"
-      - "Remediation: git branch --contains guardrail added to all agent docs"
-      - "Related audit: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md"
-      - "Evidence index: 574 lines documenting all remediation work"
-    owner: senior-dev
-    priority: P0-CRITICAL
-    related_audit: PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI
-    remediation_pr_numbers:
-      - 407
-      - 408
-      - 410
-    status: completed
-    title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
-  - completion_date: "2026-03-27"
-    closeout_date: "2026-03-27"
-    completed_stories:
-      - id: ST-AUTOCOG-001
-        status: merged
-      - id: ST-AUTOCOG-004
-        status: merged
-      - id: ST-AUTOCOG-005-T2
-        status: merged
-      - id: ST-AUTOCOG-005-T3
-        status: merged
-      - id: ST-AUTOCOG-006
-        status: merged
-      - id: ST-AUTOCOG-008
-        status: merged
-      - id: ST-AUTOCOG-009
-        status: merged
-      - id: ST-AUTOCOG-010
-        status: merged
-      - id: ST-AUTOCOG-011
-        status: merged
-      - id: ST-AUTOCOG-012
-        status: merged
-      - id: ST-AUTOCOG-013
-        status: merged
-      - id: ST-AUTOCOG-015
-        status: merged
-      - id: ST-AUTOCOG-016
-        status: merged
-    deferred_sp: 6
-    deferred_stories:
-      - id: ST-AUTOCOG-003
-        title: sys.path Fix
-      - id: ST-AUTOCOG-014
-        title: Autonomy Tuning
-    description:
-      Sprint AUTOCOG-2026-03-27 closed with 13 of 16 stories merged. 2 stories
-      deferred to backlog for future scheduling (ST-AUTOCOG-007 completed via FIX-AUTOCOG-007-A/B).
-    id: AUTOCOG-2026-03-27
-    merge_commit: a0ddb8559b0c504d427b8d5a136fdbf7c5f07969
-    notes:
-      - Sprint closed at inception - items moved to backlog for future scheduling
-      - 13 stories merged to main
-      - 2 stories deferred (6 SP)
-      - Module imports successfully - 312 tests passing
-      - "Critical fixes: Discord spam prevention, BeliefStore Redis persistence"
-      - "Deferred stories: ST-AUTOCOG-003, ST-AUTOCOG-014"
-      - ST-AUTOCOG-002 and ST-AUTOCOG-005-T1 completed per Critic review (2026-03-27)
-      - ST-AUTOCOG-007 (Belief Expansion) completed via FIX-AUTOCOG-007-A (2026-03-28,
-        SHA 211de68) and FIX-AUTOCOG-007-B (registry update)
-    pr_number: 760
-    rationale: Sprint closed at inception, items moved to backlog for future scheduling
-    sprint_id: AUTOCOG-2026-03-27
-    status: completed
-    story_count: 16
-    story_points: 48
-    title: AUTOCOG Sprint Closeout
-  - acceptance_criteria:
-      - Feature flags persist across restart
-      - Flags can be toggled via Redis
-      - Backward compatible with existing usage
-    completion_date: "2026-03-28"
-    description:
-      Add Redis/DB persistence for feature flags that currently reset on
-      restart
-    id: FEATURE-FLAGS-REDIS-001
-    merge_commit: d1d7bc0b4
-    notes:
-      - Implemented in src/config/feature_flags.py
-      - 19 new tests added, all passing
-      - "Redis keys: chise:feature_flags:config:*"
-    owner: dev
-    pr_number: 780
-    priority: P1
-    status: completed
-    story_points: 2
-    title: Feature Flag Persistence
-  - acceptance_criteria:
-      - scripts/start_consumer.py removed (had hardcoded broken paths)
-      - scripts/run_signal_consumer.py confirmed as canonical launcher
-      - No hardcoded /tmp/worktrees/ paths in scripts/
-    completion_date: "2026-03-29"
-    description:
-      "Consolidate startup scripts by removing deprecated start_consumer.py
-      which had
-
-      hardcoded paths to /tmp/worktrees/PAPER-NOGO-REMEDIATION-002. The canonical
-
-      launcher is run_signal_consumer.py which uses proper relative paths.
-
-      "
-    id: PAPER-008
-    merge_commit: e0c0fe69199bb91045838cf21147a4584358d90d
-    notes:
-      - start_consumer.py removed - had hardcoded /tmp/worktrees/PAPER-NOGO-REMEDIATION-002
-        paths
-      - run_signal_consumer.py is the canonical launcher with relative paths
-      - No hardcoded worktree paths remain in scripts/
-    owner: senior-dev
-    pr_number: 842
-    priority: P2
-    status: completed
-    story_points: 2
-    title: Consolidate Startup Scripts
-  - id: SAFETY-MERGE-AUTHORITY-001
-    title: Remove Direct Merge Bypass from Scripts
-    description:
-      'P0 CRITICAL - Removed direct merge bypass ("Do": "merge") from 4 scripts
-      that could bypass CI checks. Files modified: scripts/pr_lifecycle/auto_pr_merge.py,
-      scripts/ops/merge_reconciler.py, scripts/pr_lifecycle/recovery_handlers.py, scripts/gitea_pr_automerge.py.'
-    completion_date: "2026-03-29"
-    priority: P0-CRITICAL
-    status: completed
-    story_points: 2
-    merge_commit: 60fe02b6ffc56e8ac31e6a23645c4bc658897dbd
-    merge_commits:
-      - 67f149e
-      - ef3b0f3
-      - 60fe02b
-    notes:
-      - "PR #837 (partial), final fix via direct Merlin merge"
-      - "Files: auto_pr_merge.py, merge_reconciler.py, recovery_handlers.py, gitea_pr_automerge.py"
-    owner: jarvis
-    pr_number: 837
-  - id: REPO-AUDIT-001
-    title: Override-Force Audit Logging
-    description:
-      New scripts/audit/override_audit.py module. 5 scripts instrumented
-      with Redis audit logging for CHISE_ALLOW_NON_MERLIN_*, FORCE_DEPENDENCY_AUDIT,
-      CI_FORCE_FULL, ALLOW_SIMULATOR_FALLBACK. 30-day TTL, stderr fallback.
-    completion_date: "2026-03-29"
-    priority: P1
-    status: completed
-    story_points: 1
-    pr_number: "~"
-    merge_commit: 7d2987a58ebe51081a957a37f1d10479e80ca156
-    notes:
-      - "New module: scripts/audit/override_audit.py"
-      - 5 scripts instrumented with Redis audit logging
-      - 30-day TTL with stderr fallback
-    owner: jarvis
-  - id: REPO-VERIFY-001
-    title: Post-Merge Verification Automation
-    description:
-      New scripts/ops/post_merge_verify.sh (~500 lines) automating the 5-step
-      reconcile loop from AGENTS.md. Supports --ci JSON mode, exit codes 0/1/2.
-    completion_date: "2026-03-29"
-    priority: P1
-    status: completed
-    story_points: 2
-    pr_number: "~"
-    merge_commit: 1ba19a8512c510d5004db76b543a0ed873ea29ff
-    notes:
-      - "New script: scripts/ops/post_merge_verify.sh (~500 lines)"
-      - Automates 5-step reconcile loop from AGENTS.md
-      - Supports --ci JSON mode with exit codes 0/1/2
-    owner: jarvis
-  - id: REPO-CI-001
-    title: CI Image Tag Drift Fix
-    description:
-      scripts/ci/rebuild_ci_image.sh now updates ALL Woodpecker configs (ci.yaml,
-      push.yaml, cron-security.yaml) via WOODPECKER_CONFIGS array. Added stale tag verification
-      step.
-    completion_date: "2026-03-29"
-    priority: P1
-    status: completed
-    story_points: 1
-    pr_number: "~"
-    merge_commit: 4bc124e01bcfa51d2bcba86174c1771071ce927c
-    notes:
-      - "Script: scripts/ci/rebuild_ci_image.sh"
-      - Updates all Woodpecker configs via WOODPECKER_CONFIGS array
-      - Added stale tag verification step
-    owner: jarvis
-  - id: LESSONS-001
-    title: Lessons Normalization
-    description:
-      '"12 free-text lessons converted to LESSON template format, 3 duplicate
-      truth-gate lessons consolidated (canonical: LESSON-20260318-worker-verification).
-      Total: 59 structured lessons. Added 4 new lessons and deprecated 5 old lessons."'
-    completion_date: "2026-03-29"
-    priority: P1
-    status: completed
-    story_points: 2
-    pr_number: "847"
-    merge_commit: 19253c50c1f33f2ce1b380f93e049ce22d790fea
-    notes:
-      - 12 free-text lessons converted to LESSON template format
-      - 3 duplicate truth-gate lessons consolidated
-      - "Canonical: LESSON-20260318-worker-verification"
-      - "Total: 59 structured lessons"
-      - Added 4 new lessons, deprecated 5 old lessons
-      - "Related commit: 282ed00c"
-    owner: jarvis
-  - id: EP-SIG-OUT-001
-    title: Signal-to-Outcome Pipeline
-    description:
-      "Signal-to-outcome correlation linkage, outcome writer runtime path,
-      and
-
-      outcome type classification. Establishes the full pipeline from signal
-
-      generation through outcome recording and categorization.
-
-      "
-    completion_date: "2026-03-30"
-    priority: P1
-    status: completed
-    story_points: 3
-    pr_number: "859"
-    merge_commit: 4694d21703dfebe838f51df7846f0089896034be
-    stories:
-      - id: ST-SIG-OUT-001
-        title: Signal-to-outcome correlation linkage
-        status: completed
-      - id: ST-SIG-OUT-002
-        title: Outcome writer runtime path
-        status: completed
-      - id: ST-SIG-OUT-003
-        title: Outcome type classification
-        status: completed
-    notes:
-      - "ST-SIG-OUT-001: Signal-to-outcome correlation linkage"
-      - "ST-SIG-OUT-002: Outcome writer runtime path"
-      - "ST-SIG-OUT-003: Outcome type classification"
-    owner: jarvis
-  - id: ST-SKILL-DR-001
-    title: Deep Research Skill Creation
-    description:
-      Created chiseai-deep-research skill with systematic methodology, multi-source
-      synthesis, evidence grading, and structured deliverables. Includes "When Not To
-      Use" section, corrected skill references, and schema compliance fixes.
-    completion_date: "2026-03-30"
-    priority: P1
-    status: completed
-    story_points: 2
-    pr_number: "872"
-    merge_commit: 9451226f9cfececcb718d5fb266e4e42339d6b7f
-    target_commit: 15921483bbd4e61033707a67a959f0d9091edaca
-    notes:
-      - "Skill: .opencode/skills/chiseai-deep-research/SKILL.md"
-      - "Fixes: description quoting, When Not To Use section, bmad-create-architecture
-        refs"
-      - Merged via Merlin authority, feature branch deleted
-      - "REMEDIATION: SKILL.md replaced with approved 371-line V3 design on 2026-03-30
-        (original 157-line generic was incorrect)"
-    owner: merlin
-  - id: SPRINT-MVP-PROVING-GROUND
-    title: MVP Proving Ground Sprint
-    description:
-      MVP Proving Ground sprint — production hardening + observability +
-      launch readiness. All 12 stories merged to main across 4 batches (Batch 1A, 1B,
-      2A, 2B).
-    completion_date: "2026-04-05"
-    priority: P1
-    status: completed
-    story_points: 25
-    merge_commit: 54760c7f309848b3da5a5d16f2c0b8991a891fee
-    stories:
-      - id: ST-PAPER-BURN-001
-        title: Burn-in Tracking System
-        status: merged
-        merge_commit: 3e8d89e496c5ee56cb43faf2169ce3228b13fc99
-      - id: ST-PAPER-GUARD-001
-        title: Burn-in Bypass Guard
-        status: merged
-        merge_commit: a034e9060a43d6f97a708824c94b3c222895bc39
-      - id: ST-ICT-S3
-        title: Signal Confidence Initialization
-        status: merged
-        merge_commit: c4f401102abbabb7cedadc9bd33d2b06907fa57f
-      - id: ST-PAPER-POS-001
-        title: Position Persistence Fix
-        status: merged
-        merge_commit: c545958ff205d04bbd013b7a17f2a574e07e9080
-      - id: ST-ICT-S2
-        title: Signal Quality Filter
-        status: merged
-        merge_commit: 64c0030f4ec677a28d1ec9ae977d51c731f34d3e
-      - id: ST-ICT-P4
-        title: Signal Dedup Wiring
-        status: merged
-        merge_commit: 5e5ff1cefc8b2cea9bc14740c8ed298803139da6
-      - id: ST-ICT-P1
-        title: Signal Outcome DB Backend
-        status: merged
-        merge_commit: 5756adb4766b3a2815c1a0c2744d219d1650b821
-      - id: ST-LAUNCH-KILL-001
-        title: Kill Switch E2E Tests
-        status: merged
-        merge_commit: 45624141d5a49366ffe190348be0a27fe4895521
-      - id: ST-PAPER-REPORT-001
-        title: Daily Paper Health Report
-        status: merged
-        merge_commit: 0123a173db6ae54b4f2226c0d17482de4d6502f8
-      - id: ST-LAUNCH-VAL-001
-        title: Launch Readiness Validation
-        status: merged
-        merge_commit: 722b244bb13564d9d1d9267ab2a33a286a0a319e
-      - id: ST-CI-OBS-001
-        title: CI Observability Report
-        status: merged
-        merge_commit: d3900ef1ee2a2370e9bf77d32f3549078114fce6
-      - id: ST-PIPELINE-COMPLETE-001
-        title: Pipeline Transparency Completion
-        status: merged
-        merge_commit: 1d4c4ae881d05da5c920d8c128334b549f77bddc
-      - id: ST-LAUNCH-016
-        title: Runbook Validation & Documentation
-        description: Validate operational runbooks for safety and ML operations
-        epic_id: EP-LAUNCH-004
-        owner: ops-team
-        priority: P1
-        status: completed
-        story_points: 2
-        completion_date: "2026-04-12"
-        notes:
-          - 8/8 ACs passed — runbook validation complete
-        evidence_files:
-          - docs/validation/runbook_validation_results.md
-    notes:
-      - 12 stories completed in 2 days
-      - "Batch 1A: burn-in + guard + signal confidence"
-      - "Batch 1B: position fix + quality filter + dedup wiring + outcome DB"
-      - "Batch 2A: kill switch E2E + health report + launch validation + CI observability"
-      - "Batch 2B: pipeline transparency completion + workflow status update"
-      - All commits verified on main via git branch --contains
-      - 4 new lessons captured in docs/tempmemories/lessons.md
-    owner: jarvis
 backlog:
   - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
     id: CI-INFRA-DRIFT-001
@@ -747,32 +873,7 @@ backlog:
     merge_commit: 56fb76e
     pr_number: 408
     completion_date: "2026-03-07"
-  - acceptance_criteria:
-      - All merged branches older than 7 days are pruned
-      - Stale worktrees are removed and tracked in Redis
-      - Stashes older than 14 days without active context are dropped
-      - Active branches and worktrees are documented with rationale
-      - Redis iterlog key contains complete audit trail
-    created_date: "2026-03-05"
-    description:
-      Repository cleanup and hygiene maintenance including branch pruning,
-      worktree cleanup, stash management, and documentation updates
-    handoff_document: docs/handoffs/session-handoff-2026-03-05.md
-    id: SESSION-CLEANUP-001
-    notes:
-      - "Branches pruned: 14 merged branches"
-      - "Stashes dropped: 11 (this session)"
-      - "Stashes retained: 1 (ST-KPI-FIX-002)"
-      - "Worktrees cleaned: Multiple stale worktrees"
-      - "Correction applied: 2026-03-05 - Corrected branch names, stash disposition, and
-        counts"
-      - "Canonical iterlog: bmad:chiseai:iterlog:story:SESSION-CLEANUP-001"
-      - Superseded safety stash dropped (stash@{0}) - SAFETY-001 work merged
-    owner: jarvis
-    priority: P2
-    redis_iterlog_key: bmad:chiseai:iterlog:story:SESSION-CLEANUP-001
-    status: completed
-    title: Repository Cleanup and Hygiene Maintenance
+
   - archive_ref: ARCH-20260406-023722-PAPER-LLM-DIAG-001
     id: PAPER-LLM-DIAG-001
     status: archived
@@ -789,117 +890,7 @@ backlog:
     merge_commit: 609dfd8537c353b0add6d4b0ab999a1946583b19
     pr_number: 371
     completion_date: "2026-03-06"
-  - acceptance_criteria: TBD
-    created_date: "2026-03-02"
-    depends_on:
-      - ST-CI-001
-    description: Advanced CI enhancements beyond Phase 2 hardening
-    id: BL-CI-PHASE3
-    notes:
-      - "Phase 1 (Assessment) completed: 31 issues identified (P0:2, P1:6, P2:7)"
-      - "Phase 2 (Pipeline Hardening) completed: Epic status sync fixed, CI documentation
-        updated"
-      - Phase 3 scope to be defined based on Phase 2 outcomes
-    owner: ST-CI-001 continuation
-    priority: P2
-    status: completed
-    title: CI Phase 3 Enhancements
-  - id: BL-EP-ICT-007-P2-BOS-CHOCH-REDESIGN
-    title: BOS/CHoCH Architecture Redesign for EP-ICT-007 Phase 2
-    description:
-      Redesign CHoCH detection logic to compare structure level breaks (price
-      closing beyond established swing H/L) instead of trivially true swing price comparisons.
-      Requires architecture review. See docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md
-      for 3 redesign options.
-    status: completed
-    completion_date: "2026-04-13"
-    priority: P2
-    story_points: 5
-    depends_on:
-      - EP-ICT-007
-    decision_debt: DD-BOS-CHOCH-REDESIGN
-    pr_number: 1029
-    merge_commit: 05d384e2609f1d2de265017629bd25fbaa32bde6
-    owner: ml-signal-engineering
-    evidence_files:
-      - docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md
-    acceptance_criteria:
-      - CHoCH detection uses candle close_price instead of swing.price
-      - _check_bullish_break and _check_bearish_break fixed
-      - Unit tests cover close_price vs swing.price distinction
-      - Validation tests pass (except pre-existing scenario_039)
-      - Feature flag behavior unchanged
-      - No impact on other ICT signals (CVD, FVG, Order Block)
-    test_results:
-      validation_tests_passed: 14
-      validation_tests_total: 15
-      unit_tests_passed: 13
-      unit_tests_total: 13
-      pre_existing_failure: scenario_039
-    notes:
-      - Fix: swing.price replaced with data[swing.index].close_price in _check_bullish_break/_check_bearish_break
-      - Feature flag ict:bos_choch:enabled remains FALSE (unchanged)
-      - All directional accuracy tests pass
-      - Quality gates: black PASS, ruff PASS, mypy minor warning only
-  - acceptance_criteria:
-      - ORM model columns aligned with Postgres schema
-      - "OR: migration added for new columns (confidence_score, signal_type, is_test)"
-      - "OR: deprecated fields removed from ORM model"
-      - Evidence document created at docs/evidence/PAPER-RECON-ORM-SCHEMA-DRIFT.md
-    created_date: "2026-04-11"
-    description:
-      "ORM model has 3 columns not in Postgres schema: confidence_score,
-      signal_type, is_test. Model should either add migration or deprecate these fields."
-    evidence_files:
-      - docs/evidence/PAPER-RECON-ORM-SCHEMA-DRIFT.md
-    id: ST-PAPER-RECON-008
-    priority: P2
-    status: completed
-    story_points: 2
-    title: PAPER ORM Schema Drift Remediation
-    completion_date: "2026-04-12"
-    merge_commit: 9ab86188b
-    pr_number: "1009"
-    completion_notes: "Schema fix already on main. Verified: outcome_id, execution_venue, confidence_score columns present. R2a canary restarted 2026-04-12 with corrected schema."
-  - created_date: "2026-03-02"
-    current_completion: 76%
-    description: Complete remaining governance features to reach 100% epic completion
-    id: BL-GOV-COMPLETION
-    owner: TBD
-    priority: P1
-    remaining_stories:
-      - id: ST-GOV-001
-        points: 5
-        status: completed
-        title: Memory Deduplication Engine
-        completed_date: "2026-03-22"
-        merge_commit: 0ce77cf31d9fde4ae207fd755992ad67b5cb16e9
-        pr_number: 410
-        completion_notes:
-          Memory Deduplication Engine fully implemented with Qdrant integration,
-          Redis hash caching, and audit trail. See src/governance/deduplication/
-      - id: ST-GOV-002
-        points: 8
-        status: completed
-        title: Agent Constitution Artifact
-        completed_date: "2026-03-22"
-        merge_commit: 3ab9c34
-        completion_notes:
-          Agent Constitution Artifact v1.0.0 deployed with full API, violation
-          detection, and enforcement. See docs/constitution/v1.0.0.md and src/governance/constitution/
-      - id: ST-GOV-MINI-001
-        points: 2
-        status: completed
-        title: Week 1 Audit Snapshot + Retrieval Baseline
-      - id: ST-GOV-MINI-002
-        points: 3
-        status: completed
-        title: Week 2 Optimization Feedback Loop
-    status: completed
-    target_completion: 100%
-    target_date: "2026-03-31"
-    title: Governance Epic Completion (EP-GOV-001)
-    total_remaining_points: 0
+
   - acceptance_criteria:
       - Discord channel
       - Signal format matches specification (token, direction, confidence, key levels,
@@ -1069,78 +1060,7 @@ backlog:
     target_sprint: ICT-S9
     deferred_date: "2026-04-03"
     title: BOS/CHoCH Validation Remediation
-  - id: ST-WIRE-ERROR-RATE-TRACKER
-    title: Wire ErrorRateTracker into Execution Pipeline
-    description:
-      The error rate monitoring infrastructure exists but has no producer.
-      ErrorRateTracker.record_operation() is never called by any execution code, causing
-      false-positive Discord alerts from stale data. A producer-safety gate was added
-      (commit b835f4ad) to suppress alerts on stale data, but the tracker needs to be
-      wired into the actual execution pipeline.
-    status: completed
-    priority: P2
-    story_points: 3
-    created_date: "2026-04-08"
-    story_file: docs/stories/ST-WIRE-ERROR-RATE-TRACKER.md
-    risk_notes:
-      - Low risk: adding tracking calls is non-invasive
-      - Safety gate prevents false alerts even if wiring is incomplete
-    related_incident: false-positive-discord-error-rate-alert-2026-04-08
-  - id: AUTOCOG-DEDUP-001
-    title: Fix self-assessment writer dedup bug
-    description:
-      Self-assessment writer creates a new JSON file per run instead of deduplicating
-      by date. This caused 2,753 files to accumulate (2,251 duplicates). Fix the writer
-      to check for existing same-date files and overwrite/update instead of creating
-      new ones.
-    context:
-      "Discovered during 2026-04-12 autocog drift remediation. Self-assessment
-      cleanup archived 2,251 duplicates. Root cause: run_autonomous_self_assessment.py
-      or the writer it calls doesn't deduplicate by date before writing."
-    priority: P3
-    status: merged
-    story_points: 1
-    epic_id: EP-AUTOCOG-005
-    completion_date: "2026-04-13"
-    merge_commit: 3b9dbce25e17de86aa8a7c6d239bd0c3b4105937
-    pr_number: "1027"
-    branch: feature/AUTOCOG-DEDUP-001-fix
-    acceptance_criteria:
-      - Self-assessment writer checks for existing file with same date prefix before writing
-      - If exists, overwrites/updates instead of creating new file
-      - No more than 1 self-assessment JSON per date after fix
-      - Existing tests still pass
-      - New test added to verify dedup behavior
-  - id: AUTOCOG-RUNTIME-001
-    title: Autocog Runtime Wiring — Cron Schedules + Docker Image
-    description:
-      Wire the autocog evaluation→review→action loop into Woodpecker scheduled
-      execution. Created Dockerfile.ci-autocog with full project deps, configured 5 Woodpecker
-      cron schedules (IDs 7-11), fixed ci-gate stale status file bug, fixed PYTHONPATH unset
-      variable bug. Pipeline verified GREEN on Pipeline 4026+.
-    context:
-      Deferred item from autocog phase 5 runtime_wiring (deadline 2026-04-30). Resolved
-      ahead of schedule during canary wait period.
-    priority: P2
-    status: completed
-    story_points: 3
-    completion_date: "2026-04-14"
-    merge_commit: 9ab86188b
-    pr_number: "1042"
-    commits:
-      - 61d4b7c27
-      - c0599b2d8
-      - 645e2f9e1c
-    acceptance_criteria:
-      - Woodpecker cron schedules created for all 5 autocog modes
-      - Dedicated Docker image with full project dependencies
-      - Pipeline runs GREEN on manual trigger
-      - Runbook documentation created
-    evidence:
-      - 5 cron schedules confirmed (IDs 7-11)
-      - Docker image chiseai-ci-autocog:py311-20260414 built and registered
-      - Pipeline GREEN: autocog-belief-consistency-hourly SUCCESS, ci-gate SUCCESS
-      - docs/runbooks/autocog-runtime-operations.md (452 lines)
+
   - id: ST-CHISE-001
     title: ChiseAI Core Setup
     status: completed
