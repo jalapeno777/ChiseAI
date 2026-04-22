@@ -4361,6 +4361,28 @@ validations:
     test_method: automated
     owner: jarvis
 
+  # ============================================================
+  # GOVERNANCE TOOLING FIXES
+  # ============================================================
+
+  - id: V-GUARD-001
+    title: Status Note Consistency Checker - M1-M4 Medium Fixes
+    epic_id: EP-GOV-001
+    story_id: REPO-GUARD-MEDIUM-FIXES
+    status: validated
+    description: |
+      Governance tooling fix: status_guard.py now detects completed-vs-in_progress,
+      in_progress-vs-completed, deferred-vs-in_progress contradictions, and removes
+      false-positive "active" keyword.
+    acceptance_criteria:
+      - status_guard.py detects completed-vs-in_progress contradictions (M1)
+      - status_guard.py detects in_progress-vs-completed contradictions (M2)
+      - status_guard.py detects deferred-vs-in_progress contradictions (M3)
+      - status_guard.py removes false-positive "active" keyword detection (M4)
+      - All tests for status_guard.py pass
+    test_method: automated
+    owner: governance-team
+
 # ============================================================
 # Global validation thresholds
 # ============================================================

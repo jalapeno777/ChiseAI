@@ -14,6 +14,7 @@ import argparse
 import contextlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -21,14 +22,277 @@ import tempfile
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import yaml
+
+# Module-level constants for the check
+_STATUS_NOTE_STORY_ID_PATTERN = re.compile(
+    r"\b(ST-|CH-|FT-|EP-|REWARD-|REPO-|SAFETY-|BRANCH-|PAPER-|RECON-|I-|D-)[A-Z0-9-]+\b"
+)
+
+# Semantic intent classification
+_DEFERRED_KEYWORDS = ["deferred", "postponed", "delayed", "to be scheduled", "backlog"]
+_BLOCKED_KEYWORDS = ["blocked", "stalled", "waiting on", "held"]
+_IN_PROGRESS_KEYWORDS = ["in progress", "working", "ongoing"]
+_COMPLETED_KEYWORDS = ["completed", "done", "finished", "merged", "shipped"]
+_ARCHIVED_KEYWORDS = ["archived", "deprecated", "superseded", "replaced"]
+_OPERATIONAL_KEYWORDS = [
+    "operational",
+    "live",
+    "running",
+]  # infrastructure context only
+
+# Status values that imply NOT deferred/blocked
+_COMPLETED_STATUSES = {"completed", "merged"}
+_ACTIVE_STATUSES = {"in_progress", "active"}
+_BACKLOG_STATUSES = {"backlog", "planned", "deferred"}
+_ARCHIVED_STATUSES = {"archived", "deprecated", "cancelled"}
+
+
+@dataclass
+class NoteConsistencyResult:
+    passed: bool
+    errors: list[dict]
+    warnings: list[dict]
+
+
+def _classify_note_intent(note_text: str) -> str | None:
+    """Classify a status note's semantic intent based on keywords."""
+    text_lower = note_text.lower()
+    if any(kw in text_lower for kw in _DEFERRED_KEYWORDS):
+        return "deferred"
+    if any(kw in text_lower for kw in _BLOCKED_KEYWORDS):
+        return "blocked"
+    if any(kw in text_lower for kw in _IN_PROGRESS_KEYWORDS):
+        return "in_progress"
+    if any(kw in text_lower for kw in _COMPLETED_KEYWORDS):
+        return "completed"
+    if any(kw in text_lower for kw in _ARCHIVED_KEYWORDS):
+        return "archived"
+    if any(kw in text_lower for kw in _OPERATIONAL_KEYWORDS):
+        return "operational"
+    return None
+
+
+def _check_note_item_contradiction(
+    story_id: str,
+    note_intent: str,
+    note_text: str,
+    item_status: str,
+    item_section: str,
+) -> dict | None:
+    """Check a single story ID against its item for contradiction. Returns a dict if found."""
+    status_lower = item_status.lower()
+
+    # deferred intent contradictions
+    if note_intent == "deferred" and status_lower in _COMPLETED_STATUSES:
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # M3: deferred intent contradictions (in_progress/active)
+    if note_intent == "deferred" and status_lower in _ACTIVE_STATUSES:
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # blocked intent contradictions
+    if note_intent == "blocked" and status_lower in _COMPLETED_STATUSES:
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # in_progress intent contradictions
+    if note_intent == "in_progress" and status_lower in (
+        *_BACKLOG_STATUSES,
+        *_ARCHIVED_STATUSES,
+    ):
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # M2: in_progress intent contradictions (completed/merged)
+    if note_intent == "in_progress" and status_lower in _COMPLETED_STATUSES:
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # completed intent contradictions (backlog/archived)
+    if note_intent == "completed" and status_lower in (
+        *_BACKLOG_STATUSES,
+        *_ARCHIVED_STATUSES,
+    ):
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # M1: completed intent contradictions (in_progress/active)
+    if note_intent == "completed" and status_lower in _ACTIVE_STATUSES:
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # archived intent contradictions
+    if note_intent == "archived" and status_lower in _ACTIVE_STATUSES:
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # operational intent contradictions
+    if note_intent == "operational" and status_lower in (
+        *_ARCHIVED_STATUSES,
+        *_BACKLOG_STATUSES,
+    ):
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    return None
+
+
+def _build_item_index(data: dict) -> dict[str, tuple[str, str]]:
+    """Build a lookup: story_id -> (status, section) for all items in all sections."""
+    index: dict[str, tuple[str, str]] = {}
+    STORY_SECTIONS = [
+        "stories",
+        "completed",
+        "backlog",
+        "in_progress",
+        "launch_stories",
+        "epics",
+    ]
+    for section in STORY_SECTIONS:
+        items = data.get(section, [])
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            sid = item.get("id")
+            if sid:
+                index[sid] = (item.get("status", ""), section)
+    return index
+
+
+def check_status_note_consistency(data: dict) -> NoteConsistencyResult:
+    """
+    Check metadata.status_notes for contradictions with actual item statuses.
+
+    Returns NoteConsistencyResult with:
+    - passed: True if no errors found (warnings may still exist)
+    - errors: list of error-level contradictions
+    - warnings: list of warning-level issues
+    """
+    result = NoteConsistencyResult(passed=True, errors=[], warnings=[])
+
+    status_notes = data.get("metadata", {}).get("status_notes", [])
+    if not isinstance(status_notes, list):
+        status_notes = []
+
+    item_index = _build_item_index(data)
+
+    for note in status_notes:
+        if not isinstance(note, str):
+            continue
+
+        # Extract all story IDs from this note
+        found_ids = list(
+            set(m.group(0) for m in _STATUS_NOTE_STORY_ID_PATTERN.finditer(note))
+        )
+        if not found_ids:
+            # No story ID in note — nothing to check
+            continue
+
+        note_intent = _classify_note_intent(note)
+        if note_intent is None:
+            # Cannot classify intent — skip
+            continue
+
+        for story_id in found_ids:
+            if story_id not in item_index:
+                result.warnings.append(
+                    {
+                        "story_id": story_id,
+                        "severity": "warning",
+                        "message": f"Note references '{story_id}' which is not found in any section",
+                    }
+                )
+                continue
+
+            item_status, item_section = item_index[story_id]
+            contradiction = _check_note_item_contradiction(
+                story_id, note_intent, note, item_status, item_section
+            )
+            if contradiction:
+                if contradiction["severity"] == "error":
+                    result.errors.append(contradiction)
+                    result.passed = False
+                else:
+                    result.warnings.append(contradiction)
+
+    return result
+
 
 try:
     import fcntl
 except Exception:  # pragma: no cover
     fcntl = None
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -139,7 +403,7 @@ def run_validate(
 ) -> tuple[bool, list[CheckResult]]:
     results: list[CheckResult] = []
 
-    parse_ok, _, parse_err = parse_yaml(target)
+    parse_ok, data, parse_err = parse_yaml(target)
     results.append(
         CheckResult(
             name="yaml_parse",
@@ -195,6 +459,31 @@ def run_validate(
             passed=integ_ok,
             details=integ_details,
             blocking=strict_integrity,
+        )
+    )
+
+    # Check status note consistency
+    note_result = check_status_note_consistency(data)
+    if note_result.errors or note_result.warnings:
+        all_details = []
+        for e in note_result.errors:
+            all_details.append(f"error: {e['message']}")
+        for w in note_result.warnings:
+            all_details.append(f"warning: {w['message']}")
+        details_str = "; ".join(all_details[:10])
+        if len(all_details) > 10:
+            details_str += "; ... more"
+    else:
+        details_str = ""
+
+    # Blocking: only errors block; warnings do not
+    note_passed = len(note_result.errors) == 0
+    results.append(
+        CheckResult(
+            name="status_note_consistency",
+            passed=note_passed,
+            details=details_str,
+            blocking=False,  # warnings-only by default; use env var to upgrade
         )
     )
 
