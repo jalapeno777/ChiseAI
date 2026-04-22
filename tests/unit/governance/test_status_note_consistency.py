@@ -24,14 +24,16 @@ class TestDeferredNote:
         assert result.errors[0]["story_id"] == "ST-001"
         assert result.errors[0]["severity"] == "error"
 
-    def test_deferred_note_with_in_progress_item_ok(self):
+    def test_deferred_note_with_in_progress_item_raises_error(self):
         data = {
             "metadata": {"status_notes": ["ST-001 deferred to post-Day-3-checkpoint"]},
             "in_progress": [{"id": "ST-001", "status": "in_progress"}],
         }
         result = check_status_note_consistency(data)
-        assert result.passed
-        assert len(result.errors) == 0
+        assert not result.passed
+        assert len(result.errors) == 1
+        assert result.errors[0]["story_id"] == "ST-001"
+        assert result.errors[0]["severity"] == "error"
 
     def test_deferred_note_with_backlog_item_ok(self):
         data = {
@@ -80,12 +82,30 @@ class TestInProgressNote:
         assert not result.passed
         assert len(result.errors) == 1
 
+    def test_in_progress_note_with_completed_item_raises_error(self):
+        data = {
+            "metadata": {"status_notes": ["ST-001 in progress"]},
+            "in_progress": [{"id": "ST-001", "status": "completed"}],
+        }
+        result = check_status_note_consistency(data)
+        assert not result.passed
+        assert len(result.errors) == 1
+
 
 class TestCompletedNote:
     def test_completed_note_with_backlog_item_raises_error(self):
         data = {
             "metadata": {"status_notes": ["ST-001 completed"]},
             "backlog": [{"id": "ST-001", "status": "backlog"}],
+        }
+        result = check_status_note_consistency(data)
+        assert not result.passed
+        assert len(result.errors) == 1
+
+    def test_completed_note_with_in_progress_item_raises_error(self):
+        data = {
+            "metadata": {"status_notes": ["ST-001 completed"]},
+            "in_progress": [{"id": "ST-001", "status": "in_progress"}],
         }
         result = check_status_note_consistency(data)
         assert not result.passed
@@ -144,7 +164,7 @@ class TestNoContradiction:
     def test_infrastructure_note_ignored(self):
         data = {
             "metadata": {
-                "status_notes": ["Grafana: r2a-canary-health dashboard active"]
+                "status_notes": ["Grafana: r2a-canary-health dashboard deployed"]
             },
             "backlog": [],
         }

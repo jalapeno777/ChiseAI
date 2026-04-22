@@ -34,7 +34,7 @@ _STATUS_NOTE_STORY_ID_PATTERN = re.compile(
 # Semantic intent classification
 _DEFERRED_KEYWORDS = ["deferred", "postponed", "delayed", "to be scheduled", "backlog"]
 _BLOCKED_KEYWORDS = ["blocked", "stalled", "waiting on", "held"]
-_IN_PROGRESS_KEYWORDS = ["in progress", "active", "working", "ongoing"]
+_IN_PROGRESS_KEYWORDS = ["in progress", "working", "ongoing"]
 _COMPLETED_KEYWORDS = ["completed", "done", "finished", "merged", "shipped"]
 _ARCHIVED_KEYWORDS = ["archived", "deprecated", "superseded", "replaced"]
 _OPERATIONAL_KEYWORDS = [
@@ -97,6 +97,18 @@ def _check_note_item_contradiction(
             "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
         }
 
+    # M3: deferred intent contradictions (in_progress/active)
+    if note_intent == "deferred" and status_lower in _ACTIVE_STATUSES:
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
     # blocked intent contradictions
     if note_intent == "blocked" and status_lower in _COMPLETED_STATUSES:
         return {
@@ -124,11 +136,35 @@ def _check_note_item_contradiction(
             "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
         }
 
-    # completed intent contradictions
+    # M2: in_progress intent contradictions (completed/merged)
+    if note_intent == "in_progress" and status_lower in _COMPLETED_STATUSES:
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # completed intent contradictions (backlog/archived)
     if note_intent == "completed" and status_lower in (
         *_BACKLOG_STATUSES,
         *_ARCHIVED_STATUSES,
     ):
+        return {
+            "story_id": story_id,
+            "note_intent": note_intent,
+            "note_text": note_text[:100],
+            "item_status": item_status,
+            "item_section": item_section,
+            "severity": "error",
+            "message": f"Note indicates '{note_intent}' but item status is '{item_status}' in {item_section}",
+        }
+
+    # M1: completed intent contradictions (in_progress/active)
+    if note_intent == "completed" and status_lower in _ACTIVE_STATUSES:
         return {
             "story_id": story_id,
             "note_intent": note_intent,
