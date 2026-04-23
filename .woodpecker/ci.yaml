@@ -3,6 +3,22 @@ when:
     - pull_request
     - manual
     - cron
+  cron:
+    - exclude:
+        - autocog-hourly
+        - autocog-improvement-daily
+        - autocog-constitution-daily
+        - autocog-calibration-weekly
+        - autocog-autonomy-tune-weekly
+        - 6h-mini-eval
+        - 6h-eval
+        - daily-trends
+        - weekly-reflection
+        - persona-weekly
+        - autocog-heartbeat
+        - autocog-weekly
+        - autocog-monthly
+        - hourly-health
 clone:
   git:
     image: woodpeckerci/plugin-git
