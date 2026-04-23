@@ -563,7 +563,7 @@ completed:
     description: Advanced CI enhancements beyond Phase 2 hardening
     owner: ST-CI-001 continuation
     priority: P2
-    status: completed
+    status: archived
     story_points: 3
     created_date: "2026-03-02"
     depends_on:
@@ -630,7 +630,7 @@ completed:
     description: Complete remaining governance features to reach 100% epic completion
     owner: TBD
     priority: P1
-    status: completed
+    status: archived
     created_date: "2026-03-02"
     current_completion: 76%
     target_completion: 100%
