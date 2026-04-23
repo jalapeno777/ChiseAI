@@ -342,6 +342,21 @@ def _wait_until_mergeable(
     return _pr_by_number(cfg, number)
 
 
+def _ci_gate_ok(cfg: Config, sha: str) -> bool:
+    """Return True only when the ci-gate commit context is green."""
+    statuses = _safe_req_json(
+        cfg,
+        "GET",
+        f"{_repo_path(cfg)}/commits/{sha}/statuses",
+    )
+    if not isinstance(statuses, list):
+        return True  # treat unavailable as "not yet failed"
+    for s in statuses:
+        if isinstance(s, dict) and s.get("context") == "ci-gate":
+            return s.get("status") not in ("error", "failure")
+    return True  # no ci-gate context posted yet
+
+
 def auto_merge(cfg: Config) -> int:
     """Merge eligible open PRs once checks are green.
 
@@ -385,6 +400,10 @@ def auto_merge(cfg: Config) -> int:
             print(
                 f"skip PR #{number}: commit status not green (state={status.get('state') if isinstance(status, dict) else 'unknown'})"
             )
+            continue
+        head_sha = (pr.get("head") or {}).get("sha") or ""
+        if not _ci_gate_ok(cfg, head_sha):
+            print(f"skip PR #{number}: ci-gate context failed")
             continue
 
         for attempt in range(1, 4):
