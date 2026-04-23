@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-04-14"
+  last_updated: "2026-04-23"
   managed_by: merlin
   status_notes:
     - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324
@@ -855,6 +855,86 @@ completed:
     completion_date: "2026-04-13"
     merge_commit: 5fc297ce98d7484526f21cc75b13d6538e3f83c0
     pr_number: "~"
+  - id: REPO-STATUS-LEDGER-NORMALIZATION
+    title: Status Ledger Normalization
+    description: Normalize status ledger entries to fix consistency issues.
+    status: completed
+    priority: P2
+    story_points: 1
+    completion_date: "2026-04-23"
+    merge_commit: f560ab806834639aa8b35f87e095f873e6732135
+    pr_number: "1045"
+    branch: feature/STATUS-LEDGER-NORMALIZATION
+    owner: ops-team
+    notes:
+      - "Emergency merge via Aria override (AD-PR1045-BLOCKER-20260423T154500Z-b2c11d)"
+      - "ci-gate mismatch resolved via manual Gitea status override"
+  - id: ST-WIRE-ERROR-RATE-TRACKER-CONSISTENCY-CHECK
+    title: Error Rate Tracker Consistency Check
+    description: Consistency check fix for ErrorRateTracker wiring.
+    status: completed
+    priority: P2
+    story_points: 1
+    completion_date: "2026-04-23"
+    merge_commit: 459c81c23953905f15b8f5d0caa479403dc28c29
+    pr_number: "1046"
+    branch: feature/ST-WIRE-ERROR-RATE-TRACKER-consistency-check
+    owner: ops-team
+    notes:
+      - "Merged by Merlin 2026-04-23"
+  - id: GUARD-STATUS-NOTE-MEDIUM-FIXES
+    title: Status Guard Medium Finding Fixes
+    description: Follow-up fixes for medium-severity findings in status guard contradiction check hardening.
+    status: completed
+    priority: P2
+    story_points: 2
+    completion_date: "2026-04-22"
+    merge_commit: fa283378bbbded023c889edc43c6ec4e20971f77
+    pr_number: "1047"
+    branch: feature/GUARD-STATUS-NOTE-MEDIUM-FIXES
+    owner: ops-team
+    notes:
+      - "Medium finding fixes from contradiction check hardening"
+  - id: AUTOCOG-CRON-FIX-001
+    title: Cron Misfire Remediation
+    description: Exhaustively exclude all named cron pipelines from ci.yaml trigger.
+    status: completed
+    priority: P1
+    story_points: 1
+    completion_date: "2026-04-23"
+    merge_commit: be6775b860dbcc90d7e8a539de1e52f720c421d9
+    pr_number: "1048"
+    branch: feature/AUTOCOG-CRON-FIX-001
+    owner: ops-team
+    notes:
+      - "Adds 4 missing cron exclusions: docker-live-check, weekly-security-audit, workflow-archive-daily, workflow-archive-weekly"
+  - id: REPO-0428
+    title: CI YAML RCA/Fix - Remove Invalid cron.exclude Syntax
+    description: Remove unsupported cron.exclude map syntax from .woodpecker/ci.yaml.
+    status: completed
+    priority: P0-CRITICAL
+    story_points: 1
+    completion_date: "2026-04-23"
+    merge_commit: 01560c0cca98e42e02ace6e6b0d9d77597a86107
+    pr_number: "1049"
+    branch: refs/pull/1049/head
+    owner: ops-team
+    notes:
+      - "Root cause: Woodpecker 3.12.0 cannot parse cron.exclude"
+      - "Impact: 17 consecutive pipeline errors"
+  - id: DD-CI-ALERTING-ERROR-RATE-OUTAGE-DETECTOR
+    title: CI Outage Detector Alerting Control
+    description: CI error rate outage detector alerting control.
+    status: completed
+    priority: P2
+    story_points: 1
+    completion_date: "2026-04-23"
+    merge_commit: f1604a4137e312d837c24a3f74298c41d606ec83
+    pr_number: "1050"
+    branch: feature/DD-CI-ALERTING-ERROR-RATE-outage-detector
+    owner: ops-team
+    notes:
+      - "CI error rate outage detection alerting control"
 in_progress:
 backlog:
   - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
