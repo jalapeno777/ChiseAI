@@ -3,20 +3,16 @@
 
 from __future__ import annotations
 
-import json
 import sys
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 # Import from the script under test
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "ci"))
 from ci_outage_detector import (
     FAILED_STATUSES,
-    _is_failed_status,
     _consecutive_failures_in_window,
+    _is_failed_status,
     _normalize_pipeline,
 )
 
