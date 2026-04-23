@@ -184,3 +184,71 @@ def test_auto_merge_skips_when_ci_gate_context_pending(
 
     # Should skip because ci-gate is pending (fail-closed)
     assert auto_pr_merge.auto_merge(cfg) == 0
+
+
+@patch("auto_pr_merge._safe_req_json")
+def test_auto_merge_skips_when_ci_gate_context_fails(
+    mock_req_json: MagicMock,
+) -> None:
+    cfg = _cfg()
+    cfg.enable_server_automerge = True
+    pr = {
+        "number": 42,
+        "state": "open",
+        "mergeable": True,
+        "head": {
+            "ref": "feature/test-branch",
+            "sha": "abc123",
+            "label": "craig:feature/test-branch",
+        },
+        "user": {"login": "chise-bot"},
+    }
+
+    def _fake_req(_cfg, method: str, path: str, body=None):
+        if method == "GET" and "/pulls?state=open" in path:
+            return [pr]
+        if method == "GET" and path.endswith("/pulls/42"):
+            return pr
+        if method == "GET" and path.endswith("/commits/abc123/status"):
+            return {"state": "success"}  # aggregate passes
+        if method == "GET" and path.endswith("/commits/abc123/statuses"):
+            return [{"context": "ci-gate", "status": "failure"}]
+        raise AssertionError(f"Unexpected request: {method} {path}")
+
+    mock_req_json.side_effect = _fake_req
+
+    assert auto_pr_merge.auto_merge(cfg) == 0
+
+
+@patch("auto_pr_merge._safe_req_json")
+def test_auto_merge_skips_when_ci_gate_context_error(
+    mock_req_json: MagicMock,
+) -> None:
+    cfg = _cfg()
+    cfg.enable_server_automerge = True
+    pr = {
+        "number": 42,
+        "state": "open",
+        "mergeable": True,
+        "head": {
+            "ref": "feature/test-branch",
+            "sha": "abc123",
+            "label": "craig:feature/test-branch",
+        },
+        "user": {"login": "chise-bot"},
+    }
+
+    def _fake_req(_cfg, method: str, path: str, body=None):
+        if method == "GET" and "/pulls?state=open" in path:
+            return [pr]
+        if method == "GET" and path.endswith("/pulls/42"):
+            return pr
+        if method == "GET" and path.endswith("/commits/abc123/status"):
+            return {"state": "success"}  # aggregate passes
+        if method == "GET" and path.endswith("/commits/abc123/statuses"):
+            return [{"context": "ci-gate", "status": "error"}]
+        raise AssertionError(f"Unexpected request: {method} {path}")
+
+    mock_req_json.side_effect = _fake_req
+
+    assert auto_pr_merge.auto_merge(cfg) == 0
