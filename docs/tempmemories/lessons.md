@@ -43,6 +43,50 @@ LESSON
 
 ```text
 LESSON
+- id: LESSON-20260423-pr-open-not-merged
+- context: PRs #1045 and #1046 listed as merged in task scope but were actually OPEN when documentation session ran
+- trigger: Documentation session for PRs #1045-#1050 found 2 of 6 PRs were still open
+- actionable_rule: Always verify PR merge status via API before documenting. Gitea PR list shows state=open even when auto-PR was created. Never assume PR is merged based on PR number sequence alone.
+- applies_to:
+  - jarvis
+  - aria
+- expected_outcome: Accurate PR status in documentation; no false completion claims
+- evidence_ref: PR #1045 (state=open, merged=false), PR #1046 (state=open, merged=false)
+- added_utc: 2026-04-23T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260423-cron-exclude-exhaustive
+- context: CI cron pipelines were misfiring on push events because cron.exclude list was incomplete
+- trigger: 14 cron exclusion names in ci.yaml but more pipelines existed that weren't excluded
+- actionable_rule: When excluding cron pipelines from triggers, exhaustively audit ALL pipeline names first. Partial exclusion causes the same cascade failures as no exclusion.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Complete cron exclusion list prevents any cron pipeline from firing on push events
+- evidence_ref: PR #1048, PR #1049, AUTOCOG-CRON-FIX-001
+- added_utc: 2026-04-23T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260423-woodpecker-syntax-parse
+- context: Woodpecker 3.12.0 cannot parse cron.exclude map syntax, causing unmarshal error that kills ALL pipelines
+- trigger: Adding cron.exclude map block to ci.yaml broke all 17 consecutive pipelines
+- actionable_rule: Before adding complex YAML structures to CI configs, verify the CI runtime version supports the syntax. Use simple list syntax when possible.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: CI YAML changes validated against actual CI runtime version before merge
+- evidence_ref: PR #1049, 17 consecutive pipeline errors
+- added_utc: 2026-04-23T00:00:00Z
+```
+
+```text
+LESSON
 - id: LESSON-20260329-ci-validator-gap
 - context: evidence_validator.py performs file/git verification but only called manually; validate_status_evidence.py only checks YAML fields but IS in CI
 - trigger: git-audit-20260323 identified this gap 6 days ago, no remediation story created
