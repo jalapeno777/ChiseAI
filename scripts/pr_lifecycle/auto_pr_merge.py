@@ -319,6 +319,31 @@ def _is_mergeable_clean(pr: dict[str, Any]) -> bool:
     return mergeable is True
 
 
+def _ci_gate_ok(cfg: Config, sha: str) -> bool:
+    """Return True only when the ci-gate commit context is green.
+
+    Fail-closed: if ci-gate is pending/failed, or if the API call fails,
+    we cannot confirm safety — do not merge.
+    """
+    if not sha:
+        return False  # cannot verify — fail closed
+    statuses = _safe_req_json(
+        cfg,
+        "GET",
+        f"{_repo_path(cfg)}/commits/{sha}/statuses",
+    )
+    if statuses is None:
+        return False  # API failure — fail closed
+    if not isinstance(statuses, list):
+        return False  # unexpected response — fail closed
+    for s in statuses:
+        if isinstance(s, dict) and s.get("context") == "ci-gate":
+            # Fail closed on pending, error, or failure.
+            if s.get("status") in ("pending", "error", "failure"):
+                return False
+    return True
+
+
 def _author_allowed(cfg: Config, pr: dict[str, Any]) -> bool:
     author = ((pr.get("user") or {}).get("login") or "").strip()
     return author in cfg.allowed_authors
@@ -385,6 +410,11 @@ def auto_merge(cfg: Config) -> int:
             print(
                 f"skip PR #{number}: commit status not green (state={status.get('state') if isinstance(status, dict) else 'unknown'})"
             )
+            continue
+
+        sha = (pr.get("head") or {}).get("sha") or ""
+        if not _ci_gate_ok(cfg, sha):
+            print(f"skip PR #{number}: ci-gate not green")
             continue
 
         for attempt in range(1, 4):
