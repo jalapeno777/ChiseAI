@@ -29,7 +29,7 @@ except ModuleNotFoundError:
 FAILED_STATUSES = {"failure", "failed", "error", "killed", "blocked"}
 WINDOW_HOURS = 1
 ALERT_THRESHOLD = 3  # >3 consecutive failures
-RUNBOOK_POINTER = "docs/runbooks/ci-outage-response.md"
+RUNBOOK_POINTER = "docs/runbooks/incident_response.md"
 INCIDENT_SIGNAL = "ops-team"
 
 
