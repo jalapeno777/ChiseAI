@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-04-23"
+  last_updated: "2026-04-24"
   managed_by: merlin
   status_notes:
     - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324
@@ -1007,6 +1007,15 @@ completed:
       - "CI base tag detector hardening"
       - "Note: squash merge (PR #1055)"
 in_progress:
+active_work:
+  active_now: []
+  next_3:
+    - id: BL-BOS-CHOCH-001
+      title: BOS/CHoCH Validation Remediation
+    - id: P2-T03
+      title: ContextAssemblyBoundary Runtime Adoption Audit
+    - id: P2-T05
+      title: Persona/Memory Hardening Gate
 backlog:
   - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
     id: CI-INFRA-DRIFT-001
