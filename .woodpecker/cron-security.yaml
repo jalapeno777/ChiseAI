@@ -47,7 +47,7 @@ steps:
 
   security-scan-full:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -67,7 +67,7 @@ steps:
 
   docker-live-check:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -86,7 +86,7 @@ steps:
 
   security-audit-gate:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     depends_on:
       - dependency-audit-full
       - security-scan-full

@@ -11,7 +11,7 @@ clone:
 steps:
   swarm-context:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -29,7 +29,7 @@ steps:
         exit 0
   cross-branch-verify:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -172,7 +172,7 @@ steps:
       - python3 scripts/ci/count_test_skips.py
   security-scan:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -217,7 +217,7 @@ steps:
         exit 0
   secret-scan:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -300,7 +300,7 @@ steps:
         exit 0
   docker-governance:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -615,7 +615,7 @@ steps:
         exit 0
   truth-gate:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -679,7 +679,7 @@ steps:
         exit 0
   compass-gate:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
@@ -697,7 +697,7 @@ steps:
         fi
   flaky-detection:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -732,7 +732,7 @@ steps:
         exit 0
   post-run:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     depends_on:
       - local-ci
     environment:
@@ -757,7 +757,7 @@ steps:
         exit 0
   changed-lines-coverage:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -775,7 +775,7 @@ steps:
         exit 0
   tempmemory-operations-group:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -826,7 +826,7 @@ steps:
         exit 0
   evaluation-pre-eval-group:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -877,7 +877,7 @@ steps:
         exit 0
   quality-advisory-group:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -962,7 +962,7 @@ steps:
         exit 0
   governance-gates-group:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -1057,7 +1057,7 @@ steps:
         exit 0
   ci-gate:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     depends_on:
       - swarm-context
       - cross-branch-verify
@@ -1087,7 +1087,7 @@ steps:
       - "set -euo pipefail\npython3 scripts/ci/ci_gate.py\n"
   pr-automerge:
     pull: false
-    image: chiseai-ci-tools:py311-20260329
+    image: chiseai-ci-tools:py311-20260423
     depends_on:
       - ci-gate
     when:
