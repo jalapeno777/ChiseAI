@@ -95,6 +95,7 @@ def main() -> int:
             "passed": len(stale) == 0,
         }
         print(json.dumps(output, indent=2))
+        return 1 if stale else 0
     elif stale:
         print(f"STALE: {len(stale)} Dockerfile(s) using old chiseai-ci-tools tag")
         print(f"Latest tag in .woodpecker: {latest_tag}")
