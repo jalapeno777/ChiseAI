@@ -18,4 +18,5 @@ RUN pip install \
        websockets==15.0.1 \
        fastapi==0.121.3 \
        httpx==0.28.1 \
+       redis>=5.0.0 \
        sqlalchemy==2.0.44
