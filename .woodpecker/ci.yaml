@@ -318,7 +318,7 @@ steps:
         exit 0
   e2e-tests:
     pull: false
-    image: chiseai-ci-local-ci:py311-20260323
+    image: chiseai-ci-local-ci:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -344,7 +344,7 @@ steps:
         exit 0
   integration-tests:
     pull: false
-    image: chiseai-ci-local-ci:py311-20260323
+    image: chiseai-ci-local-ci:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
     commands:
@@ -372,7 +372,7 @@ steps:
         exit 0
   local-ci:
     pull: false
-    image: chiseai-ci-local-ci:py311-20260323
+    image: chiseai-ci-local-ci:py311-20260423
     environment:
       CI_STATUS_DIR: /woodpecker/ci-status/${CI_PIPELINE_NUMBER}
       PYTEST_WORKERS: auto
