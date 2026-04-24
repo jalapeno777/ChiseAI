@@ -1,4 +1,4 @@
-FROM chiseai-ci-tools:py311-20260323
+FROM chiseai-ci-tools:py311-20260423
 
 # Prebuilt dependency set for the local-ci gate.
 # This avoids repeated apt/pip bootstrapping in Woodpecker and keeps the gate fast.
