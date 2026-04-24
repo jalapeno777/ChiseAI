@@ -497,7 +497,7 @@ steps:
         exit 0
   brain-eval:
     pull: false
-    image: chiseai-ci-brain-eval:py311-20260323
+    image: chiseai-ci-brain-eval:py311-20260423
     depends_on:
       - evaluation-pre-eval-group
     environment:
