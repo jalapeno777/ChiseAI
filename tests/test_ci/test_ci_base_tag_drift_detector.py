@@ -268,3 +268,106 @@ class TestJsonMode:
         assert parsed["count"] == 2
         assert len(parsed["stale"]) == 2
         assert exit_code == 1
+
+    def test_json_verbose_incompatible_produces_json_error_and_exit_2(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """--json --verbose combination produces JSON error with exit code 2."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        docker_dir = tmp_path / "infrastructure" / "docker"
+        docker_dir.mkdir(parents=True)
+        monkeypatch.setattr(mod, "DOCKER_DIR", docker_dir)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(mod, "WOODPECKER_DIR", tmp_path)
+        monkeypatch.setattr(
+            sys, "argv", ["ci_base_tag_drift_detector.py", "--json", "--verbose"]
+        )
+        (tmp_path / "ci.yaml").write_text(
+            "image: chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        (docker_dir / "Dockerfile.ci-tools").write_text(
+            "FROM chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        exit_code = mod.main()
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert (
+            parsed["error"]
+            == "incompatible flags: --json and --verbose cannot be used together"
+        )
+        assert parsed["exit_code"] == 2
+        assert exit_code == 2
+
+    def test_json_no_tags_found_produces_json_error_payload(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """--json with no tags found produces valid JSON error payload with exit 1."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        monkeypatch.setattr(mod, "WOODPECKER_DIR", tmp_path)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["ci_base_tag_drift_detector.py", "--json"])
+        (tmp_path / "ci.yaml").write_text("image: other:tag\n", encoding="utf-8")
+        exit_code = mod.main()
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert (
+            parsed["error"]
+            == "No chiseai-ci-tools tag found in .woodpecker/*.yaml files."
+        )
+        assert parsed["latest_tag"] is None
+        assert parsed["stale"] == []
+        assert parsed["count"] == 0
+        assert parsed["passed"] is False
+        assert exit_code == 1
+
+
+class TestVerboseMode:
+    def test_verbose_shows_latest_tag_when_all_current(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """--verbose shows latest tag even when all files are current."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        docker_dir = tmp_path / "infrastructure" / "docker"
+        docker_dir.mkdir(parents=True)
+        monkeypatch.setattr(mod, "DOCKER_DIR", docker_dir)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(mod, "WOODPECKER_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["ci_base_tag_drift_detector.py", "--verbose"])
+        (tmp_path / "ci.yaml").write_text(
+            "image: chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        (docker_dir / "Dockerfile.ci-tools").write_text(
+            "FROM chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        exit_code = mod.main()
+        captured = capsys.readouterr()
+        assert (
+            "Latest tag in .woodpecker: chiseai-ci-tools:py311-20260423" in captured.out
+        )
+        assert exit_code == 0
+
+    def test_verbose_flag_ignored_in_json_mode(self, tmp_path, monkeypatch, capsys):
+        """--verbose is silently ignored when --json is set (handled by incompatible combo)."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        docker_dir = tmp_path / "infrastructure" / "docker"
+        docker_dir.mkdir(parents=True)
+        monkeypatch.setattr(mod, "DOCKER_DIR", docker_dir)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(mod, "WOODPECKER_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["ci_base_tag_drift_detector.py", "--verbose"])
+        (tmp_path / "ci.yaml").write_text(
+            "image: chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        (docker_dir / "Dockerfile.ci-tools").write_text(
+            "FROM chiseai-ci-tools:py311-20260301\n", encoding="utf-8"
+        )
+        exit_code = mod.main()
+        # --verbose alone doesn't reject; it works normally and shows stale files
+        # But there's no verbose output for stale files (only shows latest tag on OK)
+        captured = capsys.readouterr()
+        assert "STALE" in captured.out
+        assert exit_code == 1

@@ -78,9 +78,39 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if args.json and args.verbose:
+        import json
+
+        print(
+            json.dumps(
+                {
+                    "error": "incompatible flags: --json and --verbose cannot be used together",
+                    "exit_code": 2,
+                },
+                indent=2,
+            )
+        )
+        return 2
+
     latest_tag = find_latest_ci_tools_tag()
     if latest_tag is None:
-        print("ERROR: No chiseai-ci-tools tag found in .woodpecker/*.yaml files.")
+        if args.json:
+            import json
+
+            print(
+                json.dumps(
+                    {
+                        "error": "No chiseai-ci-tools tag found in .woodpecker/*.yaml files.",
+                        "latest_tag": None,
+                        "stale": [],
+                        "count": 0,
+                        "passed": False,
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print("ERROR: No chiseai-ci-tools tag found in .woodpecker/*.yaml files.")
         return 1
 
     stale = find_stale_dockerfiles(latest_tag)
