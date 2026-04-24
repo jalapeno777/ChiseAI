@@ -40,7 +40,7 @@ clone:
 steps:
   # Hourly: Belief Consistency Check
   autocog-belief-consistency-hourly:
-    image: chiseai-ci-autocog:py311-20260414
+    image: chiseai-ci-autocog:py311-20260423
     when:
       cron:
         - autocog-hourly
@@ -77,7 +77,7 @@ steps:
 
   # Daily: Improvement Cycle (runs at 02:00 UTC)
   autocog-improvement-cycle-daily:
-    image: chiseai-ci-autocog:py311-20260414
+    image: chiseai-ci-autocog:py311-20260423
     when:
       cron:
         - autocog-improvement-daily
@@ -113,7 +113,7 @@ steps:
 
   # Daily: Constitution Audit (runs at 03:00 UTC)
   autocog-constitution-audit-daily:
-    image: chiseai-ci-autocog:py311-20260414
+    image: chiseai-ci-autocog:py311-20260423
     when:
       cron:
         - autocog-constitution-daily
@@ -149,7 +149,7 @@ steps:
 
   # Weekly: Calibration (runs Monday at 01:00 UTC)
   autocog-calibration-weekly:
-    image: chiseai-ci-autocog:py311-20260414
+    image: chiseai-ci-autocog:py311-20260423
     when:
       cron:
         - autocog-calibration-weekly
@@ -186,7 +186,7 @@ steps:
 
   # Weekly: Autonomy Tune (runs Monday at 02:00 UTC)
   autocog-autonomy-tune-weekly:
-    image: chiseai-ci-autocog:py311-20260414
+    image: chiseai-ci-autocog:py311-20260423
     when:
       cron:
         - autocog-autonomy-tune-weekly
@@ -223,7 +223,7 @@ steps:
 
   # Manual trigger fallback for testing
   autocog-manual-trigger:
-    image: chiseai-ci-autocog:py311-20260414
+    image: chiseai-ci-autocog:py311-20260423
     when:
       event:
         - manual
@@ -257,7 +257,7 @@ steps:
 
   # CI Gate: Single authoritative failure point
   ci-gate:
-    image: chiseai-ci-autocog:py311-20260414
+    image: chiseai-ci-autocog:py311-20260423
     commands:
       - |
         set -euo pipefail
