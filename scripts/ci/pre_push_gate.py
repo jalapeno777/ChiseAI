@@ -207,6 +207,16 @@ def run_gate(*, skip_secret_scan: bool) -> int:
             )
         )
 
+    # CI base tag drift check
+    drift_detector = Path(__file__).resolve().with_name("ci_base_tag_drift_detector.py")
+    checks.append(
+        (
+            "ci-base-tag-drift",
+            [sys.executable, str(drift_detector)],
+            60,
+        )
+    )
+
     failures = 0
     total_duration = 0
     for title, cmd, timeout in checks:
