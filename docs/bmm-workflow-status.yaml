@@ -935,6 +935,77 @@ completed:
     owner: ops-team
     notes:
       - "CI error rate outage detection alerting control"
+  - id: REPO-CI-GATE-AUDIT
+    title: CI Gate Audit
+    description: Restore ci-gate failure/error tests dropped in round 1
+    status: completed
+    priority: P2
+    story_points: 1
+    completion_date: "2026-04-23"
+    merge_commit: f1ff54a30ad1d69480c5f4ddb9b3020486120b9f
+    pr_number: "1051"
+    epic_id: null
+    branch: feature/REPO-CI-GATE-AUDIT
+    owner: ops-team
+    notes:
+      - "Restored ci-gate failure/error tests"
+  - id: REPO-CI-BASE-TAG-DRIFT-DETECTOR
+    title: CI Base Tag Drift Detector
+    description: Add base tag drift detector for Dockerfile.ci-* files
+    status: completed
+    priority: P2
+    story_points: 1
+    completion_date: "2026-04-24"
+    merge_commit: 1c1361794fa0fc9e5819195b9ef09d306f113910
+    pr_number: "1052"
+    epic_id: null
+    branch: feature/CI-BASE-TAG-DRIFT-DETECTOR
+    owner: ops-team
+    notes:
+      - "Add base tag drift detector for Dockerfile.ci-* files"
+  - id: REPO-CI-BASE-TAG-DRIFT-DETECTOR-HARDENING
+    title: CI Base Tag Drift Detector Hardening
+    description: Hardening for CI base tag drift detector
+    status: completed
+    priority: P2
+    story_points: 1
+    completion_date: "2026-04-24"
+    merge_commit: 37ec8d12c07568033786817f6ee82b62dfb501fa
+    pr_number: "1053"
+    epic_id: null
+    branch: feature/CI-BASE-TAG-DRIFT-DETECTOR-HARDENING
+    owner: ops-team
+    notes:
+      - "Hardening for CI base tag drift detector"
+  - id: REPO-CI-BASE-TAG-DRIFT-DETECTOR-HARDENING-2
+    title: CI Base Tag Drift Detector Hardening v2
+    description: Additional hardening for CI base tag drift detector
+    status: completed
+    priority: P2
+    story_points: 1
+    completion_date: "2026-04-24"
+    merge_commit: a4acbeb15959865def64b7d75b913a6157b61f0e
+    pr_number: "1054"
+    epic_id: null
+    branch: feature/CI-BASE-TAG-DRIFT-DETECTOR-HARDENING
+    owner: ops-team
+    notes:
+      - "Additional hardening for CI base tag drift detector"
+  - id: REPO-CI-BASE-TAG-DETECTOR-HARDENING
+    title: CI Base Tag Detector Hardening
+    description: CI base tag detector hardening per PR #1054
+    status: completed
+    priority: P2
+    story_points: 1
+    completion_date: "2026-04-24"
+    merge_commit: d8a9824911bd63ec2a10873f38ef7548f6400344
+    pr_number: "1055"
+    epic_id: null
+    branch: feature/PR1054-CI-BASE-TAG-DETECTOR-HARDENING
+    owner: ops-team
+    notes:
+      - "CI base tag detector hardening"
+      - "Note: squash merge (PR #1055)"
 in_progress:
 backlog:
   - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
