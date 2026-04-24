@@ -57,7 +57,6 @@ def find_stale_dockerfiles(latest_tag: str) -> list[dict]:
                             "latest_date": latest_date,
                         }
                     )
-                break
     return stale
 
 
