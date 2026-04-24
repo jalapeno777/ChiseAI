@@ -102,6 +102,23 @@ class TestFindStaleDockerfiles:
         dates = {s["from_date"] for s in stale}
         assert dates == {"20260301", "20260215"}
 
+    def test_detects_stale_with_as_alias(self, tmp_path, monkeypatch):
+        """Multi-stage Dockerfile with AS alias suffix should be detected as stale."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        docker_dir = tmp_path / "infrastructure" / "docker"
+        docker_dir.mkdir(parents=True)
+        monkeypatch.setattr(mod, "DOCKER_DIR", docker_dir)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        (docker_dir / "Dockerfile.ci-tools").write_text(
+            "FROM chiseai-ci-tools:py311-20260301 AS builder\n", encoding="utf-8"
+        )
+        stale = mod.find_stale_dockerfiles("chiseai-ci-tools:py311-20260423")
+        assert len(stale) == 1
+        assert stale[0]["file"] == "infrastructure/docker/Dockerfile.ci-tools"
+        assert stale[0]["from_date"] == "20260301"
+        assert stale[0]["latest_date"] == "20260423"
+
 
 class TestMainExitCode:
     def test_main_exit_code_1_on_stale(self, tmp_path, monkeypatch):

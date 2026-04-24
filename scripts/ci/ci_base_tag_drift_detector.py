@@ -16,30 +16,32 @@ from typing import Optional
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WOODPECKER_DIR = REPO_ROOT / ".woodpecker"
 DOCKER_DIR = REPO_ROOT / "infrastructure" / "docker"
-BASE_IMAGE_RE = re.compile(r"^FROM\s+chiseai-ci-tools:py311-(\d{8})\s*$")
+BASE_IMAGE_RE = re.compile(
+    r"^FROM\s+chiseai-ci-tools:py311-(\d{8})(?:\s+AS\s+\S+)?\s*$", re.IGNORECASE
+)
 TAG_RE = re.compile(r"chiseai-ci-tools:py311-(\d{8})")
 
 
 def find_latest_ci_tools_tag() -> str | None:
     """Find the latest chiseai-ci-tools tag across all .woodpecker/*.yaml files."""
     latest: str | None = None
+    latest_date: str | None = None
     for yaml_file in WOODPECKER_DIR.glob("*.yaml"):
         content = yaml_file.read_text(encoding="utf-8")
         for match in TAG_RE.finditer(content):
             tag = match.group(0)  # e.g. "chiseai-ci-tools:py311-20260423"
             date_part = match.group(1)
-            # latest_tag format: chiseai-ci-tools:py311-YYYYMMDD (31 chars total)
-            # date part at index 23-31 gives YYYYMMDD (8 chars)
-            latest_date = latest[23:31] if latest else None
             if latest is None or date_part > latest_date:
                 latest = tag
+                latest_date = date_part
     return latest
 
 
 def find_stale_dockerfiles(latest_tag: str) -> list[dict]:
     """Find Dockerfile.ci-* files with stale FROM tags."""
     stale = []
-    latest_date = latest_tag[23:31]  # e.g. "20260423"
+    latest_match = TAG_RE.search(latest_tag)
+    latest_date = latest_match.group(1) if latest_match else None  # e.g. "20260423"
     for dockerfile in DOCKER_DIR.glob("Dockerfile.ci-*"):
         content = dockerfile.read_text(encoding="utf-8")
         for line in content.splitlines():
@@ -107,8 +109,6 @@ def main() -> int:
             print(f"Latest tag in .woodpecker: {latest_tag}")
         print("OK: All Dockerfile.ci-* files are up to date")
         return 0
-
-    return 0
 
 
 if __name__ == "__main__":
