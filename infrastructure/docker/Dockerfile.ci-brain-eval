@@ -1,4 +1,4 @@
-FROM chiseai-ci-tools:py311-20260323
+FROM chiseai-ci-tools:py311-20260423
 
 # Prebuilt dependency set for the brain-eval CI gate.
 # This avoids repeated scientific-package installs when brain changes are evaluated.

@@ -1,4 +1,4 @@
-FROM chiseai-ci-tools:py311-20260323
+FROM chiseai-ci-tools:py311-20260423
 
 # Prebuilt dependency set for the pre-eval ingestion gate.
 # This avoids per-run dependency bootstrapping when ingestion is enabled.

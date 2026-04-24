@@ -1,4 +1,4 @@
-FROM chiseai-ci-tools:py311-20260323
+FROM chiseai-ci-tools:py311-20260423
 
 # Prebuilt dependency set for the autocog-scheduler pipeline.
 # Includes all deps needed by src/autonomous_cognition/full_cycle.py and
