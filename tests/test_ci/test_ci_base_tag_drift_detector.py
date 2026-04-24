@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import sys
+
 
 class TestFindLatestCiToolsTag:
     def test_finds_latest_tag(self, tmp_path, monkeypatch):
@@ -162,3 +165,106 @@ class TestMainExitCode:
         )
         exit_code = mod.main()
         assert exit_code == 0
+
+
+class TestJsonMode:
+    def test_json_flag_produces_valid_json(self, tmp_path, monkeypatch, capsys):
+        """--json flag produces parseable JSON output."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        docker_dir = tmp_path / "infrastructure" / "docker"
+        docker_dir.mkdir(parents=True)
+        monkeypatch.setattr(mod, "DOCKER_DIR", docker_dir)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(mod, "WOODPECKER_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["ci_base_tag_drift_detector.py", "--json"])
+        (tmp_path / "ci.yaml").write_text(
+            "image: chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        (docker_dir / "Dockerfile.ci-tools").write_text(
+            "FROM chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        exit_code = mod.main()
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert "latest_tag" in parsed
+        assert "stale" in parsed
+        assert "count" in parsed
+        assert "passed" in parsed
+        assert exit_code == 0
+
+    def test_json_with_stale_tags_produces_passed_false_and_exit_code_1(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """--json with stale tags produces passed: False and exit code 1."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        docker_dir = tmp_path / "infrastructure" / "docker"
+        docker_dir.mkdir(parents=True)
+        monkeypatch.setattr(mod, "DOCKER_DIR", docker_dir)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(mod, "WOODPECKER_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["ci_base_tag_drift_detector.py", "--json"])
+        (tmp_path / "ci.yaml").write_text(
+            "image: chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        (docker_dir / "Dockerfile.ci-tools").write_text(
+            "FROM chiseai-ci-tools:py311-20260301\n", encoding="utf-8"
+        )
+        exit_code = mod.main()
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert parsed["passed"] is False
+        assert len(parsed["stale"]) == 1
+        assert exit_code == 1
+
+    def test_json_with_all_current_tags_produces_passed_true_and_exit_code_0(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """--json with all-current tags produces passed: True and exit code 0."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        docker_dir = tmp_path / "infrastructure" / "docker"
+        docker_dir.mkdir(parents=True)
+        monkeypatch.setattr(mod, "DOCKER_DIR", docker_dir)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(mod, "WOODPECKER_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["ci_base_tag_drift_detector.py", "--json"])
+        (tmp_path / "ci.yaml").write_text(
+            "image: chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        (docker_dir / "Dockerfile.ci-tools").write_text(
+            "FROM chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        exit_code = mod.main()
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert parsed["passed"] is True
+        assert parsed["count"] == 0
+        assert exit_code == 0
+
+    def test_json_count_field_matches_stale_count(self, tmp_path, monkeypatch, capsys):
+        """JSON count field matches actual stale count."""
+        import scripts.ci.ci_base_tag_drift_detector as mod
+
+        docker_dir = tmp_path / "infrastructure" / "docker"
+        docker_dir.mkdir(parents=True)
+        monkeypatch.setattr(mod, "DOCKER_DIR", docker_dir)
+        monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(mod, "WOODPECKER_DIR", tmp_path)
+        monkeypatch.setattr(sys, "argv", ["ci_base_tag_drift_detector.py", "--json"])
+        (tmp_path / "ci.yaml").write_text(
+            "image: chiseai-ci-tools:py311-20260423\n", encoding="utf-8"
+        )
+        (docker_dir / "Dockerfile.ci-tools").write_text(
+            "FROM chiseai-ci-tools:py311-20260301\n", encoding="utf-8"
+        )
+        (docker_dir / "Dockerfile.ci-autocog").write_text(
+            "FROM chiseai-ci-tools:py311-20260301\n", encoding="utf-8"
+        )
+        exit_code = mod.main()
+        captured = capsys.readouterr()
+        parsed = json.loads(captured.out)
+        assert parsed["count"] == 2
+        assert len(parsed["stale"]) == 2
+        assert exit_code == 1
