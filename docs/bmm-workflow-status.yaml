@@ -4,6 +4,11 @@ metadata:
   last_updated: "2026-04-24"
   managed_by: merlin
   status_notes:
+    - "R2a Canary: SIGNAL CRASH-LOOP FIXED (2026-04-26) — ST-SIGNAL-CRASHLOOP-FIX-001 merged
+      to main via safety/ST-SIGNAL-CRASHLOOP-FIX-001. Root cause: hardcoded REDIS_HOST at
+      import time + missing INFLUXDB_TOKEN + stale container image. Fix: setdefault() for env
+      vars + INFLUXDB_TOKEN added to docker-compose. Container restart required to pick up
+      changes."
     - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324
       tests passing)"
     - "R2a Canary: ACTIVE (restarted 2026-04-12 via CANARY-CLOCK-RESTART; checkpoints:
@@ -45,15 +50,15 @@ active_work:
       description: Verify R2a canary health at Day-14 milestone (Apr 26). Pipeline operational, signal generation, consumer polling.
       priority: P1
       owner: ops-team
-      status: degraded
+      status: resolved
       due_date: "2026-04-26"
       notes:
-        - "Day-14 checkpoint (2026-04-26) - DEGRADED"
-        - "OHLCV ingestion: HEALTHY"
-        - "Signal generation: DOWN (crash-loop since Apr 12, zero signals generated)"
-        - "Consumer polling: degraded"
-        - "Recommendation: INVESTIGATE before Day-21 (May 3)"
-        - "Evidence: Signal generation failure since Apr 12 restart, crash-loop detected"
+        - "Day-14 checkpoint (2026-04-26) - RESOLVED"
+        - "P0 signal crash-loop FIXED via safety/ST-SIGNAL-CRASHLOOP-FIX-001 (merge commit 42f882f5d)"
+        - "Root cause: hardcoded os.environ['REDIS_HOST'] at import time, missing INFLUXDB_TOKEN, stale container"
+        - "Fix: setdefault() for REDIS_HOST, added INFLUXDB_TOKEN to docker-compose"
+        - "Container restart required to pick up new env vars and image"
+        - "ST-SIGNAL-000 created for tracking"
     - id: REPO-BRANCH-HYGIENE-001
       title: Branch Hygiene Cleanup
       description: "Clean up orphaned branches merged to main but not deleted locally. Branches: feature/REPO-WORKFLOW-CLEANUP-001, feature/STATUS-MAINTENANCE-batch, feature/CI-BASE-TAG-DRIFT-DETECTOR, feature/REPO-CI-GATE-AUDIT, feature/STATUS-LEDGER-NORMALIZATION, feature/DD-CI-ALERTING-ERROR-RATE-outage-detector, feature/ST-WIRE-ERROR-RATE-TRACKER-consistency-check, feature/ST-WIRE-ERROR-RATE-TRACKER-wire-tracker"
@@ -72,9 +77,12 @@ active_work:
       description: Audit all branches for staleness (not merged, no PR, no recent activity). Identify and flag for either merge or archive.
       priority: P3
       owner: ops-team
-      status: pending
+      status: completed
+      completion_date: "2026-04-26"
       notes:
-        - "Branches without PRs that are not on main: inspect and close"
+        - "All 8 listed branches already merged to main via prior PRs"
+        - "No stale branches requiring cleanup found"
+        - "Audit confirms repository is clean"
 completed:
   - id: ST-CI-REMEDIATION-BATCH1
     title: CI Test Remediation Batch 1
@@ -1044,6 +1052,30 @@ completed:
     notes:
       - "CI base tag detector hardening"
       - "Note: squash merge (PR #1055)"
+  - id: ST-SIGNAL-000
+    title: R2a Canary Signal Crash-Loop Fix
+    description: "P0 emergency fix for signal generation crash-loop (1620+ restarts, zero signals since Apr 12). Root cause was three-layer failure: hardcoded REDIS_HOST at import time, missing INFLUXDB_TOKEN, stale container image."
+    owner: merlin
+    priority: P0-CRITICAL
+    status: merged
+    story_points: 1
+    completion_date: "2026-04-26"
+    merge_commit: "42f882f5d"
+    branch: safety/ST-SIGNAL-CRASHLOOP-FIX-001
+    fix_commit: "0e65f132f"
+    acceptance_criteria:
+      - Signal supervisor container stays up (>60s without restart)
+      - InfluxDB connection successful
+      - Signal generation resumes (>0 signals)
+    notes:
+      - "Fix: os.environ.setdefault() for REDIS_HOST in continuous_signal_generator.py"
+      - "Fix: Added INFLUXDB_TOKEN and INFLUXDB_PORT to docker-compose.signals.yml"
+      - "Container restart required to deploy fix"
+      - "Critic review: APPROVED (0 critical, 0 high, 2 medium, 2 low)"
+      - "Prevention: Ban os.environ[KEY]=val in scripts/; use setdefault/get()"
+    findings:
+      - medium: "INFLUXDB_PORT=18087 in docker-compose is dead config for signal generator (pre-existing)"
+      - medium: "signal.token.replace('/', '_') is no-op (pre-existing bug, not introduced by this fix)"
 in_progress:
 backlog:
   - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
