@@ -1007,9 +1007,6 @@ completed:
       - "CI base tag detector hardening"
       - "Note: squash merge (PR #1055)"
 in_progress:
-active_work:
-  active_now: []
-  next_3: []
 backlog:
   - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
     id: CI-INFRA-DRIFT-001
