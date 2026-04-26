@@ -37,6 +37,38 @@ metadata:
     - "CI Test Remediation completed (2026-04-16): 5 batches merged, ~293 tests resolved
       across validation, governance, swarm, discord, execution, integration, and PR lifecycle
       suites. Remaining E2E tests mitigated by existing skip markers + pytest-timeout."
+active_work:
+  active_now: []
+  next_3:
+    - id: R2A-CANARY-DAY14
+      title: R2a Canary Day-14 Checkpoint
+      description: Verify R2a canary health at Day-14 milestone (Apr 26). Pipeline operational, signal generation, consumer polling.
+      priority: P1
+      owner: ops-team
+      status: pending
+      due_date: "2026-04-26"
+      notes:
+        - "Day-7 checkpoint passed (Apr 19)"
+        - "Pipeline: FULL_PIPELINE_OPERATIONAL"
+        - "OHLCV ingestion: healthy"
+        - "Signal generation: active (600+ signals)"
+    - id: REPO-BRANCH-HYGIENE-001
+      title: Branch Hygiene Cleanup
+      description: "Clean up orphaned branches merged to main but not deleted locally. Branches: feature/REPO-WORKFLOW-CLEANUP-001, feature/STATUS-MAINTENANCE-batch, feature/CI-BASE-TAG-DRIFT-DETECTOR, feature/REPO-CI-GATE-AUDIT, feature/STATUS-LEDGER-NORMALIZATION, feature/DD-CI-ALERTING-ERROR-RATE-outage-detector, feature/ST-WIRE-ERROR-RATE-TRACKER-consistency-check, feature/ST-WIRE-ERROR-RATE-TRACKER-wire-tracker"
+      priority: P2
+      owner: ops-team
+      status: pending
+      notes:
+        - "All these branches have merged PRs"
+        - "Need local branch cleanup"
+    - id: REPO-STALE-BRANCH-CLEANUP
+      title: Stale Branch Audit
+      description: Audit all branches for staleness (not merged, no PR, no recent activity). Identify and flag for either merge or archive.
+      priority: P3
+      owner: ops-team
+      status: pending
+      notes:
+        - "Branches without PRs that are not on main: inspect and close"
 completed:
   - id: ST-CI-REMEDIATION-BATCH1
     title: CI Test Remediation Batch 1
