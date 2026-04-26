@@ -45,22 +45,28 @@ active_work:
       description: Verify R2a canary health at Day-14 milestone (Apr 26). Pipeline operational, signal generation, consumer polling.
       priority: P1
       owner: ops-team
-      status: pending
+      status: degraded
       due_date: "2026-04-26"
       notes:
-        - "Day-7 checkpoint passed (Apr 19)"
-        - "Pipeline: FULL_PIPELINE_OPERATIONAL"
-        - "OHLCV ingestion: healthy"
-        - "Signal generation: active (600+ signals)"
+        - "Day-14 checkpoint (2026-04-26) - DEGRADED"
+        - "OHLCV ingestion: HEALTHY"
+        - "Signal generation: DOWN (crash-loop since Apr 12, zero signals generated)"
+        - "Consumer polling: degraded"
+        - "Recommendation: INVESTIGATE before Day-21 (May 3)"
+        - "Evidence: Signal generation failure since Apr 12 restart, crash-loop detected"
     - id: REPO-BRANCH-HYGIENE-001
       title: Branch Hygiene Cleanup
       description: "Clean up orphaned branches merged to main but not deleted locally. Branches: feature/REPO-WORKFLOW-CLEANUP-001, feature/STATUS-MAINTENANCE-batch, feature/CI-BASE-TAG-DRIFT-DETECTOR, feature/REPO-CI-GATE-AUDIT, feature/STATUS-LEDGER-NORMALIZATION, feature/DD-CI-ALERTING-ERROR-RATE-outage-detector, feature/ST-WIRE-ERROR-RATE-TRACKER-consistency-check, feature/ST-WIRE-ERROR-RATE-TRACKER-wire-tracker"
       priority: P2
       owner: ops-team
-      status: pending
+      status: completed
+      completion_date: "2026-04-26"
+      merge_commit: batch-merged
       notes:
-        - "All these branches have merged PRs"
-        - "Need local branch cleanup"
+        - "3 branches deleted locally: feature/REPO-WORKFLOW-CLEANUP-001, feature/STATUS-MAINTENANCE-batch, feature/STATUS-MAINTENANCE-next_3"
+        - "Worktrees also removed for above branches"
+        - "Remaining 6 branches from list already cleaned up (not local)"
+        - "All branches had merged PRs"
     - id: REPO-STALE-BRANCH-CLEANUP
       title: Stale Branch Audit
       description: Audit all branches for staleness (not merged, no PR, no recent activity). Identify and flag for either merge or archive.
