@@ -16,9 +16,9 @@ from pathlib import Path
 from typing import cast
 from urllib.parse import urlparse
 
-# Set Redis connection
-os.environ["REDIS_HOST"] = "host.docker.internal"
-os.environ["REDIS_PORT"] = "6380"
+# Set Redis connection defaults (only if not already set by container env)
+os.environ.setdefault("REDIS_HOST", "host.docker.internal")
+os.environ.setdefault("REDIS_PORT", "6380")
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -232,10 +232,10 @@ async def continuous_signal_generation(
         logger.critical("InfluxDB connectivity check failed - exiting")
         sys.exit(1)
 
-    # Connect to Redis
+    # Connect to Redis (use env vars, fallback to defaults)
     r = redis.Redis(
-        host="host.docker.internal",
-        port=6380,
+        host=os.environ.get("REDIS_HOST", "host.docker.internal"),
+        port=int(os.environ.get("REDIS_PORT", "6380")),
         decode_responses=True,
         socket_connect_timeout=5,
     )

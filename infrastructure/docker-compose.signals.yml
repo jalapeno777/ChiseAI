@@ -12,6 +12,8 @@ services:
     environment:
       - REDIS_HOST=chiseai-redis
       - REDIS_PORT=6380
+      - INFLUXDB_PORT=18087
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:?INFLUXDB_TOKEN required}
       - PYTHONUNBUFFERED=1
     volumes:
       - signal-generator-logs:/var/log/chiseai
