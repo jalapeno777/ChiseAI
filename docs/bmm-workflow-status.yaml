@@ -1009,13 +1009,7 @@ completed:
 in_progress:
 active_work:
   active_now: []
-  next_3:
-    - id: BL-BOS-CHOCH-001
-      title: BOS/CHoCH Validation Remediation
-    - id: P2-T03
-      title: ContextAssemblyBoundary Runtime Adoption Audit
-    - id: P2-T05
-      title: Persona/Memory Hardening Gate
+  next_3: []
 backlog:
   - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
     id: CI-INFRA-DRIFT-001
