@@ -370,16 +370,19 @@ class OutcomeCaptureIntegration:
             from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
             symbol = getattr(signal, "token", None) or signal.get("token", "unknown")
-            side = getattr(signal, "side", None) or signal.get("side", "unknown")
+            direction = getattr(signal, "direction", None) or signal.get(
+                "direction", "unknown"
+            )
 
             provenance = self._connector_provenance
             now = datetime.now(tz=UTC)
 
+            side = "Buy" if str(direction).lower() == "long" else "Sell"
             outcome = SignalOutcome(
                 order_id=correlation_id or uuid.uuid4().hex[:12],
                 symbol=symbol,
-                side="Buy" if str(side).lower() == "long" else "Sell",
-                direction=str(side).upper(),
+                side=side,
+                direction=str(direction).upper(),
                 fill_price=Decimal("0"),
                 fill_quantity=Decimal("0"),
                 entry_price=Decimal("0"),
