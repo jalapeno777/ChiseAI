@@ -390,10 +390,10 @@ class OutcomeReconciliationService:
         start_time: datetime,
         end_time: datetime,
     ) -> dict[str, int]:
-        """Fallback method to query telemetry data.
+        """Fallback method to query telemetry data from Redis counters.
 
-        This is used when the telemetry exporter doesn't support
-        direct count queries.
+        Used when the telemetry exporter doesn't support direct count queries.
+        Reads actual counts from Redis keys ``chiseai:counts:{env}:{portfolio}:{cat}``.
 
         Args:
             environment: Trading environment
@@ -404,10 +404,54 @@ class OutcomeReconciliationService:
         Returns:
             Dictionary of counts by category
         """
-        # Default implementation returns zeros
-        # Subclasses or specific implementations should override this
-        logger.warning("Using default telemetry fallback - returning zero counts")
-        return {cat: 0 for cat in self.config.categories}
+        counts: dict[str, int] = {}
+
+        if self.redis_client is None:
+            logger.warning(
+                "Telemetry fallback: no Redis client configured, returning zero counts"
+            )
+            return {cat: 0 for cat in self.config.categories}
+
+        try:
+            for category in self.config.categories:
+                key = f"chiseai:counts:{environment}:{portfolio_id}:{category}"
+                value = None
+
+                # Try plain GET first (same pattern as _get_redis_counts)
+                if hasattr(self.redis_client, "get"):
+                    value = self.redis_client.get(key)
+                elif hasattr(self.redis_client, "hget"):
+                    hash_key = f"chiseai:counts:{environment}:{portfolio_id}"
+                    value = self.redis_client.hget(hash_key, category)
+
+                if value is not None:
+                    counts[category] = int(value)
+                    logger.info(
+                        "Telemetry fallback: found count for %s via Redis key %s = %d",
+                        category,
+                        key,
+                        counts[category],
+                    )
+                else:
+                    counts[category] = 0
+                    logger.debug(
+                        "Telemetry fallback: no Redis key %s for category %s",
+                        key,
+                        category,
+                    )
+        except Exception as exc:
+            logger.warning(
+                "Telemetry fallback: Redis query failed (%s), returning zeros", exc
+            )
+            return {cat: 0 for cat in self.config.categories}
+
+        logger.info(
+            "Telemetry fallback: resolved counts from Redis for %s/%s: %s",
+            environment,
+            portfolio_id,
+            counts,
+        )
+        return counts
 
     async def _get_redis_counts(
         self,
