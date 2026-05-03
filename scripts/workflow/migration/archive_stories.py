@@ -152,7 +152,7 @@ def parse_date(date_str: str) -> datetime | None:
     formats = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ"]
     for fmt in formats:
         try:
-            return datetime.strptime(date_str, fmt)
+            return datetime.strptime(date_str, fmt).replace(tzinfo=UTC)
         except ValueError:
             continue
     return None

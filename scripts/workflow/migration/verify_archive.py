@@ -111,7 +111,7 @@ def verify_archive_entry(archive_entry: dict) -> dict:
     integrity = archive_entry.get("integrity", {})
     archived_checksum = integrity.get("archived_checksum")
 
-    # Recompute checksum (excluding the checksum field itself)
+    # Method 1 (EXCLUDE): Remove 'archived_checksum' key entirely before hashing
     verification_entry = {k: v for k, v in archive_entry.items() if k != "integrity"}
     if "integrity" in archive_entry:
         verification_entry["integrity"] = {
@@ -121,14 +121,28 @@ def verify_archive_entry(archive_entry: dict) -> dict:
         }
 
     computed_checksum = compute_checksum(verification_entry)
+    checksum_match = archived_checksum == computed_checksum
+
+    # Method 2 (INCLUDE): Set 'archived_checksum' to None before hashing,
+    # matching the approach used by archive_workflow_status_items.py which
+    # includes archived_checksum=None in the dict, hashes it, then sets
+    # the real value afterwards.
+    if not checksum_match:
+        fallback_entry = {k: v for k, v in archive_entry.items() if k != "integrity"}
+        if "integrity" in archive_entry:
+            fallback_entry["integrity"] = dict(archive_entry["integrity"])
+            fallback_entry["integrity"]["archived_checksum"] = None
+
+        fallback_checksum = compute_checksum(fallback_entry)
+        checksum_match = archived_checksum == fallback_checksum
 
     results["checks"]["checksum"] = {
-        "passed": archived_checksum == computed_checksum,
+        "passed": checksum_match,
         "stored": archived_checksum,
         "computed": computed_checksum,
     }
 
-    if archived_checksum != computed_checksum:
+    if not checksum_match:
         results["passed"] = False
 
     # Check 4: Archive file exists at specified location
