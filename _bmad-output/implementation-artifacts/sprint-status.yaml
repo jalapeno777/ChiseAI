@@ -6,7 +6,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-04-24"
+  last_updated: "2026-05-03"
   source_file: docs/bmm-workflow-status.yaml
   generation_timestamp: "2026-04-24T23:55:00Z"
 
@@ -22,6 +22,15 @@ current_state:
   completed_recent_count: 5
 
 completed_recent:
+  - id: R2A-REMEDIATION-R8
+    title: "R2a Post-Remediation R8 Authorization"
+    completed: "2026-05-02"
+  - id: R2A-CANARY-DAY14
+    title: "R2a Day-14 Retrospective"
+    completed: "2026-05-02"
+  - id: R2A-BACKLOG-TRIM
+    title: "R2a Backlog Trim (9,001 stale signals)"
+    completed: "2026-05-02"
   - id: REPO-CI-BASE-TAG-DETECTOR-HARDENING
     title: CI Base Tag Detector Hardening
     completion_date: "2026-04-24"
@@ -59,28 +68,24 @@ r2a_canary:
 
 priority_backlog_top_3:
   - id: BL-BOS-CHOCH-001
-    title: BOS/CHoCH Validation Remediation
-    priority: P2
-    owner: ml-signal-engineering
+    title: "BOS/CHOCH Signal Implementation"
     status: deferred
-    notes: Deferred to EP-ICT-007 Phase 2 pending real market data validation
-  - id: ST-GOV-001
-    title: Memory Deduplication Engine
-    priority: P1
-    owner: TBD
-    status: completed
-  - id: ST-GOV-002
-    title: Agent Constitution Artifact
-    priority: P1
-    owner: TBD
-    status: completed
+  - id: V-LAUNCH-017
+    title: "Go/No-Go Decision Gate"
+    status: planned
+  - id: R2A-CANARY-DAY21-CHECKPOINT
+    title: "R2a Day-21 Checkpoint"
+    status: in_progress
 
 active_work:
   active_now: []
   next_3:
+    - id: R2A-CANARY-DAY21-CHECKPOINT
+      title: "R2a Day-21 Checkpoint"
+      status: in_progress
     - id: BL-BOS-CHOCH-001
-      title: BOS/CHoCH Validation Remediation
-    - id: P2-T03
-      title: ContextAssemblyBoundary Runtime Adoption Audit
-    - id: P2-T05
-      title: Persona/Memory Hardening Gate
+      title: "BOS/CHOCH Signal Implementation"
+      status: deferred
+    - id: V-LAUNCH-017
+      title: "Go/No-Go Decision Gate"
+      status: planned
