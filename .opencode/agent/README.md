@@ -80,9 +80,9 @@ Use this matrix when `jarvis` routes work to fixed-model agents.
 | Top-level strategy/orchestration                              | `aria`           | `openai/gpt-5.3-codex`                       |
 | Top-level strategy/orchestration (runtime profile)            | `aria-runtime`   | `openai/gpt-5.3-codex`                       |
 | Critical blockers, CI deep debug, escalation terminal tier    | `merlin`         | `openai/gpt-5.3-codex`                       |
-| Orchestration planning (non-Codex default)                    | `jarvis`         | `minimax-coding-plan/MiniMax-M2.7`           |
+| Orchestration planning (non-Codex default)                    | `jarvis`         | `zai-coding-plan/glm-5.1-thinking`           |
 | Orchestration planning (runtime profile)                      | `jarvis-runtime` | `minimax-coding-plan/MiniMax-M2.7`           |
-| 4-5SP implementation, complex refactors                       | `senior-dev`     | `minimax-coding-plan/MiniMax-M2.7`           |
+| 4-5SP implementation, complex refactors                       | `senior-dev`     | `zai-coding-plan/glm-5.1-thinking`           |
 | 2-3SP implementation                                          | `dev`            | `minimax-coding-plan/MiniMax-M2.7`           |
 | 1SP implementation (quality-first)                            | `quickdev`       | `minimax-coding-plan/MiniMax-M2.7-highspeed` |
 | Trivial 1SP mechanical throughput (fallback-only, deprecated) | `quickdev-fast`  | `opencode/minimax-m2.5-free`                 |
@@ -101,12 +101,12 @@ Use this matrix when `jarvis` routes work to fixed-model agents.
 ### Routing Rationale
 
 - Prefer `minimax-coding-plan/MiniMax-M2.7` for implementation-oriented work:
-  - `jarvis`, `jarvis-runtime`, `dev`, `senior-dev`
+  - `jarvis-runtime`, `dev`
   - broad refactors, multi-file implementation, and routine code execution
 - Prefer `minimax-coding-plan/MiniMax-M2.7-highspeed` for small, low-risk 1SP work:
   - `quickdev`
-- Prefer `zai-coding-plan/glm-5.0-thinking` for judgment-heavy work:
-  - `critic`, `git-review-bot`, `web-research`
+- Prefer `zai-coding-plan/glm-5.1-thinking` for judgment-heavy work:
+  - `jarvis`, `senior-dev`, `critic`, `git-review-bot`, `web-research`
   - adversarial review, reasoning-heavy synthesis, and review decisions
 - Prefer `opencode/minimax-m2.5-free` only for ultra-low-budget triage:
   - `research-fast`
