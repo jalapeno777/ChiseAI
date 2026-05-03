@@ -1646,3 +1646,37 @@ LESSON
 - evidence_ref: SESSION-EVIDENCE-PR-1045-1050.md, PRs #1051-#1055 missing entries
 - added_utc: 2026-04-24T16:00:00Z
 ```
+
+## LESSON-20260426-SIGNAL-CRASHLOOP
+
+**Context:** P0 R2a canary signal generation crash-loop
+**Date:** 2026-04-26
+**Severity:** P0-CRITICAL
+
+**What happened:**
+R2a canary signal generation crashed with 1620+ restarts and zero signals since Apr 12. Root cause was three-layer failure:
+
+1. `scripts/continuous_signal_generator.py` had `os.environ["REDIS_HOST"] = "host.docker.internal"` at import time, overriding the container's `REDIS_HOST=chiseai-redis` env var
+2. Missing `INFLUXDB_TOKEN` env var causing InfluxDB 401 auth errors
+3. Container running stale code from Apr 9 that couldn't parse port from INFLUXDB_URL
+
+**What we did:**
+
+1. Reproduced: `docker logs chiseai-signal-supervisor` showed crash-loop
+2. Root-caused: `docker exec` confirmed old code without urlparse
+3. Fixed: `os.environ.setdefault()` for REDIS_HOST, added INFLUXDB_TOKEN to docker-compose
+4. Validated: Container stayed up, signals generated
+5. Merged: safety/ST-SIGNAL-CRASHLOOP-FIX-001 → main (commit 42f882f5d)
+
+**Actionable rules:**
+
+1. **Ban `os.environ[KEY] = val` in scripts/ for containerized services.** Use `setdefault()` or `get()` which preserve container-injected env vars. Import-time override silently breaks Docker service discovery.
+2. **All required secrets must use `${VAR:?VAR required}` fail-fast in docker-compose.** Missing secrets should block container start, not cause silent auth failures.
+3. **Verify running code matches repo code with `docker exec`** before debugging application logic when containers are involved.
+
+**Prevention rules:**
+
+- Add pre-commit hook to flag `os.environ[` assignments (not `.setdefault` or `.get`) in scripts/ files
+- Container rebuilds should be automatic after env var changes in docker-compose
+
+**Evidence_ref:** merge commit 42f882f5d, safety/ST-SIGNAL-CRASHLOOP-FIX-001
