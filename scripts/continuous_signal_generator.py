@@ -95,6 +95,67 @@ async def fetch_live_ohlcv(
     return data
 
 
+async def check_influxdb_connectivity_with_retry(
+    max_retries: int = 3,
+    initial_backoff: float = 2.0,
+    max_backoff: float = 30.0,
+) -> bool:
+    """Guardrail check for InfluxDB connectivity at startup with retry logic.
+
+    Implements exponential backoff to handle transient connectivity issues.
+    Logs all attempts and failures for diagnosis.
+
+    Args:
+        max_retries: Maximum number of connection attempts
+        initial_backoff: Initial backoff delay in seconds
+        max_backoff: Maximum backoff delay in seconds
+
+    Returns:
+        True if InfluxDB is reachable, False otherwise.
+        Logs fatal error and exits with code 1 if unreachable after retries.
+    """
+    config = get_influxdb_config()
+    backoff = initial_backoff
+
+    for attempt in range(1, max_retries + 1):
+        logger.info(
+            f"Checking InfluxDB connectivity... (attempt {attempt}/{max_retries})"
+        )
+        logger.info(f"  Target: {config.host}:{config.port} (bucket={config.database})")
+
+        storage = InfluxDBStorage(config)
+        try:
+            is_healthy = await storage.health_check()
+            if is_healthy:
+                logger.info("InfluxDB connection successful")
+                return True
+            else:
+                logger.warning(
+                    f"Attempt {attempt}/{max_retries}: InfluxDB health check returned False"
+                )
+        except Exception as e:
+            logger.warning(
+                f"Attempt {attempt}/{max_retries}: InfluxDB connection failed: {e}"
+            )
+
+        if attempt < max_retries:
+            logger.info(f"Waiting {backoff:.1f}s before retry...")
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, max_backoff)
+
+    # All retries exhausted
+    logger.error("=" * 60)
+    logger.error("FATAL: InfluxDB connectivity check failed after all retries")
+    logger.error(f"  Target: {config.host}:{config.port}")
+    logger.error(f"  Bucket: {config.database}")
+    logger.error(
+        "  Attempts: " + ", ".join([f"attempt {i + 1}" for i in range(max_retries)])
+    )
+    logger.error("=" * 60)
+    logger.error("Cannot proceed without live InfluxDB data (no mock fallback allowed)")
+    return False
+
+
 async def check_influxdb_connectivity() -> bool:
     """Guardrail check for InfluxDB connectivity at startup.
 
@@ -102,26 +163,7 @@ async def check_influxdb_connectivity() -> bool:
         True if InfluxDB is reachable, False otherwise.
         Logs fatal error and exits with code 1 if unreachable.
     """
-    logger.info("Checking InfluxDB connectivity...")
-    config = get_influxdb_config()
-
-    storage = InfluxDBStorage(config)
-    try:
-        is_healthy = await storage.health_check()
-        if is_healthy:
-            logger.info("InfluxDB connection successful")
-            return True
-        else:
-            logger.error(
-                "FATAL: InfluxDB health check failed - InfluxDB is not healthy"
-            )
-            return False
-    except Exception as e:
-        logger.error(f"FATAL: InfluxDB connection failed: {e}")
-        logger.error(
-            "Cannot proceed without live InfluxDB data (no mock fallback allowed)"
-        )
-        return False
+    return await check_influxdb_connectivity_with_retry()
 
 
 def store_signal_in_redis_paper_mode(
@@ -230,6 +272,9 @@ async def continuous_signal_generation(
     # Guardrail: Check InfluxDB connectivity BEFORE entering main loop
     if not await check_influxdb_connectivity():
         logger.critical("InfluxDB connectivity check failed - exiting")
+        # Ensure all logs are flushed before exit
+        for handler in logger.handlers:
+            handler.flush()
         sys.exit(1)
 
     # Connect to Redis (use env vars, fallback to defaults)
@@ -374,6 +419,15 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
         sys.exit(0)
+    except SystemExit as e:
+        # SystemExit is not caught by Exception, so handle it explicitly
+        # This ensures errors are visible before exiting
+        if e.code == 0:
+            logger.info("Exiting normally")
+        else:
+            logger.error(f"✗ EXITED WITH CODE {e.code}")
+            logger.error("Check logs above for error details")
+        sys.exit(e.code)
     except Exception as e:
         logger.error(f"✗ FAILED: {e}")
         import traceback
