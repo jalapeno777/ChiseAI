@@ -122,6 +122,7 @@ resource "docker_container" "influxdb" {
 
   env = [
     "DOCKER_INFLUXDB_INIT_MODE=setup",
+    "DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${var.influxdb_token}",
     "DOCKER_INFLUXDB_INIT_USERNAME=${var.influxdb_admin_user}",
     "DOCKER_INFLUXDB_INIT_PASSWORD=${var.influxdb_admin_password}",
     "DOCKER_INFLUXDB_INIT_ORG=${var.influxdb_org}",
