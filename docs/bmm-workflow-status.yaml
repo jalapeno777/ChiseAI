@@ -1091,6 +1091,11 @@ completed:
     findings:
       - medium: "INFLUXDB_PORT=18087 in docker-compose is dead config for signal generator (pre-existing)"
       - medium: "signal.token.replace('/', '_') is no-op (pre-existing bug, not introduced by this fix)"
+  - id: R2A-BACKLOG-TRIM
+    title: "R2a Stale Signal Backlog Trim"
+    status: completed
+    completed: "2026-05-02"
+    notes: "9,001 stale signals removed (Apr 26-27), 4,200 preserved (May 02). Rollback artifacts at /tmp/rollback_apr26_ids.txt and /tmp/rollback_apr27_ids.txt."
 in_progress:
 backlog:
   - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
