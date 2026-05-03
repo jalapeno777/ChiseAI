@@ -8,7 +8,7 @@ metadata:
   version: 2.2.0
   last_updated: "2026-04-24"
   source_file: docs/bmm-workflow-status.yaml
-  generation_timestamp: "2026-04-24T23:55:00Z"
+  generation_timestamp: "2026-05-03T12:00:00Z"
 
 project:
   name: ChiseAI
@@ -58,22 +58,15 @@ r2a_canary:
     - Durable storage via Redis
 
 priority_backlog_top_3:
+  - id: R2A-CANARY-DAY21-CHECKPOINT
+    title: "R2a Day-21 Checkpoint"
+    status: in_progress
   - id: BL-BOS-CHOCH-001
-    title: BOS/CHoCH Validation Remediation
-    priority: P2
-    owner: ml-signal-engineering
+    title: "BOS/CHOCH Signal Implementation"
     status: deferred
-    notes: Deferred to EP-ICT-007 Phase 2 pending real market data validation
-  - id: ST-GOV-001
-    title: Memory Deduplication Engine
-    priority: P1
-    owner: TBD
-    status: completed
-  - id: ST-GOV-002
-    title: Agent Constitution Artifact
-    priority: P1
-    owner: TBD
-    status: completed
+  - id: V-LAUNCH-017
+    title: "Go/No-Go Decision Gate"
+    status: planned
 
 active_work:
   active_now: []
