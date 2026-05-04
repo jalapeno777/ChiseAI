@@ -671,6 +671,30 @@ Escalate as incident:
 - if migration introduces conflicts across protected/global-lock files,
 - or if evidence is contradictory across branches/worktrees.
 
+### Evidence Schema Enforcement (required)
+
+Every worker completion claim MUST satisfy the following evidence schema before Jarvis accepts it. This schema applies to ALL tasks that produce file changes (code, config, or documentation).
+
+**Required Evidence Fields (6):**
+
+1. **FILE_CHANGE_EVIDENCE**: `git diff --stat HEAD~N` showing all modified files with `+/-` line counts.
+2. **COMMIT_CONTENT_PROOF**: `git show <commit-sha> --name-only` proving files exist in the commit.
+3. **BRANCH_CONTAINMENT_PROOF**: `git branch --contains <commit-sha>` showing the commit is on the claimed branch.
+4. **TEST_RESULTS**: Command output from test execution, or explicit N/A justification for docs-only changes.
+5. **ACCEPTANCE_CRITERIA_MAPPING**: Explicit mapping of each AC item to evidence that satisfies it.
+6. **RESIDUAL_RISKS**: Known gaps, limitations, or follow-up items remaining after this change.
+
+**Hard Gate — NO_FILE_EXISTENCE_PROOF:**
+
+If any of FILE_CHANGE_EVIDENCE, COMMIT_CONTENT_PROOF, or BRANCH_CONTAINMENT_PROOF is missing from a worker's completion report:
+
+- Jarvis MUST reject the completion claim immediately.
+- Jarvis MUST NOT mark the task as complete.
+- Jarvis MUST delegate Missing Artifact Recovery (Step 5 above) to locate or recover the files.
+- Only after artifact recovery produces the required proofs may Jarvis accept the completion.
+
+This gate exists because of the incident documented in `docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md` where work was claimed as merged but files were not present on main.
+
 ### Incident Handling and Post-Mortems
 
 When incidents occur (conflicts, CI regressions, repeated blockers):
@@ -729,6 +753,16 @@ Preferred sink:
 Fallback:
 
 - Write a `docs/tempmemories/<date>-promotion-<story_id>.md` with the same metadata fields and a `needs_manual_qdrant_import: true` flag.
+
+### Session Rotation Discipline (required)
+
+Jarvis sessions must rotate cleanly to prevent context drift and stale state:
+
+- **One active Jarvis session at a time.** Aria must not task-call multiple Jarvis sessions in parallel for the same turn/scope.
+- **Rotate on material scope change.** A new batch with different acceptance criteria, a new task family/workstream, or a high/critical incident replan triggers a fresh session.
+- **Handoff protocol.** Session handoff must include: current plan state, open blockers, active risks, and pending evidence.
+- **Aria-level parallelism is prohibited.** Parallel execution is delegated to Jarvis worker batches only — never multiple Jarvis instances.
+- **Stale session detection.** If a session has been idle >30 minutes without pending worker returns, consider it stale and recommend Aria start a fresh session.
 
 ## PR Review-Required Merge Policy (required)
 
