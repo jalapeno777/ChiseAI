@@ -16,6 +16,6 @@ terraform {
 provider "docker" {}
 
 provider "grafana" {
-  url  = "http://172.17.0.1:3001"
+  url  = "http://localhost:3001"
   auth = "admin:${var.grafana_admin_password}"
 }
