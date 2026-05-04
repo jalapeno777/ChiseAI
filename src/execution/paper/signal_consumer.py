@@ -11,7 +11,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import time
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -61,7 +60,6 @@ class SignalConsumer:
         orchestrator: PaperTradingOrchestrator,
         redis_client: Any | None = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
-        symbol_throttle_seconds: float | None = None,
         paper_kill_switch: PaperKillSwitchManager | None = None,
     ):
         """Initialize the signal consumer.
@@ -70,18 +68,18 @@ class SignalConsumer:
             orchestrator: Paper trading orchestrator instance
             redis_client: Redis client (if None, creates new connection)
             poll_interval: Seconds between polling cycles
-            symbol_throttle_seconds: Minimum seconds between submissions per symbol.
-                If None, uses SYMBOL_EVAL_INTERVAL_SECONDS env (default 300s).
             paper_kill_switch: Optional PaperKillSwitchManager for paper trading kill switch.
                 If None, creates new instance.
+
+        Note:
+            Symbol-level cadence throttling is NOT enforced here. The orchestrator
+            owns the authoritative G1_THROTTLE gate (see orchestrator.py). Adding
+            a second throttle at the consumer layer caused 100% signal blocking
+            because the 30s signal generation interval fell within the 300s
+            consumer throttle window (ST-PIPE-001).
         """
         self.orchestrator = orchestrator
         self.poll_interval = poll_interval
-        if symbol_throttle_seconds is None:
-            symbol_throttle_seconds = float(
-                os.getenv("SYMBOL_EVAL_INTERVAL_SECONDS", "300")
-            )
-        self.symbol_throttle_seconds = max(0.0, float(symbol_throttle_seconds))
         symbols_raw = os.getenv("TRADING_SYMBOLS", "BTC/USDT")
         self.allowed_symbols = {
             s.strip().upper() for s in symbols_raw.split(",") if s.strip()
@@ -89,7 +87,6 @@ class SignalConsumer:
         self._running = False
         self._poll_task: asyncio.Task | None = None
         self._processed_signals: set[str] = set()
-        self._last_symbol_submit_ts: dict[str, float] = {}
 
         # Initialize Redis client
         if redis_client is not None:
@@ -103,9 +100,8 @@ class SignalConsumer:
         self._paper_kill_switch = paper_kill_switch
 
         logger.info(
-            "SignalConsumer initialized: poll_interval=%ss, symbol_throttle_seconds=%ss, allowed_symbols=%s",
+            "SignalConsumer initialized: poll_interval=%ss, allowed_symbols=%s",
             poll_interval,
-            self.symbol_throttle_seconds,
             sorted(self.allowed_symbols),
         )
 
@@ -704,26 +700,12 @@ class SignalConsumer:
             True if submitted successfully
         """
         try:
-            symbol = (signal.token or "").upper().strip()
-            now_ts = time.time()
-
-            if symbol and self.symbol_throttle_seconds > 0:
-                last_ts = self._last_symbol_submit_ts.get(symbol, 0.0)
-                if (now_ts - last_ts) < self.symbol_throttle_seconds:
-                    logger.info(
-                        "Skipped signal %s for %s due throttle (%.1fs < %.1fs); "
-                        "signal NOT consumed — will retry after cooldown",
-                        signal.signal_id,
-                        symbol,
-                        now_ts - last_ts,
-                        self.symbol_throttle_seconds,
-                    )
-                    return False
+            # NOTE: No consumer-level throttle here. Cadence enforcement is
+            # the orchestrator's responsibility via G1_THROTTLE. A duplicate
+            # throttle at this layer caused total signal suppression (ST-PIPE-001).
 
             # Submit to orchestrator
             await self.orchestrator.submit_signal(signal)
-            if symbol:
-                self._last_symbol_submit_ts[symbol] = now_ts
 
             # Mark as consumed in Redis (only for legacy key-based signals)
             if redis_key:
@@ -752,7 +734,6 @@ class SignalConsumer:
         return {
             "running": self._running,
             "poll_interval": self.poll_interval,
-            "symbol_throttle_seconds": self.symbol_throttle_seconds,
             "processed_count": len(self._processed_signals),
         }
 
