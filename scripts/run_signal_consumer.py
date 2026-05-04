@@ -86,7 +86,6 @@ class SignalConsumerRunner:
         poll_interval: float = 5.0,
         portfolio_value: float = 10000.0,
         confidence_threshold: float = 0.75,
-        symbol_throttle_seconds: float | None = None,
     ):
         """Initialize the SignalConsumer runner.
 
@@ -94,13 +93,10 @@ class SignalConsumerRunner:
             poll_interval: Seconds between polling cycles
             portfolio_value: Starting portfolio value for paper trading
             confidence_threshold: Minimum confidence threshold for signals
-            symbol_throttle_seconds: Minimum seconds between submissions per symbol.
-                If None, uses SYMBOL_EVAL_INTERVAL_SECONDS env (default 300s).
         """
         self.poll_interval = poll_interval
         self.portfolio_value = portfolio_value
         self.confidence_threshold = confidence_threshold
-        self.symbol_throttle_seconds = symbol_throttle_seconds
 
         self._running = False
         self._shutdown_event = asyncio.Event()
@@ -226,7 +222,6 @@ class SignalConsumerRunner:
         self.signal_consumer = SignalConsumer(
             orchestrator=None,  # Will be set below
             poll_interval=self.poll_interval,
-            symbol_throttle_seconds=self.symbol_throttle_seconds,
         )
         logger.info("Signal consumer created")
 
@@ -356,13 +351,6 @@ Examples:
     )
 
     parser.add_argument(
-        "--symbol-throttle-seconds",
-        type=float,
-        default=None,
-        help="Minimum seconds between submissions per symbol (default: from SYMBOL_EVAL_INTERVAL_SECONDS env, 300s)",
-    )
-
-    parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
@@ -393,7 +381,6 @@ async def main() -> int:
         poll_interval=args.poll_interval,
         portfolio_value=args.portfolio_value,
         confidence_threshold=args.confidence_threshold,
-        symbol_throttle_seconds=args.symbol_throttle_seconds,
     )
 
     # Setup signal handlers for graceful shutdown
