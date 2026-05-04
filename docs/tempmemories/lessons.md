@@ -1680,3 +1680,19 @@ R2a canary signal generation crashed with 1620+ restarts and zero signals since 
 - Container rebuilds should be automatic after env var changes in docker-compose
 
 **Evidence_ref:** merge commit 42f882f5d, safety/ST-SIGNAL-CRASHLOOP-FIX-001
+
+```text
+LESSON
+- id: LESSON-20260504-cron-transient-infra-outage
+- context: workflow-archive-daily and workflow-archive-weekly cron pipelines were failing during 2026-05-02 to 2026-05-04 because Redis and Gitea/Woodpecker containers were down (Exited 255) for ~44 hours
+- trigger: Cron pipeline failures investigated as potential code bugs but were actually transient infrastructure outage
+- actionable_rule: Before investigating cron pipeline failures as code bugs, check container health for all dependent services (Redis, Gitea, Woodpecker). Container status Exited 255 = infra outage, not code bug. Consider adding container health monitoring/alerting for long-running services.
+- applies_to:
+  - jarvis
+  - dev
+  - senior-dev
+  - merlin
+- expected_outcome: Cron pipeline failures triaged with infra health check first; no wasted debugging on transient outages
+- evidence_ref: workflow-archive-daily and workflow-archive-weekly pipeline failures 2026-05-02 to 2026-05-04, Redis/Gitea containers Exited 255, restored via docker start
+- added_utc: 2026-05-04T00:00:00Z
+```
