@@ -219,58 +219,99 @@ class LiveReconciler:
         days: int = 7,
         symbol: str | None = None,
     ) -> list[BybitExecution]:
-        """Fetch LIVE execution data from Bybit demo API."""
+        """Fetch LIVE execution data from Bybit demo API.
+
+        Handles >7 day ranges by chunking into 7-day windows (Bybit API limit).
+        Results are deduplicated by exec_id and sorted by exec_time.
+        """
         executions: list[BybitExecution] = []
 
         try:
             from data.exchange.bybit_connector import BybitConnector
 
-            end_time = int(datetime.now(UTC).timestamp() * 1000)
-            start_time = int(
+            now_ts = int(datetime.now(UTC).timestamp() * 1000)
+            total_start_ts = int(
                 (datetime.now(UTC) - timedelta(days=days)).timestamp() * 1000
             )
 
             logger.info(f"Fetching LIVE Bybit executions from {days} days ago...")
+
+            # Chunk into 7-day windows (Bybit API limit)
+            CHUNK_MS = timedelta(days=7).total_seconds() * 1000  # 604800000 ms
+            total_range_ms = now_ts - total_start_ts
+
+            if total_range_ms <= CHUNK_MS:
+                # Single chunk — no chunking needed
+                chunks = [(total_start_ts, now_ts)]
+            else:
+                # Multiple 7-day chunks
+                chunks = []
+                cursor = total_start_ts
+                while cursor < now_ts:
+                    chunk_end = min(cursor + int(CHUNK_MS), now_ts)
+                    chunks.append((int(cursor), int(chunk_end)))
+                    cursor = chunk_end
+                logger.info(
+                    f"Split {days}-day range into {len(chunks)} chunks (7-day max each)"
+                )
+
             logger.info(
-                f"Time range: {datetime.fromtimestamp(start_time / 1000, tz=UTC)} to {datetime.fromtimestamp(end_time / 1000, tz=UTC)}"
+                f"Time range: {datetime.fromtimestamp(total_start_ts / 1000, tz=UTC)} to {datetime.fromtimestamp(now_ts / 1000, tz=UTC)}"
             )
 
             async with BybitConnector.from_env() as connector:
-                # Get execution history from Bybit API
-                response = await connector.get_fills(
-                    symbol=symbol,
-                    start_time=start_time,
-                    end_time=end_time,
-                    limit=100,
-                )
+                all_exec_ids: set[str] = set()
+                for i, (chunk_start, chunk_end) in enumerate(chunks):
+                    logger.info(
+                        f"  Chunk {i + 1}/{len(chunks)}: {datetime.fromtimestamp(chunk_start / 1000, tz=UTC).date()} → {datetime.fromtimestamp(chunk_end / 1000, tz=UTC).date()}"
+                    )
 
-                result = response.get("result", {})
-                exec_list = result.get("list", [])
+                    response = await connector.get_fills(
+                        symbol=symbol,
+                        start_time=chunk_start,
+                        end_time=chunk_end,
+                        limit=100,
+                    )
 
-                logger.info(f"Retrieved {len(exec_list)} executions from Bybit API")
+                    result = response.get("result", {})
+                    exec_list = result.get("list", [])
 
-                for exec_data in exec_list:
-                    try:
-                        # Parse closed PnL (only present for closing trades)
-                        closed_pnl = float(exec_data.get("closedPnl", 0) or 0)
+                    for exec_data in exec_list:
+                        exec_id = exec_data.get("execId", "")
+                        # Skip duplicates across chunks
+                        if exec_id and exec_id in all_exec_ids:
+                            continue
+                        if exec_id:
+                            all_exec_ids.add(exec_id)
 
-                        execution = BybitExecution(
-                            order_id=exec_data.get("orderId", ""),
-                            symbol=exec_data.get("symbol", ""),
-                            side=exec_data.get("side", ""),
-                            exec_price=float(exec_data.get("execPrice", 0) or 0),
-                            exec_qty=float(exec_data.get("execQty", 0) or 0),
-                            exec_fee=float(exec_data.get("execFee", 0) or 0),
-                            exec_time=int(exec_data.get("execTime", 0) or 0),
-                            exec_id=exec_data.get("execId", ""),
-                            exec_value=float(exec_data.get("execValue", 0) or 0),
-                            exec_type=exec_data.get("execType", "Trade"),
-                            closed_pnl=closed_pnl,
-                        )
-                        executions.append(execution)
-                    except (ValueError, TypeError) as e:
-                        logger.warning(f"Failed to parse execution data: {e}")
-                        continue
+                        try:
+                            # Parse closed PnL (only present for closing trades)
+                            closed_pnl = float(exec_data.get("closedPnl", 0) or 0)
+
+                            execution = BybitExecution(
+                                order_id=exec_data.get("orderId", ""),
+                                symbol=exec_data.get("symbol", ""),
+                                side=exec_data.get("side", ""),
+                                exec_price=float(exec_data.get("execPrice", 0) or 0),
+                                exec_qty=float(exec_data.get("execQty", 0) or 0),
+                                exec_fee=float(exec_data.get("execFee", 0) or 0),
+                                exec_time=int(exec_data.get("execTime", 0) or 0),
+                                exec_id=exec_id,
+                                exec_value=float(exec_data.get("execValue", 0) or 0),
+                                exec_type=exec_data.get("execType", "Trade"),
+                                closed_pnl=closed_pnl,
+                            )
+                            executions.append(execution)
+                        except (ValueError, TypeError) as e:
+                            logger.warning(f"Failed to parse execution data: {e}")
+                            continue
+
+            # Sort by exec_time ascending (gap-free stitching)
+            executions.sort(key=lambda e: e.exec_time)
+
+            logger.info(
+                f"Retrieved {len(executions)} unique executions from Bybit API across {len(chunks)} chunk(s)"
+            )
 
         except ImportError as e:
             logger.error(f"Failed to import BybitConnector: {e}")
