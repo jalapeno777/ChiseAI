@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-05-03"
+  last_updated: "2026-05-06"
   managed_by: merlin
   status_notes:
     - "R2a Canary: SIGNAL CRASH-LOOP FIXED (2026-04-26) — ST-SIGNAL-CRASHLOOP-FIX-001 merged
@@ -42,32 +42,43 @@ metadata:
     - "CI Test Remediation completed (2026-04-16): 5 batches merged, ~293 tests resolved
       across validation, governance, swarm, discord, execution, integration, and PR lifecycle
       suites. Remaining E2E tests mitigated by existing skip markers + pytest-timeout."
-  # Day-14 retrospective: completed 2026-05-02
-  # R2a canary Day-14 checkpoint passed; pipeline stable at Day-14 mark
-  #
-  # Day-21 remediation completed 2026-05-02/03:
-  #   - BLK-001 (signal supervisor crash loop): Fixed INFLUXDB_TOKEN + added exponential backoff retry
-  #   - BLK-002 (InfluxDB zombie): Recreated container with influxdb:2 image, fresh volume, correct auth
-  #   - BLK-003 (consumer idle): Fixed REDIS_DB mismatch (default "1" -> "0") + Signal.get() -> .direction
-  #   - Backlog trim: 9,001 stale signals removed (Apr 26-27), 4,200 preserved (May 02)
-  #
-  # R8 conditional authorization granted 2026-05-02:
-  #   - E2E validation: all critical paths pass (signal gen, consumer, outcomes, idempotency, kill switch)
-  #   - Pipeline status: FULL_PIPELINE_OPERATIONAL
-  #
-  # Current risks and mitigations:
-  #   - Grafana localhost:3001 IPv6 binding (LOW - workaround via container IP 192.168.48.2:3001)
-  #   - Consumer throttle 0.2 sig/min (MEDIUM - 300s SYMBOL_EVAL_INTERVAL_SECONDS, working as designed)
-  #   - Day-21 canary checkpoint (HIGH - May 3, pipeline operational, monitoring)
-  #   - Docker Desktop IPv6 port forwarding (LOW - use 172.27.0.1 for host access)
+    # Day-14 retrospective: completed 2026-05-02
+    # R2a canary Day-14 checkpoint passed; pipeline stable at Day-14 mark
+    #
+    # Day-21 remediation completed 2026-05-02/03:
+    #   - BLK-001 (signal supervisor crash loop): Fixed INFLUXDB_TOKEN + added exponential backoff retry
+    #   - BLK-002 (InfluxDB zombie): Recreated container with influxdb:2 image, fresh volume, correct auth
+    #   - BLK-003 (consumer idle): Fixed REDIS_DB mismatch (default "1" -> "0") + Signal.get() -> .direction
+    #   - Backlog trim: 9,001 stale signals removed (Apr 26-27), 4,200 preserved (May 02)
+    #
+    # R8 conditional authorization granted 2026-05-02:
+    #   - E2E validation: all critical paths pass (signal gen, consumer, outcomes, idempotency, kill switch)
+    #   - Pipeline status: FULL_PIPELINE_OPERATIONAL
+    #
+    # Current risks and mitigations:
+    #   - Grafana localhost:3001 IPv6 binding (LOW - workaround via container IP 192.168.48.2:3001)
+    #   - Consumer throttle 0.2 sig/min (MEDIUM - 300s SYMBOL_EVAL_INTERVAL_SECONDS, working as designed)
+    #   - Day-21 canary checkpoint (HIGH - May 3, pipeline operational, monitoring)
+    #   - Docker Desktop IPv6 port forwarding (LOW - use 172.27.0.1 for host access)
+    - "R2a Canary Day-21: FAIL (2026-05-06). Signal pipeline dead for 4 days (May 3-6).
+      Root cause: InfluxDB token drift + consumer TypeError crash. Pipeline remediated
+      2026-05-06T18:02Z. Canary clock restarted from May 6."
+    - "Incident report: docs/postmortems/INCIDENT-2026-05-06-signal-pipeline-death.md"
 active_work:
-  active_now: []
-  next_3:
-    - id: R2A-CANARY-DAY21-CHECKPOINT
-      title: "R2a Canary Day-21 Checkpoint Validation"
+  active_now:
+    - id: R2A-CANARY-DAY21-RETRY
+      title: "R2a Canary Restart (Day-0 = May 6, Day-21 target ~May 27)"
       status: in_progress
       priority: P1
-      notes: "Day-21 checkpoint (May 3). Pipeline operational post-remediation. R8 authorized."
+      notes:
+        "Canary clock restarted after Day-21 FAIL. Pipeline remediated 2026-05-06.
+        New checkpoints: Day-14=~May 20, Day-21=~May 27, Day-28=~Jun 3."
+  next_3:
+    - id: R2A-CANARY-DAY21-RETRY
+      title: "R2a Canary Restart (Day-0 = May 6)"
+      status: in_progress
+      priority: P1
+      notes: "Day-21 FAIL — clock restarted. New Day-14=~May 20, Day-21=~May 27, Day-28=~Jun 3."
     - id: BL-BOS-CHOCH-001
       title: "BOS/CHOCH Signal Implementation"
       status: deferred
@@ -79,6 +90,15 @@ active_work:
       priority: P1
       notes: "Launch decision gate. Depends on R2a Day-21 checkpoint passing."
 completed:
+  - id: R2A-CANARY-DAY21-CHECKPOINT
+    title: "R2a Canary Day-21 Checkpoint Validation"
+    status: completed
+    completed: "2026-05-06"
+    notes:
+      "FAIL — Signal pipeline dead for 4 days (May 3-6). Root cause: InfluxDB token
+      drift (ST-PIPE-003 container never recreated) + consumer TypeError crash (ST-PIPE-001
+      runner missed). Pipeline remediated 2026-05-06T18:02Z. Clock restarted. Incident:
+      docs/postmortems/INCIDENT-2026-05-06-signal-pipeline-death.md"
   - id: R2A-CANARY-DAY14
     title: "R2a Canary Day-14 Retrospective"
     status: completed

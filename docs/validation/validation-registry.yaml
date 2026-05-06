@@ -2375,6 +2375,52 @@ validations:
       - grafana: dashboard r2a-canary-health with 11 panels
     owner: jarvis
 
+  - id: V-CANARY-DAY21-FAIL
+    title: R2a Canary Day-21 Checkpoint (FAIL)
+    story_id: R2A-CANARY-DAY21-CHECKPOINT
+    status: blocked
+    description: >
+      Day-21 canary checkpoint validation FAILED. Signal pipeline was dead for 4 days
+      (May 3-6, 2026) during the Day-14 to Day-21 validation window. Root causes:
+      InfluxDB token drift (container not recreated after ST-PIPE-003) and signal
+      consumer TypeError crash (ST-PIPE-001 runner script missed). Pipeline remediated
+      2026-05-06T18:02Z. Canary clock restarted from May 6.
+    acceptance_criteria:
+      - Canary uptime stable from Day-14 through Day-21
+      - Pipeline health confirmed with no regressions
+      - No incidents during validation window
+    test_method: manual
+    evidence:
+      - incident: docs/postmortems/INCIDENT-2026-05-06-signal-pipeline-death.md
+      - redis: bmad:chiseai:canary:R2A-20260412 (day21_verdict=FAIL)
+      - redis: bmad:chiseai:scheduler:heartbeat (signals_generated=0 for 3746 iterations)
+      - grafana: UNAVAILABLE during investigation (connection refused)
+      - cron: All 5 monitoring jobs stale since March/April
+    owner: jarvis
+
+  - id: V-CANARY-DAY0-RESTART-20260506
+    title: R2a Canary Restart Validation (Day-0 = 2026-05-06)
+    story_id: R2A-CANARY-DAY21-RETRY
+    status: validated
+    description: >
+      Post-remediation validation after signal pipeline restoration. InfluxDB volume wiped
+      and recreated, signal generator and consumer containers rebuilt. Pipeline verified
+      operational as of 2026-05-06T18:02Z.
+    acceptance_criteria:
+      - InfluxDB health endpoint returns pass
+      - Signal generator producing signals (signals_generated > 0)
+      - Consumer health key exists in Redis
+      - Both containers running on chiseai network
+      - Paper signal keys increasing in Redis
+    test_method: manual
+    evidence:
+      - influxdb: health endpoint returns {"status":"pass","message":"ready for queries and writes"}
+      - redis: bmad:chiseai:scheduler:heartbeat iteration=17, signals_generated=20, pipeline_status=healthy
+      - redis: paper:signal_consumer:health status=active, processed_count=189796
+      - docker: both containers Up and healthy on chiseai network with project=chiseai labels
+      - redis: 4621 total paper:signal:* keys (214 new since remediation)
+    owner: jarvis
+
   # ============================================================
   # MISSING COMPONENTS VALIDATIONS (4 validations for Option A)
   # Added per extended timeline decision
