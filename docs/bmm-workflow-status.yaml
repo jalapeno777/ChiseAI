@@ -74,11 +74,6 @@ active_work:
         "Canary clock restarted after Day-21 FAIL. Pipeline remediated 2026-05-06.
         New checkpoints: Day-14=~May 20, Day-21=~May 27, Day-28=~Jun 3."
   next_3:
-    - id: R2A-CANARY-DAY21-RETRY
-      title: "R2a Canary Restart (Day-0 = May 6)"
-      status: in_progress
-      priority: P1
-      notes: "Day-21 FAIL — clock restarted. New Day-14=~May 20, Day-21=~May 27, Day-28=~Jun 3."
     - id: BL-BOS-CHOCH-001
       title: "BOS/CHOCH Signal Implementation"
       status: deferred
