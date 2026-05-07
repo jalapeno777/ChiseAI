@@ -862,6 +862,12 @@ class BybitDemoConnector:
             await self._ensure_connected()
             venue_symbol = self._normalize_bybit_symbol(symbol)
 
+            # Bybit V5 linear MARKET orders require IOC or FOK — GTC prevents fills
+            if order_type.upper() == "MARKET":
+                time_in_force = "IOC"
+            else:
+                time_in_force = "GTC"
+
             result = await self._retry.execute(
                 self.connector.place_order,
                 symbol=venue_symbol,
@@ -869,7 +875,7 @@ class BybitDemoConnector:
                 order_type=order_type,
                 quantity=quantity,
                 price=price,
-                time_in_force="GTC",
+                time_in_force=time_in_force,
             )
 
             # Check for API error in response
