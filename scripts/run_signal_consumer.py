@@ -85,7 +85,7 @@ class SignalConsumerRunner:
         self,
         poll_interval: float = 5.0,
         portfolio_value: float = 10000.0,
-        confidence_threshold: float = 0.75,
+        confidence_threshold: float = 0.70,
     ):
         """Initialize the SignalConsumer runner.
 
@@ -346,8 +346,8 @@ Examples:
     parser.add_argument(
         "--confidence-threshold",
         type=float,
-        default=0.75,
-        help="Minimum confidence threshold (default: 0.75)",
+        default=0.70,
+        help="Minimum confidence threshold (default: 0.70)",
     )
 
     parser.add_argument(
