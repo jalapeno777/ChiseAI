@@ -269,6 +269,333 @@ class TestSignalProcessing:
         assert result.order is None
 
     @pytest.mark.asyncio
+    async def test_throttle_allows_different_timeframes_same_symbol(
+        self, orchestrator, mock_components
+    ):
+        """Test that G1_THROTTLE allows signals for same symbol with different timeframes.
+
+        Before fix: Only first signal per symbol passed, subsequent timeframes
+        for same symbol were incorrectly throttled (98% signal rejection).
+        After fix: Signals with different timeframes are independently throttled.
+        """
+        import os
+        import uuid
+
+        from execution.paper.models import RiskAssessment
+
+        # Set throttle interval to 60 seconds via env var (orchestrator reads it at init)
+        original_val = os.environ.get("SYMBOL_EVAL_INTERVAL_SECONDS")
+        os.environ["SYMBOL_EVAL_INTERVAL_SECONDS"] = "60"
+
+        try:
+            # Create fresh orchestrator with 60s throttle
+            throttle_orch = PaperTradingOrchestrator(
+                signal_generator=mock_components["signal_gen"],
+                order_simulator=mock_components["order_sim"],
+                position_tracker=mock_components["position_tracker"],
+                risk_enforcer=mock_components["risk_enforcer"],
+                telemetry_collector=mock_components["telemetry"],
+                kill_switch=mock_components["kill_switch"],
+                portfolio_value=10000.0,
+            )
+
+            # Setup mocks
+            mock_components["risk_enforcer"].validate_order = AsyncMock(
+                return_value=RiskAssessment(approved=True, position_size=0.1)
+            )
+
+            filled_order = PaperOrder(
+                symbol="BTC/USDT",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                quantity=0.1,
+                order_id="test-order-throttle",
+                state=OrderState.FILLED,
+                filled_quantity=0.1,
+                avg_fill_price=50000.0,
+            )
+            mock_components["order_sim"].place_order = AsyncMock(
+                return_value=filled_order
+            )
+
+            mock_position = MagicMock()
+            mock_position.position_id = "test-pos-throttle"
+            mock_components["position_tracker"].open_position = AsyncMock(
+                return_value=mock_position
+            )
+
+            # Signal 1: BTC/USDT on 15m timeframe
+            signal_15m = Signal(
+                token="BTC/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="15m",
+                signal_id=str(uuid.uuid4()),
+            )
+
+            # Signal 2: BTC/USDT on 1h timeframe (same symbol, different timeframe)
+            signal_1h = Signal(
+                token="BTC/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="1h",
+                signal_id=str(uuid.uuid4()),
+            )
+
+            # Signal 3: BTC/USDT on 4h timeframe (same symbol, different timeframe)
+            signal_4h = Signal(
+                token="BTC/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="4h",
+                signal_id=str(uuid.uuid4()),
+            )
+
+            # Setup mocks
+            mock_components["risk_enforcer"].validate_order = AsyncMock(
+                return_value=RiskAssessment(approved=True, position_size=0.1)
+            )
+
+            filled_order = PaperOrder(
+                symbol="BTC/USDT",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                quantity=0.1,
+                order_id="test-order-throttle",
+                state=OrderState.FILLED,
+                filled_quantity=0.1,
+                avg_fill_price=50000.0,
+            )
+            mock_components["order_sim"].place_order = AsyncMock(
+                return_value=filled_order
+            )
+
+            mock_position = MagicMock()
+            mock_position.position_id = "test-pos-throttle"
+            mock_components["position_tracker"].open_position = AsyncMock(
+                return_value=mock_position
+            )
+
+            # Signal 1: BTC/USDT on 15m timeframe
+            signal_15m = Signal(
+                token="BTC/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="15m",
+                signal_id=str(uuid.uuid4()),
+            )
+
+            # Signal 2: BTC/USDT on 1h timeframe (same symbol, different timeframe)
+            signal_1h = Signal(
+                token="BTC/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="1h",
+                signal_id=str(uuid.uuid4()),
+            )
+
+            # Signal 3: BTC/USDT on 4h timeframe (same symbol, different timeframe)
+            signal_4h = Signal(
+                token="BTC/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="4h",
+                signal_id=str(uuid.uuid4()),
+            )
+
+            # Process 15m signal - should succeed
+            result_15m = await throttle_orch.process_signal(signal_15m)
+            assert (
+                result_15m.status == TradeStatus.EXECUTED
+            ), f"15m signal should pass, got: {result_15m.status} {result_15m.reject_reason}"
+
+            # Process 1h signal - should ALSO succeed (different timeframe)
+            result_1h = await throttle_orch.process_signal(signal_1h)
+            assert result_1h.status == TradeStatus.EXECUTED, (
+                f"1h signal should pass (different timeframe), got: {result_1h.status} "
+                f"{result_1h.reject_reason}"
+            )
+
+            # Process 4h signal - should ALSO succeed (different timeframe)
+            result_4h = await throttle_orch.process_signal(signal_4h)
+            assert result_4h.status == TradeStatus.EXECUTED, (
+                f"4h signal should pass (different timeframe), got: {result_4h.status} "
+                f"{result_4h.reject_reason}"
+            )
+
+            # Verify metrics show 3 signals processed (not rejected by throttle)
+            assert (
+                throttle_orch._metrics["signals_processed"] == 3
+            ), f"Expected 3 signals processed, got {throttle_orch._metrics['signals_processed']}"
+            assert (
+                throttle_orch._metrics["gate_g1_throttle_count"] == 0
+            ), f"Expected 0 throttle rejections, got {throttle_orch._metrics['gate_g1_throttle_count']}"
+
+        finally:
+            # Restore original env
+            if original_val is None:
+                os.environ.pop("SYMBOL_EVAL_INTERVAL_SECONDS", None)
+            else:
+                os.environ["SYMBOL_EVAL_INTERVAL_SECONDS"] = original_val
+
+    @pytest.mark.asyncio
+    async def test_throttle_still_works_for_same_symbol_same_timeframe(
+        self, orchestrator, mock_components
+    ):
+        """Test that G1_THROTTLE still correctly throttles same symbol+timeframe within window."""
+        import os
+        import uuid
+
+        from execution.paper.models import RiskAssessment
+
+        # Set throttle interval to 60 seconds
+        original_val = os.environ.get("SYMBOL_EVAL_INTERVAL_SECONDS")
+        os.environ["SYMBOL_EVAL_INTERVAL_SECONDS"] = "60"
+
+        try:
+            throttle_orch = PaperTradingOrchestrator(
+                signal_generator=mock_components["signal_gen"],
+                order_simulator=mock_components["order_sim"],
+                position_tracker=mock_components["position_tracker"],
+                risk_enforcer=mock_components["risk_enforcer"],
+                telemetry_collector=mock_components["telemetry"],
+                kill_switch=mock_components["kill_switch"],
+                portfolio_value=10000.0,
+            )
+
+            mock_components["risk_enforcer"].validate_order = AsyncMock(
+                return_value=RiskAssessment(approved=True, position_size=0.1)
+            )
+
+            filled_order = PaperOrder(
+                symbol="ETH/USDT",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                quantity=0.1,
+                order_id="test-order-eth",
+                state=OrderState.FILLED,
+                filled_quantity=0.1,
+                avg_fill_price=3000.0,
+            )
+            mock_components["order_sim"].place_order = AsyncMock(
+                return_value=filled_order
+            )
+
+            mock_position = MagicMock()
+            mock_position.position_id = "test-pos-eth"
+            mock_components["position_tracker"].open_position = AsyncMock(
+                return_value=mock_position
+            )
+
+            # Two signals: same symbol AND same timeframe
+            signal_1 = Signal(
+                token="ETH/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="1h",
+                signal_id=str(uuid.uuid4()),
+            )
+
+            signal_2 = Signal(
+                token="ETH/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="1h",  # Same timeframe
+                signal_id=str(uuid.uuid4()),
+            )
+
+            mock_components["risk_enforcer"].validate_order = AsyncMock(
+                return_value=RiskAssessment(approved=True, position_size=0.1)
+            )
+
+            filled_order = PaperOrder(
+                symbol="ETH/USDT",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                quantity=0.1,
+                order_id="test-order-eth",
+                state=OrderState.FILLED,
+                filled_quantity=0.1,
+                avg_fill_price=3000.0,
+            )
+            mock_components["order_sim"].place_order = AsyncMock(
+                return_value=filled_order
+            )
+
+            mock_position = MagicMock()
+            mock_position.position_id = "test-pos-eth"
+            mock_components["position_tracker"].open_position = AsyncMock(
+                return_value=mock_position
+            )
+
+            # Two signals: same symbol AND same timeframe
+            signal_1 = Signal(
+                token="ETH/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="1h",
+                signal_id=str(uuid.uuid4()),
+            )
+
+            signal_2 = Signal(
+                token="ETH/USDT",
+                direction=SignalDirection.LONG,
+                confidence=0.85,
+                base_score=85.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.ACTIONABLE,
+                timeframe="1h",  # Same timeframe
+                signal_id=str(uuid.uuid4()),
+            )
+
+            # First signal should pass
+            result_1 = await throttle_orch.process_signal(signal_1)
+            assert result_1.status == TradeStatus.EXECUTED
+
+            # Second signal should be throttled (same symbol+timeframe)
+            result_2 = await throttle_orch.process_signal(signal_2)
+            assert result_2.status == TradeStatus.REJECTED
+            assert any(
+                "throttled" in r.lower() for r in result_2.reject_reason
+            ), f"Expected throttle rejection, got: {result_2.reject_reason}"
+
+            # Verify throttle metric was incremented
+            assert throttle_orch._metrics["gate_g1_throttle_count"] == 1
+
+        finally:
+            if original_val is None:
+                os.environ.pop("SYMBOL_EVAL_INTERVAL_SECONDS", None)
+            else:
+                os.environ["SYMBOL_EVAL_INTERVAL_SECONDS"] = original_val
+
+    @pytest.mark.asyncio
     async def test_low_confidence_signal_rejected(
         self, orchestrator, mock_components, mock_signal_low_confidence
     ):
