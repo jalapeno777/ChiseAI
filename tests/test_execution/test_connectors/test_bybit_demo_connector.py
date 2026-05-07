@@ -959,6 +959,50 @@ class TestBybitDemoConnectorPlaceOrder:
         assert len(filled) == 1
 
     @pytest.mark.asyncio
+    async def test_place_market_order_uses_ioc_tif(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """MARKET orders must use IOC time_in_force for Bybit V5 linear."""
+        demo_connector.connector.place_order = AsyncMock(
+            return_value={
+                "order_id": "bybit_order_mkt",
+                "status": "Filled",
+                "price": "50000.50",
+            }
+        )
+        await demo_connector.place_order(
+            symbol="BTCUSDT",
+            side="buy",
+            order_type="market",
+            quantity=0.001,
+        )
+        demo_connector.connector.place_order.assert_awaited_once()
+        call_kwargs = demo_connector.connector.place_order.call_args.kwargs
+        assert call_kwargs["time_in_force"] == "IOC"
+
+    @pytest.mark.asyncio
+    async def test_place_limit_order_uses_gtc_tif(
+        self, demo_connector: BybitDemoConnector
+    ) -> None:
+        """LIMIT orders use GTC time_in_force."""
+        demo_connector.connector.place_order = AsyncMock(
+            return_value={
+                "order_id": "bybit_order_lim",
+                "status": "Created",
+            }
+        )
+        await demo_connector.place_order(
+            symbol="BTCUSDT",
+            side="sell",
+            order_type="limit",
+            quantity=0.001,
+            price=55000.0,
+        )
+        demo_connector.connector.place_order.assert_awaited_once()
+        call_kwargs = demo_connector.connector.place_order.call_args.kwargs
+        assert call_kwargs["time_in_force"] == "GTC"
+
+    @pytest.mark.asyncio
     async def test_place_order_rejected_provenance(
         self, demo_connector: BybitDemoConnector
     ) -> None:
