@@ -1,0 +1,174 @@
+# ChiseAI Pipeline Health Alert Rules
+# Version: 1.0.0
+# Last Updated: 2026-05-07
+# Description: Alert rules for monitoring signal pipeline health - zero-signal detection, consumer dead, and scheduler issues
+
+apiVersion: 1
+
+groups:
+  - name: pipeline_health
+    interval: 30s
+    rules:
+      # Zero-Signal Detection Alert
+      # Fires when no signals have been generated for a configured period
+      - alert: ZeroSignalDetected
+        expr: |
+          last_over_time(
+            bmad_chiseai_scheduler_heartbeat{pipeline_status="degraded"}[5m]
+          ) == 1
+        for: 60s
+        labels:
+          severity: critical
+          category: pipeline
+          alert_type: zero_signal
+          source: scheduler
+        annotations:
+          summary: "Zero signals detected - pipeline degraded"
+          description: "No actionable signals have been generated in the last 15 minutes. Pipeline status is degraded."
+          runbook: "docs/runbooks/pipeline-degraded.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/pipeline-degraded.md"
+          impact: "Trading system is not generating signals - no new trades will be initiated"
+
+      # Zero-Signal Extended Alert
+      # Fires when zero-signal condition persists for an extended period
+      - alert: ZeroSignalExtended
+        expr: |
+          avg_over_time(
+            bmad_chiseai_scheduler_heartbeat{pipeline_status="degraded"}[15m]
+          ) == 1
+        for: 15m
+        labels:
+          severity: warning
+          category: pipeline
+          alert_type: zero_signal_extended
+          source: scheduler
+        annotations:
+          summary: "Extended zero-signal condition detected"
+          description: "Pipeline has been degraded for more than 15 minutes"
+          runbook: "docs/runbooks/pipeline-degraded.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/pipeline-degraded.md"
+          impact: "Trading system has not generated signals for an extended period"
+
+      # Signal Consumer Dead Alert
+      # Fires when the signal consumer has not updated health status
+      - alert: SignalConsumerDead
+        expr: |
+          last_over_time(
+            paper_signal_consumer_health{timestamp!=""}[1m]
+          ) == 0
+        for: 120s
+        labels:
+          severity: critical
+          category: pipeline
+          alert_type: consumer_dead
+          source: consumer
+        annotations:
+          summary: "Signal consumer is not responding"
+          description: "Signal consumer has not updated its health status in over 2 minutes"
+          runbook: "docs/runbooks/consumer-dead.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/consumer-dead.md"
+          impact: "Signals are being generated but not being processed - backlog will grow"
+
+      # Consumer Backlog Alert
+      # Fires when consumer backlog exceeds threshold
+      - alert: ConsumerBacklogHigh
+        expr: |
+          last_over_time(
+            bmad_chiseai_scheduler_heartbeat{consumer_backlog!=""}[2m]
+          ) > 10
+        for: 60s
+        labels:
+          severity: warning
+          category: pipeline
+          alert_type: backlog_high
+          source: consumer
+        annotations:
+          summary: "Signal consumer backlog is high"
+          description: "Consumer has more than 10 unprocessed signals in backlog"
+          runbook: "docs/runbooks/consumer-backlog.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/consumer-backlog.md"
+          impact: "Consumer is falling behind - signals may timeout"
+
+      # Scheduler Heartbeat Missing Alert
+      # Fires when scheduler heartbeat is not present
+      - alert: SchedulerHeartbeatMissing
+        expr: |
+          absent(
+            bmad_chiseai_scheduler_heartbeat{timestamp!=""}[2m]
+          )
+        for: 120s
+        labels:
+          severity: critical
+          category: infrastructure
+          alert_type: heartbeat_missing
+          source: scheduler
+        annotations:
+          summary: "Scheduler heartbeat is missing"
+          description: "No scheduler heartbeat detected in Redis for over 2 minutes"
+          runbook: "docs/runbooks/scheduler-down.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/scheduler-down.md"
+          impact: "Scheduler may be down - trading will stop"
+
+      # Scheduler Status Not Running
+      # Fires when scheduler heartbeat exists but status is not 'running'
+      - alert: SchedulerNotRunning
+        expr: |
+          last_over_time(
+            bmad_chiseai_scheduler_heartbeat{status!="running"}[1m]
+          ) == 1
+        for: 60s
+        labels:
+          severity: warning
+          category: infrastructure
+          alert_type: scheduler_error
+          source: scheduler
+        annotations:
+          summary: "Scheduler is not in running state"
+          description: "Scheduler heartbeat exists but status is not 'running'"
+          runbook: "docs/runbooks/scheduler-down.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/scheduler-down.md"
+          impact: "Scheduler may be in error state"
+
+# Alert Evaluation Configuration
+evaluation:
+  # Global evaluation interval
+  interval: 30s
+
+  # Timeout for query execution
+  timeout: 10s
+
+  # Maximum number of concurrent evaluations
+  max_concurrent: 10
+
+# Notification Settings
+notifications:
+  # Default channel for these alerts
+  default_channel: discord_alerts
+
+  # Critical alerts go to critical channel
+  critical_channel: discord_critical
+
+  # Group alerts by source to prevent spam
+  group_by:
+    - source
+    - severity
+    - alert_type
+
+  # Group wait time before sending first notification
+  group_wait: 30s
+
+  # Group interval between notifications for same group
+  group_interval: 5m
+
+  # Repeat interval for unresolved alerts
+  repeat_interval: 4h
+
+# Silence Rules
+silences:
+  # Allow silencing during maintenance windows
+  maintenance_window:
+    enabled: true
+    match_labels:
+      maintenance: "true"
+    default_duration: 1h
+    max_duration: 4h
