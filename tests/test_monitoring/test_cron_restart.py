@@ -5,10 +5,10 @@ These tests verify that the restart_cron_jobs.py script correctly
 updates stale Redis keys for all 5 cron monitoring jobs.
 """
 
-import pytest
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import MagicMock, patch
 
+import pytest
 
 # Mock CRON_JOBS data matching the actual configuration
 MOCK_CRON_JOBS = {
@@ -75,14 +75,14 @@ class TestCronRestartScript:
         mock_redis.execute = MagicMock(return_value=[True] * 10)
 
         # Simulate restart - set timestamps
-        for job_name in MOCK_CRON_JOBS.keys():
+        for job_name in MOCK_CRON_JOBS:
             timestamp = datetime.now(UTC).isoformat()
             mock_set(f"chise:cron:{job_name}:last_run", timestamp)
 
         # Verify all jobs got new timestamps
         assert len(set_timestamps) == 5
 
-        for job_name in MOCK_CRON_JOBS.keys():
+        for job_name in MOCK_CRON_JOBS:
             assert job_name in set_timestamps
             # Verify timestamp is current (today)
             ts = datetime.fromisoformat(set_timestamps[job_name])
@@ -99,7 +99,7 @@ class TestCronRestartScript:
         mock_redis.set = MagicMock(side_effect=mock_set)
 
         # Simulate restart setting missed_count to 0
-        for job_name in MOCK_CRON_JOBS.keys():
+        for job_name in MOCK_CRON_JOBS:
             mock_set(f"chise:cron:{job_name}:missed_count", "0")
 
         # Verify all missed_count values were set to "0"
@@ -118,7 +118,7 @@ class TestCronRestartScript:
         mock_redis.set = MagicMock(side_effect=mock_set)
 
         # Simulate restart setting status to success
-        for job_name in MOCK_CRON_JOBS.keys():
+        for job_name in MOCK_CRON_JOBS:
             mock_set(f"chise:cron:{job_name}:status", "success")
 
         # Verify all status values were set to "success"
@@ -134,7 +134,7 @@ class TestCronRestartScript:
 
         # Simulate pipeline write
         pipe = mock_redis.pipeline()
-        for job_name in MOCK_CRON_JOBS.keys():
+        for job_name in MOCK_CRON_JOBS:
             pipe.set(f"chise:cron:{job_name}:last_run", "some_timestamp")
             pipe.set(f"chise:cron:{job_name}:status", "success")
 
@@ -158,7 +158,7 @@ class TestCronRestartScript:
         mock_redis.get = MagicMock(side_effect=mock_get)
 
         # Verify we can read back the timestamps
-        for job_name in MOCK_CRON_JOBS.keys():
+        for job_name in MOCK_CRON_JOBS:
             last_run = mock_get(f"chise:cron:{job_name}:last_run")
             assert last_run == current_time
 
@@ -210,7 +210,7 @@ class TestCronRestartIntegration:
         with patch("scripts.cron.restart_cron_jobs.CRON_JOBS", CRON_JOBS):
             from scripts.cron.restart_cron_jobs import restart_cron_job
 
-            for job_name in CRON_JOBS.keys():
+            for job_name in CRON_JOBS:
                 restart_cron_job(job_name)
 
             # Verify write was called for each job

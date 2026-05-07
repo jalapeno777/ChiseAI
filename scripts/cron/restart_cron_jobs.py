@@ -24,10 +24,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.monitoring.cron_evidence import (
     CRON_JOBS,
-    get_redis_connection,
-    write_cron_evidence,
     check_cron_cadence,
     format_cron_status,
+    get_redis_connection,
+    write_cron_evidence,
 )
 
 # Configure logging
@@ -87,9 +87,9 @@ def restart_all_cron_jobs() -> dict:
     job_names = list(CRON_JOBS.keys())
 
     logger.info(f"Restarting {len(job_names)} cron jobs: {job_names}")
-    print(f"\n{'=' * 60}")
-    print(f"CRON JOB RESTART SCRIPT")
-    print(f"{'=' * 60}\n")
+    print("\n" + "=" * 60)
+    print("CRON JOB RESTART SCRIPT")
+    print("\n" + "=" * 60 + "\n")
 
     for job_name in job_names:
         print(f"\n--- Restarting: {job_name} ---")
@@ -100,7 +100,7 @@ def restart_all_cron_jobs() -> dict:
         if success:
             print(f"  ✓ Write succeeded (invocation_id={invocation_id})")
         else:
-            print(f"  ✗ Write FAILED")
+            print("  ✗ Write FAILED")
             results[job_name] = {"success": False, "verified": False}
             continue
 
@@ -125,7 +125,7 @@ def restart_all_cron_jobs() -> dict:
 
     # Summary
     print(f"\n{'=' * 60}")
-    print(f"SUMMARY")
+    print("SUMMARY")
     print(f"{'=' * 60}")
 
     success_count = sum(1 for r in results.values() if r.get("success"))
@@ -136,7 +136,7 @@ def restart_all_cron_jobs() -> dict:
     print(f"Verifications passed: {verified_count}/{len(job_names)}")
 
     # Check overall cadence
-    print(f"\n--- Cadence Check After Restart ---")
+    print("\n--- Cadence Check After Restart ---")
     cadence_results = check_cron_cadence()
     print(format_cron_status(cadence_results))
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
             print(f"\n⚠️  WARNING: {len(failed)} job(s) failed to restart: {failed}")
             sys.exit(1)
         else:
-            print(f"\n✅ All cron jobs restarted successfully!")
+            print("\n✅ All cron jobs restarted successfully!")
             sys.exit(0)
 
     except Exception as e:
