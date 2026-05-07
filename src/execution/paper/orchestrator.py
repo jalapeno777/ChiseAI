@@ -226,7 +226,7 @@ class PaperTradingOrchestrator:
         self._symbol_eval_interval_seconds = max(
             0, int(os.getenv("SYMBOL_EVAL_INTERVAL_SECONDS", "300"))
         )
-        self._last_symbol_processed_ts: dict[str, float] = {}
+        self._last_symbol_processed_ts: dict[tuple[str, str], float] = {}
         self._lock = asyncio.Lock()
 
         logger.info(
@@ -703,15 +703,18 @@ class PaperTradingOrchestrator:
             self._metrics["signals_processed"] += 1
 
         try:
-            # Enforce global per-symbol cadence across all ingress paths.
+            # Enforce global per-symbol-per-timeframe cadence across all ingress paths.
             symbol_key = signal.token.upper().strip()
+            timeframe_key = signal.timeframe
+            throttle_key = (symbol_key, timeframe_key)
             if symbol_key and self._symbol_eval_interval_seconds > 0:
                 now_ts = time.time()
-                last_ts = self._last_symbol_processed_ts.get(symbol_key, 0.0)
+                last_ts = self._last_symbol_processed_ts.get(throttle_key, 0.0)
                 if (now_ts - last_ts) < self._symbol_eval_interval_seconds:
                     logger.info(
-                        "Signal throttled for %s: %.1fs < %ss (correlation_id=%s)",
+                        "Signal throttled for %s %s: %.1fs < %ss (correlation_id=%s)",
                         symbol_key,
+                        timeframe_key,
                         now_ts - last_ts,
                         self._symbol_eval_interval_seconds,
                         correlation_id,
@@ -760,13 +763,14 @@ class PaperTradingOrchestrator:
                         status=TradeStatus.REJECTED,
                         reject_reason=[
                             (
-                                "Signal throttled by per-symbol cadence: "
+                                "Signal throttled by per-symbol-per-timeframe cadence: "
+                                f"{symbol_key}/{timeframe_key} within "
                                 f"{self._symbol_eval_interval_seconds}s"
                             )
                         ],
                         correlation_id=correlation_id,
                     )
-                self._last_symbol_processed_ts[symbol_key] = now_ts
+                self._last_symbol_processed_ts[throttle_key] = now_ts
 
             # PAPER-009: Check paper trading kill switch before any processing
             paper_kill_switch = await self._get_paper_kill_switch()
