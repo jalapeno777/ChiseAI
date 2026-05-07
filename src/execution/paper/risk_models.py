@@ -35,7 +35,7 @@ class RiskCheck:
     max_position_pct: float = 0.10  # 10% per token
     max_leverage: float = 3.0
     max_portfolio_exposure_pct: float = 0.80  # 80%
-    min_confidence: float = 0.75  # 75%
+    min_confidence: float = 0.70  # 70%
     max_drawdown_pct: float = 0.15  # 15%
 
     def __post_init__(self) -> None:

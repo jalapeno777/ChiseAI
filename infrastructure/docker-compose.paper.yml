@@ -21,15 +21,15 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/src:/app/scripts
       - TRADING_SYMBOLS=BTC/USDT,ETH/USDT
-      - SYMBOL_EVAL_INTERVAL_SECONDS=300
+      - SYMBOL_EVAL_INTERVAL_SECONDS=60
       - PORTFOLIO_VALUE=10000.0
-      - CONFIDENCE_THRESHOLD=0.75
+      - CONFIDENCE_THRESHOLD=0.70
     volumes:
       - paper-trading-logs:/var/log/chiseai
     command: >
       python3 scripts/run_signal_consumer.py
       --portfolio-value 10000.0
-      --confidence-threshold 0.75
+      --confidence-threshold 0.70
     labels:
       - "project=chiseai"
       - "service=paper-trading"
