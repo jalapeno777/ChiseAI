@@ -318,6 +318,7 @@ async def continuous_signal_generation(
     total_generated = 0
     start_time = time.time()
     end_time = start_time + (duration_minutes * 60) if duration_minutes > 0 else None
+    consecutive_zero_count = 0
 
     # Signal generation loop
     iteration = 0
@@ -344,13 +345,22 @@ async def continuous_signal_generation(
         count = await generate_signals_batch(r, generator, storage, count=2)
         total_generated += count
 
+        # Track consecutive zero iterations for degraded status
+        if count == 0:
+            consecutive_zero_count += 1
+        else:
+            consecutive_zero_count = 0
+
+        # Determine pipeline status based on consecutive zero iterations
+        pipeline_status = "degraded" if consecutive_zero_count > 3 else "healthy"
+
         # Record heartbeat with pipeline status
         r.hset(
             "bmad:chiseai:scheduler:heartbeat",
             mapping={
                 "timestamp": datetime.now(UTC).isoformat(),
                 "status": "running",
-                "pipeline_status": "healthy",
+                "pipeline_status": pipeline_status,
                 "iteration": str(iteration),
                 "signals_generated": str(total_generated),
                 "signals_15m": str(
