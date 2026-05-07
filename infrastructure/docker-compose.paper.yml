@@ -24,6 +24,7 @@ services:
       - SYMBOL_EVAL_INTERVAL_SECONDS=60
       - PORTFOLIO_VALUE=10000.0
       - CONFIDENCE_THRESHOLD=0.70
+      - FORCE_SIMULATOR_MODE=true
     volumes:
       - paper-trading-logs:/var/log/chiseai
     command: >
