@@ -1696,3 +1696,64 @@ LESSON
 - evidence_ref: workflow-archive-daily and workflow-archive-weekly pipeline failures 2026-05-02 to 2026-05-04, Redis/Gitea containers Exited 255, restored via docker start
 - added_utc: 2026-05-04T00:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260508-kill-switch-dual-type
+- context: Trade spam emergency — kill switch Redis key was STRING type but code expected HASH type, causing TypeError and preventing kill switch activation
+- trigger: Kill switch failed silently because worker SET key as STRING while reader expected HASH
+- actionable_rule: Kill switches must handle both HASH and STRING Redis types. Workers may SET a key as STRING while code reads it as HASH. Always use try/except with type fallback.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Kill switches always work regardless of Redis key type; dual-type fallback prevents silent failures
+- evidence_ref: R2A-TRADE-SPAM-FIX, PR #1084
+- added_utc: 2026-05-08T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260508-cross-assignment-bos-choch
+- context: BOS/CHOCH bearish accuracy was 0% due to bullish_choch updating active_structure_low instead of active_structure_high
+- trigger: Copy-pasted bullish/bearish code blocks had cross-assigned variables in CHoCH detection
+- actionable_rule: Copy-pasted code blocks (bullish/bearish) often have cross-assigned variables. In BOS/CHOCH, bullish_choch was updating active_structure_low instead of active_structure_high. Always diff mirror implementations.
+- applies_to:
+  - dev
+  - senior-dev
+  - critic
+- expected_outcome: Zero cross-assignment bugs in mirrored code paths; all mirror implementations diff-verified
+- evidence_ref: BL-BOS-CHOCH-001, PR #1086 SHA 69b14301
+- added_utc: 2026-05-08T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260508-symbol-cooldown-spam
+- context: Per-(symbol,timeframe) throttle tuples allowed 6 independent windows per symbol, insufficient for spam prevention
+- trigger: Trade spam continued despite throttle because each timeframe had its own cooldown window
+- actionable_rule: Per-(symbol,timeframe) throttle tuples allow N×independent windows per symbol (6 for 6 timeframes). For spam prevention, use symbol-only cooldown that covers ALL timeframes.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Spam prevention covers all timeframes per symbol; no multi-window bypass
+- evidence_ref: R2A-TRADE-SPAM-FIX, G1.5 SYMBOL_COOLDOWN
+- added_utc: 2026-05-08T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260508-docker-sudo-env
+- context: Running docker commands with sudo strips environment variables, causing Redis/credential failures inside containers
+- trigger: Docker compose commands failed because sudo stripped REDIS_HOST and other env vars
+- actionable_rule: sudo strips environment variables. When running docker commands with sudo, pass env vars inline: sudo -E or VAR=value sudo docker ...
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+  - ops-team
+- expected_outcome: Docker commands with sudo always have required env vars; no stripped-variable failures
+- evidence_ref: R2A-REDIS-FIX, PR #1085
+- added_utc: 2026-05-08T00:00:00Z
+```
