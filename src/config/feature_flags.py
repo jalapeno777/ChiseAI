@@ -648,6 +648,7 @@ class FeatureFlags:
             persona_regression_enabled=_get_bool_env(
                 "FEATURE_PERSONA_REGRESSION_ENABLED", True
             ),
+            force_simulator_mode=_get_bool_env("FORCE_SIMULATOR_MODE", False),
         )
 
     def to_dict(self) -> dict[str, Any]:
