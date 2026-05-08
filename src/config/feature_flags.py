@@ -617,6 +617,8 @@ class FeatureFlags:
                 return default
 
             value_lower = value.lower().strip()
+            if value_lower in ("true", "1", "yes", "on"):
+                return True
             if value_lower in ("false", "0", "no", "off"):
                 return False
             # Any other value (including empty string, whitespace, invalid)
