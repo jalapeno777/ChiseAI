@@ -301,5 +301,155 @@ class TestTTLExpiry:
         assert status.active is False
 
 
+class TestKillSwitchSETKeyFallback:
+    """Tests for kill switch SET key fallback (FIX 3f).
+
+    When someone activates the kill switch via `SET paper:kill_switch:global true`
+    (wrong key, wrong type), the system should still detect it.
+    """
+
+    @pytest.mark.asyncio
+    async def test_set_key_fallback_activates_kill_switch(self):
+        """Test that SET key fallback activates kill switch when hash is empty."""
+        mock_redis = AsyncMock()
+        mock_redis.hgetall.return_value = {}  # No hash key
+        mock_redis.get.return_value = b"true"  # SET key exists
+
+        manager = PaperKillSwitchManager(redis_client=mock_redis)
+        status = await manager.get_status()
+
+        assert status.active is True
+        assert status.reason == "emergency_manual_activation"
+        assert status.activated_by == "manual_redis_set"
+
+    @pytest.mark.asyncio
+    async def test_set_key_fallback_with_string_yes(self):
+        """Test SET key fallback with 'yes' value."""
+        mock_redis = AsyncMock()
+        mock_redis.hgetall.return_value = {}
+        mock_redis.get.return_value = "yes"
+
+        manager = PaperKillSwitchManager(redis_client=mock_redis)
+        status = await manager.get_status()
+
+        assert status.active is True
+
+    @pytest.mark.asyncio
+    async def test_set_key_fallback_with_string_1(self):
+        """Test SET key fallback with '1' value."""
+        mock_redis = AsyncMock()
+        mock_redis.hgetall.return_value = {}
+        mock_redis.get.return_value = b"1"
+
+        manager = PaperKillSwitchManager(redis_client=mock_redis)
+        status = await manager.get_status()
+
+        assert status.active is True
+
+    @pytest.mark.asyncio
+    async def test_set_key_fallback_ignores_false_values(self):
+        """Test that SET key fallback ignores false-like values."""
+        mock_redis = AsyncMock()
+        mock_redis.hgetall.return_value = {}
+        mock_redis.get.return_value = b"false"
+
+        manager = PaperKillSwitchManager(redis_client=mock_redis)
+        status = await manager.get_status()
+
+        assert status.active is False
+
+    @pytest.mark.asyncio
+    async def test_set_key_fallback_none_value(self):
+        """Test SET key fallback when key doesn't exist (None)."""
+        mock_redis = AsyncMock()
+        mock_redis.hgetall.return_value = {}
+        mock_redis.get.return_value = None
+
+        manager = PaperKillSwitchManager(redis_client=mock_redis)
+        status = await manager.get_status()
+
+        assert status.active is False
+
+    @pytest.mark.asyncio
+    async def test_hash_key_takes_precedence_over_set_key(self):
+        """Test that hash key is checked first and takes precedence."""
+        mock_redis = AsyncMock()
+        mock_redis.hgetall.return_value = {
+            "active": "true",
+            "reason": "test_hash",
+            "activated_at": "2024-01-01T00:00:00+00:00",
+            "activated_by": "hash_user",
+        }
+        mock_redis.ttl.return_value = 300
+        # SET key also exists but should be ignored
+        mock_redis.get.return_value = b"true"
+
+        manager = PaperKillSwitchManager(redis_client=mock_redis)
+        status = await manager.get_status()
+
+        assert status.active is True
+        assert status.reason == "test_hash"
+        assert status.activated_by == "hash_user"
+        # SET key should NOT have been checked
+        mock_redis.get.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_set_key_fallback_exception_non_blocking(self):
+        """Test that SET key fallback exception doesn't block."""
+        mock_redis = AsyncMock()
+        mock_redis.hgetall.return_value = {}
+        mock_redis.get.side_effect = Exception("Redis error")
+
+        manager = PaperKillSwitchManager(redis_client=mock_redis)
+        status = await manager.get_status()
+
+        # Should still return inactive (not crash)
+        assert status.active is False
+
+
+class TestKillSwitchSETKeyFallbackSync:
+    """Tests for kill switch SET key fallback in sync mode."""
+
+    def test_sync_set_key_fallback_activates(self):
+        """Test that sync SET key fallback activates kill switch."""
+        mock_redis = MagicMock()
+        mock_redis.hgetall.return_value = {}
+        mock_redis.get.return_value = b"true"
+
+        with patch(
+            "src.execution.paper.paper_kill_switch.get_redis_client",
+            return_value=mock_redis,
+        ):
+            # Clear sync cache
+            import src.execution.paper.paper_kill_switch as mod
+
+            mod._sync_status_cache = None
+            mod._sync_status_cache_time = None
+
+            status = get_status_sync()
+
+            assert status.active is True
+            assert status.reason == "emergency_manual_activation"
+
+    def test_sync_set_key_fallback_inactive_when_none(self):
+        """Test that sync fallback returns inactive when SET key is None."""
+        mock_redis = MagicMock()
+        mock_redis.hgetall.return_value = {}
+        mock_redis.get.return_value = None
+
+        with patch(
+            "src.execution.paper.paper_kill_switch.get_redis_client",
+            return_value=mock_redis,
+        ):
+            import src.execution.paper.paper_kill_switch as mod
+
+            mod._sync_status_cache = None
+            mod._sync_status_cache_time = None
+
+            status = get_status_sync()
+
+            assert status.active is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

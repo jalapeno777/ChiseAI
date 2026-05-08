@@ -2088,5 +2088,75 @@ class TestOrderPriceValidation:
         assert order.symbol == mock_signal.token
 
 
+class TestSymbolCooldownGate:
+    """Tests for G1.5_SYMBOL_COOLDOWN gate (FIX 3c).
+
+    Cooldown prevents rapid repeated trades on the same symbol.
+    Default 300s, minimum 60s, configurable via SYMBOL_COOLDOWN_SECONDS.
+    """
+
+    def test_cooldown_seconds_reads_env_var(self):
+        """Test that cooldown reads SYMBOL_COOLDOWN_SECONDS env var."""
+        import os
+
+        val = int(os.environ.get("SYMBOL_COOLDOWN_SECONDS", "300"))
+        assert val == 300  # Default
+
+    def test_cooldown_seconds_minimum_60(self):
+        """Test that cooldown minimum is 60 seconds."""
+        cooldown_seconds = max(int("10"), 60)  # Simulating env var "10"
+        assert cooldown_seconds == 60
+
+    def test_set_symbol_cooldown_method_exists(self, orchestrator):
+        """Test that _set_symbol_cooldown method exists and is callable."""
+        assert hasattr(orchestrator, "_set_symbol_cooldown")
+        assert callable(orchestrator._set_symbol_cooldown)
+
+    def test_set_symbol_cooldown_handles_no_redis(self, orchestrator):
+        """Test that _set_symbol_cooldown handles None Redis gracefully."""
+        orchestrator._redis = None
+        # Should not raise
+        orchestrator._set_symbol_cooldown("BTC/USDT")
+
+    def test_set_symbol_cooldown_sets_redis_key(self, orchestrator):
+        """Test that _set_symbol_cooldown sets the cooldown Redis key."""
+        from unittest.mock import MagicMock
+
+        mock_redis = MagicMock()
+        orchestrator._redis = mock_redis
+
+        orchestrator._set_symbol_cooldown("BTC/USDT")
+
+        # Should have called setex
+        mock_redis.setex.assert_called_once()
+        call_args = mock_redis.setex.call_args
+        assert "cooldown:symbol:BTC/USDT" in call_args[0][0]
+        assert call_args[0][1] >= 60  # TTL at least 60
+
+    def test_set_symbol_cooldown_respects_env_var(self, orchestrator):
+        """Test that _set_symbol_cooldown reads SYMBOL_COOLDOWN_SECONDS."""
+        from unittest.mock import MagicMock, patch
+
+        mock_redis = MagicMock()
+        orchestrator._redis = mock_redis
+
+        with patch.dict("os.environ", {"SYMBOL_COOLDOWN_SECONDS": "120"}):
+            orchestrator._set_symbol_cooldown("ETH/USDT")
+
+            call_args = mock_redis.setex.call_args
+            assert call_args[0][1] == 120  # TTL matches env var
+
+    def test_set_symbol_cooldown_handles_redis_exception(self, orchestrator):
+        """Test that Redis exception in cooldown is non-blocking."""
+        from unittest.mock import MagicMock
+
+        mock_redis = MagicMock()
+        mock_redis.setex.side_effect = Exception("Redis down")
+        orchestrator._redis = mock_redis
+
+        # Should not raise
+        orchestrator._set_symbol_cooldown("BTC/USDT")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

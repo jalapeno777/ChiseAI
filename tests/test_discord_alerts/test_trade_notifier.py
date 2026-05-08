@@ -893,3 +893,131 @@ class TestDurationField:
         embed = notifier._build_close_embed(outcome)
         field_names = [f["name"] for f in embed["fields"]]
         assert not any("Duration" in name for name in field_names)
+
+
+class TestNotificationThrottle:
+    """Tests for per-symbol notification throttle (FIX 3d).
+
+    Notifications for the same symbol within NOTIFICATION_MIN_INTERVAL_SECONDS
+    should be throttled. Different symbols should not interfere.
+    """
+
+    @pytest.fixture
+    def notifier_with_throttle(self) -> TradeNotifier:
+        """Create a notifier with a short throttle for testing."""
+        notifier = TradeNotifier(webhook_url="https://discord.test/webhook")
+        notifier._notification_min_interval = 10  # 10s for testing
+        return notifier
+
+    def test_should_throttle_returns_false_for_first_notification(
+        self, notifier_with_throttle: TradeNotifier
+    ):
+        """Test that first notification for a symbol is never throttled."""
+        assert notifier_with_throttle._should_throttle_notification("BTCUSDT") is False
+
+    def test_should_throttle_returns_true_within_interval(
+        self, notifier_with_throttle: TradeNotifier
+    ):
+        """Test that rapid notification for same symbol is throttled."""
+        notifier_with_throttle._record_notification_sent("BTCUSDT")
+        # Immediately try again — should be throttled
+        assert notifier_with_throttle._should_throttle_notification("BTCUSDT") is True
+
+    def test_different_symbols_not_throttled(
+        self, notifier_with_throttle: TradeNotifier
+    ):
+        """Test that different symbols have independent throttle."""
+        notifier_with_throttle._record_notification_sent("BTCUSDT")
+        # ETH should not be throttled
+        assert notifier_with_throttle._should_throttle_notification("ETHUSDT") is False
+
+    def test_throttle_clears_after_interval(
+        self, notifier_with_throttle: TradeNotifier
+    ):
+        """Test that throttle clears after minimum interval passes."""
+        import time
+
+        notifier_with_throttle._notification_min_interval = 0  # Instant expiry
+        notifier_with_throttle._record_notification_sent("BTCUSDT")
+        time.sleep(0.01)  # Tiny wait
+        assert notifier_with_throttle._should_throttle_notification("BTCUSDT") is False
+
+    def test_throttle_reads_env_var(self):
+        """Test that NOTIFICATION_MIN_INTERVAL_SECONDS env var is respected."""
+        with patch.dict(os.environ, {"NOTIFICATION_MIN_INTERVAL_SECONDS": "60"}):
+            notifier = TradeNotifier(webhook_url="https://discord.test/webhook")
+            assert notifier._notification_min_interval == 60
+
+    def test_throttle_minimum_is_5_seconds(self):
+        """Test that throttle minimum is 5 seconds (safety floor)."""
+        with patch.dict(os.environ, {"NOTIFICATION_MIN_INTERVAL_SECONDS": "1"}):
+            notifier = TradeNotifier(webhook_url="https://discord.test/webhook")
+            assert notifier._notification_min_interval >= 5
+
+    @pytest.mark.asyncio
+    async def test_open_notification_skipped_when_throttled(self):
+        """Test that open notification returns throttled result."""
+        notifier = TradeNotifier(webhook_url="https://discord.test/webhook")
+        notifier._notification_min_interval = 300  # 5 min throttle
+
+        outcome = SignalOutcome(
+            outcome_id=uuid4(),
+            signal_id=uuid4(),
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            fill_price=Decimal("50000"),
+            position_size=Decimal("0.1"),
+            status=SignalOutcomeStatus.CLOSED,
+        )
+
+        # Send first notification
+        with patch.object(
+            notifier, "_send_webhook_with_retry", new_callable=AsyncMock
+        ) as mock_send:
+            mock_send.return_value = TradeNotificationResult(
+                success=True, message_id="123"
+            )
+            result1 = await notifier.send_trade_open_notification(outcome)
+            assert result1.success is True
+
+        # Second notification should be throttled
+        result2 = await notifier.send_trade_open_notification(outcome)
+        assert result2.success is False
+        assert "throttled" in result2.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_close_notification_skipped_when_throttled(self):
+        """Test that close notification returns throttled result."""
+        notifier = TradeNotifier(webhook_url="https://discord.test/webhook")
+        notifier._notification_min_interval = 300
+
+        outcome = SignalOutcome(
+            outcome_id=uuid4(),
+            signal_id=uuid4(),
+            symbol="ETHUSDT",
+            token="ETH",
+            side="Sell",
+            direction="SHORT",
+            fill_price=Decimal("3000"),
+            position_size=Decimal("1.0"),
+            status=SignalOutcomeStatus.CLOSED,
+        )
+
+        with patch.object(
+            notifier, "_send_webhook_with_retry", new_callable=AsyncMock
+        ) as mock_send:
+            mock_send.return_value = TradeNotificationResult(
+                success=True, message_id="456"
+            )
+            result1 = await notifier.send_trade_close_notification(outcome)
+            assert result1.success is True
+
+        result2 = await notifier.send_trade_close_notification(outcome)
+        assert result2.success is False
+        assert "throttled" in result2.error.lower()
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

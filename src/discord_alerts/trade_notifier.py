@@ -14,6 +14,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -132,6 +133,12 @@ class TradeNotifier:
         self.retry_base_delay = retry_base_delay
         self.retry_max_delay = retry_max_delay
 
+        # Notification throttle: per-symbol minimum interval
+        self._notification_min_interval = max(
+            int(os.environ.get("NOTIFICATION_MIN_INTERVAL_SECONDS", "30")), 5
+        )
+        self._last_notification_ts: dict[str, float] = {}
+
         if not self.webhook_url:
             logger.warning(
                 "TradeNotifier initialized without webhook URL. "
@@ -167,6 +174,35 @@ class TradeNotifier:
         if self._session and not self._session.closed:
             await self._session.close()
             self._session = None
+
+    def _should_throttle_notification(self, symbol: str) -> bool:
+        """Check if a notification for the given symbol should be throttled.
+
+        Args:
+            symbol: Trading symbol to check
+
+        Returns:
+            True if notification should be skipped due to throttle
+        """
+        last_ts = self._last_notification_ts.get(symbol, 0.0)
+        elapsed = time.time() - last_ts
+        if elapsed < self._notification_min_interval:
+            logger.info(
+                "Notification throttled for %s — %ds since last (min %ds)",
+                symbol,
+                int(elapsed),
+                self._notification_min_interval,
+            )
+            return True
+        return False
+
+    def _record_notification_sent(self, symbol: str) -> None:
+        """Record that a notification was sent for a symbol.
+
+        Args:
+            symbol: Trading symbol
+        """
+        self._last_notification_ts[symbol] = time.time()
 
     @staticmethod
     def create_outcome_from_paper_position(
@@ -272,11 +308,22 @@ class TradeNotifier:
                 error="No webhook URL configured",
             )
 
+        # Per-symbol notification throttle
+        symbol = (outcome.symbol or "unknown").upper().strip()
+        if self._should_throttle_notification(symbol):
+            return TradeNotificationResult(
+                success=False,
+                error=f"Notification throttled for {symbol}",
+            )
+
         try:
             embed = self._build_open_embed(outcome, llm_decision)
             payload = {"embeds": [embed]}
 
-            return await self._send_webhook_with_retry(payload, outcome)
+            result = await self._send_webhook_with_retry(payload, outcome)
+            if result.success:
+                self._record_notification_sent(symbol)
+            return result
 
         except Exception as e:
             logger.error(f"Failed to send trade open notification: {e}")
@@ -311,11 +358,22 @@ class TradeNotifier:
                 error="No webhook URL configured",
             )
 
+        # Per-symbol notification throttle
+        symbol = (outcome.symbol or "unknown").upper().strip()
+        if self._should_throttle_notification(symbol):
+            return TradeNotificationResult(
+                success=False,
+                error=f"Notification throttled for {symbol}",
+            )
+
         try:
             embed = self._build_close_embed(outcome, llm_decision)
             payload = {"embeds": [embed]}
 
-            return await self._send_webhook_with_retry(payload, outcome)
+            result = await self._send_webhook_with_retry(payload, outcome)
+            if result.success:
+                self._record_notification_sent(symbol)
+            return result
 
         except Exception as e:
             logger.error(f"Failed to send trade close notification: {e}")
