@@ -7,7 +7,7 @@ executed within 30 seconds.
 
 EP-ICT-008: Real data validation epic with provisional gating
 ST-ICT-033: outcome_label must be provisional_pass only
-Feature flag ict:bos_choch:enabled defaults to false
+Feature flag ict:bos_choch:enabled defaults to true (re-enabled after accuracy fix)
 """
 
 import logging
@@ -218,7 +218,7 @@ class ProvisionalRollback:
             "documentation": {
                 "st_ict_033_outcome": "Must be provisional_pass for provisional deployment",
                 "rollback_time_limit": "30 seconds maximum",
-                "feature_flag_default": "ict:bos_choch:enabled defaults to false",
+                "feature_flag_default": "ict:bos_choch:enabled defaults to true",
             },
         }
 

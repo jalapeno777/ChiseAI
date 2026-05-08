@@ -265,7 +265,7 @@ class TestPriorityOrderEnumeration:
 
         # Build expected order by priority value
         expected_order = [
-            # Priority 1: BOS/CHoCH (excluded per BL-BOS-CHOCH-001)
+            # Priority 1: BOS/CHoCH (re-enabled after accuracy fix)
             # ICTSignalType.BOS_CHOCH: SignalPriority.BOS_CHOCH.value,
             # Priority 2: Order Blocks
             ICTSignalType.ORDER_BLOCK,

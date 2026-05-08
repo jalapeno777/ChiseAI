@@ -385,6 +385,6 @@ class LiveSignalTester:
         return {
             "ict_bos_choch_enabled": self.check_feature_flag(),
             "redis_key": ICTFeatureFlags.KEY_BOS_CHOCH,
-            "default_value": False,
-            "safety_note": "BOS/CHoCH disabled by default per BL-BOS-CHOCH-001",
+            "default_value": True,
+            "safety_note": "BOS/CHoCH enabled by default (accuracy fix applied)",
         }

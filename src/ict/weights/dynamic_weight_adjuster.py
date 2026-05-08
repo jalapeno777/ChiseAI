@@ -247,7 +247,7 @@ class DynamicWeightAdjuster:
         included_weights: list[float] = []
 
         for score in layer1_scores:
-            # Skip BOS/CHoCH signals per BL-BOS-CHOCH-001
+            # Skip invalid signal types
             if not self._is_signal_valid(score.signal_type):
                 continue
 
@@ -302,7 +302,7 @@ class DynamicWeightAdjuster:
         return result
 
     def _is_signal_valid(self, signal_type: str) -> bool:
-        """Check if signal type is valid (not BOS/CHoCH).
+        """Check if signal type is valid.
 
         Args:
             signal_type: The signal type to check

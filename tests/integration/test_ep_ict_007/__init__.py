@@ -10,7 +10,7 @@ Tests end-to-end ICT confluence with all 7 components from EP-ICT-007:
 - ST-ICT-030: Neuro-Symbolic Explainability
 
 Verifies integration with EP-ICT-005 confluence scorer and confirms
-BOS/CHoCH signals remain excluded per BL-BOS-CHOCH-001.
+BOS/CHoCH signals are now INCLUDED (re-enabled after accuracy fix).
 """
 
 import pytest
@@ -82,42 +82,44 @@ class TestICTConfluenceIntegration:
 class TestEPICT005ConfluenceIntegration:
     """Test integration with EP-ICT-005 confluence scorer."""
 
-    def test_bos_choch_exclusion_enforced(self):
-        """Verify BOS/CHoCH signals remain excluded per BL-BOS-CHOCH-001."""
+    def test_bos_choch_inclusion_enforced(self):
+        """Verify BOS/CHoCH signals are now included."""
         from signal_generation.registry.ict_signal_registry import ICTSignalRegistry
 
         registry = ICTSignalRegistry()
 
-        # Check that BOS/CHoCH is excluded
+        # Check that BOS/CHoCH is NOT excluded
         excluded = registry.get_excluded_signals()
         bos_choch_excluded = any(
             "BOS" in s.upper() or "CHOC" in s.upper() for s in excluded
         )
 
-        # Per BL-BOS-CHOCH-001, BOS/CHoCH should be excluded
-        assert bos_choch_excluded, "BOS/CHoCH should be in excluded signal types"
+        # BOS/CHoCH should no longer be excluded
+        assert not bos_choch_excluded, (
+            "BOS/CHoCH should NOT be in excluded signal types"
+        )
 
 
-class TestICTComponentExclusion:
-    """Verify BOS/CHoCH exclusion is maintained."""
+class TestICTComponentInclusion:
+    """Verify BOS/CHoCH inclusion is maintained."""
 
-    def test_bos_choch_not_in_confluence_calculation(self):
-        """Ensure BOS/CHoCH signals are not included in confluence."""
+    def test_bos_choch_in_confluence_calculation(self):
+        """Ensure BOS/CHoCH signals are now included in confluence."""
         from signal_generation.registry.ict_signal_registry import ICTSignalRegistry
 
         registry = ICTSignalRegistry()
 
-        # Verify BOS/CHoCH is in exclusion list
+        # Verify BOS/CHoCH is NOT in exclusion list
         excluded_signals = registry.get_excluded_signals()
 
-        # BOS/CHoCH should be in the excluded list
+        # BOS/CHoCH should NOT be in the excluded list
         has_bos_choch_exclusion = any(
             "BOS" in str(s).upper() or "CHOC" in str(s).upper()
             for s in excluded_signals
         )
-        assert (
-            has_bos_choch_exclusion
-        ), "BOS/CHoCH should be in excluded signal types list"
+        assert not has_bos_choch_exclusion, (
+            "BOS/CHoCH should NOT be in excluded signal types list"
+        )
 
 
 class TestEPICT007CompletionCriteria:

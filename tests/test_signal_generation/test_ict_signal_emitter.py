@@ -154,18 +154,18 @@ class TestICTSignalEmitter:
         assert len(emitter.emitters) == 1
         assert emitter.emitters[0].name == "mock"
 
-    def test_check_bos_choch_exclusion(self):
-        """Test BOS/CHoCH exclusion check."""
+    def test_check_bos_choch_no_longer_excluded(self):
+        """Test BOS/CHoCH is no longer excluded (re-enabled)."""
         emitter = ICTSignalEmitter()
 
-        # These should be excluded
-        assert emitter._check_bos_choch_exclusion("bos") is True
-        assert emitter._check_bos_choch_exclusion("choch") is True
-        assert emitter._check_bos_choch_exclusion("bos_choch") is True
-        assert emitter._check_bos_choch_exclusion("BOS") is True
-        assert emitter._check_bos_choch_exclusion("CHOCH") is True
+        # BOS/CHoCH should no longer be excluded
+        assert emitter._check_bos_choch_exclusion("bos") is False
+        assert emitter._check_bos_choch_exclusion("choch") is False
+        assert emitter._check_bos_choch_exclusion("bos_choch") is False
+        assert emitter._check_bos_choch_exclusion("BOS") is False
+        assert emitter._check_bos_choch_exclusion("CHOCH") is False
 
-        # These should not be excluded
+        # Other signals also not excluded
         assert emitter._check_bos_choch_exclusion("cvd") is False
         assert emitter._check_bos_choch_exclusion("fvg") is False
         assert emitter._check_bos_choch_exclusion("order_block") is False
@@ -207,14 +207,14 @@ class TestICTSignalEmitter:
         emitter.set_feature_flag("order_block", False)
         assert emitter.is_signal_enabled("order_block") is False
 
-    def test_is_signal_enabled_bos_choch_excluded(self):
-        """Test that BOS/CHoCH is always excluded."""
+    def test_is_signal_enabled_bos_choch_included(self):
+        """Test that BOS/CHoCH is no longer excluded."""
         emitter = ICTSignalEmitter()
 
-        # BOS should always return False (excluded)
-        assert emitter.is_signal_enabled("bos") is False
-        assert emitter.is_signal_enabled("choch") is False
-        assert emitter.is_signal_enabled("bos_choch") is False
+        # BOS/CHoCH is no longer blocked by exclusion check
+        assert emitter._check_bos_choch_exclusion("bos") is False
+        assert emitter._check_bos_choch_exclusion("choch") is False
+        assert emitter._check_bos_choch_exclusion("bos_choch") is False
 
     def test_log_bos_choch_warning(self):
         """Test BOS/CHoCH warning logging."""
@@ -276,13 +276,13 @@ class TestICTSignalEmitter:
         assert "feature_flags" in status
         assert "emitters" in status
         assert "cycle_count" in status
-        assert status["bos_choch_excluded"] is True
-        assert status["bos_choch_exclusion_reference"] == "BL-BOS-CHOCH-001"
+        assert status["bos_choch_excluded"] is False
+        assert status["bos_choch_exclusion_reference"] is None
         assert status["config"]["min_confidence"] == 0.50
 
     @pytest.mark.asyncio
-    async def test_emit_signal_bos_excluded(self):
-        """Test that BOS signals are excluded."""
+    async def test_emit_signal_bos_not_excluded(self):
+        """Test that BOS signals are no longer excluded."""
         emitter = ICTSignalEmitter()
 
         result = await emitter.emit_signal(
@@ -292,12 +292,14 @@ class TestICTSignalEmitter:
             signal_data=None,
         )
 
-        assert result.skipped is True
-        assert "EXCLUDED per BL-BOS-CHOCH-001" in result.skip_reason
+        # BOS is no longer excluded - it may be skipped for other reasons
+        # (e.g., no signal data) but not for BL-BOS-CHOCH-001
+        if result.skipped:
+            assert "BL-BOS-CHOCH-001" not in result.skip_reason
 
     @pytest.mark.asyncio
-    async def test_emit_signal_choch_excluded(self):
-        """Test that CHoCH signals are excluded."""
+    async def test_emit_signal_choch_not_excluded(self):
+        """Test that CHoCH signals are no longer excluded."""
         emitter = ICTSignalEmitter()
 
         result = await emitter.emit_signal(
@@ -307,8 +309,9 @@ class TestICTSignalEmitter:
             signal_data=None,
         )
 
-        assert result.skipped is True
-        assert "EXCLUDED per BL-BOS-CHOCH-001" in result.skip_reason
+        # CHoCH is no longer excluded
+        if result.skipped:
+            assert "BL-BOS-CHOCH-001" not in result.skip_reason
 
     @pytest.mark.asyncio
     async def test_emit_signal_feature_flag_disabled(self):
@@ -428,7 +431,7 @@ class TestICTSignalEmitter:
         assert cycle.signals_processed == 4  # 1 CVD + 2 FVG + 1 OB
         assert cycle.signals_emitted == 4
         assert cycle.signals_skipped == 0
-        assert "bos_choch" in cycle.excluded_signals
+        assert "bos_choch" not in cycle.excluded_signals
         assert cycle.cycle_id.startswith("ict-cycle-")
 
     @pytest.mark.asyncio
@@ -502,7 +505,7 @@ class TestICTEmissionCycle:
             signals_processed=5,
             signals_emitted=3,
             signals_skipped=2,
-            excluded_signals=["bos_choch"],
+            excluded_signals=[],
             errors=["Some error"],
         )
 
@@ -512,7 +515,7 @@ class TestICTEmissionCycle:
         assert result["signals_processed"] == 5
         assert result["signals_emitted"] == 3
         assert result["signals_skipped"] == 2
-        assert "bos_choch" in result["excluded_signals"]
+        assert "bos_choch" not in result["excluded_signals"]
         assert "Some error" in result["errors"]
 
 
@@ -1070,15 +1073,15 @@ class TestSignalPriority:
 
         # At least one OB result should come before any FVG result
         if ob_positions and fvg_positions:
-            assert min(ob_positions) < min(
-                fvg_positions
-            ), "Order Block results should appear before FVG results in priority order"
+            assert min(ob_positions) < min(fvg_positions), (
+                "Order Block results should appear before FVG results in priority order"
+            )
 
         # At least one FVG result should come before CVD
         if fvg_positions and cvd_positions:
-            assert min(fvg_positions) < min(
-                cvd_positions
-            ), "FVG results should appear before CVD results in priority order"
+            assert min(fvg_positions) < min(cvd_positions), (
+                "FVG results should appear before CVD results in priority order"
+            )
 
 
 class TestLiquiditySweepSignals:

@@ -39,10 +39,10 @@ class TestICTFeatureFlagDefaults:
         flags = ICTFeatureFlags()
         assert flags.ict_order_block_enabled is True
 
-    def test_bos_choch_defaults_to_disabled(self) -> None:
-        """BOS/CHoCH signals should default to disabled (False) per BL-BOS-CHOCH-001."""
+    def test_bos_choch_defaults_to_enabled(self) -> None:
+        """BOS/CHoCH signals should default to enabled (True) after accuracy fix."""
         flags = ICTFeatureFlags()
-        assert flags.ict_bos_choch_enabled is False
+        assert flags.ict_bos_choch_enabled is True
 
     def test_integration_defaults_to_enabled(self) -> None:
         """ICT integration master flag should default to enabled (True)."""
@@ -72,8 +72,8 @@ class TestICTFeatureFlagFromEnv:
             assert flags.ict_fvg_enabled is True
             assert flags.ict_order_block_enabled is True
             assert flags.ict_integration_enabled is True
-            # BOS/CHoCH should default to False per safety
-            assert flags.ict_bos_choch_enabled is False
+            # BOS/CHoCH should default to True (re-enabled)
+            assert flags.ict_bos_choch_enabled is True
         finally:
             for k, v in cleared_env.items():
                 if v is not None:
@@ -175,34 +175,33 @@ class TestICTRuntimeMethods:
             assert result is True
             mock_client.get.assert_called_with("ict:feature_flags:cvd")
 
-    def test_is_bos_choch_enabled_safety_default(self) -> None:
-        """BOS/CHoCH should use safety default when Redis has no value."""
+    def test_is_bos_choch_enabled_default(self) -> None:
+        """BOS/CHoCH should use default when Redis has no value."""
         flags = ICTFeatureFlags()
-        # Redis returns None (no value) and default is False
+        # Redis returns None (no value) and default is True
         mock_client = MagicMock()
         mock_client.get.return_value = None
         with patch.object(
             ICTFeatureFlags, "_get_redis_client", return_value=mock_client
         ):
             result = flags.is_bos_choch_enabled()
-            # Should return False because that's the safety default
-            assert result is False
+            # Should return True because that's the default
+            assert result is True
 
 
 class TestICTRuntimeSetters:
     """Test runtime flag setter methods."""
 
-    def test_set_bos_choch_enabled_logs_warning(self) -> None:
-        """Setting BOS/CHoCH to enabled should log safety warning."""
+    def test_set_bos_choch_disabled_logs_warning(self) -> None:
+        """Setting BOS/CHoCH to disabled should log warning."""
         flags = ICTFeatureFlags()
         mock_client = MagicMock()
         with patch.object(
             ICTFeatureFlags, "_get_redis_client", return_value=mock_client
         ):
             with patch("src.config.ict_feature_flags.logger") as mock_logger:
-                flags.set_bos_choch_enabled(True)
+                flags.set_bos_choch_enabled(False)
                 mock_logger.warning.assert_called_once()
-                assert "BL-BOS-CHOCH-001" in mock_logger.warning.call_args[0][0]
 
 
 class TestICTFeatureFlagToDict:
@@ -232,7 +231,7 @@ class TestICTFeatureFlagToDict:
         assert data["ict_cvd_enabled"] is True
         assert data["ict_fvg_enabled"] is True
         assert data["ict_order_block_enabled"] is True
-        assert data["ict_bos_choch_enabled"] is False
+        assert data["ict_bos_choch_enabled"] is True
         assert data["ict_integration_enabled"] is True
 
 
@@ -257,7 +256,7 @@ class TestICTFeatureFlagGlobalInstance:
             ict_cvd_enabled=False,
             ict_fvg_enabled=False,
             ict_order_block_enabled=False,
-            ict_bos_choch_enabled=True,  # Would be unsafe but testing setter
+            ict_bos_choch_enabled=False,  # Override for testing
             ict_integration_enabled=False,
         )
 
@@ -286,13 +285,12 @@ class TestICTSafetyDocumentation:
     """Test that ICT safety flags are properly documented."""
 
     def test_bos_choch_safety_documented(self) -> None:
-        """BOS/CHoCH safety exclusion should be documented."""
+        """BOS/CHoCH should be documented as re-enabled."""
         docstring = ICTFeatureFlags.__doc__
         assert docstring is not None
-        assert "BL-BOS-CHOCH-001" in docstring
-        assert "DISABLED" in docstring or "False" in docstring
+        assert "ENABLED" in docstring or "True" in docstring
 
-    def test_bos_choch_default_false(self) -> None:
-        """BOS/CHoCH should be documented as defaulting to False."""
+    def test_bos_choch_default_true(self) -> None:
+        """BOS/CHoCH should default to True (re-enabled)."""
         flags = ICTFeatureFlags()
-        assert flags.ict_bos_choch_enabled is False
+        assert flags.ict_bos_choch_enabled is True

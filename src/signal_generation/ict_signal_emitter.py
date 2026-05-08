@@ -327,8 +327,8 @@ class ICTSignalEmitter:
         Returns:
             True if signal should be excluded, False otherwise
         """
-        excluded = ["bos", "choch", "bos_choch"]
-        return signal_type.lower() in excluded
+        # BOS/CHOCH re-enabled — no longer excluded
+        return False
 
     def _log_bos_choch_warning(self, signal_type: str) -> None:
         """Log warning if BOS/CHoCH signal is detected.
@@ -380,11 +380,6 @@ class ICTSignalEmitter:
         Returns:
             True if the signal type is enabled
         """
-        # Check BOS/CHoCH exclusion first
-        if self._check_bos_choch_exclusion(signal_type):
-            self._log_bos_choch_warning(signal_type)
-            return False
-
         # Check feature flag via registry
         flag_map = {
             "cvd": "enable_cvd_signals",
@@ -488,15 +483,6 @@ class ICTSignalEmitter:
             ICTSignalResult with emission status
         """
         start_time = time.perf_counter()
-
-        # Check BOS/CHoCH exclusion
-        if self._check_bos_choch_exclusion(signal_type):
-            self._log_bos_choch_warning(signal_type)
-            return ICTSignalResult(
-                signal_type=signal_type,
-                skipped=True,
-                skip_reason=f"EXCLUDED per BL-BOS-CHOCH-001: {signal_type}",
-            )
 
         # Check feature flag
         if not self.is_signal_enabled(signal_type):
@@ -701,6 +687,89 @@ class ICTSignalEmitter:
                     emission_error=last_error,
                     emission_latency_ms=latency_ms,
                 )
+            # BOS/CHOCH signals (Break of Structure / Change of Character - re-enabled)
+            elif signal_type in ("bos", "choch", "bos_choch"):
+                # signal_data is expected to be a dict with:
+                # {
+                #     "price": float,
+                #     "direction": str,
+                #     "confidence": float,
+                # }
+                if not isinstance(signal_data, dict):
+                    signal_data = {}
+
+                price = signal_data.get("price", 0.0)
+                direction_str = signal_data.get("direction", "long")
+                confidence = signal_data.get("confidence", 0.65)
+
+                from signal_generation.models import SignalDirection as SigDir
+
+                sig_direction = SigDir.LONG if direction_str == "long" else SigDir.SHORT
+
+                actionable_threshold = getattr(
+                    self.config, "signal_confidence_threshold", 0.75
+                )
+                status = SignalStatus.LOGGED_ONLY
+                if confidence >= actionable_threshold:
+                    status = SignalStatus.ACTIONABLE
+
+                signal = Signal(
+                    token=token,
+                    direction=sig_direction,
+                    confidence=confidence,
+                    base_score=confidence * 100,
+                    timestamp=datetime.now(UTC),
+                    status=status,
+                    timeframe=timeframe,
+                    contributing_factors=[
+                        {
+                            "factor": f"ict_{signal_type}",
+                            "weight": 1.0,
+                            "score": confidence,
+                        }
+                    ],
+                    metadata={
+                        "signal_type": signal_type,
+                        "source": "ict",
+                        "price": price,
+                    },
+                )
+
+                # Emit to all registered emitters
+                emission_latency_ms = 0.0
+                any_success = False
+                last_error = None
+
+                for emitter in self.emitters:
+                    try:
+                        result = await emitter.emit(signal)
+                        emission_latency_ms += result.latency_ms
+                        if result.success:
+                            any_success = True
+                        else:
+                            last_error = result.error
+                    except Exception as e:
+                        last_error = str(e)
+                        logger.error(f"Emitter {emitter.name} failed: {e}")
+
+                # Track signal for experiment telemetry if emission succeeded
+                if any_success:
+                    await self._track_signal_for_experiment(
+                        signal=signal,
+                        signal_type=signal_type,
+                        confluence_score=confidence,
+                        direction=sig_direction.value,
+                    )
+
+                latency_ms = (time.perf_counter() - start_time) * 1000
+
+                return ICTSignalResult(
+                    signal=signal,
+                    signal_type=signal_type,
+                    emission_success=any_success,
+                    emission_error=last_error,
+                    emission_latency_ms=latency_ms,
+                )
             else:
                 return ICTSignalResult(
                     signal_type=signal_type,
@@ -857,7 +926,7 @@ class ICTSignalEmitter:
         cycle = ICTEmissionCycle(
             cycle_id=cycle_id,
             timestamp=datetime.now(UTC),
-            excluded_signals=["bos_choch"],  # Always exclude per BL-BOS-CHOCH-001
+            excluded_signals=[],
         )
 
         logger.info(f"ICT emission cycle started: {cycle_id} for {token} {timeframe}")
@@ -874,8 +943,7 @@ class ICTSignalEmitter:
         # CVD (priority 4): volume delta
         # H/L/H-OLD/L-OLD (priority 5): price structure levels
         #
-        # BOS/CHoCH (priority 1) is excluded per BL-BOS-CHOCH-001 but
-        # its position in the priority order is preserved for re-enablement.
+        # BOS/CHoCH (priority 1) is now re-enabled in the signal pipeline.
 
         # Process each signal type in priority order
         for signal_type_str in priority_order:
@@ -1004,8 +1072,8 @@ class ICTSignalEmitter:
             },
             "emitters": [e.name for e in self.emitters],
             "cycle_count": self._cycle_count,
-            "bos_choch_excluded": True,
-            "bos_choch_exclusion_reference": "BL-BOS-CHOCH-001",
+            "bos_choch_excluded": False,
+            "bos_choch_exclusion_reference": None,
         }
 
 

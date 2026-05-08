@@ -142,6 +142,7 @@ class ICTSignalTracker:
         ICTSignalType.CVD,
         ICTSignalType.FVG,
         ICTSignalType.ORDER_BLOCK,
+        ICTSignalType.BOS_CHOCH,
     ]
 
     def __init__(self, registry: ICTSignalRegistry | None = None) -> None:
@@ -155,17 +156,16 @@ class ICTSignalTracker:
         self._tracked_ids: set[str] = set()
 
     def is_bos_choch(self, signal_type: ICTSignalType) -> bool:
-        """Check if a signal type is BOS/CHoCH (excluded).
+        """Check if a signal type is BOS/CHoCH.
 
         Args:
             signal_type: Signal type to check
 
         Returns:
-            True if BOS/CHoCH (excluded), False otherwise
+            True if BOS/CHoCH, False otherwise
         """
-        # BOS_CHOCH is the excluded type
-        excluded = ["bos_choch", "bos", "choch"]
-        return signal_type.value.lower() in excluded
+        # BOS/CHOCH re-enabled — no longer excluded
+        return False
 
     def track_signal(
         self,
@@ -181,10 +181,8 @@ class ICTSignalTracker:
     ) -> ICTSignalRecord | None:
         """Track an ICT signal prediction.
 
-        BOS/CHoCH signals are filtered out with logging per BL-BOS-CHOCH-001.
-
         Args:
-            signal_type: Type of ICT signal (CVD, FVG, Order Block)
+            signal_type: Type of ICT signal (CVD, FVG, Order Block, BOS_CHOCH)
             signal_id: Unique identifier for the signal
             direction: Signal direction
             confidence: Signal confidence (0.0-1.0)
@@ -195,16 +193,8 @@ class ICTSignalTracker:
             metadata: Optional additional metadata
 
         Returns:
-            ICTSignalRecord if tracked, None if filtered out (BOS/CHoCH)
+            ICTSignalRecord if tracked, None if filtered out
         """
-        # Check for excluded BOS/CHoCH signals
-        if self.is_bos_choch(signal_type):
-            logger.warning(
-                f"BOS/CHoCH signal detected and excluded per BL-BOS-CHOCH-001: "
-                f"signal_id={signal_id}, type={signal_type.value}"
-            )
-            return None
-
         # Validate signal type
         if signal_type not in self.VALID_SIGNAL_TYPES:
             logger.warning(

@@ -52,8 +52,8 @@ CHECKPOINT_FILE = (
     / "ST-ICT-020-PART-B-checkpoint.md"
 )
 
-# Signal types to exclude per BL-BOS-CHOCH-001
-EXCLUDED_SIGNAL_TYPES = {"bos", "choch"}
+# Signal types no longer excluded (BL-BOS-CHOCH-001 lifted)
+EXCLUDED_SIGNAL_TYPES: set[str] = set()
 
 
 def calculate_cohens_h(proportion1: float, proportion2: float) -> float:

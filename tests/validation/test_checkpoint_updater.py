@@ -261,10 +261,10 @@ class TestCalculateGroupMetrics:
             assert result["win_rate"] == 1.0
             assert result["pnl_sum"] == pytest.approx(0.025 + 0.015 + 0.008)
 
-    def test_calculate_group_metrics_filters_bos_choch(
+    def test_calculate_group_metrics_includes_bos_choch(
         self, mock_signal_data, mock_outcome_data
     ):
-        """Test that BOS/CHoCH signals are properly excluded."""
+        """Test that BOS/CHoCH signals are now included in metrics."""
         with (
             patch(
                 "src.validation.experiment_telemetry.checkpoint_updater.get_signal_data"
@@ -286,10 +286,8 @@ class TestCalculateGroupMetrics:
             # All signals including bos (c3) and choch (c5)
             result = calculate_group_metrics(["c1", "c2", "c3", "c4", "c5"])
 
-            # Should only count c1, c2, c4 (3 signals, all wins)
-            assert result["count"] == 3
-            assert result["win_count"] == 3
-            # c3 (bos) and c5 (choch) should be excluded
+            # All 5 signals should be counted (BOS/CHOCH no longer excluded)
+            assert result["count"] == 5
 
     def test_calculate_group_metrics_empty_list(self):
         """Test calculate_group_metrics with empty signal list."""
@@ -430,14 +428,14 @@ class TestCalculateExperimentMetrics:
 class TestBOSCHoCHExclusion:
     """Tests for BOS/CHoCH signal exclusion."""
 
-    def test_excluded_signal_types_defined(self):
-        """Test that excluded signal types are properly defined."""
-        assert "bos" in EXCLUDED_SIGNAL_TYPES
-        assert "choch" in EXCLUDED_SIGNAL_TYPES
-        assert len(EXCLUDED_SIGNAL_TYPES) == 2
+    def test_excluded_signal_types_empty(self):
+        """Test that excluded signal types set is now empty."""
+        assert "bos" not in EXCLUDED_SIGNAL_TYPES
+        assert "choch" not in EXCLUDED_SIGNAL_TYPES
+        assert len(EXCLUDED_SIGNAL_TYPES) == 0
 
-    def test_bos_signal_excluded(self, mock_signal_data, mock_outcome_data):
-        """Test that BOS signals are excluded from metrics."""
+    def test_bos_signal_included(self, mock_signal_data, mock_outcome_data):
+        """Test that BOS signals are now included in metrics."""
         with (
             patch(
                 "src.validation.experiment_telemetry.checkpoint_updater.get_signal_data"
@@ -453,14 +451,14 @@ class TestBOSCHoCHExclusion:
                 sig_id, {}
             )
 
-            # c3 is BOS - should be excluded
+            # c3 is BOS - should now be included
             result = calculate_group_metrics(["c3"])
 
-            assert result["count"] == 0  # Excluded
-            assert result["win_count"] == 0
+            assert result["count"] == 1  # Included
+            assert result["win_count"] == 0  # loss outcome
 
-    def test_choch_signal_excluded(self, mock_signal_data, mock_outcome_data):
-        """Test that CHoCH signals are excluded from metrics."""
+    def test_choch_signal_included(self, mock_signal_data, mock_outcome_data):
+        """Test that CHoCH signals are now included in metrics."""
         with (
             patch(
                 "src.validation.experiment_telemetry.checkpoint_updater.get_signal_data"
@@ -476,10 +474,10 @@ class TestBOSCHoCHExclusion:
                 sig_id, {}
             )
 
-            # c5 is CHoCH - should be excluded
+            # c5 is CHoCH - should now be included
             result = calculate_group_metrics(["c5"])
 
-            assert result["count"] == 0  # Excluded
+            assert result["count"] == 1  # Included
 
 
 # =============================================================================

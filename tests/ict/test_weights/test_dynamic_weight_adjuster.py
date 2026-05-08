@@ -6,7 +6,7 @@ Tests the time-based weight decay algorithm for ICT signals:
 - Signals 15-30 minutes old: 0.5x multiplier
 - Signals older than 30 minutes: excluded from confluence
 
-BOS/CHoCH signals are EXCLUDED per BL-BOS-CHOCH-001.
+BOS/CHoCH signals are INCLUDED (re-enabled after accuracy fix).
 """
 
 from ict.weights.dynamic_weight_adjuster import (
@@ -270,8 +270,8 @@ class TestDynamicWeightAdjuster:
         assert old[0].dynamic_multiplier == 0.5
         assert excluded[0].dynamic_multiplier == 0.0
 
-    def test_adjust_weights_excludes_bos_choch(self):
-        """Test that BOS/CHoCH signals are excluded per BL-BOS-CHOCH-001."""
+    def test_adjust_weights_includes_bos_choch(self):
+        """Test that BOS/CHoCH signals are included (re-enabled after accuracy fix)."""
         adjuster = DynamicWeightAdjuster()
         current_time = 10000.0
 
@@ -283,9 +283,12 @@ class TestDynamicWeightAdjuster:
 
         result = adjuster.adjust_weights(scores, current_time)
 
-        # Only CVD should be included
-        assert len(result.weighted_signals) == 1
-        assert result.weighted_signals[0].original_score.signal_type == "cvd"
+        # All three signals should be included
+        assert len(result.weighted_signals) == 3
+        signal_types = [ws.original_score.signal_type for ws in result.weighted_signals]
+        assert "cvd" in signal_types
+        assert "bos" in signal_types
+        assert "choc" in signal_types
 
     def test_adjust_weights_aggregate_metrics(self):
         """Test aggregate metrics calculation."""
