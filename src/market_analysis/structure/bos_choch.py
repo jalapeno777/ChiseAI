@@ -250,7 +250,7 @@ class BOSCHoCHClassifier:
                                 event_type = BOSCHoCHType.BULLISH_CHOCH
                                 is_bos = False
                                 new_trend = (
-                                    trend_direction  # CHoCH doesn't change trend
+                                    TrendDirection.BULLISH  # CHoCH reverses trend
                                 )
 
                             # Check for duplicate
@@ -283,11 +283,13 @@ class BOSCHoCHClassifier:
                                     )
                                 else:
                                     bullish_choch.append(event)
-                                    # CHoCH doesn't change trend, updates opposite structure
-                                    active_structure_low = StructureLevel(
+                                    # CHoCH reverses trend: this swing_high break
+                                    # becomes the new structure high
+                                    active_structure_high = StructureLevel(
                                         pivot=current,
                                         price=current.price,
                                     )
+                                    trend_direction = new_trend
 
                 # Update active structure high if no break (per design doc)
                 if not break_detected:
@@ -329,7 +331,7 @@ class BOSCHoCHClassifier:
                                 event_type = BOSCHoCHType.BEARISH_CHOCH
                                 is_bos = False
                                 new_trend = (
-                                    trend_direction  # CHoCH doesn't change trend
+                                    TrendDirection.BEARISH  # CHoCH reverses trend
                                 )
 
                             # Check for duplicate
@@ -362,11 +364,13 @@ class BOSCHoCHClassifier:
                                     )
                                 else:
                                     bearish_choch.append(event)
-                                    # CHoCH doesn't change trend, updates opposite structure
-                                    active_structure_high = StructureLevel(
+                                    # CHoCH reverses trend: this swing_low break
+                                    # becomes the new structure low
+                                    active_structure_low = StructureLevel(
                                         pivot=current,
                                         price=current.price,
                                     )
+                                    trend_direction = new_trend
 
                 # Update active structure low if no break (per design doc)
                 if not break_detected:
