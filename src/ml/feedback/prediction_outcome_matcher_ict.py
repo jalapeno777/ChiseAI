@@ -223,16 +223,16 @@ class ICTPredictionOutcomeMatcher:
         }
 
     def is_bos_choch(self, signal_type: ICTSignalType) -> bool:
-        """Check if a signal type is BOS/CHoCH (excluded).
+        """Check if a signal type is BOS/CHoCH.
 
         Args:
             signal_type: Signal type to check
 
         Returns:
-            True if BOS/CHoCH (excluded), False otherwise
+            True if BOS/CHoCH, False otherwise
         """
-        excluded = ["bos_choch", "bos", "choch"]
-        return signal_type.value.lower() in excluded
+        # BOS/CHOCH re-enabled — no longer excluded
+        return False
 
     async def match_signal_with_outcome(
         self,
@@ -248,26 +248,10 @@ class ICTPredictionOutcomeMatcher:
             current_time_ms: Current time in milliseconds
 
         Returns:
-            ICTPredictionMatch if matched, None if excluded (BOS/CHoCH)
+            ICTPredictionMatch if matched, None if invalid
         """
         if current_time_ms is None:
             current_time_ms = int(datetime.now(UTC).timestamp() * 1000)
-
-        # Check for excluded BOS/CHoCH
-        if self.is_bos_choch(signal.signal_type):
-            logger.warning(
-                f"BOS/CHoCH signal excluded from matching per BL-BOS-CHOCH-001: "
-                f"signal_id={signal.signal_id}"
-            )
-            return ICTPredictionMatch(
-                signal_id=signal.signal_id,
-                signal_type=signal.signal_type,
-                direction=signal.direction.value,
-                predicted_direction=signal.direction.value,
-                match_status=ICTMatchStatus.EXCLUDED,
-                match_confidence=ICTMatchConfidence.UNKNOWN,
-                timestamp=signal.timestamp,
-            )
 
         # Validate signal type
         if signal.signal_type not in self.VALID_SIGNAL_TYPES:

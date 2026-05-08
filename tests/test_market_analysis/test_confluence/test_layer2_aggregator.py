@@ -408,16 +408,12 @@ class TestSignalWeights:
         weight = get_signal_weight("order_block")
         assert weight == 0.85
 
-    def test_bos_excluded(self):
-        """Test BOS raises ValueError."""
-        with pytest.raises(ValueError) as exc_info:
-            get_signal_weight("bos")
-        assert "EXCLUDED" in str(exc_info.value)
-        assert "BL-BOS-CHOCH-001" in str(exc_info.value)
+    def test_bos_included(self):
+        """Test BOS now returns a weight (re-enabled)."""
+        weight = get_signal_weight("bos")
+        assert isinstance(weight, (int, float))
 
-    def test_choc_excluded(self):
-        """Test CHoCH raises ValueError."""
-        with pytest.raises(ValueError) as exc_info:
-            get_signal_weight("choc")
-        assert "EXCLUDED" in str(exc_info.value)
-        assert "BL-BOS-CHOCH-001" in str(exc_info.value)
+    def test_choc_included(self):
+        """Test CHoCH now returns a weight (re-enabled)."""
+        weight = get_signal_weight("choc")
+        assert isinstance(weight, (int, float))

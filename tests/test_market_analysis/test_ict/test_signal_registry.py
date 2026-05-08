@@ -59,22 +59,21 @@ class TestICTSignalType:
         """Test LOW_OLD (Old Low) signal type exists (S1A-2)."""
         assert ICTSignalType.LOW_OLD.value == "low_old"
 
-    def test_bos_choch_is_excluded(self) -> None:
-        """Test that BOS/CHoCH is excluded per BL-BOS-CHOCH-001."""
+    def test_bos_choch_is_included(self) -> None:
+        """Test that BOS/CHoCH is now included (re-enabled)."""
         excluded = ICTSignalType.get_excluded_signals()
-        assert "bos_choch" in excluded
+        assert "bos_choch" not in excluded
 
-    def test_excluded_signals_list(self) -> None:
-        """Test get_excluded_signals returns correct list."""
+    def test_excluded_signals_list_empty(self) -> None:
+        """Test get_excluded_signals returns empty list."""
         excluded = ICTSignalType.get_excluded_signals()
         assert isinstance(excluded, list)
-        assert "bos_choch" in excluded
+        assert len(excluded) == 0
 
-    def test_signal_types_do_not_include_bos_choch(self) -> None:
-        """Test that BOS_CHOCH is not a valid ICTSignalType member."""
-        # This verifies the exclusion at the enum level
+    def test_signal_types_include_bos_choch(self) -> None:
+        """Test that BOS_CHOCH is a valid ICTSignalType member."""
         all_values = [e.value for e in ICTSignalType]
-        assert "bos_choch" not in all_values
+        assert "bos_choch" in all_values
 
 
 class TestFeatureFlagManager:
@@ -234,11 +233,11 @@ class TestICTSignalRegistry:
         assert len(types_disabled) == 6
         assert ICTSignalType.CVD not in types_disabled
 
-    def test_excluded_signals_documented(self) -> None:
-        """Test that excluded signals are properly documented."""
+    def test_no_excluded_signals(self) -> None:
+        """Test that there are no excluded signals."""
         registry = ICTSignalRegistry()
         excluded = registry.get_excluded_signals()
-        assert "bos_choch" in excluded
+        assert "bos_choch" not in excluded
 
     def test_registry_to_dict(self) -> None:
         """Test converting registry to dictionary."""
@@ -527,29 +526,31 @@ class TestICTSignalAdapter:
         assert result.token == "ETH/USDT"
 
 
-class TestBOSCHOCHExclusion:
-    """Tests verifying BOS/CHoCH exclusion per BL-BOS-CHOCH-001."""
+class TestBOSCHOCHInclusion:
+    """Tests verifying BOS/CHoCH is now included in the pipeline."""
 
-    def test_bos_choch_not_in_signal_types(self) -> None:
-        """Test that BOS_CHOCH is not a valid ICTSignalType."""
+    def test_bos_choch_in_signal_types(self) -> None:
+        """Test that BOS_CHOCH is a valid ICTSignalType."""
         all_types = [e for e in ICTSignalType]
         type_values = [e.value for e in all_types]
-        assert "bos_choch" not in type_values
+        assert "bos_choch" in type_values
 
-    def test_bos_choch_not_in_registry_defaults(self) -> None:
-        """Test that BOS_CHOCH is not registered by default."""
+    def test_bos_choch_in_registry(self) -> None:
+        """Test that BOS_CHOCH is registered."""
         registry = ICTSignalRegistry()
         registered_types = registry.list_signal_types()
 
-        # Ensure bos_choch is not in registered types
-        for sig_type in registered_types:
-            assert sig_type.value != "bos_choch"
+        # BOS_CHOCH should be in registered types
+        bos_choch_found = any(
+            sig_type.value == "bos_choch" for sig_type in registered_types
+        )
+        assert bos_choch_found
 
-    def test_bos_choch_exclusion_documented(self) -> None:
-        """Test that BOS/CHoCH exclusion is documented."""
+    def test_bos_choch_not_in_excluded_list(self) -> None:
+        """Test that BOS/CHoCH is not in the excluded list."""
         excluded = ICTSignalType.get_excluded_signals()
-        assert "bos_choch" in excluded
+        assert "bos_choch" not in excluded
 
         # Also verify via registry
         registry = ICTSignalRegistry()
-        assert "bos_choch" in registry.get_excluded_signals()
+        assert "bos_choch" not in registry.get_excluded_signals()

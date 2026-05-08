@@ -13,7 +13,7 @@ from src.validation.experiment_telemetry.smoke_checker import (
     EXCLUDED_SIGNAL_TYPES,
     EXIT_CODES,
     CheckResult,
-    check_bos_choch_exclusion,
+    check_bos_choch_inclusion,
     check_data_freshness,
     check_redis_connectivity,
     format_human_output,
@@ -40,12 +40,12 @@ def sample_signals():
     return {
         "c1": {"signal_type": "fvg", "direction": "long"},
         "c2": {"signal_type": "order_block", "direction": "long"},
-        "c3": {"signal_type": "bos", "direction": "long"},  # Excluded
+        "c3": {"signal_type": "bos", "direction": "long"},  # Included
         "c4": {"signal_type": "fvg", "direction": "short"},
-        "c5": {"signal_type": "choch", "direction": "long"},  # Excluded
+        "c5": {"signal_type": "choch", "direction": "long"},  # Included
         "t1": {"signal_type": "fvg", "direction": "long"},
         "t2": {"signal_type": "order_block", "direction": "long"},
-        "t3": {"signal_type": "bos", "direction": "long"},  # Excluded
+        "t3": {"signal_type": "bos", "direction": "long"},  # Included
         "t4": {"signal_type": "fvg", "direction": "short"},
     }
 
@@ -84,15 +84,15 @@ class TestRedisConnectivity:
 
 
 # =============================================================================
-# BOS/CHoCH Exclusion Tests
+# BOS/CHoCH Inclusion Tests
 # =============================================================================
 
 
-class TestBOSCHoCHExclusion:
-    """Tests for BOS/CHoCH exclusion checking."""
+class TestBOSCHoCHInclusion:
+    """Tests for BOS/CHoCH inclusion (re-enabled after accuracy fix)."""
 
-    def test_bos_choch_exclusion_clean(self, sample_signals):
-        """Test when no BOS/CHoCH signals are found."""
+    def test_bos_choch_inclusion_found(self, sample_signals):
+        """Test when BOS/CHoCH signals are found (expected now)."""
         with (
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.get_signal_ids"
@@ -101,42 +101,39 @@ class TestBOSCHoCHExclusion:
                 "src.validation.experiment_telemetry.smoke_checker.get_signal_data"
             ) as mock_get_signal,
         ):
-            # Return signals that don't include bos/choch
-            mock_get_ids.return_value = ["c1", "c2", "c4"]  # Only valid signals
-            mock_get_signal.side_effect = lambda sig_id: sample_signals.get(sig_id, {})
-
-            is_clean, found = check_bos_choch_exclusion()
-
-            assert is_clean is True
-            assert len(found) == 0
-
-    def test_bos_choch_exclusion_violation(self, sample_signals):
-        """Test when BOS/CHoCH signals are detected."""
-        with (
-            patch(
-                "src.validation.experiment_telemetry.smoke_checker.get_signal_ids"
-            ) as mock_get_ids,
-            patch(
-                "src.validation.experiment_telemetry.smoke_checker.get_signal_data"
-            ) as mock_get_signal,
-        ):
-            # Include bos and choch signals
+            # Include bos and choch signals (now expected)
             mock_get_ids.return_value = ["c1", "c2", "c3", "c4", "c5"]
             mock_get_signal.side_effect = lambda sig_id: sample_signals.get(sig_id, {})
 
-            is_clean, found = check_bos_choch_exclusion()
+            has_signals, found = check_bos_choch_inclusion()
 
-            assert is_clean is False
+            # Since BOS/CHoCH are now included, should find them
+            assert has_signals is True
             assert len(found) > 0
-            # Should find c3 (bos) and c5 (choch)
-            found_types = [f.split(":")[1] for f in found]
-            assert "bos" in found_types
-            assert "choch" in found_types
 
-    def test_excluded_signal_types_defined(self):
-        """Test that excluded signal types are properly defined."""
-        assert "bos" in EXCLUDED_SIGNAL_TYPES
-        assert "choch" in EXCLUDED_SIGNAL_TYPES
+    def test_bos_choch_inclusion_empty_excluded(self, sample_signals):
+        """Test that BOS/CHoCH signals pass through with empty exclusion list."""
+        with (
+            patch(
+                "src.validation.experiment_telemetry.smoke_checker.get_signal_ids"
+            ) as mock_get_ids,
+            patch(
+                "src.validation.experiment_telemetry.smoke_checker.get_signal_data"
+            ) as mock_get_signal,
+        ):
+            mock_get_ids.return_value = ["c3", "c5"]  # Only bos/choch
+            mock_get_signal.side_effect = lambda sig_id: sample_signals.get(sig_id, {})
+
+            has_signals, found = check_bos_choch_inclusion()
+
+            # With empty EXCLUDED_SIGNAL_TYPES, BOS/CHoCH signals are found
+            assert has_signals is True
+
+    def test_excluded_signal_types_empty(self):
+        """Test that excluded signal types set is now empty."""
+        assert "bos" not in EXCLUDED_SIGNAL_TYPES
+        assert "choch" not in EXCLUDED_SIGNAL_TYPES
+        assert len(EXCLUDED_SIGNAL_TYPES) == 0
 
 
 # =============================================================================
@@ -263,7 +260,7 @@ class TestRunSmokeChecks:
                 "src.validation.experiment_telemetry.smoke_checker.redis_state_llen"
             ) as mock_llen,
             patch(
-                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_exclusion"
+                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_inclusion"
             ) as mock_bos_choch,
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.get_signal_counts"
@@ -293,7 +290,7 @@ class TestRunSmokeChecks:
                 "src.validation.experiment_telemetry.smoke_checker.redis_state_llen"
             ) as mock_llen,
             patch(
-                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_exclusion"
+                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_inclusion"
             ) as mock_bos_choch,
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.get_signal_counts"
@@ -316,14 +313,14 @@ class TestRunSmokeChecks:
             assert results["overall_result"] == CheckResult.FAIL.value
             assert any("FAIL" in msg for msg in results["messages"])
 
-    def test_smoke_checks_critical_bos_choch(self, sample_signals):
-        """Test smoke check returns CRITICAL when BOS/CHoCH found."""
+    def test_smoke_checks_bos_choch_passes(self, sample_signals):
+        """Test smoke check passes when BOS/CHoCH are included (not excluded)."""
         with (
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.redis_state_llen"
             ) as mock_llen,
             patch(
-                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_exclusion"
+                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_inclusion"
             ) as mock_bos_choch,
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.get_signal_counts"
@@ -333,7 +330,8 @@ class TestRunSmokeChecks:
             ) as mock_freshness,
         ):
             mock_llen.return_value = 5
-            mock_bos_choch.return_value = (False, ["c3:bos", "t3:bos"])
+            # With empty EXCLUDED_SIGNAL_TYPES, inclusion check returns clean
+            mock_bos_choch.return_value = (True, [])
             mock_counts.return_value = {
                 "control_count": 10,
                 "treatment_count": 10,
@@ -343,9 +341,8 @@ class TestRunSmokeChecks:
 
             results = run_smoke_checks()
 
-            assert results["overall_result"] == CheckResult.CRITICAL.value
-            assert any("CRITICAL" in msg for msg in results["messages"])
-            assert any("BOS/CHoCH" in msg for msg in results["messages"])
+            # Should pass since BOS/CHoCH are no longer excluded
+            assert results["overall_result"] == CheckResult.PASS.value
 
 
 # =============================================================================
@@ -500,7 +497,7 @@ class TestExitCodes:
                 "src.validation.experiment_telemetry.smoke_checker.redis_state_llen"
             ) as mock_llen,
             patch(
-                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_exclusion"
+                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_inclusion"
             ) as mock_bos_choch,
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.get_signal_counts"
@@ -530,7 +527,7 @@ class TestExitCodes:
                 "src.validation.experiment_telemetry.smoke_checker.redis_state_llen"
             ) as mock_llen,
             patch(
-                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_exclusion"
+                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_inclusion"
             ) as mock_bos_choch,
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.get_signal_counts"
@@ -553,14 +550,14 @@ class TestExitCodes:
 
             assert exit_code == 1
 
-    def test_smoke_check_returns_correct_exit_code_critical(self):
-        """Test that smoke check returns exit code 2 for critical issues."""
+    def test_smoke_check_bos_choch_no_longer_critical(self):
+        """Test that smoke check returns PASS since BOS/CHoCH are included."""
         with (
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.redis_state_llen"
             ) as mock_llen,
             patch(
-                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_exclusion"
+                "src.validation.experiment_telemetry.smoke_checker.check_bos_choch_inclusion"
             ) as mock_bos_choch,
             patch(
                 "src.validation.experiment_telemetry.smoke_checker.get_signal_counts"
@@ -570,7 +567,8 @@ class TestExitCodes:
             ) as mock_freshness,
         ):
             mock_llen.return_value = 5
-            mock_bos_choch.return_value = (False, ["c3:bos"])
+            # BOS/CHoCH no longer triggers critical
+            mock_bos_choch.return_value = (True, [])
             mock_counts.return_value = {
                 "control_count": 10,
                 "treatment_count": 10,
@@ -581,7 +579,7 @@ class TestExitCodes:
             results = run_smoke_checks()
             exit_code = EXIT_CODES.get(CheckResult(results["overall_result"]))
 
-            assert exit_code == 2
+            assert exit_code == 0
 
 
 # =============================================================================

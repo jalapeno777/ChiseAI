@@ -3,7 +3,7 @@
 This module defines signal type enums and related constants used
 throughout the signal generation system.
 
-EXCLUDED: BOS/CHoCH signals are explicitly excluded per BL-BOS-CHOCH-001.
+RE-ENABLED: BOS/CHoCH signals are now included in the signal pipeline (accuracy fix applied).
 These signals should not be registered in the ICT signal registry.
 """
 
@@ -50,7 +50,7 @@ class ICTSignalType(Enum):
     CVD = "cvd"
     FVG = "fvg"
     ORDER_BLOCK = "order_block"
-    # BOS_CHOCH = "bos_choch"  # EXCLUDED per BL-BOS-CHOCH-001
+    BOS_CHOCH = "bos_choch"
 
     # Price structure signals (H/L/H-OLD/L-OLD)
     H = "h"  # Current period high
@@ -77,9 +77,9 @@ class ICTSignalType(Enum):
         """Get list of excluded signal names.
 
         Returns:
-            List of signal names that are excluded per BL-BOS-CHOCH-001
+            List of signal names that are excluded (currently none).
         """
-        return ["bos_choch"]
+        return []
 
 
 class SignalPriority(Enum):

@@ -266,6 +266,24 @@ class ICTSignalRegistry:
             ),
             "enable_hl_signals",
         ),
+        # BOS/CHoCH - Break of Structure / Change of Character
+        # Re-enabled after accuracy fix (was excluded via BL-BOS-CHOCH-001)
+        (
+            ICTSignalType.BOS_CHOCH,
+            SignalMetadata(
+                name="Break of Structure / Change of Character",
+                description=(
+                    "BOS/CHoCH identifies structural market shifts by detecting "
+                    "breaks of significant swing points (BOS) or character changes "
+                    "where the market transitions from bullish to bearish structure "
+                    "or vice versa (CHoCH)."
+                ),
+                confidence_base=0.65,
+                timeframe_default="1H",
+                tags=["structure", "bos", "choch", "institutional"],
+            ),
+            "enable_bos_choch_signals",
+        ),
     ]
 
     # --- Detection priority configuration (ST-ICT-ST2) ---
@@ -277,12 +295,10 @@ class ICTSignalRegistry:
     #   BOS/CHoCH > Order Blocks > FVG > Liquidity Sweeps > Price Structure
     #   (lower numeric value = higher priority)
     #
-    # Note: BOS/CHOCH is excluded per BL-BOS-CHOCH-001 but its priority
-    # is preserved here for when it is re-enabled.
+    # Note: BOS/CHOCH priority ordering (re-enabled).
     SIGNAL_PRIORITY_ORDER: dict[ICTSignalType, int] = {
-        # Priority 1: BOS/CHoCH (excluded per BL-BOS-CHOCH-001)
-        # Uncomment when re-enabled:
-        # ICTSignalType.BOS_CHOCH: SignalPriority.BOS_CHOCH.value,
+        # Priority 1: BOS/CHoCH
+        ICTSignalType.BOS_CHOCH: SignalPriority.BOS_CHOCH.value,
         # Priority 2: Order Blocks - institutional order flow zones
         ICTSignalType.ORDER_BLOCK: SignalPriority.ORDER_BLOCK.value,
         # Priority 3: FVG - imbalance / fair value zones

@@ -375,34 +375,32 @@ class ExperimentTracker:
         """
         return self._runner.generate_report()
 
-    def validate_bos_choch_excluded(self) -> dict[str, Any]:
-        """Validate that BOS/CHoCH signals are properly excluded.
+    def validate_bos_choch_included(self) -> dict[str, Any]:
+        """Validate that BOS/CHoCH signals are properly included in the pipeline.
 
-        This is a sanity check to ensure the experiment properly
-        excludes BOS and CHoCH signals per BL-BOS-CHOCH-001.
+        This is a sanity check to ensure BOS and CHoCH signals flow through
+        the pipeline after re-enablement (BL-BOS-CHOCH-001 lifted).
 
         Returns:
             Dictionary with validation results
         """
         results = {
-            "bos_excluded": True,
-            "choch_excluded": True,
+            "bos_choch_enabled": True,
             "validation_passed": True,
             "signals_tried": [],
         }
 
-        # Try to process BOS/CHoCH signals - they should raise errors
+        # Verify BOS/CHoCH signals are accepted
         for signal_type in ["bos", "choch"]:
             try:
                 self.process_treatment_signal(
                     signal_type=signal_type,
                     entry_price=1.1000,
                 )
-                # If we get here, the signal was not excluded
-                results[f"{signal_type}_excluded"] = False
-                results["validation_passed"] = False
-                results["signals_tried"].append(f"{signal_type}: NOT EXCLUDED (ERROR)")
+                results["signals_tried"].append(f"{signal_type}: accepted")
             except ValueError:
-                results["signals_tried"].append(f"{signal_type}: correctly excluded")
+                results[f"{signal_type}_enabled"] = False
+                results["validation_passed"] = False
+                results["signals_tried"].append(f"{signal_type}: rejected (ERROR)")
 
         return results

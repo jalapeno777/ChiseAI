@@ -161,19 +161,15 @@ class TestICTSignalTracker:
         assert record.signal_id == "ob-1"
         assert record.signal_type == ICTSignalType.ORDER_BLOCK
 
-    def test_bos_choch_filtered(self, tracker: ICTSignalTracker) -> None:
-        """Test that BOS/CHoCH signals are filtered out."""
-        # We cannot test directly with BOS_CHOCH since it's excluded from the enum,
-        # but we can verify the filtering logic with excluded types
-
-        # Verify excluded types return True for is_bos_choch
-        # Note: Since BOS_CHOCH is not in ICTSignalType enum, we test the concept
-        # by verifying that only CVD, FVG, ORDER_BLOCK are valid
+    def test_bos_choch_included(self, tracker: ICTSignalTracker) -> None:
+        """Test that BOS/CHoCH signals are now included (re-enabled)."""
+        # BOS_CHOCH is now re-enabled in the enum
         valid_types = tracker.VALID_SIGNAL_TYPES
         assert ICTSignalType.CVD in valid_types
         assert ICTSignalType.FVG in valid_types
         assert ICTSignalType.ORDER_BLOCK in valid_types
-        assert len(valid_types) == 3
+        # BOS_CHOCH is now included
+        assert ICTSignalType.BOS_CHOCH in valid_types
 
     def test_get_signals_by_type(self, tracker: ICTSignalTracker) -> None:
         """Test getting signals by type."""

@@ -328,8 +328,8 @@ class TestICTSignalType:
         assert ICTSignalType.is_valid_signal("cvd") is True
         assert ICTSignalType.is_valid_signal("fvg") is True
         assert ICTSignalType.is_valid_signal("order_block") is True
-        assert ICTSignalType.is_valid_signal("bos") is False
-        assert ICTSignalType.is_valid_signal("choc") is False
+        assert ICTSignalType.is_valid_signal("bos") is True
+        assert ICTSignalType.is_valid_signal("choc") is True
         assert ICTSignalType.is_valid_signal("unknown") is False
 
     def test_get_supported_signals(self):
@@ -340,15 +340,15 @@ class TestICTSignalType:
         assert "cvd" in supported_values
         assert "fvg" in supported_values
         assert "order_block" in supported_values
-        assert "bos" not in supported_values
-        assert "choc" not in supported_values
+        assert "bos" in supported_values
+        assert "choc" in supported_values
 
-    def test_bos_excluded_value(self):
-        """Test BOS enum value exists but is excluded."""
+    def test_bos_included_value(self):
+        """Test BOS enum value exists and is included."""
         assert ICTSignalType.BOS.value == "bos"
-        assert ICTSignalType.is_valid_signal("bos") is False
+        assert ICTSignalType.is_valid_signal("bos") is True
 
-    def test_choc_excluded_value(self):
-        """Test CHoCH enum value exists but is excluded."""
+    def test_choc_included_value(self):
+        """Test CHoCH enum value exists and is included."""
         assert ICTSignalType.CHOC.value == "choc"
-        assert ICTSignalType.is_valid_signal("choc") is False
+        assert ICTSignalType.is_valid_signal("choc") is True

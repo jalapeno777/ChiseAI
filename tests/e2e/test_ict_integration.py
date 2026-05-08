@@ -5,19 +5,20 @@ Tests the complete flow:
 2. Two-layer scorer scores signals for confluence
 3. ICT signal emitter processes signals with feature flags
 4. Signals are emitted to the signal bus
-5. BOS/CHoCH signals are excluded per BL-BOS-CHOCH-001
+5. BOS/CHoCH signals are included (re-enabled after accuracy fix)
 
-BOS/CHoCH EXCLUDED per BL-BOS-CHOCH-001.
+BOS/CHoCH RE-ENABLED after accuracy fix.
 """
 
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from market_analysis.confluence.signal_weights import (
     get_all_weights,
@@ -124,14 +125,14 @@ class TestSignalWeights:
         weight = get_signal_weight("order_block")
         assert weight == 0.85
 
-    def test_bos_choch_raises_error(self):
-        """BOS/CHoCH is EXCLUDED per BL-BOS-CHOCH-001."""
-        # Note: The actual enum value is "choc" not "choch"
-        with pytest.raises(ValueError, match="EXCLUDED per BL-BOS-CHOCH-001"):
-            get_signal_weight("bos")
+    def test_bos_choch_returns_weight(self):
+        """BOS/CHoCH is re-enabled after accuracy fix."""
+        # BOS should now return a weight
+        weight = get_signal_weight("bos")
+        assert isinstance(weight, (int, float))
 
-        with pytest.raises(ValueError, match="EXCLUDED per BL-BOS-CHOCH-001"):
-            get_signal_weight("choc")
+        weight = get_signal_weight("choc")
+        assert isinstance(weight, (int, float))
 
     def test_all_weights_dict(self):
         """All weights dictionary contains correct values."""
@@ -139,8 +140,9 @@ class TestSignalWeights:
         assert weights["cvd"] == 1.0
         assert weights["fvg"] == 1.0
         assert weights["order_block"] == 0.85
-        assert "bos" not in weights
-        assert "choch" not in weights
+        # BOS/CHOCH are now included
+        assert "bos" in weights
+        assert "choch" in weights
 
 
 # =============================================================================
@@ -198,59 +200,54 @@ class TestFeatureFlags:
 
 
 # =============================================================================
-# Test: BOS/CHoCH Exclusion (BL-BOS-CHOCH-001)
-# =============================================================================
+# Test: BOS/CHoCH Inclusion (re-enabled after accuracy fix)
 
 
-class TestBosChochExclusion:
-    """Test BOS/CHoCH exclusion per BL-BOS-CHOCH-001."""
+class TestBosChochInclusion:
+    """Test BOS/CHoCH inclusion (re-enabled after accuracy fix)."""
 
-    def test_bos_signal_is_excluded(self, ict_registry, two_layer_scorer):
-        """BOS signal is always excluded."""
+    def test_bos_signal_is_enabled(self, ict_registry, two_layer_scorer):
+        """BOS signal is now enabled."""
         emitter = ICTSignalEmitter(
             config=ICTEmissionConfig(),
             registry=ict_registry,
             two_layer_scorer=two_layer_scorer,
         )
-        assert emitter.is_signal_enabled("bos") is False
+        assert emitter.is_signal_enabled("bos") is True
 
-    def test_choch_signal_is_excluded(self, ict_registry, two_layer_scorer):
-        """CHoCH signal is always excluded."""
+    def test_choch_signal_is_enabled(self, ict_registry, two_layer_scorer):
+        """CHoCH signal is now enabled."""
         emitter = ICTSignalEmitter(
             config=ICTEmissionConfig(),
             registry=ict_registry,
             two_layer_scorer=two_layer_scorer,
         )
-        assert emitter.is_signal_enabled("choch") is False
+        assert emitter.is_signal_enabled("choch") is True
 
-    def test_bos_choch_signal_is_excluded(self, ict_registry, two_layer_scorer):
-        """BOS_CHoCH combined signal is always excluded."""
+    def test_bos_choch_signal_is_enabled(self, ict_registry, two_layer_scorer):
+        """BOS_CHoCH combined signal is now enabled."""
         emitter = ICTSignalEmitter(
             config=ICTEmissionConfig(),
             registry=ict_registry,
             two_layer_scorer=two_layer_scorer,
         )
-        assert emitter.is_signal_enabled("bos_choch") is False
+        assert emitter.is_signal_enabled("bos_choch") is True
 
     @pytest.mark.asyncio
-    async def test_bos_signal_emission_returns_skipped(self, ict_emitter):
-        """BOS signal emission returns skipped result."""
+    async def test_bos_signal_emission_returns_success(self, ict_emitter):
+        """BOS signal emission returns success result."""
         result = await ict_emitter.emit_signal(
             signal_type="bos",
             token="BTC/USDT",
             timeframe="1H",
             signal_data={},
         )
-        assert result.skipped is True
-        assert "EXCLUDED per BL-BOS-CHOCH-001" in result.skip_reason
+        assert result.emission_success is True
 
-    def test_bos_choch_in_excluded_signals_list(self, ict_emitter):
-        """BOS_CHoCH appears in excluded signals list of emission cycles."""
-        # Note: excluded_signals is in the ICTEmissionCycle, not in get_status()
-        # get_status() confirms bos_choch_excluded flag instead
+    def test_bos_choch_not_in_excluded_signals_list(self, ict_emitter):
+        """BOS_CHoCH no longer appears in excluded signals list."""
         status = ict_emitter.get_status()
-        assert status["bos_choch_excluded"] is True
-        assert status["bos_choch_exclusion_reference"] == "BL-BOS-CHOCH-001"
+        assert status["bos_choch_excluded"] is False
 
 
 # =============================================================================
@@ -267,10 +264,10 @@ class TestTwoLayerScorer:
         assert two_layer_scorer.is_signal_supported("fvg") is True
         assert two_layer_scorer.is_signal_supported("order_block") is True
 
-    def test_scorer_does_not_support_bos_choch(self, two_layer_scorer):
-        """Two-layer scorer does not support BOS/CHoCH."""
-        assert two_layer_scorer.is_signal_supported("bos") is False
-        assert two_layer_scorer.is_signal_supported("choch") is False
+    def test_scorer_supports_bos_choch(self, two_layer_scorer):
+        """Two-layer scorer now supports BOS/CHoCH (re-enabled)."""
+        assert two_layer_scorer.is_signal_supported("bos") is True
+        assert two_layer_scorer.is_signal_supported("choc") is True
 
     def test_scorer_returns_supported_signals(self, two_layer_scorer):
         """Scorer returns correct list of supported signals."""
@@ -278,8 +275,9 @@ class TestTwoLayerScorer:
         assert "cvd" in supported
         assert "fvg" in supported
         assert "order_block" in supported
-        assert "bos" not in supported
-        assert "choch" not in supported
+        # BOS/CHOCH are now included
+        assert "bos" in supported
+        assert "choch" in supported
 
     def test_feature_flag_controls_signal(self, two_layer_scorer):
         """Feature flags control which signals are scored."""
@@ -362,8 +360,8 @@ class TestFullPipelineIntegration:
 
         # Verify cycle processed both signals
         assert cycle.signals_processed >= 2
-        # Note: excluded_signals is set in ICTEmissionCycle, not from get_status()
-        assert "bos_choch" in cycle.excluded_signals
+        # Note: excluded_signals is now empty since BOS/CHOCH is included
+        assert "bos_choch" not in cycle.excluded_signals
 
     @pytest.mark.asyncio
     async def test_signal_excluded_when_feature_flag_disabled(self, ict_emitter):
@@ -407,12 +405,11 @@ class TestEmitterStatus:
         assert "enable_fvg_signals" in status["feature_flags"]
         assert "enable_order_block_signals" in status["feature_flags"]
 
-    def test_emitter_status_contains_bos_choch_exclusion(self, ict_emitter):
-        """Emitter status confirms BOS/CHoCH exclusion."""
+    def test_emitter_status_contains_bos_choch_inclusion(self, ict_emitter):
+        """Emitter status confirms BOS/CHoCH is included."""
         status = ict_emitter.get_status()
 
-        assert status["bos_choch_excluded"] is True
-        assert status["bos_choch_exclusion_reference"] == "BL-BOS-CHOCH-001"
+        assert status["bos_choch_excluded"] is False
 
     def test_emitter_status_contains_emitters_list(self, ict_emitter, mock_emitter):
         """Emitter status includes list of registered emitters."""

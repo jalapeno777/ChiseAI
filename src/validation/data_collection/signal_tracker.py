@@ -5,8 +5,7 @@ Distinguishes between:
 - Control group: Signals WITHOUT ICT confluence scoring (baseline)
 - Treatment group: Signals WITH ICT confluence scoring (ICT-enhanced)
 
-Supports signal types: CVD, FVG, Order Block
-Excludes: BOS, CHoCH (per BL-BOS-CHOCH-001)
+Supports signal types: CVD, FVG, Order Block, BOS, CHoCH
 
 Redis Schema:
 - signal:{signal_id} - Hash with signal data
@@ -45,10 +44,13 @@ class SignalType(Enum):
     CVD = "cvd"
     FVG = "fvg"
     ORDER_BLOCK = "order_block"
+    BOS_CHOCH = "bos_choch"
+    BOS = "bos"
+    CHOCH = "choch"
 
     @classmethod
     def is_valid(cls, signal_type: str) -> bool:
-        """Check if signal type is valid (excludes BOS/CHoCH)."""
+        """Check if signal type is valid."""
         try:
             cls(signal_type.lower())
             return True
@@ -57,8 +59,8 @@ class SignalType(Enum):
 
     @classmethod
     def excluded_types(cls) -> list[str]:
-        """Return list of excluded signal types."""
-        return ["bos", "choch"]
+        """Return list of excluded signal types (currently none)."""
+        return []
 
 
 @dataclass
@@ -248,16 +250,10 @@ class SignalTracker:
             TrackedSignal instance
 
         Raises:
-            ValueError: If signal type is BOS/CHoCH or invalid
+            ValueError: If signal type is invalid
         """
-        # Validate signal type (exclude BOS/CHoCH)
+        # Validate signal type
         if not SignalType.is_valid(signal_type):
-            excluded = SignalType.excluded_types()
-            if signal_type.lower() in excluded:
-                raise ValueError(
-                    f"Signal type '{signal_type}' is excluded per BL-BOS-CHOCH-001. "
-                    f"Supported types: {[t.value for t in SignalType]}"
-                )
             raise ValueError(f"Invalid signal type: {signal_type}")
 
         # Create signal

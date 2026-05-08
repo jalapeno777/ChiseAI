@@ -5,15 +5,16 @@ Tests the two-layer scorer with real signal data:
 2. Layer 2: Confluence aggregation with weights from EP-ICT-004 validation
 3. Confluence score calculation with direction consensus
 
-BOS/CHoCH signals are EXCLUDED per BL-BOS-CHOCH-001.
+BOS/CHoCH signals are INCLUDED (re-enabled after accuracy fix).
 """
 
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 
-sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from market_analysis.confluence.layer1_signal_scorer import Layer1SignalScorer
 from market_analysis.confluence.layer2_confluence_aggregator import (
@@ -406,18 +407,19 @@ class TestICTSignalType:
         assert ICTSignalType.is_valid_signal("fvg") is True
         assert ICTSignalType.is_valid_signal("order_block") is True
 
-    def test_bos_choch_are_excluded(self):
-        """BOS and CHoCH are NOT valid (excluded)."""
-        assert ICTSignalType.is_valid_signal("bos") is False
-        assert ICTSignalType.is_valid_signal("choc") is False
+    def test_bos_choch_are_included(self):
+        """BOS and CHoCH are now valid (re-enabled)."""
+        assert ICTSignalType.is_valid_signal("bos") is True
+        assert ICTSignalType.is_valid_signal("choc") is True
 
     def test_get_supported_signals(self):
-        """get_supported_signals returns only non-excluded signals."""
+        """get_supported_signals returns all signals including BOS/CHOCH."""
         supported = ICTSignalType.get_supported_signals()
         supported_values = [s.value for s in supported]
 
         assert "cvd" in supported_values
         assert "fvg" in supported_values
         assert "order_block" in supported_values
-        assert "bos" not in supported_values
-        assert "choc" not in supported_values
+        # BOS/CHOCH are now included
+        assert "bos" in supported_values
+        assert "choc" in supported_values

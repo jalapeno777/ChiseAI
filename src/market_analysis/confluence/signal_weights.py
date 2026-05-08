@@ -3,14 +3,13 @@
 This module defines signal reliability weights derived from EP-ICT-004 validation.
 These weights are used by Layer 2 confluence aggregation to weight signals appropriately.
 
-EXCLUDED SIGNALS (per BL-BOS-CHOCH-001):
-- BOS (Break of Structure) - excluded from scoring
-- CHoCH (Change of Character) - excluded from scoring
+RE-ENABLED: BOS/CHoCH signals are now included in the signal pipeline (accuracy fix applied).
 
 VALIDATED SIGNALS:
 - CVD (Cumulative Volume Delta): 100% validation → weight 1.0
 - FVG (Fair Value Gap): 100% validation → weight 1.0
 - Order Block: 80.77% validation → weight 0.85
+- BOS/CHoCH: Re-enabled — weight 0.65 (initial confidence base)
 """
 
 from dataclasses import dataclass
@@ -20,17 +19,14 @@ from enum import Enum
 class ICTSignalType(str, Enum):
     """ICT signal types available for confluence scoring.
 
-    Note: BOS and CHoCH are explicitly EXCLUDED per BL-BOS-CHOCH-001.
-    These signals are not supported by the two-layer scorer.
+    BOS/CHoCH signals are now re-enabled after accuracy fix.
     """
 
     CVD = "cvd"
     FVG = "fvg"
     ORDER_BLOCK = "order_block"
-
-    # EXCLUDED - do not use
-    BOS = "bos"  # EXCLUDED per BL-BOS-CHOCH-001
-    CHOC = "choc"  # EXCLUDED per BL-BOS-CHOCH-001
+    BOS = "bos"  # Break of Structure - re-enabled
+    CHOC = "choc"  # Change of Character - re-enabled
 
     @classmethod
     def is_valid_signal(cls, signal_type: str) -> bool:
@@ -40,10 +36,8 @@ class ICTSignalType(str, Enum):
             signal_type: The signal type string to check
 
         Returns:
-            True if the signal is valid (not excluded)
+            True if the signal is valid (recognized enum member)
         """
-        if signal_type in (cls.BOS.value, cls.CHOC.value):
-            return False
         try:
             cls(signal_type)
             return True
@@ -52,12 +46,12 @@ class ICTSignalType(str, Enum):
 
     @classmethod
     def get_supported_signals(cls) -> list["ICTSignalType"]:
-        """Get list of supported (non-excluded) signal types.
+        """Get list of all supported signal types.
 
         Returns:
-            List of valid ICT signal types for scoring
+            List of all ICT signal types for scoring
         """
-        return [s for s in cls if s not in (cls.BOS, cls.CHOC)]
+        return list(cls)
 
 
 @dataclass(frozen=True)
@@ -101,6 +95,18 @@ ICT_SIGNAL_WEIGHTS: dict[ICTSignalType, SignalWeight] = {
         weight=0.85,
         description="Order Block - 80.77% validated (BL-OB-003)",
     ),
+    ICTSignalType.BOS: SignalWeight(
+        signal_type=ICTSignalType.BOS,
+        reliability_percent=65.0,
+        weight=0.65,
+        description="Break of Structure - re-enabled, initial confidence base",
+    ),
+    ICTSignalType.CHOC: SignalWeight(
+        signal_type=ICTSignalType.CHOC,
+        reliability_percent=65.0,
+        weight=0.65,
+        description="Change of Character - re-enabled, initial confidence base",
+    ),
 }
 
 
@@ -111,17 +117,8 @@ def get_signal_weight(signal_type: str) -> float:
         signal_type: The signal type string
 
     Returns:
-        The signal weight (0.0-1.0), or 0.0 if signal is excluded or unknown
-
-    Raises:
-        ValueError: If signal_type is BOS or CHoCH (explicitly excluded)
+        The signal weight (0.0-1.0), or 0.0 if unknown
     """
-    if signal_type in (ICTSignalType.BOS.value, ICTSignalType.CHOC.value):
-        raise ValueError(
-            f"Signal type '{signal_type}' is explicitly EXCLUDED per BL-BOS-CHOCH-001. "
-            f"Use supported signals: {[s.value for s in ICTSignalType.get_supported_signals()]}"
-        )
-
     try:
         signal_enum = ICTSignalType(signal_type)
         weight_info = ICT_SIGNAL_WEIGHTS.get(signal_enum)

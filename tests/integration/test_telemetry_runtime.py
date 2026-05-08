@@ -5,7 +5,7 @@ to emit telemetry data during signal emission.
 
 Tests cover:
 - SignalTracker.track_signal() is called during emit_signal()
-- BOS/CHoCH signals are NOT tracked (per BL-BOS-CHOCH-001)
+- BOS/CHoCH signals are tracked (re-enabled after accuracy fix)
 - Feature-flag-disabled signals are NOT tracked
 - Control vs Treatment group assignment based on confluence_score
 - Redis keys are written correctly
@@ -120,10 +120,10 @@ class TestICTSignalEmitterTelemetryIntegration:
         assert call_kwargs[1]["confluence_score"] == 0.75
 
     @pytest.mark.asyncio
-    async def test_bos_choch_signals_not_tracked(
+    async def test_bos_choch_signals_are_tracked(
         self, signal_tracker, mock_scorer, mock_emitter
     ):
-        """Test that BOS/CHoCH signals are NOT tracked per BL-BOS-CHOCH-001."""
+        """Test that BOS/CHoCH signals ARE tracked (re-enabled after accuracy fix)."""
         from src.signal_generation.ict_signal_emitter import (
             ICTEmissionConfig,
             ICTSignalEmitter,
@@ -137,18 +137,18 @@ class TestICTSignalEmitterTelemetryIntegration:
             two_layer_scorer=mock_scorer,
         )
 
-        # Mock _check_bos_choch_exclusion to return True for bos signal
-        emitter._check_bos_choch_exclusion = MagicMock(return_value=True)
+        # Mock _check_bos_choch_exclusion to return False (BOS/CHOCH no longer excluded)
+        emitter._check_bos_choch_exclusion = MagicMock(return_value=False)
+        emitter.is_signal_enabled = MagicMock(return_value=True)
 
         cvd_data = MagicMock()
         result = await emitter.emit_signal("bos", "BTC/USDT", "1H", cvd_data)
 
-        # Verify signal was skipped due to BOS/CHoCH exclusion
-        assert result.skipped is True
-        assert "EXCLUDED per BL-BOS-CHOCH-001" in result.skip_reason
+        # Verify signal was emitted (not skipped)
+        assert result.emission_success is True
 
-        # Verify tracker.track_signal was NOT called
-        signal_tracker.track_signal.assert_not_called()
+        # Verify tracker.track_signal was called
+        signal_tracker.track_signal.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_feature_flag_disabled_signals_not_tracked(
@@ -444,23 +444,20 @@ class TestSignalTrackerRedisKeys:
         assert TREATMENT_SIGNALS_KEY == "experiment:signals:treatment"
 
 
-class TestBOSCHoCHExclusion:
-    """Tests for BOS/CHoCH exclusion behavior."""
+class TestBOSCHoCHInclusion:
+    """Tests for BOS/CHoCH inclusion behavior (re-enabled after accuracy fix)."""
 
-    def test_bos_excluded_in_signal_type_validation(self):
-        """Test that BOS is excluded from valid signal types."""
+    def test_bos_included_in_signal_type_validation(self):
+        """Test that BOS is included in valid signal types."""
         from validation.data_collection.signal_tracker import SignalType
 
-        assert not SignalType.is_valid("bos")
-        assert not SignalType.is_valid("BOS")
+        assert SignalType.is_valid("bos")
 
-    def test_choch_excluded_in_signal_type_validation(self):
-        """Test that CHoCH is excluded from valid signal types."""
+    def test_choch_included_in_signal_type_validation(self):
+        """Test that CHoCH is included in valid signal types."""
         from validation.data_collection.signal_tracker import SignalType
 
-        assert not SignalType.is_valid("choch")
-        assert not SignalType.is_valid("CHoCH")
-        assert not SignalType.is_valid("CHoCH")
+        assert SignalType.is_valid("choch")
 
     def test_cvd_fvg_orderblock_are_valid(self):
         """Test that CVD, FVG, Order Block are valid signal types."""
@@ -470,21 +467,21 @@ class TestBOSCHoCHExclusion:
         assert SignalType.is_valid("fvg")
         assert SignalType.is_valid("order_block")
 
-    def test_tracker_raises_on_bos_choch_track_attempt(self):
-        """Test that SignalTracker raises ValueError for BOS/CHoCH."""
+    def test_tracker_accepts_bos_choch_track_attempt(self):
+        """Test that SignalTracker accepts BOS/CHoCH signals (re-enabled)."""
         mock_redis = MagicMock()
         tracker = SignalTracker(mock_redis)
 
-        with pytest.raises(ValueError, match="excluded per BL-BOS-CHOCH-001"):
-            tracker.track_signal(
-                signal_type="bos",
-                group=SignalGroup.TREATMENT,
-                entry_price=1.1000,
-            )
+        # BOS should now be trackable
+        tracker.track_signal(
+            signal_type="bos",
+            group=SignalGroup.TREATMENT,
+            entry_price=1.1000,
+        )
 
-        with pytest.raises(ValueError, match="excluded per BL-BOS-CHOCH-001"):
-            tracker.track_signal(
-                signal_type="choch",
-                group=SignalGroup.CONTROL,
-                entry_price=1.1000,
-            )
+        # CHoCH should now be trackable
+        tracker.track_signal(
+            signal_type="choch",
+            group=SignalGroup.CONTROL,
+            entry_price=1.1000,
+        )

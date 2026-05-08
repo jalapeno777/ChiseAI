@@ -233,10 +233,10 @@ class ICTAnalyzer:
             signal_type: Signal type to check
 
         Returns:
-            True if BOS/CHoCH (excluded), False otherwise
+            True if BOS/CHoCH, False otherwise
         """
-        excluded = ["bos_choch", "bos", "choch"]
-        return signal_type.value.lower() in excluded
+        # BOS/CHOCH re-enabled — no longer excluded
+        return False
 
     async def analyze_ict_signals(
         self,
@@ -321,11 +321,6 @@ class ICTAnalyzer:
             if match.outcome_correct is None:
                 continue
 
-            # Filter out BOS/CHoCH
-            if self.is_bos_choch(match.signal_type):
-                logger.debug(f"Filtered out BOS/CHoCH signal: {match.signal_id}")
-                continue
-
             valid.append(match)
 
         return valid
@@ -365,8 +360,7 @@ class ICTAnalyzer:
         # Group by signal type
         by_type: dict[ICTSignalType, list[ICTPredictionMatch]] = defaultdict(list)
         for match in matches:
-            if not self.is_bos_choch(match.signal_type):
-                by_type[match.signal_type].append(match)
+            by_type[match.signal_type].append(match)
 
         results = []
         for signal_type, type_matches in by_type.items():
@@ -416,8 +410,7 @@ class ICTAnalyzer:
 
         by_type: dict[ICTSignalType, list[ICTPredictionMatch]] = defaultdict(list)
         for match in matches:
-            if not self.is_bos_choch(match.signal_type):
-                by_type[match.signal_type].append(match)
+            by_type[match.signal_type].append(match)
 
         for signal_type, type_matches in by_type.items():
             if not type_matches:

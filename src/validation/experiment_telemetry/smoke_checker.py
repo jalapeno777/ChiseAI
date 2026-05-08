@@ -43,8 +43,8 @@ REDIS_KEYS = {
     "meta": "experiment:meta",
 }
 
-# Signal types to exclude per BL-BOS-CHOCH-001
-EXCLUDED_SIGNAL_TYPES = {"bos", "choch"}
+# Signal types no longer excluded (BL-BOS-CHOCH-001 lifted)
+EXCLUDED_SIGNAL_TYPES: set[str] = set()
 
 # Thresholds
 MIN_SIGNALS = 10  # Minimum signals for basic smoke check
@@ -113,14 +113,14 @@ def get_signal_data(signal_id: str) -> dict[str, Any]:
     return redis_state_hgetall(key)
 
 
-def check_bos_choch_exclusion() -> tuple[bool, list[str]]:
-    """Check if any BOS/CHoCH signals exist in the data.
+def check_bos_choch_inclusion() -> tuple[bool, list[str]]:
+    """Check if BOS/CHoCH signals are present in the data (now expected).
 
     Returns:
-        Tuple of (is_clean, found_types) where is_clean is True if no
-        excluded signals found
+        Tuple of (has_bos_choch, found_types) where has_bos_choch is True
+        if BOS/CHoCH signals were found in the data
     """
-    found_excluded = set()
+    found = set()
 
     for group in ["control", "treatment"]:
         signal_ids = get_signal_ids(group)
@@ -128,10 +128,10 @@ def check_bos_choch_exclusion() -> tuple[bool, list[str]]:
             signal = get_signal_data(sig_id)
             if signal:
                 signal_type = signal.get("signal_type", "").lower()
-                if signal_type in EXCLUDED_SIGNAL_TYPES:
-                    found_excluded.add(f"{sig_id}:{signal_type}")
+                if signal_type in {"bos", "choch", "bos_choch"}:
+                    found.add(f"{sig_id}:{signal_type}")
 
-    return len(found_excluded) == 0, list(found_excluded)
+    return len(found) > 0, list(found)
 
 
 def get_signal_counts() -> dict[str, int]:
@@ -236,23 +236,18 @@ def run_smoke_checks() -> dict[str, Any]:
         # Redis failure is not critical - could be transient
         return results
 
-    # Check 2: BOS/CHoCH exclusion
-    bos_choch_clean, found_types = check_bos_choch_exclusion()
-    results["checks"]["bos_choch_exclusion"] = {
-        "status": "OK" if bos_choch_clean else "CRITICAL",
+    # Check 2: BOS/CHoCH inclusion (now expected in pipeline)
+    bos_choch_found, found_types = check_bos_choch_inclusion()
+    results["checks"]["bos_choch_inclusion"] = {
+        "status": "OK" if bos_choch_found else "WARN",
         "message": (
-            "No BOS/CHoCH signals found"
-            if bos_choch_clean
-            else f"BOS/CHoCH found: {found_types}"
+            f"BOS/CHoCH signals found: {found_types}"
+            if bos_choch_found
+            else "No BOS/CHoCH signals found yet (may appear later)"
         ),
-        "found_excluded": found_types,
+        "found_types": found_types,
     }
-    if not bos_choch_clean:
-        results["messages"].append(
-            f"CRITICAL: BOS/CHoCH signals detected: {found_types}"
-        )
-        results["overall_result"] = CheckResult.CRITICAL.value
-        # Don't return early - gather all info
+    # BOS/CHoCH not found is a warning, not critical - they may not have triggered yet
 
     # Check 3: Signal counts
     counts = get_signal_counts()

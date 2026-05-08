@@ -4,7 +4,7 @@ Tests cover:
 - SignalTracker: Signal tracking and outcome recording
 - ExperimentRunner: Experiment orchestration and early stopping
 - ExperimentTracker: High-level coordinator interface
-- BOS/CHoCH exclusion per BL-BOS-CHOCH-001
+- BOS/CHoCH inclusion (re-enabled after accuracy fix)
 """
 
 from __future__ import annotations
@@ -39,18 +39,18 @@ class TestSignalType:
         assert SignalType.is_valid("FVG")
         assert SignalType.is_valid("ORDER_BLOCK")
 
-    def test_bos_choch_excluded(self):
-        """Test that BOS and CHoCH are excluded per BL-BOS-CHOCH-001."""
-        assert not SignalType.is_valid("bos")
-        assert not SignalType.is_valid("choch")
-        assert not SignalType.is_valid("BOS")
-        assert not SignalType.is_valid("CHoCH")
+    def test_bos_choch_included(self):
+        """Test that BOS and CHoCH are now valid signal types."""
+        assert SignalType.is_valid("bos")
+        assert SignalType.is_valid("choch")
+        assert SignalType.is_valid("BOS")
+        assert SignalType.is_valid("CHoCH")
 
     def test_excluded_types_list(self):
-        """Test that excluded types are properly documented."""
+        """Test that excluded types list is now empty."""
         excluded = SignalType.excluded_types()
-        assert "bos" in excluded
-        assert "choch" in excluded
+        assert "bos" not in excluded
+        assert "choch" not in excluded
 
 
 class TestTrackedSignal:
@@ -220,21 +220,21 @@ class TestSignalTracker:
         assert signal.group == SignalGroup.CONTROL
         assert signal.confluence_score is None
 
-    def test_track_signal_excludes_bos_choch(self, tracker):
-        """Test that BOS/CHoCH signals raise ValueError."""
-        with pytest.raises(ValueError, match="excluded per BL-BOS-CHOCH-001"):
-            tracker.track_signal(
-                signal_type="bos",
-                group=SignalGroup.TREATMENT,
-                entry_price=1.1000,
-            )
+    def test_track_signal_includes_bos_choch(self, tracker):
+        """Test that BOS/CHoCH signals are now accepted."""
+        signal = tracker.track_signal(
+            signal_type="bos",
+            group=SignalGroup.TREATMENT,
+            entry_price=1.1000,
+        )
+        assert signal.signal_type == "bos"
 
-        with pytest.raises(ValueError, match="excluded per BL-BOS-CHOCH-001"):
-            tracker.track_signal(
-                signal_type="choch",
-                group=SignalGroup.TREATMENT,
-                entry_price=1.1000,
-            )
+        signal = tracker.track_signal(
+            signal_type="choch",
+            group=SignalGroup.TREATMENT,
+            entry_price=1.1000,
+        )
+        assert signal.signal_type == "choch"
 
     def test_record_outcome(self, tracker, mock_redis):
         """Test recording signal outcome."""
@@ -446,21 +446,20 @@ class TestExperimentTracker:
         assert call_kwargs[1]["group"] == SignalGroup.CONTROL
         assert call_kwargs[1]["confluence_score"] is None
 
-    def test_bos_choch_excluded(self, coordinator):
-        """Test that BOS/CHoCH signals raise ValueError."""
+    def test_bos_choch_included(self, coordinator):
+        """Test that BOS/CHoCH signals are now accepted."""
         coordinator.start_experiment()
 
-        with pytest.raises(ValueError, match="Invalid signal type"):
-            coordinator.process_treatment_signal(
-                signal_type="bos",
-                entry_price=1.1000,
-            )
+        # BOS and CHoCH should now be valid signal types
+        coordinator.process_treatment_signal(
+            signal_type="bos",
+            entry_price=1.1000,
+        )
 
-        with pytest.raises(ValueError, match="Invalid signal type"):
-            coordinator.process_control_signal(
-                signal_type="choch",
-                entry_price=1.1000,
-            )
+        coordinator.process_control_signal(
+            signal_type="choch",
+            entry_price=1.1000,
+        )
 
     def test_get_stats(self, coordinator, mock_tracker):
         """Test getting experiment statistics."""
@@ -470,15 +469,15 @@ class TestExperimentTracker:
         assert "treatment_signals" in stats
         mock_tracker.get_experiment_stats.assert_called_once()
 
-    def test_validate_bos_choch_excluded(self, coordinator):
-        """Test validation that BOS/CHoCH are properly excluded."""
+    def test_validate_bos_choch_included(self, coordinator):
+        """Test validation that BOS/CHoCH are now included."""
         coordinator.start_experiment()
 
-        validation = coordinator.validate_bos_choch_excluded()
+        validation = coordinator.validate_bos_choch_included()
 
         assert validation["validation_passed"] is True
-        assert validation["bos_excluded"] is True
-        assert validation["choch_excluded"] is True
+        assert validation["validation_passed"] is True
+        assert validation["bos_choch_enabled"] is True
 
 
 class TestIntegration:

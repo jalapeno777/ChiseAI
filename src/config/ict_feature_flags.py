@@ -3,7 +3,7 @@
 ICT (Inner Circle Trader) signals feature flags with Redis-backed runtime configuration.
 Supports CVD, FVG, Order Block, and BOS/CHoCH signal toggling.
 
-BOS/CHoCH EXCLUDED per BL-BOS-CHOCH-001 - defaults to False for safety.
+BOS/CHoCH re-enabled (accuracy fix applied) - defaults to True.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ class ICTFeatureFlags:
 
     SAFETY-FIRST DESIGN:
     - CVD, FVG, Order Block: Default to ENABLED (True) - validated signals
-    - BOS/CHoCH: Default to DISABLED (False) - excluded per BL-BOS-CHOCH-001
+    - BOS/CHoCH: Default to ENABLED (True) - re-enabled after accuracy fix
 
     All flags support Redis-backed runtime toggling with environment variable overrides.
 
@@ -34,7 +34,7 @@ class ICTFeatureFlags:
         ict_cvd_enabled: Enable ICT CVD (Change of Character) signals [default: True]
         ict_fvg_enabled: Enable ICT FVG (Fair Value Gap) signals [default: True]
         ict_order_block_enabled: Enable ICT Order Block signals [default: True]
-        ict_bos_choch_enabled: Enable ICT BOS/CHoCH signals [default: False - SAFETY]
+        ict_bos_choch_enabled: Enable ICT BOS/CHoCH signals [default: True - re-enabled]
         ict_integration_enabled: Master flag for all ICT integration [default: True]
     """
 
@@ -53,8 +53,8 @@ class ICTFeatureFlags:
     ict_fvg_enabled: bool = True
     ict_order_block_enabled: bool = True
 
-    # Default value - DISABLED signal (excluded per BL-BOS-CHOCH-001)
-    ict_bos_choch_enabled: bool = False
+    # Default value - ENABLED signal (re-enabled after accuracy fix)
+    ict_bos_choch_enabled: bool = True
 
     # Master integration flag
     ict_integration_enabled: bool = True
@@ -117,8 +117,8 @@ class ICTFeatureFlags:
             ict_fvg_enabled=_get_bool_env("ICT_FVG_ENABLED", True),
             ict_order_block_enabled=_get_bool_env("ICT_ORDER_BLOCK_ENABLED", True),
             ict_bos_choch_enabled=_get_bool_env(
-                "ICT_BOS_CHOCH_ENABLED", False
-            ),  # Default False per safety
+                "ICT_BOS_CHOCH_ENABLED", True
+            ),  # Re-enabled after accuracy fix
             ict_integration_enabled=_get_bool_env("ICT_INTEGRATION_ENABLED", True),
         )
 
@@ -184,8 +184,7 @@ class ICTFeatureFlags:
     def is_bos_choch_enabled(self) -> bool:
         """Check if BOS/CHoCH signals are enabled (Redis or default).
 
-        SAFETY: BOS/CHoCH defaults to disabled per BL-BOS-CHOCH-001.
-        This is a safety-critical exclusion - do not enable without proper validation.
+        BOS/CHoCH is now enabled by default (accuracy fix applied).
         """
         return self.get_redis_value(self.KEY_BOS_CHOCH, self.ict_bos_choch_enabled)
 
@@ -208,13 +207,10 @@ class ICTFeatureFlags:
     def set_bos_choch_enabled(self, enabled: bool) -> bool:
         """Enable or disable BOS/CHoCH signals.
 
-        SAFETY WARNING: BOS/CHoCH is disabled by default per BL-BOS-CHOCH-001.
-        This flag should only be enabled after proper validation.
+        BOS/CHoCH is now enabled by default after accuracy fix.
         """
-        if enabled:
-            logger.warning(
-                "SAFETY: Enabling BOS/CHoCH signals - ensure BL-BOS-CHOCH-001 validation complete"
-            )
+        if not enabled:
+            logger.warning("Disabling BOS/CHoCH signals via explicit override")
         return self.set_redis_value(self.KEY_BOS_CHOCH, enabled)
 
     def set_integration_enabled(self, enabled: bool) -> bool:
