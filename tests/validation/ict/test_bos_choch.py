@@ -69,7 +69,17 @@ def _evaluate_bos_choch_scenario(scenario: dict[str, Any]) -> bool:
     detected_choch = has_bullish_choch or has_bearish_choch
     detected_direction = "none"
 
-    if has_bullish_bos or has_bullish_choch:
+    # Determine direction from the LAST event (most recent market state)
+    # rather than just presence of any bullish/bearish event.
+    # This handles CHoCH scenarios where an initial BOS in one direction
+    # is followed by a CHoCH reversal in the opposite direction.
+    if result.events:
+        last_event = result.events[-1]
+        if last_event.event_type.value in ("bullish_bos", "bullish_choch"):
+            detected_direction = "bullish"
+        elif last_event.event_type.value in ("bearish_bos", "bearish_choch"):
+            detected_direction = "bearish"
+    elif has_bullish_bos or has_bullish_choch:
         detected_direction = "bullish"
     elif has_bearish_bos or has_bearish_choch:
         detected_direction = "bearish"
