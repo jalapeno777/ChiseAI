@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: '2026-05-06'
+  last_updated: '2026-05-08'
   managed_by: merlin
   status_notes:
   - 'R2a Canary: SIGNAL CRASH-LOOP FIXED (2026-04-26) — ST-SIGNAL-CRASHLOOP-FIX-001 merged to main via safety/ST-SIGNAL-CRASHLOOP-FIX-001. Root cause: hardcoded REDIS_HOST at import time + missing INFLUXDB_TOKEN
@@ -27,25 +27,45 @@ metadata:
   - 'R2a Canary Day-21: FAIL (2026-05-06). Signal pipeline dead for 4 days (May 3-6). Root cause: InfluxDB token drift + consumer TypeError crash. Pipeline remediated 2026-05-06T18:02Z. Canary clock restarted
     from May 6.'
   - 'Incident report: docs/postmortems/INCIDENT-2026-05-06-signal-pipeline-death.md'
+  - 'R2a Day-21 Remediation (2026-05-07/08): ~20 PRs merged (#1070-#1087). Trade spam emergency fixed (G1.5 symbol cooldown, Discord throttle, kill switch dual-type). BOS/CHOCH bearish fix + re-enablement (96.2% accuracy). Redis connectivity fix. Pipeline fully operational.'
+  - 'BOS/CHOCH: RE-ENABLED (2026-05-08) — Bearish CHoCH cross-assignment fixed (0%→100%). All 10 exclusion layers removed. 96.2% overall accuracy. Feature flag default TRUE.'
 active_work:
   active_now:
   - id: R2A-CANARY-DAY21-RETRY
     title: R2a Canary Restart (Day-0 = May 6, Day-21 target ~May 27)
     status: in_progress
     priority: P1
-    notes: 'Canary clock restarted after Day-21 FAIL. Pipeline remediated 2026-05-06. New checkpoints: Day-14=~May 20, Day-21=~May 27, Day-28=~Jun 3.'
+    notes: 'Canary clock Day-0 restarted May 7 after Day-21 FAIL remediation. Pipeline fully operational. ~20 PRs merged May 6-8. New checkpoints: Day-14=~May 21, Day-21=~May 28, Day-28=~Jun 4.'
   next_3:
   - id: BL-BOS-CHOCH-001
     title: BOS/CHOCH Signal Implementation
-    status: deferred
+    status: completed
     priority: P2
-    notes: Next priority after canary validation. Awaiting Day-21 checkpoint completion.
+    notes: 'COMPLETED 2026-05-08. Bearish CHoCH fix (PR #1086) + re-enablement (PR #1087). 96.2% accuracy. Feature flag default TRUE.'
   - id: V-LAUNCH-017
     title: Go/No-Go Decision Gate
     status: planned
     priority: P1
     notes: Launch decision gate. Depends on R2a Day-21 checkpoint passing.
 completed:
+- id: BL-BOS-CHOCH-001
+  title: BOS/CHOCH Signal Implementation
+  status: completed
+  completed: '2026-05-08'
+  notes: 'Bearish CHoCH cross-assignment fixed (0%→100% accuracy, PR #1086 SHA 69b14301). All 10 exclusion layers removed (PR #1087 SHA b363614e). 96.2% overall accuracy. Feature flag default TRUE.'
+  merge_commit: b363614e
+- id: R2A-TRADE-SPAM-FIX
+  title: R2a Trade Spam Emergency Fix
+  status: completed
+  completed: '2026-05-07'
+  notes: '6 fixes merged: G1.5_SYMBOL_COOLDOWN (300s), Discord throttle (30s), kill switch HASH+STRING fallback, POC_MODE burn-in configurable (300s), SYMBOL_EVAL_INTERVAL 300, timeframe_key bug fix. PR #1084 SHA 4e21c8411.'
+  merge_commit: 4e21c8411
+- id: R2A-REDIS-FIX
+  title: R2a Redis Connectivity Fix
+  status: completed
+  completed: '2026-05-07'
+  notes: 'REDIS_HOST changed from host.docker.internal to chiseai-redis. Added PAPER_REDIS_HOST/PAPER_REDIS_PORT/REDIS_URL env vars. chiseai-redis container restarted. PR #1085 SHA a7bf1e47.'
+  merge_commit: a7bf1e47
 - id: R2A-CANARY-DAY21-CHECKPOINT
   title: R2a Canary Day-21 Checkpoint Validation
   status: completed

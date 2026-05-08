@@ -378,14 +378,12 @@ class PostgresSignalsPersistence:
         try:
             pool = await self._get_pool()
             async with pool.acquire() as conn:
-                result = await conn.fetchval(
-                    """
+                result = await conn.fetchval("""
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables 
                         WHERE table_name = 'signals'
                     )
-                    """
-                )
+                    """)
                 return result or False
         except Exception as e:
             logger.error(f"Failed to check if signals table exists: {e}")
