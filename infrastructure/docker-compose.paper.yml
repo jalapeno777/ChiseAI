@@ -10,8 +10,11 @@ services:
     networks:
       - chiseai
     environment:
-      - REDIS_HOST=host.docker.internal
+      - REDIS_HOST=chiseai-redis
       - REDIS_PORT=6380
+      - PAPER_REDIS_HOST=chiseai-redis
+      - PAPER_REDIS_PORT=6380
+      - REDIS_URL=redis://chiseai-redis:6380
       - PAPER_REDIS_DB=0
       - POSTGRES_HOST=host.docker.internal
       - POSTGRES_PORT=${POSTGRES_PORT:-5434}
@@ -38,7 +41,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python3 -c "import redis.asyncio as redis; import asyncio; asyncio.run(redis.Redis(host=''host.docker.internal'', port=6380).ping())" && python3 -c "import redis; r=redis.Redis(host=''host.docker.internal'', port=6380); r.ping() and r.exists(''paper:signal_consumer:health'')"',
+          'python3 -c "import redis.asyncio as redis; import asyncio; asyncio.run(redis.Redis(host=''chiseai-redis'', port=6380).ping())" && python3 -c "import redis; r=redis.Redis(host=''chiseai-redis'', port=6380); r.ping() and r.exists(''paper:signal_consumer:health'')"',
         ]
       interval: 30s
       timeout: 10s
