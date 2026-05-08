@@ -705,16 +705,14 @@ class PaperTradingOrchestrator:
         try:
             # Enforce global per-symbol-per-timeframe cadence across all ingress paths.
             symbol_key = signal.token.upper().strip()
-            timeframe_key = signal.timeframe
-            throttle_key = (symbol_key, timeframe_key)
+            throttle_key = symbol_key  # Per-symbol throttle (not per-timeframe)
             if symbol_key and self._symbol_eval_interval_seconds > 0:
                 now_ts = time.time()
                 last_ts = self._last_symbol_processed_ts.get(throttle_key, 0.0)
                 if (now_ts - last_ts) < self._symbol_eval_interval_seconds:
                     logger.info(
-                        "Signal throttled for %s %s: %.1fs < %ss (correlation_id=%s)",
+                        "Signal throttled for %s: %.1fs < %ss (correlation_id=%s)",
                         symbol_key,
-                        timeframe_key,
                         now_ts - last_ts,
                         self._symbol_eval_interval_seconds,
                         correlation_id,
@@ -763,14 +761,66 @@ class PaperTradingOrchestrator:
                         status=TradeStatus.REJECTED,
                         reject_reason=[
                             (
-                                "Signal throttled by per-symbol-per-timeframe cadence: "
-                                f"{symbol_key}/{timeframe_key} within "
+                                "Signal throttled by per-symbol cadence: "
+                                f"{symbol_key} within "
                                 f"{self._symbol_eval_interval_seconds}s"
                             )
                         ],
                         correlation_id=correlation_id,
                     )
                 self._last_symbol_processed_ts[throttle_key] = now_ts
+
+            # G1.5_SYMBOL_COOLDOWN — Minimum cooldown between ANY trades on same symbol
+            cooldown_seconds = max(
+                int(os.environ.get("SYMBOL_COOLDOWN_SECONDS", "300")), 60
+            )
+            cooldown_key = f"cooldown:symbol:{signal.token.upper().strip()}"
+            if self._redis is not None:
+                try:
+                    last_trade_ts = await self._redis.get(cooldown_key)
+                    if last_trade_ts:
+                        elapsed = time.time() - float(last_trade_ts)
+                        if elapsed < cooldown_seconds:
+                            logger.info(
+                                "G1.5_SYMBOL_COOLDOWN rejected %s — "
+                                "cooldown %ds/%ds (correlation_id=%s)",
+                                signal.token,
+                                int(elapsed),
+                                cooldown_seconds,
+                                correlation_id,
+                            )
+                            async with self._lock:
+                                self._metrics["trades_rejected"] += 1
+                                self._metrics["gate_g1_5_cooldown_count"] = (
+                                    self._metrics.get("gate_g1_5_cooldown_count", 0) + 1
+                                )
+                            # ST-ICT-Q3: Record signal rejection at cooldown gate
+                            if self.outcome_capture:
+                                try:
+                                    await self.outcome_capture.on_signal_rejected(
+                                        signal,
+                                        "G1.5_SYMBOL_COOLDOWN",
+                                        f"Symbol cooldown: {int(elapsed)}s/{cooldown_seconds}s",
+                                        correlation_id,
+                                    )
+                                except Exception as e:
+                                    logger.warning(
+                                        f"outcome_capture.on_signal_rejected(G1.5) failed: {e}"
+                                    )
+                            return PaperTradeResult(
+                                signal=signal,
+                                status=TradeStatus.REJECTED,
+                                reject_reason=[
+                                    f"Symbol cooldown: {signal.token} — "
+                                    f"{int(elapsed)}s/{cooldown_seconds}s"
+                                ],
+                                correlation_id=correlation_id,
+                            )
+                except Exception as cooldown_exc:
+                    logger.debug(
+                        "G1.5_SYMBOL_COOLDOWN check failed (non-blocking): %s",
+                        cooldown_exc,
+                    )
 
             # PAPER-009: Check paper trading kill switch before any processing
             paper_kill_switch = await self._get_paper_kill_switch()
@@ -992,9 +1042,10 @@ class PaperTradingOrchestrator:
                 # Close if position is older than 60 seconds (for burn-in testing)
                 # Only active when POC_MODE=true env var is set
                 # POC_MODE is the ONLY allowed bypass path for burn-in testing
-                if (
-                    os.getenv("POC_MODE", "false").lower() == "true"
-                    and position_age_seconds > 60
+                if os.getenv(
+                    "POC_MODE", "false"
+                ).lower() == "true" and position_age_seconds > int(
+                    os.getenv("POC_MODE_BURN_IN_SECONDS", "300")
                 ):
                     logger.debug("Burn-in testing is enabled via POC_MODE=true")
                     await self.close_position(
@@ -1777,6 +1828,9 @@ class PaperTradingOrchestrator:
                     exc_info=True,
                 )
 
+        # Set symbol cooldown after position open
+        self._set_symbol_cooldown(position.symbol)
+
         return position
 
     async def _record_trade(
@@ -1982,11 +2036,35 @@ class PaperTradingOrchestrator:
                         exc_info=True,
                     )
 
+            # Set symbol cooldown after position close
+            if position is not None:
+                self._set_symbol_cooldown(position.symbol)
+
             return position, realized_pnl
 
         except Exception as e:
             logger.error(f"Failed to close position {position_id}: {e}")
             return None
+
+    def _set_symbol_cooldown(self, symbol: str) -> None:
+        """Set cooldown key in Redis after a trade on a symbol.
+
+        This is fire-and-forget — a failure here must never block trading.
+
+        Args:
+            symbol: Trading pair symbol (e.g. "BTC/USDT")
+        """
+        if self._redis is None:
+            return
+        try:
+            cooldown_seconds = max(
+                int(os.environ.get("SYMBOL_COOLDOWN_SECONDS", "300")), 60
+            )
+            cooldown_key = f"cooldown:symbol:{symbol.upper().strip()}"
+            self._redis.setex(cooldown_key, cooldown_seconds, str(time.time()))
+            logger.debug("Set symbol cooldown for %s (%ds)", symbol, cooldown_seconds)
+        except Exception as e:
+            logger.debug("Failed to set symbol cooldown for %s: %s", symbol, e)
 
     def _get_default_price(self, symbol: str) -> float | None:
         """Get default market price for a known symbol.

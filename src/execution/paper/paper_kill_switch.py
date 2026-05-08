@@ -146,6 +146,33 @@ class PaperKillSwitchManager:
             data = await redis.hgetall(PAPER_KILL_SWITCH_KEY)
 
             if not data:
+                # Fallback: check if activated via simple SET command
+                # (wrong key type but rescue it)
+                try:
+                    simple_val = await redis.get("paper:kill_switch:global")
+                    if simple_val and (
+                        simple_val.decode()
+                        if isinstance(simple_val, bytes)
+                        else simple_val
+                    ) in ("true", "1", "yes"):
+                        logger.warning(
+                            "Kill switch activated via SET key fallback "
+                            "(paper:kill_switch:global)"
+                        )
+                        fallback_status = PaperKillSwitchStatus(
+                            active=True,
+                            reason="emergency_manual_activation",
+                            activated_at=datetime.now(UTC).isoformat(),
+                            activated_by="manual_redis_set",
+                        )
+                        self._status_cache = fallback_status
+                        self._status_cache_time = time.time()
+                        return fallback_status
+                except Exception as fallback_exc:
+                    logger.debug(
+                        "Kill switch SET fallback check failed: %s", fallback_exc
+                    )
+
                 status = PaperKillSwitchStatus(active=False)
                 self._status_cache = status
                 self._status_cache_time = time.time()
@@ -324,6 +351,31 @@ def get_status_sync() -> PaperKillSwitchStatus:
         data = redis.hgetall(PAPER_KILL_SWITCH_KEY)
 
         if not data:
+            # Fallback: check if activated via simple SET command
+            try:
+                simple_val = redis.get("paper:kill_switch:global")
+                if simple_val and (
+                    simple_val.decode() if isinstance(simple_val, bytes) else simple_val
+                ) in ("true", "1", "yes"):
+                    logger.warning(
+                        "Kill switch activated via SET key fallback (sync) "
+                        "(paper:kill_switch:global)"
+                    )
+                    fallback_status = PaperKillSwitchStatus(
+                        active=True,
+                        reason="emergency_manual_activation",
+                        activated_at=datetime.now(UTC).isoformat(),
+                        activated_by="manual_redis_set",
+                    )
+                    _sync_status_cache = fallback_status
+                    _sync_status_cache_time = time.time()
+                    return fallback_status
+            except Exception as fallback_exc:
+                logger.debug(
+                    "Kill switch SET fallback check (sync) failed: %s",
+                    fallback_exc,
+                )
+
             _sync_status_cache = PaperKillSwitchStatus(active=False)
             _sync_status_cache_time = time.time()
             return _sync_status_cache
