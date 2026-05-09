@@ -12,22 +12,17 @@ Story: ST-MVP-006
 
 from __future__ import annotations
 
-import asyncio
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from discord_alerts.zero_signal_notifier import (
     COLOR_CRITICAL,
-    COLOR_INFO,
     COLOR_RECOVERY,
-    COLOR_WARNING,
-    DEFAULT_ALERT_COOLDOWN_SECONDS,
     SEVERITY_COLORS,
     SEVERITY_EMOJIS,
     ZeroSignalDiscordFormatter,
-    ZeroSignalNotificationResult,
     ZeroSignalNotifier,
 )
 

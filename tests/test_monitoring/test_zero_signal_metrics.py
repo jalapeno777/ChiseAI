@@ -13,17 +13,12 @@ Story: ST-MVP-006
 
 from __future__ import annotations
 
-import time
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from monitoring.zero_signal_metrics import (
+    METRICS_KEY_PREFIX,
     DatasourceMetrics,
     ZeroSignalMetrics,
-    DEFAULT_THRESHOLDS,
-    METRICS_KEY_PREFIX,
-    THRESHOLDS_KEY,
 )
 
 
@@ -365,7 +360,7 @@ class TestZeroSignalMetricsRedis:
 
         # Should still work in-memory despite Redis errors
         result = metrics.record_zero_signal("binance", duration_minutes=30)
-        assert result["success_indicators"] if "success_indicators" in result else True
+        assert result.get("success_indicators", True)
         assert result["event_count"] == 1
 
         m = metrics.get_metrics("binance")
