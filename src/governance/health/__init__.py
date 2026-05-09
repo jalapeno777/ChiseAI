@@ -50,6 +50,11 @@ from .scorer import (
     HealthStatus,
     SwarmHealthScore,
 )
+from .degradation import (
+    DegradationEvent,
+    DegradationLevel,
+    DegradationTracker,
+)
 from .sentinel import (
     HealthSentinel,
     HealthSentinelConfig,
@@ -84,4 +89,8 @@ __all__ = [
     "HealthMetrics",
     "HealthMetricPoint",
     "get_health_metrics",
+    # Degradation tracking
+    "DegradationTracker",
+    "DegradationLevel",
+    "DegradationEvent",
 ]
