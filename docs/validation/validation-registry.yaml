@@ -6,7 +6,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-05-06"
+  last_updated: "2026-05-09"
 
 # Validation entries
 validations:
@@ -4430,6 +4430,150 @@ validations:
       - All tests for status_guard.py pass
     test_method: automated
     owner: governance-team
+
+  # ============================================================
+  # MVP CLOSURE VALIDATIONS (May 9, 2026 batch)
+  # ============================================================
+
+  - id: V-MVP-002
+    title: Dashboard Redis Host Fix
+    epic_id: null
+    story_id: ST-MVP-002
+    status: validated
+    description: Fix Redis host configuration in Grafana dashboard datasources
+    acceptance_criteria:
+      - Dashboard Redis host fixed
+    test_method: automated
+    owner: ops-team
+    evidence:
+      - pr: 1096
+      - merge_date: 2026-05-09
+
+  - id: V-MVP-003
+    title: Validation Bug Fix
+    epic_id: null
+    story_id: ST-MVP-003
+    status: validated
+    description: Fix validation logic bug in signal pipeline
+    acceptance_criteria:
+      - Validation bug fixed
+    test_method: automated
+    owner: dev
+    evidence:
+      - pr: 1095
+      - merge_date: 2026-05-09
+
+  - id: V-MVP-005
+    title: Heartbeat Degradation Fix
+    epic_id: null
+    story_id: ST-MVP-005
+    status: validated
+    description: Fix heartbeat signal degradation issue
+    acceptance_criteria:
+      - Heartbeat degradation fixed
+    test_method: automated
+    owner: dev
+    evidence:
+      - pr: 1098
+      - merge_date: 2026-05-09
+
+  - id: V-MVP-006
+    title: Zero Signal Alerts Fix
+    epic_id: null
+    story_id: ST-MVP-006
+    status: validated
+    description: Fix zero signal alerts being triggered incorrectly
+    acceptance_criteria:
+      - Zero signal alerts fixed
+    test_method: automated
+    owner: ops-team
+    evidence:
+      - pr: 1099
+      - merge_date: 2026-05-09
+
+  - id: V-MVP-007
+    title: LLM Redundancy Fix
+    epic_id: null
+    story_id: ST-MVP-007
+    status: validated
+    description: Fix LLM redundancy in signal generation
+    acceptance_criteria:
+      - LLM redundancy fixed
+    test_method: automated
+    owner: dev
+    evidence:
+      - pr: 1097
+      - merge_date: 2026-05-09
+
+  - id: V-MVP-008
+    title: Alert Infra Fix
+    epic_id: null
+    story_id: ST-MVP-008
+    status: validated
+    description: Fix alert infrastructure issues
+    acceptance_criteria:
+      - Alert infrastructure fixed
+    test_method: automated
+    owner: ops-team
+    evidence:
+      - pr: 1100
+      - merge_date: 2026-05-09
+
+  - id: V-MVP-009
+    title: Strategy Protocol Registry
+    epic_id: null
+    story_id: ST-MVP-009
+    status: validated
+    description: Implement strategy protocol registry for strategy management
+    acceptance_criteria:
+      - Strategy protocol registry implemented
+    test_method: automated
+    owner: dev
+    evidence:
+      - pr: 1102
+      - merge_date: 2026-05-09
+
+  - id: V-MVP-010
+    title: ICT Confluence Strategy
+    epic_id: null
+    story_id: ST-MVP-010
+    status: validated
+    description: Implement ICT confluence strategy for signal generation
+    acceptance_criteria:
+      - ICT confluence strategy implemented
+    test_method: automated
+    owner: ml-team
+    evidence:
+      - pr: 1103
+      - merge_date: 2026-05-09
+
+  - id: V-MVP-011
+    title: Backtest Adapter
+    epic_id: null
+    story_id: ST-MVP-011
+    status: validated
+    description: Implement backtest adapter for strategy validation
+    acceptance_criteria:
+      - Backtest adapter implemented
+    test_method: automated
+    owner: dev
+    evidence:
+      - pr: 1104
+      - merge_date: 2026-05-09
+
+  - id: V-G-EXIT-24H
+    title: Canary PnL Instrumentation
+    epic_id: null
+    story_id: G-EXIT-24H
+    status: validated
+    description: Add PnL tracking instrumentation to canary trading system
+    acceptance_criteria:
+      - Canary PnL instrumentation added
+    test_method: automated
+    owner: ops-team
+    evidence:
+      - pr: 1101
+      - merge_date: 2026-05-09
 
 # ============================================================
 # Global validation thresholds

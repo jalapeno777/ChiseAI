@@ -1,8 +1,8 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: '2026-05-08'
-  managed_by: merlin
+  last_updated: '2026-05-09'
+  managed_by: jarvis
   status_notes:
   - 'R2a Canary: SIGNAL CRASH-LOOP FIXED (2026-04-26) — ST-SIGNAL-CRASHLOOP-FIX-001 merged to main via safety/ST-SIGNAL-CRASHLOOP-FIX-001. Root cause: hardcoded REDIS_HOST at import time + missing INFLUXDB_TOKEN
     + stale container image. Fix: setdefault() for env vars + INFLUXDB_TOKEN added to docker-compose. Container restart required to pick up changes.'
@@ -1089,6 +1089,136 @@ completed:
   notes: 9,001 stale signals removed (Apr 26-27), 4,200 preserved (May 02).
   merge_commit: 42525bbe8
   commit_sha: 2d67cb335
+- id: ST-MVP-002
+  title: Dashboard Redis Host Fix
+  description: Fix Redis host configuration in Grafana dashboard datasources
+  owner: ops-team
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1096'
+  branch: feature/ST-MVP-002-dashboard-redis-host
+  notes:
+  - Dashboard Redis host fixed
+  merge_commit: unknown
+- id: ST-MVP-003
+  title: Validation Bug Fix
+  description: Fix validation logic bug in signal pipeline
+  owner: dev
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1095'
+  branch: feature/ST-MVP-003-validation-bug-fix
+  notes:
+  - Validation bug fixed
+  merge_commit: unknown
+- id: ST-MVP-005
+  title: Heartbeat Degradation Fix
+  description: Fix heartbeat signal degradation issue
+  owner: dev
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1098'
+  branch: feature/ST-MVP-005-heartbeat-degradation
+  notes:
+  - Heartbeat degradation fixed
+  merge_commit: unknown
+- id: ST-MVP-006
+  title: Zero Signal Alerts Fix
+  description: Fix zero signal alerts being triggered incorrectly
+  owner: ops-team
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1099'
+  branch: feature/ST-MVP-006-zero-signal-alerts
+  notes:
+  - Zero signal alerts fixed
+  merge_commit: unknown
+- id: ST-MVP-007
+  title: LLM Redundancy Fix
+  description: Fix LLM redundancy in signal generation
+  owner: dev
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1097'
+  branch: feature/ST-MVP-007-llm-redundancy
+  notes:
+  - LLM redundancy fixed
+  merge_commit: unknown
+- id: ST-MVP-008
+  title: Alert Infra Fix
+  description: Fix alert infrastructure issues
+  owner: ops-team
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1100'
+  branch: feature/ST-MVP-008-alert-infra-fix
+  notes:
+  - Alert infrastructure fixed
+  merge_commit: unknown
+- id: ST-MVP-009
+  title: Strategy Protocol Registry
+  description: Implement strategy protocol registry for strategy management
+  owner: dev
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1102'
+  branch: feature/ST-MVP-009-strategy-protocol-registry
+  notes:
+  - Strategy protocol registry implemented
+  merge_commit: unknown
+- id: ST-MVP-010
+  title: ICT Confluence Strategy
+  description: Implement ICT confluence strategy for signal generation
+  owner: ml-team
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1103'
+  branch: feature/ST-MVP-010-ict-confluence-strategy
+  notes:
+  - ICT confluence strategy implemented
+  merge_commit: unknown
+- id: ST-MVP-011
+  title: Backtest Adapter
+  description: Implement backtest adapter for strategy validation
+  owner: dev
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1104'
+  branch: feature/ST-MVP-011-backtest-adapter
+  notes:
+  - Backtest adapter implemented
+  merge_commit: unknown
+- id: G-EXIT-24H
+  title: Canary PnL Instrumentation
+  description: Add PnL tracking instrumentation to canary trading system
+  owner: ops-team
+  priority: P2
+  status: completed
+  story_points: 1
+  completion_date: '2026-05-09'
+  pr_number: '1101'
+  branch: feature/G-EXIT-24H-canary-pnl-instrumentation
+  notes:
+  - Canary PnL instrumentation added
+  merge_commit: unknown
 in_progress: null
 backlog:
 - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
