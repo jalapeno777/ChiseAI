@@ -7,14 +7,13 @@ from __future__ import annotations
 
 import pytest
 
-from strategy.contracts import SignalResult, StrategyProtocol
+from strategy.contracts import StrategyProtocol
 from strategy.executors.ict_executor import (
     ICTConfluenceExecutor,
     ICTSignalData,
 )
 from strategy.registry import StrategyRegistry
 from strategy.strategies import register_ict_strategies
-
 
 # ---------------------------------------------------------------------------
 # Test fixtures

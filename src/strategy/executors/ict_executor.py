@@ -26,7 +26,6 @@ from typing import Any
 
 from strategy.contracts import SignalResult
 
-
 # ---------------------------------------------------------------------------
 # Signal data structures (accepted as input, not generated internally)
 # ---------------------------------------------------------------------------
@@ -489,7 +488,6 @@ class ICTConfluenceExecutor:
         Returns:
             Trade P&L if position was closed, None otherwise.
         """
-        entry = position["entry_price"]
         sl = position["stop_loss"]
         tp = position["take_profit"]
         risk_amount = position["risk_amount"]
