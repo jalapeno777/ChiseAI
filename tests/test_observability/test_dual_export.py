@@ -198,6 +198,31 @@ class TestInfluxDBLineProtocol:
         result = exporter._to_influxdb_line_protocol({})
         assert result == ""
 
+    def test_boolean_values_in_influxdb(self, exporter: DualFormatExporter):
+        """Boolean values must produce 'true'/'false', not 'Truei'/'Falsei'.
+
+        InfluxDB line protocol requires:
+        - lowercase 'true'/'false' for boolean fields
+        - No 'i' suffix on booleans (integers get 'i' suffix)
+        """
+        metrics = {
+            "feature_flag": {
+                "value": True,
+                "fields": {"active": False, "enabled": True},
+            }
+        }
+        result = exporter._to_influxdb_line_protocol(metrics)
+
+        # Boolean values should be lowercase 'true'/'false' without 'i' suffix
+        assert "value=true" in result
+        assert "active=false" in result
+        assert "enabled=true" in result
+        # Booleans should NOT get 'i' suffix (Python bool is subclass of int)
+        assert "Truei" not in result
+        assert "Falsei" not in result
+        assert "truei" not in result
+        assert "falsei" not in result
+
     def test_escape_special_characters(self):
         exporter = DualFormatExporter()
         assert exporter._escape_influx_value("hello world") == r"hello\ world"

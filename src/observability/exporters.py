@@ -125,7 +125,9 @@ class DualFormatExporter:
             extra_fields = metric_data.get("fields", {})
 
             field_parts: list[str] = []
-            if isinstance(value, int):
+            if isinstance(value, bool):
+                field_parts.append(f"value={str(value).lower()}")
+            elif isinstance(value, int):
                 field_parts.append(f"value={value}i")
             elif isinstance(value, float):
                 field_parts.append(f"value={value}")
@@ -133,7 +135,9 @@ class DualFormatExporter:
                 field_parts.append(f'value="{value}"')
 
             for fk, fv in extra_fields.items():
-                if isinstance(fv, int):
+                if isinstance(fv, bool):
+                    field_parts.append(f"{fk}={str(fv).lower()}")
+                elif isinstance(fv, int):
                     field_parts.append(f"{fk}={fv}i")
                 elif isinstance(fv, float):
                     field_parts.append(f"{fk}={fv}")
