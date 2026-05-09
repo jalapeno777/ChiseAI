@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 import os
 import socket
+import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -73,6 +74,7 @@ class ProviderHealthChecker:
         self._timeout = timeout_seconds
         self._cache_ttl = cache_ttl_seconds
         self._cache: dict[str, HealthCheckResult] = {}
+        self._cache_lock = threading.Lock()
 
     def check_health(self, provider: str) -> HealthCheckResult:
         """Check the health of a provider.
@@ -86,17 +88,18 @@ class ProviderHealthChecker:
             HealthCheckResult with status
         """
         # Check cache first
-        cached = self._cache.get(provider)
-        if cached is not None:
-            age = time.monotonic() - cached.checked_at
-            if age < self._cache_ttl:
-                logger.debug(
-                    "Health check for %s: using cached result (%s, age=%.1fs)",
-                    provider,
-                    cached.status.name,
-                    age,
-                )
-                return cached
+        with self._cache_lock:
+            cached = self._cache.get(provider)
+            if cached is not None:
+                age = time.monotonic() - cached.checked_at
+                if age < self._cache_ttl:
+                    logger.debug(
+                        "Health check for %s: using cached result (%s, age=%.1fs)",
+                        provider,
+                        cached.status.name,
+                        age,
+                    )
+                    return cached
 
         # Perform fresh check
         check_fn = {
@@ -117,7 +120,8 @@ class ProviderHealthChecker:
             )
 
         # Cache the result
-        self._cache[provider] = result
+        with self._cache_lock:
+            self._cache[provider] = result
         logger.info(
             "Health check for %s: %s (%s)",
             provider,
@@ -148,10 +152,11 @@ class ProviderHealthChecker:
         Args:
             provider: Provider to invalidate, or None for all
         """
-        if provider is None:
-            self._cache.clear()
-        else:
-            self._cache.pop(provider, None)
+        with self._cache_lock:
+            if provider is None:
+                self._cache.clear()
+            else:
+                self._cache.pop(provider, None)
 
     def _check_kimi_compat(self, provider: str) -> HealthCheckResult:
         """Check health of KIMI adapter container via TCP socket.
@@ -179,8 +184,10 @@ class ProviderHealthChecker:
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(self._timeout)
-                result = sock.connect_ex((host, port))
-                sock.close()
+                try:
+                    result = sock.connect_ex((host, port))
+                finally:
+                    sock.close()
 
                 latency_ms = (time.monotonic() - start) * 1000
 

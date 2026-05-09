@@ -260,6 +260,7 @@ class LLMProviderChain:
         enable_metrics: bool = True,
         metrics_exporter: ProviderMetricsExporter | None = None,
         circuit_breaker: Any | None = None,
+        health_monitor: Any | None = None,
     ):
         """Initialize the provider chain.
 
@@ -271,6 +272,9 @@ class LLMProviderChain:
             metrics_exporter: Optional exporter for InfluxDB integration
             circuit_breaker: Optional CircuitBreaker instance for proactive
                 failure detection. If None, a default is created.
+            health_monitor: Optional HealthMonitor instance for background
+                health checking. If provided, it updates the circuit breaker
+                based on periodic health checks.
         """
         # Provider Order Enforcement (LLM-PROVIDER-FIX-003):
         # 1. kimi_compat MUST be tried before kimi (adapter preferred over direct)
@@ -311,6 +315,9 @@ class LLMProviderChain:
             from llm.circuit_breaker import CircuitBreaker
 
             self._circuit_breaker = CircuitBreaker()
+
+        # Health monitor for background health checking (ST-MVP-007)
+        self._health_monitor = health_monitor
 
     def _normalize_provider_order(self, provider_order: list[str]) -> list[str]:
         """Normalize provider order with backward-compatible aliases.

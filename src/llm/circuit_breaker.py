@@ -90,7 +90,7 @@ class CircuitBreaker:
         self._cooldown_seconds = cooldown_seconds
         self._half_open_max_attempts = half_open_max_attempts
         self._circuits: dict[str, CircuitRecord] = {}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def _get_or_create_circuit(self, provider: str) -> CircuitRecord:
         """Get or create a circuit record for a provider.

@@ -119,7 +119,7 @@ class HealthMonitor:
             results[provider] = result.status.name
 
             # Update circuit breaker based on health
-            self._update_circuit_from_health(provider, result.status)
+            self._update_circuit_from_health(provider, result.status.name)
 
         self._last_check_results = results
         return results
