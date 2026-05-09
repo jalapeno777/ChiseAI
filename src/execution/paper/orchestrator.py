@@ -2042,7 +2042,7 @@ class PaperTradingOrchestrator:
 
             # G-EXIT-24H: Record canary close for instrumentation
             try:
-                self._canary_metrics.record_canary_close(
+                await self._canary_metrics.record_canary_close_async(
                     position_id=position.position_id,
                     realized_pnl=realized_pnl,
                     timestamp=datetime.now(UTC).timestamp(),
