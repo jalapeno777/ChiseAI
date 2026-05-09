@@ -13,6 +13,7 @@ Redis keys:
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass
@@ -69,7 +70,16 @@ class ZeroSignalMetrics:
                 import redis
 
                 self._redis = redis.Redis(
-                    host="localhost", port=6379, decode_responses=True
+                    host=os.getenv(
+                        "MONITORING_REDIS_HOST",
+                        os.getenv("REDIS_HOST", "host.docker.internal"),
+                    ),
+                    port=int(
+                        os.getenv(
+                            "MONITORING_REDIS_PORT", os.getenv("REDIS_PORT", "6380")
+                        )
+                    ),
+                    decode_responses=True,
                 )
                 self._redis.ping()
                 self._redis_available = True
