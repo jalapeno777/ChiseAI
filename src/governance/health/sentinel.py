@@ -19,6 +19,11 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from .degradation import (
+    DegradationEvent,
+    DegradationLevel,
+    DegradationTracker,
+)
 from .metrics import get_health_metrics
 from .predictor import (
     HealthAlert,
@@ -30,11 +35,6 @@ from .remediator import (
     RemediationConfig,
     RemediationRecord,
     RemediationStatus,
-)
-from .degradation import (
-    DegradationEvent,
-    DegradationLevel,
-    DegradationTracker,
 )
 from .scorer import (
     AgentHealthScore,
@@ -470,10 +470,8 @@ class HealthSentinel:
                 # Level transition detected
                 slope = self.degradation_tracker.get_slope(component)
                 window = self.degradation_tracker.get_window(component)
-                previous_level = self.degradation_tracker.get_level(component)
 
-                # We need the previous level before it changed
-                # The tracker already updated, so reconstruct from event
+                # Create degradation event for history tracking
                 event = DegradationEvent(
                     component=component,
                     previous_level=DegradationLevel.STABLE,  # placeholder

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -132,7 +131,7 @@ class DegradationTracker:
         # Emit event on transition
         if new_level != previous_level:
             slope = self._calculate_slope(list(self._windows[component]))
-            event = DegradationEvent(
+            DegradationEvent(
                 component=component,
                 previous_level=previous_level,
                 new_level=new_level,
@@ -241,7 +240,7 @@ class DegradationTracker:
         # Calculate covariance and variance
         numerator = 0.0
         denominator = 0.0
-        for i, y in zip(x_indices, scores):
+        for i, y in zip(x_indices, scores, strict=True):
             numerator += (i - x_mean) * (y - y_mean)
             denominator += (i - x_mean) ** 2
 

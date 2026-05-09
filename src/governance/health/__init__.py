@@ -23,6 +23,11 @@ Story: ST-GOV-008
 Epic: EP-GOV-001
 """
 
+from .degradation import (
+    DegradationEvent,
+    DegradationLevel,
+    DegradationTracker,
+)
 from .metrics import (
     HealthMetricPoint,
     HealthMetrics,
@@ -49,11 +54,6 @@ from .scorer import (
     HealthScorer,
     HealthStatus,
     SwarmHealthScore,
-)
-from .degradation import (
-    DegradationEvent,
-    DegradationLevel,
-    DegradationTracker,
 )
 from .sentinel import (
     HealthSentinel,

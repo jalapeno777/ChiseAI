@@ -10,29 +10,19 @@ Story: ST-MVP-005
 """
 
 from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock
 
-import pytest
-from unittest.mock import MagicMock, patch
-
+from src.governance.checkpoint.gates import (
+    GateChecker,
+)
 from src.governance.health.degradation import (
-    DegradationEvent,
     DegradationLevel,
     DegradationTracker,
-)
-from src.governance.health.scorer import (
-    AgentHealthScore,
-    HealthDimension,
-    HealthStatus,
 )
 from src.governance.health.sentinel import (
     HealthSentinel,
     HealthSentinelConfig,
 )
-from src.governance.checkpoint.gates import (
-    GateChecker,
-    GateResult,
-)
-
 
 # ---------------------------------------------------------------------------
 # Unit Tests: DegradationTracker
@@ -333,7 +323,7 @@ class TestDegradationTrackerRedisIntegration:
 
         mock_redis.setex.assert_called_once()
         call_args = mock_redis.setex.call_args
-        assert "bmad:chiseai:health:degradation:scheduler" == call_args[0][0]
+        assert call_args[0][0] == "bmad:chiseai:health:degradation:scheduler"
 
     def test_persist_state_no_redis(self):
         """record() works without Redis (in-memory only)."""
