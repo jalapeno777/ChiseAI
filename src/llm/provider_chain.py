@@ -259,6 +259,7 @@ class LLMProviderChain:
         retry_delay: float = 1.0,
         enable_metrics: bool = True,
         metrics_exporter: ProviderMetricsExporter | None = None,
+        circuit_breaker: Any | None = None,
     ):
         """Initialize the provider chain.
 
@@ -268,6 +269,8 @@ class LLMProviderChain:
             retry_delay: Initial retry delay (exponential backoff)
             enable_metrics: Whether to collect metrics during burn-in
             metrics_exporter: Optional exporter for InfluxDB integration
+            circuit_breaker: Optional CircuitBreaker instance for proactive
+                failure detection. If None, a default is created.
         """
         # Provider Order Enforcement (LLM-PROVIDER-FIX-003):
         # 1. kimi_compat MUST be tried before kimi (adapter preferred over direct)
@@ -300,6 +303,14 @@ class LLMProviderChain:
             from llm.observability import ChainMetrics
 
             self._chain_metrics = ChainMetrics()
+
+        # Circuit breaker for proactive failure detection (ST-MVP-007)
+        if circuit_breaker is not None:
+            self._circuit_breaker = circuit_breaker
+        else:
+            from llm.circuit_breaker import CircuitBreaker
+
+            self._circuit_breaker = CircuitBreaker()
 
     def _normalize_provider_order(self, provider_order: list[str]) -> list[str]:
         """Normalize provider order with backward-compatible aliases.
@@ -1250,10 +1261,18 @@ class LLMProviderChain:
             self._chain_metrics.record_query_start()
 
         for provider_name in provider_list:
-            # Check if provider is available
+            # Check if provider is available (environment/config check)
             available, reason = self._is_provider_available(provider_name)
             if not available:
                 logger.debug(f"Skipping {provider_name}: {reason}")
+                continue
+
+            # Check circuit breaker state (ST-MVP-007)
+            if not self._circuit_breaker.is_available(provider_name):
+                cb_state = self._circuit_breaker.get_state(provider_name)
+                logger.info(
+                    f"Skipping {provider_name}: circuit breaker is {cb_state.name}"
+                )
                 continue
 
             logger.info(f"Trying LLM provider: {provider_name}")
@@ -1268,6 +1287,12 @@ class LLMProviderChain:
             response = await self._query_with_retry(
                 provider_name, query_fn, prompt, system_prompt
             )
+
+            # Record result to circuit breaker (ST-MVP-007)
+            if response.success:
+                self._circuit_breaker.record_success(provider_name)
+            else:
+                self._circuit_breaker.record_failure(provider_name)
 
             if response.success:
                 logger.info(
@@ -1325,10 +1350,20 @@ class LLMProviderChain:
         for provider_name in self.provider_order:
             available, reason = self._is_provider_available(provider_name)
             config = PROVIDER_CONFIGS.get(provider_name)
+            cb_state = self._circuit_breaker.get_state(provider_name)
             status[provider_name] = {
                 "available": available,
                 "reason": reason,
                 "priority": config.priority if config else 0,
                 "label": config.name if config else provider_name,
+                "circuit_breaker_state": cb_state.name,
             }
         return status
+
+    def get_circuit_breaker_states(self) -> dict[str, dict[str, Any]]:
+        """Get circuit breaker states for all providers.
+
+        Returns:
+            Dictionary mapping provider names to circuit breaker info
+        """
+        return self._circuit_breaker.get_all_states()
