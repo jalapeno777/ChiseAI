@@ -119,6 +119,44 @@ class Alert:
             ).isoformat(),  # Default 1h TTL
         }
 
+    def to_influxdb_format(self) -> dict[str, Any]:
+        """Convert to InfluxDB-compatible alert format.
+
+        InfluxDB uses tags for indexed/dimension fields and fields for
+        data values. Timestamps use nanosecond precision Unix epoch.
+
+        Returns:
+            InfluxDB-compatible alert dictionary with measurement, tags,
+            fields, and timestamp keys
+        """
+        from ml.monitoring.registry_metrics import sanitize_metric_name
+
+        tags = {
+            "alertname": sanitize_metric_name(self.name, "influxdb"),
+            "severity": self.severity.value,
+        }
+        # Merge any metadata tags (e.g. environment, service)
+        for k, v in self.metadata.get("labels", {}).items():
+            tags[sanitize_metric_name(k, "influxdb")] = str(v)
+
+        fields = {
+            "message": self.message,
+            "acknowledged": str(self.acknowledged).lower(),
+        }
+        # Merge any metadata fields
+        for k, v in self.metadata.get("annotations", {}).items():
+            fields[k] = str(v)
+
+        # InfluxDB uses nanosecond-precision Unix timestamps
+        ts_ns = int(self.timestamp.timestamp() * 1e9)
+
+        return {
+            "measurement": "alerts",
+            "tags": tags,
+            "fields": fields,
+            "timestamp": ts_ns,
+        }
+
 
 @dataclass
 class AlertRule:
