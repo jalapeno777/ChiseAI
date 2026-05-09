@@ -9,8 +9,6 @@ For ST-MVP-007: LLM Provider Redundancy Enhancement
 import threading
 import time
 
-import pytest
-
 from llm.circuit_breaker import CircuitBreaker, CircuitState
 
 

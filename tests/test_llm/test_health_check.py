@@ -10,8 +10,6 @@ import os
 import time
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from llm.health_check import HealthCheckResult, HealthStatus, ProviderHealthChecker
 
 
