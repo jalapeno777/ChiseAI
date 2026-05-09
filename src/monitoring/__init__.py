@@ -6,9 +6,11 @@ Provides monitoring capabilities for:
 - Data source health (InfluxDB, PostgreSQL)
 - Alert routing to Discord
 - Grafana dashboard integration
+- Zero-signal metrics and Prometheus exposition
 
 For ST-DATA-004: Data Quality Monitoring - Freshness + Gaps
 For ST-OPS-008: Grafana Data Source Health Monitoring
+For ST-MVP-006: Zero-Signal Monitoring Alerts
 """
 
 from monitoring.data_quality import (
@@ -58,6 +60,10 @@ from monitoring.datasource_health_discord import (
     DatasourceHealthDiscordSender,
     create_discord_alert_handler,
 )
+from monitoring.zero_signal_metrics import (
+    DatasourceMetrics,
+    ZeroSignalMetrics,
+)
 
 __all__ = [
     # Core data quality
@@ -97,4 +103,7 @@ __all__ = [
     "DatasourceHealthDiscordFormatter",
     "DatasourceHealthDiscordSender",
     "create_discord_alert_handler",
+    # Zero-signal metrics (ST-MVP-006)
+    "DatasourceMetrics",
+    "ZeroSignalMetrics",
 ]

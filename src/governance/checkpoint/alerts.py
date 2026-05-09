@@ -6,8 +6,9 @@ anomalous conditions in the trading system.
 Alerts:
 - ActionableZeroAlert: Detects when signals are generated but none are actionable
   for a sustained period, indicating potential filtering or strategy issues.
+  Integrates with ZeroSignalMetrics and ZeroSignalNotifier for observability.
 
-Story: BATCH3-ACTIONABLE-ZERO-002
+Story: BATCH3-ACTIONABLE-ZERO-002, ST-MVP-006
 """
 
 from __future__ import annotations
@@ -99,6 +100,9 @@ class ActionableZeroAlert:
         redis_port: int | None = None,
         consecutive_windows: int | None = None,
         suppression_hours: int | None = None,
+        zero_signal_metrics: Any | None = None,
+        zero_signal_notifier: Any | None = None,
+        datasource_name: str = "primary",
     ):
         """Initialize the actionable-zero alert.
 
@@ -108,6 +112,9 @@ class ActionableZeroAlert:
             redis_port: Redis port (defaults to env or 6380)
             consecutive_windows: Number of consecutive windows before alerting
             suppression_hours: Minimum hours between alerts
+            zero_signal_metrics: Optional ZeroSignalMetrics instance for recording
+            zero_signal_notifier: Optional ZeroSignalNotifier for Discord alerts
+            datasource_name: Name of the datasource for metrics/notifier routing
         """
         self._redis = redis_client
         self._redis_host = redis_host or os.getenv(
@@ -126,6 +133,9 @@ class ActionableZeroAlert:
                 "ACTIONABLE_ZERO_SUPPRESSION_HOURS", self.DEFAULT_SUPPRESSION_HOURS
             )
         )
+        self._zero_signal_metrics = zero_signal_metrics
+        self._zero_signal_notifier = zero_signal_notifier
+        self._datasource_name = datasource_name
 
     def _get_redis(self) -> Any | None:
         """Get or create Redis connection."""
@@ -326,6 +336,18 @@ class ActionableZeroAlert:
                     signals_15m, consecutive, duration_minutes
                 )
 
+                # Record metrics and send Discord notification (ST-MVP-006)
+                self._record_zero_signal_metrics(
+                    duration_minutes=duration_minutes,
+                    consecutive=consecutive,
+                )
+                self._notify_zero_signal(
+                    duration_minutes=duration_minutes,
+                    consecutive=consecutive,
+                    signals_15m=signals_15m,
+                    suppressed=False,
+                )
+
                 # Update last alert time
                 state["last_alert_time"] = now.isoformat()
                 self._save_state(state)
@@ -370,6 +392,12 @@ class ActionableZeroAlert:
                     f"(actionable={actionable_15m}, signals={signals_15m})"
                 )
 
+                # Record recovery in metrics and notify (ST-MVP-006)
+                self._record_zero_signal_recovery()
+                self._notify_zero_signal_recovery(
+                    outage_duration_minutes=consecutive * 15,
+                )
+
             # Reset state
             state["consecutive_windows"] = 0
             state["window_signals"] = []
@@ -390,6 +418,150 @@ class ActionableZeroAlert:
                 },
                 timestamp=now,
             )
+
+    def _record_zero_signal_metrics(
+        self, duration_minutes: int, consecutive: int
+    ) -> None:
+        """Record zero-signal metrics for observability (ST-MVP-006).
+
+        Non-blocking: errors are logged but never prevent alert behavior.
+
+        Args:
+            duration_minutes: Total zero-signal duration in minutes.
+            consecutive: Number of consecutive zero-signal windows.
+        """
+        if self._zero_signal_metrics is None:
+            return
+
+        try:
+            self._zero_signal_metrics.record_zero_signal(
+                datasource=self._datasource_name,
+                duration_minutes=float(duration_minutes),
+                window_count=consecutive,
+            )
+        except Exception as e:
+            logger.debug("Failed to record zero-signal metrics: %s", e)
+
+    def _record_zero_signal_recovery(self) -> None:
+        """Record zero-signal recovery in metrics (ST-MVP-006).
+
+        Non-blocking: errors are logged but never prevent alert behavior.
+        """
+        if self._zero_signal_metrics is None:
+            return
+
+        try:
+            self._zero_signal_metrics.record_signal_resumed(
+                datasource=self._datasource_name,
+            )
+        except Exception as e:
+            logger.debug("Failed to record zero-signal recovery: %s", e)
+
+    def _notify_zero_signal(
+        self,
+        duration_minutes: int,
+        consecutive: int,
+        signals_15m: int,
+        suppressed: bool,
+    ) -> None:
+        """Send zero-signal Discord notification (ST-MVP-006).
+
+        Non-blocking: errors are logged but never prevent alert behavior.
+        Only sends for unsuppressed alerts (suppressed alerts already notified).
+
+        Args:
+            duration_minutes: Total zero-signal duration in minutes.
+            consecutive: Number of consecutive zero-signal windows.
+            signals_15m: Number of signals in the current 15m window.
+            suppressed: Whether this alert is suppressed.
+        """
+        if self._zero_signal_notifier is None or suppressed:
+            return
+
+        try:
+            import asyncio
+
+            metrics = None
+            if self._zero_signal_metrics is not None:
+                metrics = self._zero_signal_metrics.get_metrics(self._datasource_name)
+
+            last_signal_ts = None
+            event_count = 0
+            if metrics is not None:
+                last_signal_ts = metrics.last_signal_timestamp
+                event_count = metrics.event_count
+
+            severity = (
+                "critical" if consecutive >= self._consecutive_windows else "warning"
+            )
+
+            # Fire-and-forget async notification
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(
+                    self._zero_signal_notifier.send_zero_signal_alert(
+                        datasource=self._datasource_name,
+                        duration_minutes=float(duration_minutes),
+                        window_count=consecutive,
+                        severity=severity,
+                        event_count=event_count,
+                        last_signal_time=last_signal_ts,
+                    )
+                )
+            except RuntimeError:
+                # No running loop, create one
+                asyncio.run(
+                    self._zero_signal_notifier.send_zero_signal_alert(
+                        datasource=self._datasource_name,
+                        duration_minutes=float(duration_minutes),
+                        window_count=consecutive,
+                        severity=severity,
+                        event_count=event_count,
+                        last_signal_time=last_signal_ts,
+                    )
+                )
+        except Exception as e:
+            logger.debug("Failed to send zero-signal notification: %s", e)
+
+    def _notify_zero_signal_recovery(self, outage_duration_minutes: int) -> None:
+        """Send zero-signal recovery Discord notification (ST-MVP-006).
+
+        Non-blocking: errors are logged but never prevent alert behavior.
+
+        Args:
+            outage_duration_minutes: Total duration of the outage that ended.
+        """
+        if self._zero_signal_notifier is None:
+            return
+
+        try:
+            import asyncio
+
+            event_count = 0
+            if self._zero_signal_metrics is not None:
+                metrics = self._zero_signal_metrics.get_metrics(self._datasource_name)
+                if metrics is not None:
+                    event_count = metrics.event_count
+
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(
+                    self._zero_signal_notifier.send_recovery_notification(
+                        datasource=self._datasource_name,
+                        outage_duration_minutes=float(outage_duration_minutes),
+                        event_count=event_count,
+                    )
+                )
+            except RuntimeError:
+                asyncio.run(
+                    self._zero_signal_notifier.send_recovery_notification(
+                        datasource=self._datasource_name,
+                        outage_duration_minutes=float(outage_duration_minutes),
+                        event_count=event_count,
+                    )
+                )
+        except Exception as e:
+            logger.debug("Failed to send zero-signal recovery notification: %s", e)
 
     def get_state(self) -> dict[str, Any]:
         """Get current alert state.
