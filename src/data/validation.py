@@ -230,19 +230,19 @@ class TypeValidator(DataValidator):
         issues = []
 
         for _field_name, expected_type in self.type_map.items():
-            if field not in data:
+            if _field_name not in data:
                 continue
 
-            value = data[field]
+            value = data[_field_name]
             if value is None:
                 continue
 
             if not isinstance(value, expected_type):
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' has wrong type",
+                        f"Field '{_field_name}' has wrong type",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field_name,
                         value=type(value).__name__,
                         expected=expected_type.__name__,
                         suggestion=f"Expected {expected_type.__name__}, got {type(value).__name__}",
@@ -274,16 +274,16 @@ class RangeValidator(DataValidator):
         issues = []
 
         for _field_name, range_spec in self.ranges.items():
-            if field not in data or data[field] is None:
+            if _field_name not in data or data[_field_name] is None:
                 continue
 
-            value = data[field]
+            value = data[_field_name]
             if not isinstance(value, (int, float)):
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is not numeric",
+                        f"Field '{_field_name}' is not numeric",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field_name,
                         value=value,
                     )
                 )
@@ -297,9 +297,9 @@ class RangeValidator(DataValidator):
                 if inclusive and value < min_val:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is below minimum",
+                            f"Field '{_field_name}' is below minimum",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field_name,
                             value=value,
                             expected=f"{min_val}",
                             suggestion=f"Value must be >= {min_val}",
@@ -308,9 +308,9 @@ class RangeValidator(DataValidator):
                 elif not inclusive and value <= min_val:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is at or below minimum",
+                            f"Field '{_field_name}' is at or below minimum",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field_name,
                             value=value,
                             expected=f"> {min_val}",
                         )
@@ -320,9 +320,9 @@ class RangeValidator(DataValidator):
                 if inclusive and value > max_val:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' exceeds maximum",
+                            f"Field '{_field_name}' exceeds maximum",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field_name,
                             value=value,
                             expected=f"{max_val}",
                             suggestion=f"Value must be <= {max_val}",
@@ -331,9 +331,9 @@ class RangeValidator(DataValidator):
                 elif not inclusive and value >= max_val:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is at or above maximum",
+                            f"Field '{_field_name}' is at or above maximum",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field_name,
                             value=value,
                             expected=f"< {max_val}",
                         )
@@ -362,16 +362,16 @@ class PatternValidator(DataValidator):
         issues = []
 
         for _field_name, pattern in self.patterns.items():
-            if field not in data or data[field] is None:
+            if _field_name not in data or data[_field_name] is None:
                 continue
 
-            value = str(data[field])
+            value = str(data[_field_name])
             if not pattern.match(value):
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' does not match required pattern",
+                        f"Field '{_field_name}' does not match required pattern",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field_name,
                         value=value,
                         expected=pattern.pattern,
                         suggestion=f"Value must match pattern: {pattern.pattern}",
@@ -401,10 +401,10 @@ class LengthValidator(DataValidator):
         issues = []
 
         for _field_name, specs in self.length_specs.items():
-            if field not in data or data[field] is None:
+            if _field_name not in data or data[_field_name] is None:
                 continue
 
-            value = data[field]
+            value = data[_field_name]
             if hasattr(value, "__len__"):
                 length = len(value)
             else:
@@ -416,9 +416,9 @@ class LengthValidator(DataValidator):
             if min_len is not None and length < min_len:
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is too short",
+                        f"Field '{_field_name}' is too short",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field_name,
                         value=length,
                         expected=f"{min_len}",
                         suggestion=f"Length must be >= {min_len}",
@@ -428,9 +428,9 @@ class LengthValidator(DataValidator):
             if max_len is not None and length > max_len:
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is too long",
+                        f"Field '{_field_name}' is too long",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field_name,
                         value=length,
                         expected=f"{max_len}",
                         suggestion=f"Length must be <= {max_len}",
@@ -480,7 +480,7 @@ class UniquenessValidator(DataValidator):
             # Create key from specified fields
             key_parts = []
             for _field in self.fields:
-                value = record.get(field)
+                value = record.get(_field)
                 if value is None:
                     key_parts.append(None)
                 elif isinstance(value, str) and not self.case_sensitive:
@@ -557,7 +557,7 @@ class DateTimeValidator(DataValidator):
             if _field not in data or data[_field] is None:
                 continue
 
-            value = data[field]
+            value = data[_field]
             dt_value = None
 
             # Parse datetime
@@ -572,9 +572,9 @@ class DateTimeValidator(DataValidator):
                 except ValueError:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' has invalid datetime format",
+                            f"Field '{_field}' has invalid datetime format",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field,
                             value=value,
                             expected=self.format_str or "ISO format",
                             suggestion="Use ISO 8601 format or specify format",
@@ -587,9 +587,9 @@ class DateTimeValidator(DataValidator):
                 if self.min_date and dt_value < self.min_date:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is before minimum date",
+                            f"Field '{_field}' is before minimum date",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field,
                             value=str(dt_value),
                             expected=f">= {self.min_date}",
                         )
@@ -598,9 +598,9 @@ class DateTimeValidator(DataValidator):
                 if self.max_date and dt_value > self.max_date:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is after maximum date",
+                            f"Field '{_field}' is after maximum date",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field,
                             value=str(dt_value),
                             expected=f"<= {self.max_date}",
                         )
@@ -610,9 +610,9 @@ class DateTimeValidator(DataValidator):
                 if not self.allow_future and dt_value > now:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is in the future",
+                            f"Field '{_field}' is in the future",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field,
                             value=str(dt_value),
                             suggestion="Future dates are not allowed",
                         )
@@ -621,9 +621,9 @@ class DateTimeValidator(DataValidator):
                 if not self.allow_past and dt_value < now:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is in the past",
+                            f"Field '{_field}' is in the past",
                             ValidationSeverity.WARNING,
-                            field=field,
+                            field=_field,
                             value=str(dt_value),
                         )
                     )
@@ -656,10 +656,10 @@ class EnumValidator(DataValidator):
         issues = []
 
         for _field_name, allowed in self.allowed_values.items():
-            if field not in data or data[field] is None:
+            if _field_name not in data or data[_field_name] is None:
                 continue
 
-            value = data[field]
+            value = data[_field_name]
 
             if not self.case_sensitive and isinstance(value, str):
                 valid = value.lower() in [str(v).lower() for v in allowed]
@@ -669,9 +669,9 @@ class EnumValidator(DataValidator):
             if not valid:
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' has invalid value",
+                        f"Field '{_field_name}' has invalid value",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field_name,
                         value=value,
                         expected=allowed,
                         suggestion=f"Value must be one of: {allowed}",
@@ -965,23 +965,44 @@ class JSONValidator(DataValidator):
     def validate(
         self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
+        import json
+
         issues = []
 
         for _field in self.fields:
             if _field not in data or data[_field] is None:
                 continue
 
-            value = str(data[_field])
+            value = data[_field]
 
-            if not self.URL_PATTERN.match(value):
+            # If it's already a dict, it's valid JSON object
+            if isinstance(value, dict):
+                continue
+
+            # Try to parse as JSON string
+            if isinstance(value, str):
+                try:
+                    json.loads(value)
+                except json.JSONDecodeError:
+                    issues.append(
+                        self._create_issue(
+                            f"Field '{_field}' contains invalid JSON",
+                            ValidationSeverity.ERROR,
+                            field=_field,
+                            value=value,
+                            expected="Valid JSON object or string",
+                            suggestion="Provide valid JSON format",
+                        )
+                    )
+            else:
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' contains invalid URL",
+                        f"Field '{_field}' is not JSON-serializable",
                         ValidationSeverity.ERROR,
-                        field=field,
-                        value=value,
-                        expected="Valid URL format",
-                        suggestion=f"URL should use scheme: {', '.join(self.allowed_schemes)}",
+                        field=_field,
+                        value=type(value).__name__,
+                        expected="dict or JSON string",
+                        suggestion="Provide a JSON object or valid JSON string",
                     )
                 )
 
@@ -1191,9 +1212,9 @@ class FilePathValidator(DataValidator):
             if len(value) > self.max_length:
                 issues.append(
                     self._create_issue(
-                        f"File path in '{field}' is too long",
+                        f"File path in '{_field}' is too long",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=len(value),
                         expected=f"<= {self.max_length}",
                     )
@@ -1205,9 +1226,9 @@ class FilePathValidator(DataValidator):
                 if ext not in self.allowed_extensions:
                     issues.append(
                         self._create_issue(
-                            f"File path in '{field}' has invalid extension",
+                            f"File path in '{_field}' has invalid extension",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field,
                             value=ext,
                             expected=f"One of: {', '.join(self.allowed_extensions)}",
                         )
@@ -1217,9 +1238,9 @@ class FilePathValidator(DataValidator):
             if self.must_exist and not os.path.exists(value):
                 issues.append(
                     self._create_issue(
-                        f"File path in '{field}' does not exist",
+                        f"File path in '{_field}' does not exist",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                     )
                 )
@@ -1259,18 +1280,18 @@ class PhoneValidator(DataValidator):
         phone_pattern = re.compile(r"^[\d\s\-\(\)\+]+$")
 
         for _field in self.fields:
-            if field not in data or data[field] is None:
+            if _field not in data or data[_field] is None:
                 continue
 
-            value = str(data[field]).strip()
+            value = str(data[_field]).strip()
 
             # Check basic characters
             if not phone_pattern.match(value):
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' contains invalid characters for phone number",
+                        f"Field '{_field}' contains invalid characters for phone number",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                         suggestion="Phone should only contain digits, spaces, dashes, parentheses, and +",
                     )
@@ -1284,9 +1305,9 @@ class PhoneValidator(DataValidator):
             if len(digits) < 10 or len(digits) > 15:
                 issues.append(
                     self._create_issue(
-                        f"Phone number in '{field}' has invalid length",
+                        f"Phone number in '{_field}' has invalid length",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=f"{len(digits)} digits",
                         expected="10-15 digits",
                         suggestion="Check for missing or extra digits",
@@ -1415,17 +1436,17 @@ class UUIDValidator(DataValidator):
         issues = []
 
         for _field in self.fields:
-            if field not in data or data[field] is None:
+            if _field not in data or data[_field] is None:
                 continue
 
-            value = str(data[field]).lower().strip()
+            value = str(data[_field]).lower().strip()
 
             if not self.UUID_PATTERN.match(value):
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is not a valid UUID",
+                        f"Field '{_field}' is not a valid UUID",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                         expected="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
                         suggestion="UUID should be in standard format with 36 characters",
@@ -1438,9 +1459,9 @@ class UUIDValidator(DataValidator):
                 if version_char != expected_version:
                     issues.append(
                         self._create_issue(
-                            f"UUID in '{field}' has wrong version",
+                            f"UUID in '{_field}' has wrong version",
                             ValidationSeverity.WARNING,
-                            field=field,
+                            field=_field,
                             value=f"version {version_char}",
                             expected=f"version {expected_version}",
                         )
@@ -1509,10 +1530,10 @@ class IPAddressValidator(DataValidator):
         issues = []
 
         for _field in self.fields:
-            if field not in data or data[field] is None:
+            if _field not in data or data[_field] is None:
                 continue
 
-            value = str(data[field]).strip()
+            value = str(data[_field]).strip()
 
             is_v4 = self._is_valid_ipv4(value)
             is_v6 = self._is_valid_ipv6(value)
@@ -1520,9 +1541,9 @@ class IPAddressValidator(DataValidator):
             if not is_v4 and not is_v6:
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is not a valid IP address",
+                        f"Field '{_field}' is not a valid IP address",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                         expected="Valid IPv4 or IPv6 address",
                     )
@@ -1530,9 +1551,9 @@ class IPAddressValidator(DataValidator):
             elif is_v4 and not self.allow_v4:
                 issues.append(
                     self._create_issue(
-                        f"IPv4 addresses not allowed in '{field}'",
+                        f"IPv4 addresses not allowed in '{_field}'",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                         expected="IPv6 address",
                     )
@@ -1540,9 +1561,9 @@ class IPAddressValidator(DataValidator):
             elif is_v6 and not self.allow_v6:
                 issues.append(
                     self._create_issue(
-                        f"IPv6 addresses not allowed in '{field}'",
+                        f"IPv6 addresses not allowed in '{_field}'",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                         expected="IPv4 address",
                     )
@@ -1587,10 +1608,10 @@ class PercentageValidator(DataValidator):
         issues = []
 
         for _field in self.fields:
-            if field not in data or data[field] is None:
+            if _field not in data or data[_field] is None:
                 continue
 
-            value = data[field]
+            value = data[_field]
 
             # Handle percentage strings (e.g., "50%")
             if isinstance(value, str):
@@ -1600,10 +1621,10 @@ class PercentageValidator(DataValidator):
                 except ValueError:
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is not a valid percentage",
+                            f"Field '{_field}' is not a valid percentage",
                             ValidationSeverity.ERROR,
-                            field=field,
-                            value=data[field],
+                            field=_field,
+                            value=data[_field],
                         )
                     )
                     continue
@@ -1611,9 +1632,9 @@ class PercentageValidator(DataValidator):
             if not isinstance(value, (int, float)):
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is not numeric",
+                        f"Field '{_field}' is not numeric",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                     )
                 )
@@ -1622,9 +1643,9 @@ class PercentageValidator(DataValidator):
             if not self.allow_decimal and value != int(value):
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' must be whole number",
+                        f"Field '{_field}' must be whole number",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                     )
                 )
@@ -1632,9 +1653,9 @@ class PercentageValidator(DataValidator):
             if value < self.min_val or value > self.max_val:
                 issues.append(
                     self._create_issue(
-                        f"Percentage in '{field}' out of range",
+                        f"Percentage in '{_field}' out of range",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                         expected=f"{self.min_val} to {self.max_val}",
                     )
@@ -1687,9 +1708,9 @@ class EmailValidator(DataValidator):
                 if not self.EMAIL_REGEX.match(email):
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is not a valid email address",
+                            f"Field '{fld}' is not a valid email address",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=fld,
                             value=email,
                             expected="valid email format (e.g., user@example.com)",
                         )
@@ -1738,7 +1759,7 @@ class URLValidator(DataValidator):
                     self._create_issue(
                         f"Field '{fld}' is not a valid URL",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=fld,
                         value=value,
                         expected="valid URL format (e.g., https://example.com)",
                     )
