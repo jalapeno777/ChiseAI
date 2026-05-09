@@ -138,8 +138,10 @@ class GateChecker:
         Validates that the scheduler is running and reporting heartbeats
         within the expected interval (2 minutes). Also checks degradation
         trend from the health monitoring system:
-        - MILD/MODERATE degradation: warning (CHECK status)
-        - SEVERE degradation: failure (FAIL status)
+
+        - Degradation info is appended to gate details
+        - Gate status remains PASS regardless of degradation level
+        - Degradation tracking is informational at this stage
         """
         r = self._get_redis()
         if not r:

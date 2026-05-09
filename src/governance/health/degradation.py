@@ -131,13 +131,6 @@ class DegradationTracker:
         # Emit event on transition
         if new_level != previous_level:
             slope = self._calculate_slope(list(self._windows[component]))
-            DegradationEvent(
-                component=component,
-                previous_level=previous_level,
-                new_level=new_level,
-                slope=slope,
-                window_scores=list(self._windows[component]),
-            )
             logger.info(
                 f"Degradation transition for {component}: "
                 f"{previous_level.value} -> {new_level.value} "

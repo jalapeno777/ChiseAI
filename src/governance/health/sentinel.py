@@ -16,6 +16,7 @@ Story: ST-GOV-008
 import asyncio
 import logging
 import time
+from collections import deque
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -162,7 +163,7 @@ class HealthSentinel:
             window_size=self.config.degradation_window_size,
             redis_client=redis_client,
         )
-        self._degradation_events: list[DegradationEvent] = []
+        self._degradation_events: deque[DegradationEvent] = deque(maxlen=100)
 
         # State tracking
         self._agent_health: dict[str, AgentHealthScore] = {}
@@ -465,6 +466,8 @@ class HealthSentinel:
             return
 
         try:
+            # Capture previous level BEFORE calling record()
+            previous_level = self.degradation_tracker.get_level(component)
             new_level = self.degradation_tracker.record(component, score)
             if new_level is not None:
                 # Level transition detected
@@ -474,7 +477,11 @@ class HealthSentinel:
                 # Create degradation event for history tracking
                 event = DegradationEvent(
                     component=component,
-                    previous_level=DegradationLevel.STABLE,  # placeholder
+                    previous_level=(
+                        previous_level
+                        if previous_level is not None
+                        else DegradationLevel.STABLE
+                    ),
                     new_level=new_level,
                     slope=slope if slope is not None else 0.0,
                     window_scores=window,
@@ -508,7 +515,8 @@ class HealthSentinel:
         Returns:
             List of recent DegradationEvents.
         """
-        return self._degradation_events[-limit:]
+        events_list = list(self._degradation_events)
+        return events_list[-limit:]
 
     def _store_agent_health(self, agent_id: str, score: AgentHealthScore) -> None:
         """Store agent health in Redis."""
