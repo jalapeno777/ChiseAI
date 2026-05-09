@@ -28,6 +28,7 @@ metadata:
     from May 6.'
   - 'Incident report: docs/postmortems/INCIDENT-2026-05-06-signal-pipeline-death.md'
   - 'R2a Day-21 Remediation (2026-05-07/08): ~20 PRs merged (#1070-#1087). Trade spam emergency fixed (G1.5 symbol cooldown, Discord throttle, kill switch dual-type). BOS/CHOCH bearish fix + re-enablement (96.2% accuracy). Redis connectivity fix. Pipeline fully operational.'
+  - 'MVP Closure Batch (2026-05-09): ST-MVP-004 was never defined (numbering gap); stories proceed ST-MVP-003 → ST-MVP-005'
   - 'BOS/CHOCH: RE-ENABLED (2026-05-08) — Bearish CHoCH cross-assignment fixed (0%→100%). All 10 exclusion layers removed. 96.2% overall accuracy. Feature flag default TRUE.'
 active_work:
   active_now:
@@ -1101,7 +1102,7 @@ completed:
   branch: feature/ST-MVP-002-dashboard-redis-host
   notes:
   - Dashboard Redis host fixed
-  merge_commit: unknown
+  merge_commit: 0c94199925d620db2bcf3919c4463e987fb70b13
 - id: ST-MVP-003
   title: Validation Bug Fix
   description: Fix validation logic bug in signal pipeline
@@ -1114,7 +1115,7 @@ completed:
   branch: feature/ST-MVP-003-validation-bug-fix
   notes:
   - Validation bug fixed
-  merge_commit: unknown
+  merge_commit: 10dfff98f172f67407fdae1b7cb321c20aebb12d
 - id: ST-MVP-005
   title: Heartbeat Degradation Fix
   description: Fix heartbeat signal degradation issue
@@ -1127,7 +1128,7 @@ completed:
   branch: feature/ST-MVP-005-heartbeat-degradation
   notes:
   - Heartbeat degradation fixed
-  merge_commit: unknown
+  merge_commit: e6633b18824c30a00da7caeee037bf8fba16d190
 - id: ST-MVP-006
   title: Zero Signal Alerts Fix
   description: Fix zero signal alerts being triggered incorrectly
@@ -1140,7 +1141,7 @@ completed:
   branch: feature/ST-MVP-006-zero-signal-alerts
   notes:
   - Zero signal alerts fixed
-  merge_commit: unknown
+  merge_commit: 7df7f41d9db0b135235352ddebbf96c821a508ae
 - id: ST-MVP-007
   title: LLM Redundancy Fix
   description: Fix LLM redundancy in signal generation
@@ -1153,7 +1154,7 @@ completed:
   branch: feature/ST-MVP-007-llm-redundancy
   notes:
   - LLM redundancy fixed
-  merge_commit: unknown
+  merge_commit: 66b70b5725c76663f6d1dad45f1383ce829328c2
 - id: ST-MVP-008
   title: Alert Infra Fix
   description: Fix alert infrastructure issues
@@ -1166,7 +1167,7 @@ completed:
   branch: feature/ST-MVP-008-alert-infra-fix
   notes:
   - Alert infrastructure fixed
-  merge_commit: unknown
+  merge_commit: 3a4e1fa6d806e8ac448df0b10c43212478edf585
 - id: ST-MVP-009
   title: Strategy Protocol Registry
   description: Implement strategy protocol registry for strategy management
@@ -1179,7 +1180,7 @@ completed:
   branch: feature/ST-MVP-009-strategy-protocol-registry
   notes:
   - Strategy protocol registry implemented
-  merge_commit: unknown
+  merge_commit: c862a1a66f26314362c5f9a483613abe9e4e9c9c
 - id: ST-MVP-010
   title: ICT Confluence Strategy
   description: Implement ICT confluence strategy for signal generation
@@ -1192,7 +1193,7 @@ completed:
   branch: feature/ST-MVP-010-ict-confluence-strategy
   notes:
   - ICT confluence strategy implemented
-  merge_commit: unknown
+  merge_commit: 489c5b56b8938b0432a4b130b76f9f2f5764f21e
 - id: ST-MVP-011
   title: Backtest Adapter
   description: Implement backtest adapter for strategy validation
@@ -1205,7 +1206,7 @@ completed:
   branch: feature/ST-MVP-011-backtest-adapter
   notes:
   - Backtest adapter implemented
-  merge_commit: unknown
+  merge_commit: 7bd68f0bf91bf7cab447a135efadcc4b9aad3299
 - id: G-EXIT-24H
   title: Canary PnL Instrumentation
   description: Add PnL tracking instrumentation to canary trading system
@@ -1218,7 +1219,7 @@ completed:
   branch: feature/G-EXIT-24H-canary-pnl-instrumentation
   notes:
   - Canary PnL instrumentation added
-  merge_commit: unknown
+  merge_commit: c399978ae330570604d476da0ab1a310fc4815b8
 in_progress: null
 backlog:
 - archive_ref: ARCH-20260406-023722-CI-INFRA-DRIFT-001
