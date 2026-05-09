@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from signal_generation.signal_generator import SignalGenerator
 
 from execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
+from execution.paper.canary_metrics import CanaryMetrics
 from execution.paper.models import (
     OrderSide,
     OrderState,
@@ -228,6 +229,9 @@ class PaperTradingOrchestrator:
         )
         self._last_symbol_processed_ts: dict[tuple[str, str], float] = {}
         self._lock = asyncio.Lock()
+
+        # G-EXIT-24H: Canary metrics for tracking position closes
+        self._canary_metrics = CanaryMetrics(redis_client=redis_client)
 
         logger.info(
             f"PaperTradingOrchestrator initialized: portfolio=${portfolio_value:.2f}"
@@ -2035,6 +2039,25 @@ class PaperTradingOrchestrator:
                         f"Failed to send Discord trade close notification: {e}",
                         exc_info=True,
                     )
+
+            # G-EXIT-24H: Record canary close for instrumentation
+            try:
+                self._canary_metrics.record_canary_close(
+                    position_id=position.position_id,
+                    realized_pnl=realized_pnl,
+                    timestamp=datetime.now(UTC).timestamp(),
+                    metadata={
+                        "symbol": position.symbol,
+                        "side": position.side,
+                        "reason": reason,
+                    },
+                )
+                logger.info(
+                    f"[G-EXIT-24H] Canary close recorded: position_id={position.position_id}, "
+                    f"realized_pnl={realized_pnl:.4f}"
+                )
+            except Exception as e:
+                logger.warning(f"[G-EXIT-24H] Failed to record canary close: {e}")
 
             # Set symbol cooldown after position close
             if position is not None:
