@@ -24,7 +24,7 @@ ENV PYTHONPATH=/app/src:/app/scripts
 
 # Health check - verify Redis and InfluxDB connectivity
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD python3 -c "import redis; r=redis.Redis(host='host.docker.internal', port=6380); r.ping()" && \
+    CMD python3 -c "import redis; r=redis.Redis(host='chiseai-redis', port=6380); r.ping()" && \
     curl -s -o /dev/null -w "%{http_code}" http://chiseai-influxdb:18087/health -H "Authorization: Token ${INFLUXDB_TOKEN}" | grep -q "200\|204"
 
 # Run dashboard emitter

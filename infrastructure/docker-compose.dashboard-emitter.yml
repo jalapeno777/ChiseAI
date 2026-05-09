@@ -12,7 +12,7 @@ services:
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:?INFLUXDB_TOKEN required}
       - INFLUXDB_ORG=${INFLUXDB_ORG:-chiseai}
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET:-chiseai}
-      - REDIS_HOST=host.docker.internal
+      - REDIS_HOST=chiseai-redis
       - REDIS_PORT=6380
       - REDIS_DB=0
       - POLL_INTERVAL=1.0
@@ -28,7 +28,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "python3 -c \"import redis; r=redis.Redis(host='host.docker.internal', port=6380); r.ping()\" && curl -s -o /dev/null -w '%{http_code}' http://chiseai-influxdb:18087/health -H 'Authorization: Token ${INFLUXDB_TOKEN}' | grep -q '200\\|204'",
+          "python3 -c \"import redis; r=redis.Redis(host='chiseai-redis', port=6380); r.ping()\" && curl -s -o /dev/null -w '%{http_code}' http://chiseai-influxdb:18087/health -H 'Authorization: Token ${INFLUXDB_TOKEN}' | grep -q '200\\|204'",
         ]
       interval: 30s
       timeout: 10s
