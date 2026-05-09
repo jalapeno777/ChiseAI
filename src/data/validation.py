@@ -1212,9 +1212,9 @@ class FilePathValidator(DataValidator):
             if len(value) > self.max_length:
                 issues.append(
                     self._create_issue(
-                        f"File path in '{field}' is too long",
+                        f"File path in '{_field}' is too long",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=len(value),
                         expected=f"<= {self.max_length}",
                     )
@@ -1226,9 +1226,9 @@ class FilePathValidator(DataValidator):
                 if ext not in self.allowed_extensions:
                     issues.append(
                         self._create_issue(
-                            f"File path in '{field}' has invalid extension",
+                            f"File path in '{_field}' has invalid extension",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=_field,
                             value=ext,
                             expected=f"One of: {', '.join(self.allowed_extensions)}",
                         )
@@ -1238,9 +1238,9 @@ class FilePathValidator(DataValidator):
             if self.must_exist and not os.path.exists(value):
                 issues.append(
                     self._create_issue(
-                        f"File path in '{field}' does not exist",
+                        f"File path in '{_field}' does not exist",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                         value=value,
                     )
                 )
@@ -1708,9 +1708,9 @@ class EmailValidator(DataValidator):
                 if not self.EMAIL_REGEX.match(email):
                     issues.append(
                         self._create_issue(
-                            f"Field '{field}' is not a valid email address",
+                            f"Field '{fld}' is not a valid email address",
                             ValidationSeverity.ERROR,
-                            field=field,
+                            field=fld,
                             value=email,
                             expected="valid email format (e.g., user@example.com)",
                         )
@@ -1759,7 +1759,7 @@ class URLValidator(DataValidator):
                     self._create_issue(
                         f"Field '{fld}' is not a valid URL",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=fld,
                         value=value,
                         expected="valid URL format (e.g., https://example.com)",
                     )
