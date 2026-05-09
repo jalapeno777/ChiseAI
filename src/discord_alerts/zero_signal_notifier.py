@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class ZeroSignalNotificationResult:
     success: bool
     datasource: str
     notification_type: str  # "alert" or "recovery"
-    error: Optional[str] = None
+    error: str | None = None
     rate_limited: bool = False
     timestamp: float = field(default_factory=time.time)
 
@@ -69,7 +69,7 @@ class ZeroSignalDiscordFormatter:
         window_count: int,
         severity: str,
         event_count: int,
-        last_signal_time: Optional[float] = None,
+        last_signal_time: float | None = None,
     ) -> dict[str, Any]:
         """Format a zero-signal alert embed.
 
@@ -92,9 +92,7 @@ class ZeroSignalDiscordFormatter:
         if last_signal_time and last_signal_time > 0:
             import datetime
 
-            dt = datetime.datetime.fromtimestamp(
-                last_signal_time, tz=datetime.timezone.utc
-            )
+            dt = datetime.datetime.fromtimestamp(last_signal_time, tz=datetime.UTC)
             last_signal_str = dt.strftime("%Y-%m-%d %H:%M:%S UTC")
 
         # Build severity label
@@ -202,7 +200,7 @@ class ZeroSignalNotifier:
     def __init__(
         self,
         discord_client: Any = None,
-        channel_id: Optional[str] = None,
+        channel_id: str | None = None,
         cooldown_seconds: int = DEFAULT_ALERT_COOLDOWN_SECONDS,
         enable_recovery_notices: bool = True,
     ) -> None:
@@ -262,7 +260,7 @@ class ZeroSignalNotifier:
         window_count: int,
         severity: str,
         event_count: int,
-        last_signal_time: Optional[float] = None,
+        last_signal_time: float | None = None,
     ) -> ZeroSignalNotificationResult:
         """Send a zero-signal alert to Discord.
 
@@ -306,7 +304,7 @@ class ZeroSignalNotifier:
                 last_signal_time=last_signal_time,
             )
 
-            result = await client.send_message(
+            await client.send_message(
                 content=formatted["content"],
                 channel=self._channel_id,
                 embeds=formatted["embeds"],

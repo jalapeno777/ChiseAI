@@ -15,8 +15,8 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class ZeroSignalMetrics:
         self._lock = threading.RLock()
         self._metrics: dict[str, DatasourceMetrics] = {}
         self._thresholds: dict[str, int] = dict(DEFAULT_THRESHOLDS)
-        self._redis_available: Optional[bool] = None
+        self._redis_available: bool | None = None
 
         if self._redis is not None:
             self._redis_available = True
@@ -248,7 +248,7 @@ class ZeroSignalMetrics:
 
             self._save_to_redis(datasource)
 
-    def get_metrics(self, datasource: str) -> Optional[DatasourceMetrics]:
+    def get_metrics(self, datasource: str) -> DatasourceMetrics | None:
         """Get metrics for a specific datasource."""
         with self._lock:
             return self._metrics.get(datasource)
@@ -356,7 +356,7 @@ class ZeroSignalMetrics:
 
             return "\n".join(lines)
 
-    def reset(self, datasource: Optional[str] = None) -> None:
+    def reset(self, datasource: str | None = None) -> None:
         """Reset metrics for a datasource or all datasources.
 
         Args:
@@ -368,16 +368,16 @@ class ZeroSignalMetrics:
                     del self._metrics[datasource]
                     redis = self._get_redis()
                     if redis is not None:
-                        try:
+                        import contextlib
+
+                        with contextlib.suppress(Exception):
                             redis.delete(f"{METRICS_KEY_PREFIX}{datasource}")
-                        except Exception:
-                            pass
             else:
                 self._metrics.clear()
                 redis = self._get_redis()
                 if redis is not None:
-                    try:
+                    import contextlib
+
+                    with contextlib.suppress(Exception):
                         for key in redis.keys(f"{METRICS_KEY_PREFIX}*"):
                             redis.delete(key)
-                    except Exception:
-                        pass
