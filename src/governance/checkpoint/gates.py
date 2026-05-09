@@ -133,10 +133,15 @@ class GateChecker:
             return None
 
     def check_g1_scheduler(self) -> GateResult:
-        """G1: Scheduler Continuity - Check Redis heartbeat.
+        """G1: Scheduler Continuity - Check Redis heartbeat + degradation.
 
         Validates that the scheduler is running and reporting heartbeats
-        within the expected interval (2 minutes).
+        within the expected interval (2 minutes). Also checks degradation
+        trend from the health monitoring system:
+
+        - Degradation info is appended to gate details
+        - Gate status remains PASS regardless of degradation level
+        - Degradation tracking is informational at this stage
         """
         r = self._get_redis()
         if not r:
@@ -194,6 +199,11 @@ class GateChecker:
             if uptime_seconds:
                 detail_parts.append(f"uptime: {int(uptime_seconds) // 60}m")
 
+            # Check degradation trend
+            degradation_detail = self._check_scheduler_degradation(r)
+            if degradation_detail:
+                detail_parts.append(degradation_detail)
+
             return GateResult(
                 gate="G1",
                 status=self.STATUS_PASS,
@@ -207,6 +217,55 @@ class GateChecker:
                 status=self.STATUS_FAIL,
                 detail=f"Exception: {str(e)[:100]}",
             )
+
+    def _check_scheduler_degradation(self, r) -> str | None:
+        """Check scheduler degradation trend from Redis state.
+
+        Reads degradation state stored by DegradationTracker and adds
+        degradation context to the G1 gate result.
+
+        Args:
+            r: Redis client.
+
+        Returns:
+            Degradation detail string, or None if no degradation.
+        """
+        try:
+            import json
+
+            from src.governance.health.degradation import DegradationLevel
+
+            key = "bmad:chiseai:health:degradation:scheduler"
+            raw = r.get(key)
+            if raw is None:
+                return None
+
+            state = json.loads(raw)
+            level_str = state.get("level", "stable")
+            window = state.get("window", [])
+
+            try:
+                level = DegradationLevel(level_str)
+            except ValueError:
+                return None
+
+            if level == DegradationLevel.STABLE:
+                return None
+
+            # Build degradation detail
+            if window:
+                slope = (window[-1] - window[0]) / max(len(window) - 1, 1)
+                slope_str = f"slope={slope:.1f}"
+            else:
+                slope_str = "slope=N/A"
+
+            detail = f"degradation={level.value}({slope_str})"
+            logger.info(f"G1 degradation check: {detail}")
+            return detail
+
+        except Exception as e:
+            logger.debug(f"Degradation check failed (non-critical): {e}")
+            return None
 
     def check_g2_signal_cadence(self) -> GateResult:
         """G2: Signal Cadence - Check for active signal generation.

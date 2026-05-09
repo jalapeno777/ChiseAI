@@ -23,6 +23,11 @@ Story: ST-GOV-008
 Epic: EP-GOV-001
 """
 
+from .degradation import (
+    DegradationEvent,
+    DegradationLevel,
+    DegradationTracker,
+)
 from .metrics import (
     HealthMetricPoint,
     HealthMetrics,
@@ -84,4 +89,8 @@ __all__ = [
     "HealthMetrics",
     "HealthMetricPoint",
     "get_health_metrics",
+    # Degradation tracking
+    "DegradationTracker",
+    "DegradationLevel",
+    "DegradationEvent",
 ]

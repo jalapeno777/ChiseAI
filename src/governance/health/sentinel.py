@@ -16,9 +16,15 @@ Story: ST-GOV-008
 import asyncio
 import logging
 import time
+from collections import deque
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from .degradation import (
+    DegradationEvent,
+    DegradationLevel,
+    DegradationTracker,
+)
 from .metrics import get_health_metrics
 from .predictor import (
     HealthAlert,
@@ -72,6 +78,10 @@ class HealthSentinelConfig:
     # Alert thresholds
     alert_threshold_score: float = 60.0
     alert_latency_target_seconds: float = 30.0
+
+    # Degradation tracking
+    enable_degradation_tracking: bool = True
+    degradation_window_size: int = 5
 
 
 @dataclass
@@ -148,6 +158,13 @@ class HealthSentinel:
         )
         self.metrics = get_health_metrics()
 
+        # Degradation tracker
+        self.degradation_tracker = DegradationTracker(
+            window_size=self.config.degradation_window_size,
+            redis_client=redis_client,
+        )
+        self._degradation_events: deque[DegradationEvent] = deque(maxlen=100)
+
         # State tracking
         self._agent_health: dict[str, AgentHealthScore] = {}
         self._swarm_health: SwarmHealthScore | None = None
@@ -188,6 +205,9 @@ class HealthSentinel:
 
         # Update state
         self._agent_health[agent_id] = score
+
+        # Feed into degradation tracker
+        self._track_degradation(agent_id, score.overall_score)
 
         # Record metrics
         self.metrics.record_agent_health(
@@ -432,6 +452,71 @@ class HealthSentinel:
         except Exception as e:
             logger.error(f"Health sentinel validation failed: {e}")
             return False
+
+    def _track_degradation(self, component: str, score: float) -> None:
+        """Feed a health score into the degradation tracker.
+
+        Emits degradation events when level changes occur.
+
+        Args:
+            component: Component identifier.
+            score: Current health score.
+        """
+        if not self.config.enable_degradation_tracking:
+            return
+
+        try:
+            # Capture previous level BEFORE calling record()
+            previous_level = self.degradation_tracker.get_level(component)
+            new_level = self.degradation_tracker.record(component, score)
+            if new_level is not None:
+                # Level transition detected
+                slope = self.degradation_tracker.get_slope(component)
+                window = self.degradation_tracker.get_window(component)
+
+                # Create degradation event for history tracking
+                event = DegradationEvent(
+                    component=component,
+                    previous_level=(
+                        previous_level
+                        if previous_level is not None
+                        else DegradationLevel.STABLE
+                    ),
+                    new_level=new_level,
+                    slope=slope if slope is not None else 0.0,
+                    window_scores=window,
+                )
+                self._degradation_events.append(event)
+
+                logger.info(
+                    f"Degradation level change for {component}: "
+                    f"-> {new_level.value} (slope={slope:.2f if slope else 0})"
+                )
+        except Exception as e:
+            logger.debug(f"Degradation tracking error for {component}: {e}")
+
+    def get_degradation_level(self, component: str) -> DegradationLevel:
+        """Get current degradation level for a component.
+
+        Args:
+            component: Component identifier.
+
+        Returns:
+            Current DegradationLevel.
+        """
+        return self.degradation_tracker.get_level(component)
+
+    def get_degradation_events(self, limit: int = 10) -> list[DegradationEvent]:
+        """Get recent degradation transition events.
+
+        Args:
+            limit: Maximum number of events to return.
+
+        Returns:
+            List of recent DegradationEvents.
+        """
+        events_list = list(self._degradation_events)
+        return events_list[-limit:]
 
     def _store_agent_health(self, agent_id: str, score: AgentHealthScore) -> None:
         """Store agent health in Redis."""
