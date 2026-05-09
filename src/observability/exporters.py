@@ -6,7 +6,6 @@ ST-MVP-008: Dual-format metric export (Prometheus + InfluxDB)
 """
 
 import os
-
 from enum import Enum
 from typing import Any
 
