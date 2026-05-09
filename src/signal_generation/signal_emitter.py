@@ -467,7 +467,7 @@ class DashboardEmitter(SignalEmitter):
     STREAM_KEY = "chiseai:signals:dashboard"
 
     # Redis connection settings (matches iteration_logging.py)
-    DEFAULT_REDIS_HOST = "host.docker.internal"
+    DEFAULT_REDIS_HOST = "chiseai-redis"
     DEFAULT_REDIS_PORT = 6380
     DEFAULT_REDIS_DB = 0
 
