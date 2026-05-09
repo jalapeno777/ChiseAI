@@ -25,6 +25,63 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
+def sanitize_metric_name(source_name: str, target_format: str) -> str:
+    """Sanitize a metric name for the target format.
+
+    Handles naming conflicts between Prometheus and InfluxDB:
+    - Prometheus: underscores allowed, dots NOT allowed, hyphens NOT allowed,
+      no uppercase. Labels for dimensions.
+    - InfluxDB: underscores allowed, dots allowed, hyphens discouraged but
+      allowed. Tags for dimensions.
+
+    Args:
+        source_name: Original metric name (e.g. 'model.accuracy.score')
+        target_format: One of 'prometheus' or 'influxdb'
+
+    Returns:
+        Sanitized metric name compatible with the target format
+
+    Raises:
+        ValueError: If target_format is not 'prometheus' or 'influxdb'
+
+    Example:
+        >>> sanitize_metric_name('model.accuracy.score', 'prometheus')
+        'model_accuracy_score'
+        >>> sanitize_metric_name('model_accuracy_score', 'influxdb')
+        'model_accuracy_score'
+    """
+    if target_format not in ("prometheus", "influxdb"):
+        raise ValueError(
+            f"target_format must be 'prometheus' or 'influxdb', got '{target_format}'"
+        )
+
+    name = source_name
+
+    if target_format == "prometheus":
+        # Replace dots and hyphens with underscores (dots/hyphens invalid in Prometheus)
+        name = name.replace(".", "_").replace("-", "_")
+        # Lowercase (Prometheus names must be lowercase)
+        name = name.lower()
+        # Collapse consecutive underscores
+        while "__" in name:
+            name = name.replace("__", "_")
+        # Strip leading/trailing underscores
+        name = name.strip("_")
+        # Ensure name starts with a letter (Prometheus requirement)
+        if name and not name[0].isalpha():
+            name = f"metric_{name}"
+    elif target_format == "influxdb":
+        # InfluxDB is more permissive - mainly ensure no spaces
+        name = name.replace(" ", "_")
+        # Replace hyphens with underscores for consistency
+        name = name.replace("-", "_")
+        # Lowercase for consistency (not strictly required by InfluxDB)
+        name = name.lower()
+
+    return name
+
+
 # Global metrics collector instance
 _metrics_collector: MetricsCollector | None = None
 

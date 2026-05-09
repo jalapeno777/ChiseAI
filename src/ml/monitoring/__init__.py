@@ -29,6 +29,7 @@ from ml.monitoring.registry_metrics import (
     PrometheusMetricsCollector,
     RegistryMetrics,
     get_metrics_collector,
+    sanitize_metric_name,
     set_metrics_collector,
 )
 from ml.monitoring.registry_monitor import (
@@ -55,6 +56,7 @@ __all__ = [
     "PrometheusMetricsCollector",
     "RegistryMetrics",
     "get_metrics_collector",
+    "sanitize_metric_name",
     "set_metrics_collector",
     # Registry Alerts
     "Alert",
