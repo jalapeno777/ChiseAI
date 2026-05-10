@@ -234,6 +234,14 @@ class PaperTradingOrchestrator:
         self._min_hold_seconds = int(os.getenv("MIN_HOLD_SECONDS", "300"))
         self._opposite_signal_count: dict[str, int] = {}  # keyed by position_id
 
+        # PT-FIX-3: SL/TP monitoring loop
+        self._sltp_task: asyncio.Task | None = None
+        self._sltp_poll_interval = int(os.getenv("SLTP_POLL_INTERVAL", "20"))
+        self._sltp_last_price: dict[str, tuple[float, float]] = (
+            {}
+        )  # symbol -> (price, timestamp)
+        self._sltp_stats = {"positions_checked": 0, "triggers_executed": 0}
+
         # G-EXIT-24H: Canary metrics for tracking position closes
         self._canary_metrics = CanaryMetrics(redis_client=redis_client)
 
@@ -447,6 +455,13 @@ class PaperTradingOrchestrator:
         # ST-FILL-004: Start ReconciliationMonitor if feature flag is enabled (alert-only)
         await self._start_reconciliation_monitor()
 
+        # PT-FIX-3: Start SL/TP monitoring loop
+        self._sltp_task = asyncio.create_task(self._sltp_monitoring_loop())
+        logger.info(
+            "SL/TP monitoring loop started (poll_interval=%ds)",
+            self._sltp_poll_interval,
+        )
+
         logger.info("PaperTradingOrchestrator started")
 
     async def _start_reconciliation_monitor(self) -> None:
@@ -597,6 +612,13 @@ class PaperTradingOrchestrator:
             await self._reconciliation_monitor.stop()
             self._reconciliation_monitor = None
             logger.info("ReconciliationMonitor stopped")
+
+        # PT-FIX-3: Cancel SL/TP monitoring task
+        if self._sltp_task and not self._sltp_task.done():
+            self._sltp_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._sltp_task
+            logger.info("SL/TP monitoring loop stopped")
 
         # Stop telemetry
         if self.telemetry:
@@ -1807,6 +1829,7 @@ class PaperTradingOrchestrator:
             "order_id": filled_order.order_id,
             "correlation_id": correlation_id,
             "stop_loss": signal.stop_loss,
+            "take_profit": signal.take_profit,
             "stop_loss_method": signal.stop_loss_method,
             "confidence": signal.confidence,
         }
@@ -2236,6 +2259,163 @@ class PaperTradingOrchestrator:
                 result,
             )
         return result
+
+    async def _sltp_monitoring_loop(self) -> None:
+        """Periodically check open positions for SL/TP triggers.
+
+        PT-FIX-3: Runs every _sltp_poll_interval seconds while the orchestrator
+        is active. For each open position, fetches current price, validates
+        freshness, and evaluates SL/TP conditions. Triggers close_position()
+        when a level is hit.
+        """
+        logger.info("SL/TP monitoring loop entering main cycle")
+        stats_interval = 300  # Log stats every 5 minutes
+        last_stats_time = time.monotonic()
+
+        while self._running:
+            try:
+                await asyncio.sleep(self._sltp_poll_interval)
+
+                if not self._running:
+                    break
+
+                # Get all open positions
+                open_positions = await self.position_tracker.get_open_positions()
+                if not open_positions:
+                    continue
+
+                positions_checked = 0
+                triggers = 0
+
+                for position in open_positions:
+                    try:
+                        # Fetch current price
+                        current_price = await self._get_current_market_price(
+                            position.symbol
+                        )
+                        if current_price is None:
+                            logger.debug(
+                                "SL/TP: No price for %s, skipping position %s",
+                                position.symbol,
+                                position.position_id,
+                            )
+                            continue
+
+                        # Price freshness check
+                        now = time.monotonic()
+                        last_entry = self._sltp_last_price.get(position.symbol)
+                        if last_entry is not None:
+                            last_val, last_ts = last_entry
+                            if last_val == current_price and (now - last_ts) > 60.0:
+                                logger.warning(
+                                    "SL/TP: Stale price for %s (%.2f unchanged "
+                                    "for %.0fs), skipping position %s",
+                                    position.symbol,
+                                    current_price,
+                                    now - last_ts,
+                                    position.position_id,
+                                )
+                                continue
+                        self._sltp_last_price[position.symbol] = (
+                            current_price,
+                            now,
+                        )
+
+                        # Check SL/TP conditions
+                        trigger = self._check_position_sltp(position, current_price)
+                        positions_checked += 1
+
+                        if trigger is not None:
+                            trigger_type, trigger_level = trigger
+                            logger.info(
+                                "SL/TP TRIGGER: position=%s symbol=%s side=%s "
+                                "entry=%.2f current=%.2f level=%.2f type=%s",
+                                position.position_id,
+                                position.symbol,
+                                position.side,
+                                position.entry_price,
+                                current_price,
+                                trigger_level,
+                                trigger_type,
+                            )
+                            await self.close_position(
+                                position_id=position.position_id,
+                                exit_price=current_price,
+                                reason=trigger_type,
+                            )
+                            triggers += 1
+                            self._sltp_stats["triggers_executed"] += 1
+
+                    except Exception as e:
+                        logger.error(
+                            "SL/TP: Error checking position %s: %s",
+                            getattr(position, "position_id", "unknown"),
+                            e,
+                            exc_info=True,
+                        )
+
+                self._sltp_stats["positions_checked"] += positions_checked
+
+                # Periodic stats logging
+                now = time.monotonic()
+                if (now - last_stats_time) >= stats_interval:
+                    logger.info(
+                        "SL/TP stats: checked=%d triggers=%d open=%d",
+                        self._sltp_stats["positions_checked"],
+                        self._sltp_stats["triggers_executed"],
+                        len(open_positions),
+                    )
+                    last_stats_time = now
+
+            except asyncio.CancelledError:
+                logger.info("SL/TP monitoring loop cancelled")
+                raise
+            except Exception as e:
+                logger.error("SL/TP monitoring loop error: %s", e, exc_info=True)
+
+    @staticmethod
+    def _check_position_sltp(
+        position: Any, current_price: float
+    ) -> tuple[str, float] | None:
+        """Check if a position's SL or TP level has been hit.
+
+        PT-FIX-3: Evaluates stop-loss and take-profit conditions based on
+        position side (long/short) and current market price.
+
+        Args:
+            position: PaperPosition with metadata containing stop_loss/take_profit
+            current_price: Current market price for the position's symbol
+
+        Returns:
+            Tuple of (reason, trigger_level) if triggered, None otherwise.
+            reason is "stop_loss_hit" or "take_profit_hit".
+        """
+        metadata = getattr(position, "metadata", None) or {}
+        stop_loss = metadata.get("stop_loss")
+        take_profit = metadata.get("take_profit")
+
+        if stop_loss is None and take_profit is None:
+            return None
+
+        side = position.side
+        # Normalize side to lowercase for comparison
+        side_str = str(side).lower()
+
+        # Check stop-loss
+        if stop_loss is not None and stop_loss > 0:
+            if side_str == "long" and current_price <= stop_loss:
+                return ("stop_loss_hit", stop_loss)
+            if side_str == "short" and current_price >= stop_loss:
+                return ("stop_loss_hit", stop_loss)
+
+        # Check take-profit
+        if take_profit is not None and take_profit > 0:
+            if side_str == "long" and current_price >= take_profit:
+                return ("take_profit_hit", take_profit)
+            if side_str == "short" and current_price <= take_profit:
+                return ("take_profit_hit", take_profit)
+
+        return None
 
     def get_metrics(self) -> dict[str, Any]:
         """Get orchestrator metrics.
