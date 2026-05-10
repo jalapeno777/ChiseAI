@@ -27,7 +27,8 @@ services:
       - SYMBOL_EVAL_INTERVAL_SECONDS=300
       - PORTFOLIO_VALUE=10000.0
       - CONFIDENCE_THRESHOLD=0.70
-      - FORCE_SIMULATOR_MODE=true
+      # Disabled: allows live fill prices from exchange instead of simulated fills
+      - FORCE_SIMULATOR_MODE=false
     volumes:
       - paper-trading-logs:/var/log/chiseai
     command: >
