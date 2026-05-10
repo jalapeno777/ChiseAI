@@ -186,7 +186,30 @@ class SignalConsumerRunner:
                     "(simulator fallback)"
                 )
 
-        position_tracker = PaperPositionTracker(enable_persistence=True)
+        # Create Redis client for orchestrator (fill persistence, health keys, cooldowns)
+        # Created early so it can be shared with the position tracker's persistence layer.
+        try:
+            orchestrator_redis = get_redis_client(decode_responses=True)
+            logger.info(
+                "Redis client created for orchestrator (host=%s, port=%s)",
+                REDIS_HOST,
+                REDIS_PORT,
+            )
+        except Exception as redis_err:
+            logger.warning(
+                "Failed to create Redis client for orchestrator: %s. "
+                "Proceeding without Redis persistence.",
+                redis_err,
+            )
+            orchestrator_redis = None
+
+        # Pass the orchestrator's Redis client to the position tracker so that
+        # PositionPersistence reuses it instead of creating its own client
+        # (which might use the wrong hostname).
+        position_tracker = PaperPositionTracker(
+            enable_persistence=True,
+            redis_client=orchestrator_redis,
+        )
         self._components["order_simulator"] = order_simulator
         self._components["position_tracker"] = position_tracker
 
@@ -226,23 +249,7 @@ class SignalConsumerRunner:
         )
         logger.info("Signal consumer created")
 
-        # Create Redis client for orchestrator (fill persistence, health keys, cooldowns)
-        try:
-            orchestrator_redis = get_redis_client(decode_responses=True)
-            logger.info(
-                "Redis client created for orchestrator (host=%s, port=%s)",
-                REDIS_HOST,
-                REDIS_PORT,
-            )
-        except Exception as redis_err:
-            logger.warning(
-                "Failed to create Redis client for orchestrator: %s. "
-                "Proceeding without Redis persistence.",
-                redis_err,
-            )
-            orchestrator_redis = None
-
-        # Create orchestrator
+        # Create orchestrator (orchestrator_redis was created earlier for the position tracker)
         self.orchestrator = PaperTradingOrchestrator(
             signal_generator=signal_generator,
             order_simulator=order_simulator,

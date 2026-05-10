@@ -42,11 +42,14 @@ class PositionPersistence:
         return self.__redis_client
 
     def _create_default_redis(self) -> Redis:
-        """Create default Redis client from environment."""
-        import os
+        """Create default Redis client using centralized redis_config."""
+        from .redis_config import REDIS_HOST, REDIS_PORT
 
-        redis_url = os.getenv("REDIS_URL", "redis://host.docker.internal:6380")
-        return Redis.from_url(redis_url, decode_responses=True)
+        return Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            decode_responses=True,
+        )
 
     async def persist_position(self, position: PaperPosition) -> None:
         """Persist a position to Redis.

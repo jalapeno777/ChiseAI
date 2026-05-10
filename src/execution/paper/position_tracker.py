@@ -106,11 +106,19 @@ class PaperPositionTracker:
         _persistence: Optional Redis persistence manager
     """
 
-    def __init__(self, enable_persistence: bool = False) -> None:
+    def __init__(
+        self,
+        enable_persistence: bool = False,
+        redis_client: Redis | None = None,
+    ) -> None:
         """Initialize the position tracker.
 
         Args:
             enable_persistence: If True, enables Redis persistence for positions
+            redis_client: Optional Redis client to pass to persistence layer.
+                When provided with enable_persistence=True, avoids the
+                persistence layer creating its own client with potentially
+                wrong hostname defaults.
         """
         self._open_positions: dict[str, PaperPosition] = {}
         self._closed_positions: list[PaperPosition] = []
@@ -118,7 +126,7 @@ class PaperPositionTracker:
         self._persistence: PositionPersistence | None = None
 
         if enable_persistence:
-            self._persistence = PositionPersistence()
+            self._persistence = PositionPersistence(redis_client=redis_client)
 
         logger.info("PaperPositionTracker initialized")
 
