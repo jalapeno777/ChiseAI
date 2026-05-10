@@ -1073,15 +1073,15 @@ class TestSignalPriority:
 
         # At least one OB result should come before any FVG result
         if ob_positions and fvg_positions:
-            assert min(ob_positions) < min(fvg_positions), (
-                "Order Block results should appear before FVG results in priority order"
-            )
+            assert min(ob_positions) < min(
+                fvg_positions
+            ), "Order Block results should appear before FVG results in priority order"
 
         # At least one FVG result should come before CVD
         if fvg_positions and cvd_positions:
-            assert min(fvg_positions) < min(cvd_positions), (
-                "FVG results should appear before CVD results in priority order"
-            )
+            assert min(fvg_positions) < min(
+                cvd_positions
+            ), "FVG results should appear before CVD results in priority order"
 
 
 class TestLiquiditySweepSignals:
