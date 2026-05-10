@@ -1508,6 +1508,17 @@ class PaperTradingOrchestrator:
 
             # Step 5: Handle fill
             if filled_order.state == OrderState.FILLED:
+                # PAPER-FIX-005: Log fill event for observability
+                logger.info(
+                    "[FILL-RECORDED] symbol=%s direction=%s fill_price=%.2f "
+                    "quantity=%.6f order_id=%s (correlation_id=%s)",
+                    filled_order.symbol,
+                    filled_order.side,
+                    filled_order.avg_fill_price,
+                    filled_order.filled_quantity,
+                    filled_order.order_id,
+                    correlation_id,
+                )
                 position_start = time.perf_counter()
                 position = await self._open_position(
                     filled_order,
