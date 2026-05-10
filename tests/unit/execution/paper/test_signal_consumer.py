@@ -90,7 +90,6 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         # Start consumer
@@ -153,7 +152,6 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -182,7 +180,6 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -207,7 +204,6 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         # Load processed signals (normally done in start())
@@ -333,7 +329,6 @@ class TestSignalConsumerIntegration:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -488,7 +483,6 @@ class TestHealthMarkerTTL:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=0.05,  # Very fast for test
-            symbol_throttle_seconds=0.0,
         )
 
         await consumer.start()
@@ -505,9 +499,9 @@ class TestHealthMarkerTTL:
             for c in mock_redis.expire.call_args_list
             if c[0][0] == SignalConsumer.HEALTH_MARKER_KEY
         ]
-        assert len(expire_calls) >= 2, (
-            f"Expected at least 2 expire calls (start + poll refresh), got {len(expire_calls)}"
-        )
+        assert (
+            len(expire_calls) >= 2
+        ), f"Expected at least 2 expire calls (start + poll refresh), got {len(expire_calls)}"
 
     @pytest.mark.asyncio
     async def test_crash_leaves_marker_to_expire(self, mock_orchestrator):
@@ -610,7 +604,6 @@ class TestHealthMarkerTTL:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=0.05,  # Fast polling for test
-            symbol_throttle_seconds=0.0,
         )
 
         # Use a flag to track TTL refresh calls
@@ -638,9 +631,9 @@ class TestHealthMarkerTTL:
         expire_count_after_stop = len(refresh_calls)
 
         # Verify that stop() was called
-        assert expire_count_before_stop >= 1, (
-            "Expected at least 1 TTL refresh before stop"
-        )
+        assert (
+            expire_count_before_stop >= 1
+        ), "Expected at least 1 TTL refresh before stop"
 
         # No additional TTL refreshes should occur after stop()
         # The stop should cause the polling loop to exit before next refresh
@@ -684,7 +677,6 @@ class TestSilentSignalConsumptionFix:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
         # Override allowed_symbols to exclude BTC
         consumer.allowed_symbols = {"ETH/USDT", "SOL/USDT"}
@@ -725,7 +717,6 @@ class TestSilentSignalConsumptionFix:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
         consumer.allowed_symbols = {"ETH/USDT"}
 
@@ -737,6 +728,9 @@ class TestSilentSignalConsumptionFix:
             for rec in caplog.records
         ), f"Expected WARNING with 'SKIPPED' and 'non-allowed', got: {caplog.text}"
 
+    @pytest.mark.skip(
+        reason="Consumer-level symbol_throttle_seconds removed (ST-PIPE-001); throttle is now in orchestrator G1_THROTTLE gate"
+    )
     @pytest.mark.asyncio
     async def test_throttled_symbol_not_consumed(
         self, mock_orchestrator, mock_redis, sample_signal_data
@@ -748,6 +742,9 @@ class TestSilentSignalConsumptionFix:
 
         After fix: throttled signal returns False but is NOT consumed,
         so it will be retried after throttle cooldown expires.
+
+        NOTE: consumer-level throttle was removed; this test is skipped
+        until a replacement test for orchestrator-level throttle is added.
         """
         signal_id = sample_signal_data["signal_id"]
         redis_key = f"bmad:chiseai:signals:2026-02-26:BTC_USDT:{signal_id}"
@@ -761,7 +758,6 @@ class TestSilentSignalConsumptionFix:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=300.0,  # 5 minute throttle
         )
 
         # First submission succeeds
@@ -810,7 +806,6 @@ class TestSilentSignalConsumptionFix:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
         # Ensure BTC/USDT is in the allowed set
         consumer.allowed_symbols = {"BTC/USDT"}
@@ -942,7 +937,6 @@ class TestStreamBasedConsumption:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -975,7 +969,6 @@ class TestStreamBasedConsumption:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -1009,7 +1002,6 @@ class TestStreamBasedConsumption:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -1035,7 +1027,6 @@ class TestStreamBasedConsumption:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
         consumer.allowed_symbols = {"ETH/USDT"}
 
