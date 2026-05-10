@@ -229,6 +229,7 @@ class PaperTradingOrchestrator:
         )
         self._last_symbol_processed_ts: dict[tuple[str, str], float] = {}
         self._lock = asyncio.Lock()
+        self._position_locks: dict[str, asyncio.Lock] = {}
 
         # PT-FIX-2: Minimum hold period and debouncing for opposite-signal closes
         self._min_hold_seconds = int(os.getenv("MIN_HOLD_SECONDS", "300"))
@@ -248,6 +249,17 @@ class PaperTradingOrchestrator:
         logger.info(
             f"PaperTradingOrchestrator initialized: portfolio=${portfolio_value:.2f}"
         )
+
+    def _get_position_lock(self, position_id: str) -> asyncio.Lock:
+        """Get or create an asyncio.Lock for a specific position.
+
+        Used to prevent race conditions between the SL/TP monitoring loop
+        and signal processing when both attempt to close the same position
+        concurrently.
+        """
+        if position_id not in self._position_locks:
+            self._position_locks[position_id] = asyncio.Lock()
+        return self._position_locks[position_id]
 
     def _extract_connector_provenance(self, order_simulator: Any) -> dict[str, str]:
         """Extract provenance information from the order simulator/connector.
@@ -1087,13 +1099,30 @@ class PaperTradingOrchestrator:
                             signal.token,
                         )
                         exit_price = entry_price
-                    await self.close_position(
-                        existing_position.position_id, exit_price, reason="time_limit"
-                    )
-                    logger.info(
-                        f"Time-based close: position {existing_position.position_id} "
-                        f"after {position_age_seconds:.0f}s"
-                    )
+                    # Acquire per-position lock before closing
+                    pos_lock = self._get_position_lock(existing_position.position_id)
+                    async with pos_lock:
+                        # Re-check position still exists (TOCTOU safety)
+                        current_open = await self.position_tracker.get_open_positions()
+                        if any(
+                            p.position_id == existing_position.position_id
+                            for p in current_open
+                        ):
+                            await self.close_position(
+                                existing_position.position_id,
+                                exit_price,
+                                reason="time_limit",
+                            )
+                            logger.info(
+                                f"Time-based close: position "
+                                f"{existing_position.position_id} "
+                                f"after {position_age_seconds:.0f}s"
+                            )
+                        else:
+                            logger.debug(
+                                "Burn-in: position %s already closed, skipping",
+                                existing_position.position_id,
+                            )
                     existing_position = None  # Allow new position to open
                 else:
                     # Check if signal is opposite direction
@@ -1151,16 +1180,33 @@ class PaperTradingOrchestrator:
                             )
                             exit_price = entry_price
                         # Close existing position
-                        await self.close_position(
-                            existing_position.position_id, exit_price
-                        )
+                        # Acquire per-position lock before closing
+                        opp_pos_lock = self._get_position_lock(pos_id)
+                        async with opp_pos_lock:
+                            # Re-check position still exists (TOCTOU safety)
+                            current_open = (
+                                await self.position_tracker.get_open_positions()
+                            )
+                            if any(p.position_id == pos_id for p in current_open):
+                                await self.close_position(
+                                    existing_position.position_id, exit_price
+                                )
+                                logger.info(
+                                    f"Closed position "
+                                    f"{existing_position.position_id} for "
+                                    f"{signal.token} "
+                                    f"(opposite signal: {current_side} -> "
+                                    f"{signal_side}, "
+                                    f"exit_price={exit_price})"
+                                )
+                            else:
+                                logger.debug(
+                                    "Opposite-signal: position %s already "
+                                    "closed, skipping",
+                                    pos_id,
+                                )
                         # Reset debounce counter
                         self._opposite_signal_count.pop(pos_id, None)
-                        logger.info(
-                            f"Closed position {existing_position.position_id} for {signal.token} "
-                            f"(opposite signal: {current_side} -> {signal_side}, "
-                            f"exit_price={exit_price})"
-                        )
                         existing_position = None  # Allow new position to open
                     else:
                         # Same direction - skip this signal
@@ -2166,6 +2212,9 @@ class PaperTradingOrchestrator:
             if position is not None:
                 await self._set_symbol_cooldown(position.symbol)
 
+            # Clean up per-position lock to prevent memory leaks
+            self._position_locks.pop(position_id, None)
+
             return position, realized_pnl
 
         except Exception as e:
@@ -2280,62 +2329,93 @@ class PaperTradingOrchestrator:
 
                 for position in open_positions:
                     try:
-                        # Fetch current price
-                        current_price = await self._get_current_market_price(
-                            position.symbol
-                        )
-                        if current_price is None:
+                        # Per-position lock: skip if another operation
+                        # (e.g. signal processing) is already acting on
+                        # this position.
+                        position_lock = self._get_position_lock(position.position_id)
+                        if position_lock.locked():
                             logger.debug(
-                                "SL/TP: No price for %s, skipping position %s",
-                                position.symbol,
+                                "SL/TP: Position %s is locked by another "
+                                "operation, skipping",
                                 position.position_id,
                             )
                             continue
 
-                        # Price freshness check
-                        now = time.monotonic()
-                        last_entry = self._sltp_last_price.get(position.symbol)
-                        if last_entry is not None:
-                            last_val, last_ts = last_entry
-                            if last_val == current_price and (now - last_ts) > 60.0:
-                                logger.warning(
-                                    "SL/TP: Stale price for %s (%.2f unchanged "
-                                    "for %.0fs), skipping position %s",
-                                    position.symbol,
-                                    current_price,
-                                    now - last_ts,
+                        async with position_lock:
+                            # Re-check if position is still open (may have
+                            # been closed while waiting or in a prior
+                            # iteration).
+                            current_positions = (
+                                await self.position_tracker.get_open_positions()
+                            )
+                            if not any(
+                                p.position_id == position.position_id
+                                for p in current_positions
+                            ):
+                                logger.debug(
+                                    "SL/TP: Position %s no longer open, skipping",
                                     position.position_id,
                                 )
                                 continue
-                        self._sltp_last_price[position.symbol] = (
-                            current_price,
-                            now,
-                        )
 
-                        # Check SL/TP conditions
-                        trigger = self._check_position_sltp(position, current_price)
-                        positions_checked += 1
+                            # Fetch current price
+                            current_price = await self._get_current_market_price(
+                                position.symbol
+                            )
+                            if current_price is None:
+                                logger.debug(
+                                    "SL/TP: No price for %s, skipping position %s",
+                                    position.symbol,
+                                    position.position_id,
+                                )
+                                continue
 
-                        if trigger is not None:
-                            trigger_type, trigger_level = trigger
-                            logger.info(
-                                "SL/TP TRIGGER: position=%s symbol=%s side=%s "
-                                "entry=%.2f current=%.2f level=%.2f type=%s",
-                                position.position_id,
-                                position.symbol,
-                                position.side,
-                                position.entry_price,
+                            # Price freshness check
+                            now = time.monotonic()
+                            last_entry = self._sltp_last_price.get(position.symbol)
+                            if last_entry is not None:
+                                last_val, last_ts = last_entry
+                                if last_val == current_price and (now - last_ts) > 60.0:
+                                    logger.warning(
+                                        "SL/TP: Stale price for %s (%.2f "
+                                        "unchanged for %.0fs), skipping "
+                                        "position %s",
+                                        position.symbol,
+                                        current_price,
+                                        now - last_ts,
+                                        position.position_id,
+                                    )
+                                    continue
+                            self._sltp_last_price[position.symbol] = (
                                 current_price,
-                                trigger_level,
-                                trigger_type,
+                                now,
                             )
-                            await self.close_position(
-                                position_id=position.position_id,
-                                exit_price=current_price,
-                                reason=trigger_type,
-                            )
-                            triggers += 1
-                            self._sltp_stats["triggers_executed"] += 1
+
+                            # Check SL/TP conditions
+                            trigger = self._check_position_sltp(position, current_price)
+                            positions_checked += 1
+
+                            if trigger is not None:
+                                trigger_type, trigger_level = trigger
+                                logger.info(
+                                    "SL/TP TRIGGER: position=%s symbol=%s "
+                                    "side=%s entry=%.2f current=%.2f "
+                                    "level=%.2f type=%s",
+                                    position.position_id,
+                                    position.symbol,
+                                    position.side,
+                                    position.entry_price,
+                                    current_price,
+                                    trigger_level,
+                                    trigger_type,
+                                )
+                                await self.close_position(
+                                    position_id=position.position_id,
+                                    exit_price=current_price,
+                                    reason=trigger_type,
+                                )
+                                triggers += 1
+                                self._sltp_stats["triggers_executed"] += 1
 
                     except Exception as e:
                         logger.error(
