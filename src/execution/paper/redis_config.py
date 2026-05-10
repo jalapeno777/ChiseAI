@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-REDIS_HOST = os.getenv("PAPER_REDIS_HOST", "host.docker.internal")
+REDIS_HOST = os.getenv("PAPER_REDIS_HOST", "chiseai-redis")
 REDIS_PORT = int(os.getenv("PAPER_REDIS_PORT", "6380"))
 REDIS_DB = int(os.getenv("PAPER_REDIS_DB", "0"))
 REDIS_SOCKET_CONNECT_TIMEOUT = 5

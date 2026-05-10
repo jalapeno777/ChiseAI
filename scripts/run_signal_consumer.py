@@ -59,6 +59,7 @@ from execution.paper import (
     create_simulator,
 )
 from execution.paper.orchestrator import PaperTradingOrchestrator
+from execution.paper.redis_config import REDIS_HOST, REDIS_PORT, get_redis_client
 from execution.paper.risk_enforcer import PaperRiskEnforcer
 from execution.paper.risk_models import RiskCheck
 from execution.paper.signal_consumer import SignalConsumer
@@ -185,7 +186,7 @@ class SignalConsumerRunner:
                     "(simulator fallback)"
                 )
 
-        position_tracker = PaperPositionTracker()
+        position_tracker = PaperPositionTracker(enable_persistence=True)
         self._components["order_simulator"] = order_simulator
         self._components["position_tracker"] = position_tracker
 
@@ -225,6 +226,22 @@ class SignalConsumerRunner:
         )
         logger.info("Signal consumer created")
 
+        # Create Redis client for orchestrator (fill persistence, health keys, cooldowns)
+        try:
+            orchestrator_redis = get_redis_client(decode_responses=True)
+            logger.info(
+                "Redis client created for orchestrator (host=%s, port=%s)",
+                REDIS_HOST,
+                REDIS_PORT,
+            )
+        except Exception as redis_err:
+            logger.warning(
+                "Failed to create Redis client for orchestrator: %s. "
+                "Proceeding without Redis persistence.",
+                redis_err,
+            )
+            orchestrator_redis = None
+
         # Create orchestrator
         self.orchestrator = PaperTradingOrchestrator(
             signal_generator=signal_generator,
@@ -236,6 +253,7 @@ class SignalConsumerRunner:
             portfolio_value=self.portfolio_value,
             outcome_capture=outcome_capture,
             signal_consumer=self.signal_consumer,
+            redis_client=orchestrator_redis,
         )
 
         # Wire the orchestrator to the signal consumer
@@ -276,8 +294,8 @@ class SignalConsumerRunner:
             import redis.asyncio as redis
 
             redis_client = redis.Redis(
-                host="host.docker.internal",
-                port=6380,
+                host=REDIS_HOST,
+                port=REDIS_PORT,
                 decode_responses=True,
             )
             await redis_client.delete("paper:signal_consumer:health")
