@@ -208,6 +208,14 @@ class ICTSignalEmitter:
         # Cycle tracking
         self._cycle_count = 0
 
+        # Direction distribution tracking for bias detection
+        self._direction_counts: dict[str, int] = {
+            "long": 0,
+            "short": 0,
+            "neutral_skipped": 0,
+        }
+        self._direction_log_interval = 50  # Log every N signals
+
         logger.info(
             f"ICTSignalEmitter initialized: "
             f"min_confidence={self.config.min_confidence:.0%}, "
@@ -400,6 +408,27 @@ class ICTSignalEmitter:
 
         return True
 
+    def _log_direction_distribution(self) -> None:
+        """Log direction distribution and warn on extreme bias."""
+        long_count = self._direction_counts["long"]
+        short_count = self._direction_counts["short"]
+        neutral_count = self._direction_counts["neutral_skipped"]
+        total = long_count + short_count + neutral_count
+
+        if total > 0 and total % self._direction_log_interval == 0:
+            logger.info(
+                f"ICT signal direction distribution: "
+                f"LONG={long_count}, SHORT={short_count}, "
+                f"NEUTRAL_SKIPPED={neutral_count}"
+            )
+
+        # Extreme bias warning: SHORT:LONG > 100:1
+        if short_count > 100 * max(long_count, 1):
+            logger.warning(
+                f"Extreme SHORT bias detected: {short_count}:{long_count} "
+                f"(neutral_skipped={neutral_count})"
+            )
+
     def _create_signal_from_ict(
         self,
         signal_type: str,
@@ -409,7 +438,7 @@ class ICTSignalEmitter:
         token: str,
         timeframe: str,
         metadata: dict[str, Any] | None = None,
-    ) -> Signal:
+    ) -> Signal | None:
         """Create a Signal from ICT scoring results.
 
         Args:
@@ -424,10 +453,22 @@ class ICTSignalEmitter:
         Returns:
             Signal instance
         """
-        # Map direction
+        # Map direction — explicit 3-way to avoid NEUTRAL→SHORT silent mapping
         from signal_generation.models import SignalDirection as SigDir
 
-        sig_direction = SigDir.LONG if direction.value == "long" else SigDir.SHORT
+        if direction == SignalDirection.LONG or direction.value == "long":
+            sig_direction = SigDir.LONG
+            self._direction_counts["long"] += 1
+        elif direction == SignalDirection.SHORT or direction.value == "short":
+            sig_direction = SigDir.SHORT
+            self._direction_counts["short"] += 1
+        else:
+            self._direction_counts["neutral_skipped"] += 1
+            self._log_direction_distribution()
+            logger.debug("Skipping signal with NEUTRAL direction from ICT scoring")
+            return None
+
+        self._log_direction_distribution()
 
         # Determine status based on confidence threshold
         # Use configurable threshold from TradingModeConfig via min_confidence
@@ -543,7 +584,25 @@ class ICTSignalEmitter:
                 # Create signal directly for HL signals
                 from signal_generation.models import SignalDirection as SigDir
 
-                sig_direction = SigDir.LONG if direction_str == "long" else SigDir.SHORT
+                # Explicit 3-way direction mapping (defensive)
+                if direction_str == "long":
+                    sig_direction = SigDir.LONG
+                    self._direction_counts["long"] += 1
+                elif direction_str == "short":
+                    sig_direction = SigDir.SHORT
+                    self._direction_counts["short"] += 1
+                else:
+                    self._direction_counts["neutral_skipped"] += 1
+                    self._log_direction_distribution()
+                    logger.debug(
+                        f"Skipping HL signal with unexpected direction: "
+                        f"'{direction_str}'"
+                    )
+                    return ICTSignalResult(
+                        signal_type=signal_type,
+                        skipped=True,
+                        skip_reason=f"unexpected_direction:{direction_str}",
+                    )
 
                 actionable_threshold = getattr(
                     self.config, "signal_confidence_threshold", 0.75
@@ -625,11 +684,27 @@ class ICTSignalEmitter:
 
                 from signal_generation.models import SignalDirection as SigDir
 
-                sig_direction = (
-                    SigDir.LONG
-                    if signal_data.signal_direction.value == "bullish_sweep"
-                    else SigDir.SHORT
-                )
+                # Explicit mapping for sweep direction (defensive —
+                # SweepDirection only has BULLISH/BEARISH but be safe)
+                sweep_val = signal_data.signal_direction.value
+                if sweep_val == "bullish_sweep":
+                    sig_direction = SigDir.LONG
+                    self._direction_counts["long"] += 1
+                elif sweep_val == "bearish_sweep":
+                    sig_direction = SigDir.SHORT
+                    self._direction_counts["short"] += 1
+                else:
+                    self._direction_counts["neutral_skipped"] += 1
+                    self._log_direction_distribution()
+                    logger.warning(
+                        f"Unknown sweep direction '{sweep_val}', skipping "
+                        f"liquidity sweep signal"
+                    )
+                    return ICTSignalResult(
+                        signal_type=signal_type,
+                        skipped=True,
+                        skip_reason=f"unknown_sweep_direction:{sweep_val}",
+                    )
 
                 status = SignalStatus.LOGGED_ONLY
                 if signal_data.confidence >= actionable_threshold:
@@ -704,7 +779,25 @@ class ICTSignalEmitter:
 
                 from signal_generation.models import SignalDirection as SigDir
 
-                sig_direction = SigDir.LONG if direction_str == "long" else SigDir.SHORT
+                # Explicit 3-way direction mapping (defensive)
+                if direction_str == "long":
+                    sig_direction = SigDir.LONG
+                    self._direction_counts["long"] += 1
+                elif direction_str == "short":
+                    sig_direction = SigDir.SHORT
+                    self._direction_counts["short"] += 1
+                else:
+                    self._direction_counts["neutral_skipped"] += 1
+                    self._log_direction_distribution()
+                    logger.debug(
+                        f"Skipping BOS/CHoCH signal with unexpected direction: "
+                        f"'{direction_str}'"
+                    )
+                    return ICTSignalResult(
+                        signal_type=signal_type,
+                        skipped=True,
+                        skip_reason=f"unexpected_direction:{direction_str}",
+                    )
 
                 actionable_threshold = getattr(
                     self.config, "signal_confidence_threshold", 0.75
@@ -798,6 +891,14 @@ class ICTSignalEmitter:
                 timeframe=timeframe,
                 metadata=score_result.to_dict(),
             )
+
+            # If direction was NEUTRAL, signal is None (skipped)
+            if signal is None:
+                return ICTSignalResult(
+                    signal_type=signal_type,
+                    skipped=True,
+                    skip_reason="neutral_direction_skipped",
+                )
 
             # Emit to all registered emitters
             emission_latency_ms = 0.0
