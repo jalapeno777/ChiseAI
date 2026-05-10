@@ -225,20 +225,20 @@ class TestHealthMarkerBehavior:
 
             # Verify health marker exists during polling
             marker = await redis.hgetall(SignalConsumer.HEALTH_MARKER_KEY)
-            assert (
-                marker is not None and len(marker) > 0
-            ), "Health marker should exist during polling"
+            assert marker is not None and len(marker) > 0, (
+                "Health marker should exist during polling"
+            )
 
-            # The _refresh_health_marker_ttl is called during polling loop
+            # The _refresh_health_marker is called during polling loop
             # We verify the marker was created and has proper data
             assert marker.get("status") == "active"
 
             await consumer.stop()
             # After stop, marker should be deleted
             marker_after_stop = await redis.get(SignalConsumer.HEALTH_MARKER_KEY)
-            assert (
-                marker_after_stop is None
-            ), "Health marker should be deleted after stop"
+            assert marker_after_stop is None, (
+                "Health marker should be deleted after stop"
+            )
         finally:
             await redis.aclose()
 
@@ -397,16 +397,16 @@ class TestIdempotencyAfterRestart:
                 is_processed = await redis.sismember(
                     SignalConsumer.PROCESSED_SET_KEY, signal_id
                 )
-                assert (
-                    is_processed
-                ), "Signal should be in processed set after first poll"
+                assert is_processed, (
+                    "Signal should be in processed set after first poll"
+                )
 
                 # Second poll should not process again
                 mock_orchestrator.reset_mock()
                 count_2 = await consumer._poll_once()
-                assert (
-                    count_2 == 0
-                ), "Second poll should not process already-processed signal"
+                assert count_2 == 0, (
+                    "Second poll should not process already-processed signal"
+                )
                 assert mock_orchestrator.submit_signal.call_count == 0
             else:
                 # Signal not found in first poll - this can happen with fakeredis scan
@@ -500,9 +500,9 @@ class TestProcessingLockBehavior:
 
             # Lock should be released (deleted) even after failure
             lock_value = await redis.get(lock_key)
-            assert (
-                lock_value is None
-            ), "Lock should be released after processing failure"
+            assert lock_value is None, (
+                "Lock should be released after processing failure"
+            )
         finally:
             await redis.aclose()
 

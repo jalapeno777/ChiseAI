@@ -449,16 +449,22 @@ class TestHealthMarkerTTL:
         await consumer.stop()
 
     @pytest.mark.asyncio
-    async def test_refresh_health_marker_ttl(self, mock_orchestrator, mock_redis):
-        """Test that _refresh_health_marker_ttl resets TTL to 120s."""
+    async def test_refresh_health_marker(self, mock_orchestrator, mock_redis):
+        """Test that _refresh_health_marker updates processed_count and resets TTL."""
         consumer = SignalConsumer(
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
         )
 
+        mock_redis.hset.reset_mock()
         mock_redis.expire.reset_mock()
-        await consumer._refresh_health_marker_ttl()
+        await consumer._refresh_health_marker()
 
+        mock_redis.hset.assert_called_once_with(
+            SignalConsumer.HEALTH_MARKER_KEY,
+            "processed_count",
+            str(len(consumer._processed_signals)),
+        )
         mock_redis.expire.assert_called_once_with(
             SignalConsumer.HEALTH_MARKER_KEY,
             SignalConsumer.HEALTH_MARKER_TTL,
@@ -499,9 +505,9 @@ class TestHealthMarkerTTL:
             for c in mock_redis.expire.call_args_list
             if c[0][0] == SignalConsumer.HEALTH_MARKER_KEY
         ]
-        assert (
-            len(expire_calls) >= 2
-        ), f"Expected at least 2 expire calls (start + poll refresh), got {len(expire_calls)}"
+        assert len(expire_calls) >= 2, (
+            f"Expected at least 2 expire calls (start + poll refresh), got {len(expire_calls)}"
+        )
 
     @pytest.mark.asyncio
     async def test_crash_leaves_marker_to_expire(self, mock_orchestrator):
@@ -559,30 +565,28 @@ class TestHealthMarkerTTL:
         mock_redis.delete.assert_called_with(SignalConsumer.HEALTH_MARKER_KEY)
 
     @pytest.mark.asyncio
-    async def test_refresh_health_marker_ttl_handles_redis_exception(
+    async def test_refresh_health_marker_handles_redis_exception(
         self, mock_orchestrator, mock_redis
     ):
-        """Test that _refresh_health_marker_ttl handles Redis exceptions gracefully.
+        """Test that _refresh_health_marker handles Redis exceptions gracefully.
 
-        When redis.expire() raises an exception, it should be caught and logged
-        as a warning, not crash the consumer.
+        When redis.hset() or redis.expire() raises an exception, it should be
+        caught and logged as a warning, not crash the consumer.
         """
         consumer = SignalConsumer(
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
         )
 
-        # Configure expire to raise an exception
-        mock_redis.expire.side_effect = Exception("Redis connection error")
+        # Configure hset to raise an exception
+        mock_redis.hset.side_effect = Exception("Redis connection error")
 
         # Should not raise, just log warning
-        await consumer._refresh_health_marker_ttl()
+        await consumer._refresh_health_marker()
 
-        # Verify expire was still called (it attempted the operation)
-        mock_redis.expire.assert_called_once_with(
-            SignalConsumer.HEALTH_MARKER_KEY,
-            SignalConsumer.HEALTH_MARKER_TTL,
-        )
+        # Verify hset was still called (it attempted the operation)
+        mock_redis.hset.assert_called_once()
+        mock_redis.expire.assert_not_called()  # expire should not be called if hset fails
 
     @pytest.mark.asyncio
     async def test_ttl_refresh_stops_after_consumer_stop(self, mock_orchestrator):
@@ -634,9 +638,9 @@ class TestHealthMarkerTTL:
         expire_count_after_stop = len(refresh_calls)
 
         # Verify that stop() was called
-        assert (
-            expire_count_before_stop >= 1
-        ), "Expected at least 1 TTL refresh before stop"
+        assert expire_count_before_stop >= 1, (
+            "Expected at least 1 TTL refresh before stop"
+        )
 
         # No additional TTL refreshes should occur after stop()
         # The stop should cause the polling loop to exit before next refresh

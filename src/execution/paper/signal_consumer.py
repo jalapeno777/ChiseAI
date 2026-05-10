@@ -289,18 +289,29 @@ class SignalConsumer:
         except Exception as e:
             logger.warning(f"Failed to clear health marker: {e}")
 
-    async def _refresh_health_marker_ttl(self) -> None:
-        """Refresh the health marker TTL to keep it alive during polling.
+    async def _refresh_health_marker(self) -> None:
+        """Refresh the health marker TTL and update stats.
 
-        Called after each successful poll cycle. If the consumer crashes,
+        Called after each successful poll cycle. Updates the processed_count
+        in the health hash and refreshes the TTL. If the consumer crashes,
         the marker will expire after HEALTH_MARKER_TTL seconds.
         """
         try:
             redis = await self._get_redis()
+            # Update processed count in health data
+            await redis.hset(
+                self.HEALTH_MARKER_KEY,
+                "processed_count",
+                str(len(self._processed_signals)),
+            )
             await redis.expire(self.HEALTH_MARKER_KEY, self.HEALTH_MARKER_TTL)
-            logger.debug("Health marker TTL refreshed to %ds", self.HEALTH_MARKER_TTL)
+            logger.debug(
+                "Health marker refreshed: TTL=%ds, processed=%d",
+                self.HEALTH_MARKER_TTL,
+                len(self._processed_signals),
+            )
         except Exception as e:
-            logger.warning(f"Failed to refresh health marker TTL: {e}")
+            logger.warning(f"Failed to refresh health marker: {e}")
 
     async def _mark_signal_processed(self, signal_id: str) -> None:
         """Mark a signal as processed in Redis.
@@ -432,8 +443,8 @@ class SignalConsumer:
             except Exception as e:
                 logger.error(f"Error in polling loop: {e}", exc_info=True)
 
-            # Refresh health marker TTL after each poll cycle
-            await self._refresh_health_marker_ttl()
+            # Refresh health marker after each poll cycle
+            await self._refresh_health_marker()
 
             # Wait before next poll
             await asyncio.sleep(self.poll_interval)
