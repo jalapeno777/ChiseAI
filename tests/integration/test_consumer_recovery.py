@@ -92,7 +92,6 @@ class TestConsumerRestartRecovery:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.1,
-                symbol_throttle_seconds=0.0,
             )
 
             await consumer_1.start()
@@ -109,7 +108,6 @@ class TestConsumerRestartRecovery:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.1,
-                symbol_throttle_seconds=0.0,
             )
 
             # Start new instance
@@ -152,7 +150,6 @@ class TestConsumerRestartRecovery:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.1,
-                symbol_throttle_seconds=0.0,
             )
 
             # Load processed signals (normally done in start)
@@ -217,7 +214,6 @@ class TestHealthMarkerBehavior:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.1,  # Fast polling
-                symbol_throttle_seconds=0.0,
             )
 
             await consumer.start()
@@ -229,7 +225,7 @@ class TestHealthMarkerBehavior:
                 marker is not None and len(marker) > 0
             ), "Health marker should exist during polling"
 
-            # The _refresh_health_marker_ttl is called during polling loop
+            # The _refresh_health_marker is called during polling loop
             # We verify the marker was created and has proper data
             assert marker.get("status") == "active"
 
@@ -331,7 +327,6 @@ class TestIdempotencyAfterRestart:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.05,
-                symbol_throttle_seconds=0.0,
             )
 
             await consumer_1.start()
@@ -348,7 +343,6 @@ class TestIdempotencyAfterRestart:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.05,
-                symbol_throttle_seconds=0.0,
             )
 
             await consumer_2.start()
@@ -382,7 +376,6 @@ class TestIdempotencyAfterRestart:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.1,
-                symbol_throttle_seconds=0.0,
             )
 
             # Process first time
@@ -452,7 +445,6 @@ class TestProcessingLockBehavior:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.1,
-                symbol_throttle_seconds=0.0,
             )
 
             await consumer.start()
@@ -491,7 +483,6 @@ class TestProcessingLockBehavior:
                 orchestrator=mock_orchestrator,
                 redis_client=redis,
                 poll_interval=0.1,
-                symbol_throttle_seconds=0.0,
             )
 
             await consumer.start()

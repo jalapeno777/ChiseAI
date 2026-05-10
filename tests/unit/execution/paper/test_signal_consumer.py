@@ -90,7 +90,6 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         # Start consumer
@@ -153,7 +152,6 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -182,7 +180,6 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -207,7 +204,6 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         # Load processed signals (normally done in start())
@@ -333,7 +329,6 @@ class TestSignalConsumerIntegration:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -449,16 +444,22 @@ class TestHealthMarkerTTL:
         await consumer.stop()
 
     @pytest.mark.asyncio
-    async def test_refresh_health_marker_ttl(self, mock_orchestrator, mock_redis):
-        """Test that _refresh_health_marker_ttl resets TTL to 120s."""
+    async def test_refresh_health_marker(self, mock_orchestrator, mock_redis):
+        """Test that _refresh_health_marker updates processed_count and resets TTL."""
         consumer = SignalConsumer(
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
         )
 
+        mock_redis.hset.reset_mock()
         mock_redis.expire.reset_mock()
-        await consumer._refresh_health_marker_ttl()
+        await consumer._refresh_health_marker()
 
+        mock_redis.hset.assert_called_once_with(
+            SignalConsumer.HEALTH_MARKER_KEY,
+            "processed_count",
+            str(len(consumer._processed_signals)),
+        )
         mock_redis.expire.assert_called_once_with(
             SignalConsumer.HEALTH_MARKER_KEY,
             SignalConsumer.HEALTH_MARKER_TTL,
@@ -482,7 +483,6 @@ class TestHealthMarkerTTL:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=0.05,  # Very fast for test
-            symbol_throttle_seconds=0.0,
         )
 
         await consumer.start()
@@ -559,30 +559,28 @@ class TestHealthMarkerTTL:
         mock_redis.delete.assert_called_with(SignalConsumer.HEALTH_MARKER_KEY)
 
     @pytest.mark.asyncio
-    async def test_refresh_health_marker_ttl_handles_redis_exception(
+    async def test_refresh_health_marker_handles_redis_exception(
         self, mock_orchestrator, mock_redis
     ):
-        """Test that _refresh_health_marker_ttl handles Redis exceptions gracefully.
+        """Test that _refresh_health_marker handles Redis exceptions gracefully.
 
-        When redis.expire() raises an exception, it should be caught and logged
-        as a warning, not crash the consumer.
+        When redis.hset() or redis.expire() raises an exception, it should be
+        caught and logged as a warning, not crash the consumer.
         """
         consumer = SignalConsumer(
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
         )
 
-        # Configure expire to raise an exception
-        mock_redis.expire.side_effect = Exception("Redis connection error")
+        # Configure hset to raise an exception
+        mock_redis.hset.side_effect = Exception("Redis connection error")
 
         # Should not raise, just log warning
-        await consumer._refresh_health_marker_ttl()
+        await consumer._refresh_health_marker()
 
-        # Verify expire was still called (it attempted the operation)
-        mock_redis.expire.assert_called_once_with(
-            SignalConsumer.HEALTH_MARKER_KEY,
-            SignalConsumer.HEALTH_MARKER_TTL,
-        )
+        # Verify hset was still called (it attempted the operation)
+        mock_redis.hset.assert_called_once()
+        mock_redis.expire.assert_not_called()  # expire should not be called if hset fails
 
     @pytest.mark.asyncio
     async def test_ttl_refresh_stops_after_consumer_stop(self, mock_orchestrator):
@@ -606,7 +604,6 @@ class TestHealthMarkerTTL:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=0.05,  # Fast polling for test
-            symbol_throttle_seconds=0.0,
         )
 
         # Use a flag to track TTL refresh calls
@@ -680,7 +677,6 @@ class TestSilentSignalConsumptionFix:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
         # Override allowed_symbols to exclude BTC
         consumer.allowed_symbols = {"ETH/USDT", "SOL/USDT"}
@@ -721,7 +717,6 @@ class TestSilentSignalConsumptionFix:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
         consumer.allowed_symbols = {"ETH/USDT"}
 
@@ -733,6 +728,9 @@ class TestSilentSignalConsumptionFix:
             for rec in caplog.records
         ), f"Expected WARNING with 'SKIPPED' and 'non-allowed', got: {caplog.text}"
 
+    @pytest.mark.skip(
+        reason="Consumer-level symbol_throttle_seconds removed (ST-PIPE-001); throttle is now in orchestrator G1_THROTTLE gate"
+    )
     @pytest.mark.asyncio
     async def test_throttled_symbol_not_consumed(
         self, mock_orchestrator, mock_redis, sample_signal_data
@@ -744,6 +742,9 @@ class TestSilentSignalConsumptionFix:
 
         After fix: throttled signal returns False but is NOT consumed,
         so it will be retried after throttle cooldown expires.
+
+        NOTE: consumer-level throttle was removed; this test is skipped
+        until a replacement test for orchestrator-level throttle is added.
         """
         signal_id = sample_signal_data["signal_id"]
         redis_key = f"bmad:chiseai:signals:2026-02-26:BTC_USDT:{signal_id}"
@@ -757,7 +758,6 @@ class TestSilentSignalConsumptionFix:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=300.0,  # 5 minute throttle
         )
 
         # First submission succeeds
@@ -806,7 +806,6 @@ class TestSilentSignalConsumptionFix:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
         # Ensure BTC/USDT is in the allowed set
         consumer.allowed_symbols = {"BTC/USDT"}
@@ -938,7 +937,6 @@ class TestStreamBasedConsumption:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -971,7 +969,6 @@ class TestStreamBasedConsumption:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -1005,7 +1002,6 @@ class TestStreamBasedConsumption:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -1031,7 +1027,6 @@ class TestStreamBasedConsumption:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
-            symbol_throttle_seconds=0.0,
         )
         consumer.allowed_symbols = {"ETH/USDT"}
 
