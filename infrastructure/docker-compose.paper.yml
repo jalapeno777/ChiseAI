@@ -54,6 +54,32 @@ services:
         max-size: "100m"
         max-file: "5"
 
+  ohlcv-ingestion:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/Dockerfile.ohlcv-ingestion
+    container_name: chiseai-ohlcv-ingestion
+    restart: unless-stopped
+    networks:
+      - chiseai
+    environment:
+      - EXCHANGE_ID=bybit
+      - SYMBOLS=BTC/USDT,ETH/USDT
+      - TIMEFRAMES=1m,5m,15m,1h
+      - INGEST_INTERVAL_SECONDS=60
+      - INFLUXDB_URL=http://chiseai-influxdb:18087
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG:-chiseai}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET:-market_data}
+    labels:
+      - "project=chiseai"
+      - "service=ohlcv-ingestion"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
 networks:
   chiseai:
     external: true
