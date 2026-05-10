@@ -169,14 +169,9 @@ class ErrorRateTracker:
         """Get or create Redis client."""
         if self._redis is None:
             try:
-                import redis
+                from src.execution.paper.redis_config import get_redis_client_sync
 
-                self._redis = redis.Redis(
-                    host="host.docker.internal",
-                    port=6380,
-                    db=0,
-                    decode_responses=True,
-                )
+                self._redis = get_redis_client_sync(decode_responses=True)
             except Exception as e:
                 logger.warning(f"Failed to connect to Redis: {e}")
                 self._redis = None
