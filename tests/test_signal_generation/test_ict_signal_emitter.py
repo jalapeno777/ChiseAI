@@ -1073,15 +1073,15 @@ class TestSignalPriority:
 
         # At least one OB result should come before any FVG result
         if ob_positions and fvg_positions:
-            assert min(ob_positions) < min(fvg_positions), (
-                "Order Block results should appear before FVG results in priority order"
-            )
+            assert min(ob_positions) < min(
+                fvg_positions
+            ), "Order Block results should appear before FVG results in priority order"
 
         # At least one FVG result should come before CVD
         if fvg_positions and cvd_positions:
-            assert min(fvg_positions) < min(cvd_positions), (
-                "FVG results should appear before CVD results in priority order"
-            )
+            assert min(fvg_positions) < min(
+                cvd_positions
+            ), "FVG results should appear before CVD results in priority order"
 
 
 class TestLiquiditySweepSignals:
@@ -1402,3 +1402,372 @@ class TestLiquiditySweepSignals:
         # Should not process any sweep signals
         assert cycle.signals_processed == 0
         assert cycle.signals_emitted == 0
+
+
+class TestDirectionMappingBias:
+    """Tests for direction mapping correctness (PAPER-FIX-006).
+
+    Verifies that NEUTRAL direction signals are skipped (not silently
+    mapped to SHORT), and that LONG/SHORT mappings are correct for
+    all signal handlers: ICT scoring, HL, liquidity sweep, and BOS/CHoCH.
+    """
+
+    def _make_mock_emitter(self):
+        """Create a mock emitter that reports success."""
+        mock_emitter = MagicMock()
+        mock_emitter.name = "mock"
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.latency_ms = 10.0
+        mock_result.error = None
+        mock_emitter.emit = AsyncMock(return_value=mock_result)
+        return mock_emitter
+
+    # ------------------------------------------------------------------
+    # Fix 1: _create_signal_from_ict() — NEUTRAL skipped, LONG/SHORT OK
+    # ------------------------------------------------------------------
+
+    def test_create_signal_from_ict_long_direction(self):
+        """LONG direction should produce a LONG signal."""
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        signal = emitter._create_signal_from_ict(
+            signal_type="cvd",
+            confluence_score=0.80,
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            token="BTC/USDT",
+            timeframe="1H",
+        )
+        assert signal is not None
+        assert signal.direction == SignalDirection.LONG
+
+    def test_create_signal_from_ict_short_direction(self):
+        """SHORT direction should produce a SHORT signal."""
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        signal = emitter._create_signal_from_ict(
+            signal_type="cvd",
+            confluence_score=0.80,
+            direction=SignalDirection.SHORT,
+            confidence=0.85,
+            token="BTC/USDT",
+            timeframe="1H",
+        )
+        assert signal is not None
+        assert signal.direction == SignalDirection.SHORT
+
+    def test_create_signal_from_ict_neutral_direction_returns_none(self):
+        """NEUTRAL direction should return None (signal skipped).
+
+        This is the primary bug fix: previously NEUTRAL was silently
+        mapped to SHORT via binary ternary.
+        """
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        signal = emitter._create_signal_from_ict(
+            signal_type="cvd",
+            confluence_score=0.80,
+            direction=SignalDirection.NEUTRAL,
+            confidence=0.85,
+            token="BTC/USDT",
+            timeframe="1H",
+        )
+        assert signal is None
+
+    @pytest.mark.asyncio
+    async def test_emit_signal_neutral_direction_skipped(self):
+        """Full emit cycle: NEUTRAL direction from scorer should be skipped."""
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+
+        mock_score_result = MagicMock()
+        mock_score_result.confluence_score = 0.75
+        mock_score_result.confidence = 0.80
+        mock_score_result.direction = SignalDirection.NEUTRAL
+        mock_score_result.to_dict = MagicMock(return_value={})
+
+        with patch.object(emitter, "_get_two_layer_scorer") as mock_get_scorer:
+            mock_scorer = MagicMock()
+            mock_scorer.score = MagicMock(return_value=mock_score_result)
+            mock_get_scorer.return_value = mock_scorer
+
+            result = await emitter.emit_signal(
+                signal_type="cvd",
+                token="BTC/USDT",
+                timeframe="1H",
+                signal_data=MagicMock(),
+            )
+
+        assert result.skipped is True
+        assert result.skip_reason == "neutral_direction_skipped"
+        assert result.signal is None
+
+    # ------------------------------------------------------------------
+    # Fix 2: Liquidity sweep — bullish/bearish mapping correct
+    # ------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_liquidity_sweep_bullish_direction(self):
+        """Bullish sweep should produce LONG signal."""
+        from ict.liquidity.models import (
+            LiquidityLevel,
+            LiquidityLevelType,
+            LiquiditySweep,
+            SweepConfirmation,
+            SweepDirection,
+            SweepSignal,
+        )
+
+        mock_level = LiquidityLevel(
+            price=49000.0,
+            level_type=LiquidityLevelType.PREVIOUS_LOW,
+            source_indices=(5,),
+            strength=3.0,
+            timestamp_ms=1704067200000,
+        )
+        mock_sweep = LiquiditySweep(
+            sweep_candle_index=10,
+            direction=SweepDirection.BULLISH_SWEEP,
+            level=mock_level,
+            sweep_high=49025.0,
+            sweep_low=48975.0,
+            penetration=25.0,
+            penetration_pct=0.05,
+            confirmation=SweepConfirmation(
+                confirmed=True,
+                rejection_candle_index=11,
+                wick_ratio=2.5,
+                close_beyond_level=True,
+            ),
+        )
+        sweep_signal = SweepSignal(
+            sweep=mock_sweep,
+            signal_direction=SweepDirection.BULLISH_SWEEP,
+            confidence=0.85,
+            metadata={},
+        )
+
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        result = await emitter.emit_signal(
+            signal_type="liquidity_sweep",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data=sweep_signal,
+        )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.direction == SignalDirection.LONG
+
+    @pytest.mark.asyncio
+    async def test_liquidity_sweep_bearish_direction(self):
+        """Bearish sweep should produce SHORT signal."""
+        from ict.liquidity.models import (
+            LiquidityLevel,
+            LiquidityLevelType,
+            LiquiditySweep,
+            SweepConfirmation,
+            SweepDirection,
+            SweepSignal,
+        )
+
+        mock_level = LiquidityLevel(
+            price=50000.0,
+            level_type=LiquidityLevelType.PREVIOUS_HIGH,
+            source_indices=(10,),
+            strength=3.0,
+            timestamp_ms=1704067200000,
+        )
+        mock_sweep = LiquiditySweep(
+            sweep_candle_index=15,
+            direction=SweepDirection.BEARISH_SWEEP,
+            level=mock_level,
+            sweep_high=50025.0,
+            sweep_low=49975.0,
+            penetration=25.0,
+            penetration_pct=0.05,
+            confirmation=SweepConfirmation(
+                confirmed=True,
+                rejection_candle_index=16,
+                wick_ratio=2.5,
+                close_beyond_level=True,
+            ),
+        )
+        sweep_signal = SweepSignal(
+            sweep=mock_sweep,
+            signal_direction=SweepDirection.BEARISH_SWEEP,
+            confidence=0.85,
+            metadata={},
+        )
+
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        result = await emitter.emit_signal(
+            signal_type="liquidity_sweep",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data=sweep_signal,
+        )
+
+        assert result.emission_success is True
+        assert result.signal is not None
+        assert result.signal.direction == SignalDirection.SHORT
+
+    # ------------------------------------------------------------------
+    # Fix 3: HL signals — unexpected direction skipped
+    # ------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_hl_signal_unexpected_direction_skipped(self):
+        """HL signal with non-long/short direction should be skipped."""
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        result = await emitter.emit_signal(
+            signal_type="h",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data={
+                "price": 50000.0,
+                "direction": "neutral",
+                "confidence": 0.80,
+            },
+        )
+
+        assert result.skipped is True
+        assert "unexpected_direction" in result.skip_reason
+        assert result.signal is None
+
+    @pytest.mark.asyncio
+    async def test_hl_signal_long_direction(self):
+        """HL signal with 'long' direction should produce LONG signal."""
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        result = await emitter.emit_signal(
+            signal_type="h",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data={
+                "price": 50000.0,
+                "direction": "long",
+                "confidence": 0.80,
+            },
+        )
+
+        assert result.signal is not None
+        assert result.signal.direction == SignalDirection.LONG
+
+    @pytest.mark.asyncio
+    async def test_hl_signal_short_direction(self):
+        """HL signal with 'short' direction should produce SHORT signal."""
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        result = await emitter.emit_signal(
+            signal_type="l",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data={
+                "price": 49000.0,
+                "direction": "short",
+                "confidence": 0.80,
+            },
+        )
+
+        assert result.signal is not None
+        assert result.signal.direction == SignalDirection.SHORT
+
+    # ------------------------------------------------------------------
+    # Fix 4: BOS/CHoCH — unexpected direction skipped
+    # ------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_bos_choch_unexpected_direction_skipped(self):
+        """BOS/CHoCH signal with non-long/short direction should be skipped."""
+        emitter = ICTSignalEmitter(emitters=[self._make_mock_emitter()])
+        result = await emitter.emit_signal(
+            signal_type="bos",
+            token="BTC/USDT",
+            timeframe="1H",
+            signal_data={
+                "price": 50000.0,
+                "direction": "sideways",
+                "confidence": 0.80,
+            },
+        )
+
+        assert result.skipped is True
+        assert "unexpected_direction" in result.skip_reason
+        assert result.signal is None
+
+    # ------------------------------------------------------------------
+    # Direction distribution tracking
+    # ------------------------------------------------------------------
+
+    def test_direction_counts_initialized(self):
+        """Direction counts should be initialized to zero."""
+        emitter = ICTSignalEmitter()
+        assert emitter._direction_counts == {
+            "long": 0,
+            "short": 0,
+            "neutral_skipped": 0,
+        }
+
+    def test_direction_counts_increment_on_signal(self):
+        """Direction counts should increment when signals are created."""
+        emitter = ICTSignalEmitter()
+        emitter._create_signal_from_ict(
+            signal_type="cvd",
+            confluence_score=0.80,
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            token="BTC/USDT",
+            timeframe="1H",
+        )
+        assert emitter._direction_counts["long"] == 1
+
+        emitter._create_signal_from_ict(
+            signal_type="fvg",
+            confluence_score=0.80,
+            direction=SignalDirection.SHORT,
+            confidence=0.85,
+            token="BTC/USDT",
+            timeframe="1H",
+        )
+        assert emitter._direction_counts["short"] == 1
+
+    def test_direction_counts_neutral_skipped(self):
+        """NEUTRAL signals should increment neutral_skipped counter."""
+        emitter = ICTSignalEmitter()
+        result = emitter._create_signal_from_ict(
+            signal_type="cvd",
+            confluence_score=0.80,
+            direction=SignalDirection.NEUTRAL,
+            confidence=0.85,
+            token="BTC/USDT",
+            timeframe="1H",
+        )
+        assert result is None
+        assert emitter._direction_counts["neutral_skipped"] == 1
+        assert emitter._direction_counts["long"] == 0
+        assert emitter._direction_counts["short"] == 0
+
+    def test_extreme_bias_warning_logged(self, caplog):
+        """Extreme SHORT bias (>100:1) should trigger warning log."""
+        emitter = ICTSignalEmitter()
+        # Simulate 101 SHORTs and 0 LONGs
+        emitter._direction_counts["short"] = 101
+        emitter._direction_counts["long"] = 0
+        emitter._direction_counts["neutral_skipped"] = 0
+
+        with caplog.at_level(
+            logging.WARNING, logger="signal_generation.ict_signal_emitter"
+        ):
+            emitter._log_direction_distribution()
+
+        assert any("Extreme SHORT bias" in msg for msg in caplog.messages)
+
+    def test_no_bias_warning_under_threshold(self, caplog):
+        """No extreme bias warning when SHORT:LONG ratio is under 100:1."""
+        emitter = ICTSignalEmitter()
+        emitter._direction_counts["short"] = 50
+        emitter._direction_counts["long"] = 1
+        emitter._direction_counts["neutral_skipped"] = 0
+
+        with caplog.at_level(
+            logging.WARNING, logger="signal_generation.ict_signal_emitter"
+        ):
+            emitter._log_direction_distribution()
+
+        assert not any("Extreme SHORT bias" in msg for msg in caplog.messages)
