@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: '2026-05-09'
+  last_updated: '2026-05-10'
   managed_by: jarvis
   status_notes:
   - 'R2a Canary: SIGNAL CRASH-LOOP FIXED (2026-04-26) — ST-SIGNAL-CRASHLOOP-FIX-001 merged to main via safety/ST-SIGNAL-CRASHLOOP-FIX-001. Root cause: hardcoded REDIS_HOST at import time + missing INFLUXDB_TOKEN
@@ -30,13 +30,14 @@ metadata:
   - 'R2a Day-21 Remediation (2026-05-07/08): ~20 PRs merged (#1070-#1087). Trade spam emergency fixed (G1.5 symbol cooldown, Discord throttle, kill switch dual-type). BOS/CHOCH bearish fix + re-enablement (96.2% accuracy). Redis connectivity fix. Pipeline fully operational.'
   - 'MVP Closure Batch (2026-05-09): ST-MVP-004 was never defined (numbering gap); stories proceed ST-MVP-003 → ST-MVP-005'
   - 'BOS/CHOCH: RE-ENABLED (2026-05-08) — Bearish CHoCH cross-assignment fixed (0%→100%). All 10 exclusion layers removed. 96.2% overall accuracy. Feature flag default TRUE.'
+  - 'R2a Canary: BYBIT DEMO ENVIRONMENT CONFIRMED (2026-05-10). Smoke test PASS: api-demo.bybit.com operational, fill prices within 0.214% of live, P&L verified (-$169.22 BTC, -$24.38 ETH), 20+ fills confirmed on exchange. Non-blocking: fill tracking bug (container reports 0 fills), all-SHORT signal bias (561/0), Redis telemetry down. Canary Day-0 restarted to May 10.'
 active_work:
   active_now:
   - id: R2A-CANARY-DAY21-RETRY
-    title: R2a Canary Restart (Day-0 = May 6, Day-21 target ~May 27)
+    title: R2a Canary Restart (Day-0 = May 10, Day-21 target ~May 31)
     status: in_progress
     priority: P1
-    notes: 'Canary clock Day-0 restarted May 7 after Day-21 FAIL remediation. Pipeline fully operational. ~20 PRs merged May 6-8. New checkpoints: Day-14=~May 21, Day-21=~May 28, Day-28=~Jun 4.'
+    notes: 'Canary clock Day-0 restarted May 10 after Bybit demo environment confirmation. Pipeline using api-demo.bybit.com (live prices, paper money). Smoke test PASS: fills within 0.214% of live, P&L verified, 20+ fills. Non-blocking issues: fill tracking bug, all-SHORT signal bias, Redis telemetry gap. New checkpoints: Day-7=~May 17, Day-14=~May 24, Day-21=~May 31, Day-28=~Jun 7.'
   next_3:
   - id: BL-BOS-CHOCH-001
     title: BOS/CHOCH Signal Implementation
