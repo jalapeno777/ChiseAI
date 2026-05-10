@@ -2299,19 +2299,21 @@ class TestCloseAtMarketPrice:
         assert "pos-001" not in orchestrator._opposite_signal_count
 
     @pytest.mark.asyncio
-    async def test_get_default_price_logs_warning(self, orchestrator, caplog):
-        """Verify _get_default_price logs a warning about hardcoded defaults."""
+    async def test_get_default_price_returns_none_and_logs_warning(
+        self, orchestrator, caplog
+    ):
+        """Verify _get_default_price returns None and warns about removed defaults."""
         import logging
 
         with caplog.at_level(logging.WARNING):
             result = orchestrator._get_default_price("BTC/USDT")
 
-        assert result == 65000.0
+        assert result is None
         assert any(
-            "hardcoded default price" in msg.lower()
-            and "live data feeds" in msg.lower()
+            "no default price available" in msg.lower()
+            and "hardcoded defaults removed" in msg.lower()
             for msg in caplog.messages
-        ), f"Expected hardcoded default warning, got: {caplog.messages}"
+        ), f"Expected no-default-price warning, got: {caplog.messages}"
 
     @pytest.mark.asyncio
     async def test_close_price_fallback_to_entry_when_no_market_data(

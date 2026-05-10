@@ -2231,45 +2231,25 @@ class PaperTradingOrchestrator:
     def _get_default_price(self, symbol: str) -> float | None:
         """Get default market price for a known symbol.
 
-        Provides fallback prices for common trading pairs when market data
-        is not available. This allows the system to be self-healing when
-        price feeds are temporarily unavailable.
+        DEPRECATED: Hardcoded price defaults removed as they become stale
+        and dangerous (e.g., BTC hardcoded at $65K was 40% below actual).
+
+        Always returns None — callers must handle the absence of price data
+        by skipping the operation or fetching live data.
 
         Args:
             symbol: Trading pair symbol (e.g., "BTC/USDT", "BTCUSDT")
 
         Returns:
-            Default price for known symbols, None for unknown symbols
+            Always None — hardcoded defaults are removed
         """
-        # Normalize symbol to uppercase and remove common separators
-        normalized = symbol.upper().replace("/", "").replace("-", "")
-
-        # Default prices for known symbols (updated periodically)
-        defaults = {
-            "BTCUSDT": 65000.0,
-            "BTCUSD": 65000.0,
-            "BTC": 65000.0,
-            "ETHUSDT": 3500.0,
-            "ETHUSD": 3500.0,
-            "ETH": 3500.0,
-            "SOLUSDT": 150.0,
-            "SOLUSD": 150.0,
-            "SOL": 150.0,
-            "BNBUSDT": 600.0,
-            "BNBUSD": 600.0,
-            "BNB": 600.0,
-        }
-
-        result = defaults.get(normalized)
-        if result is not None:
-            logger.warning(
-                "Using hardcoded default price for %s (%s=$%.2f). "
-                "This should not happen with live data feeds.",
-                symbol,
-                normalized,
-                result,
-            )
-        return result
+        logger.warning(
+            "No default price available for %s. "
+            "Hardcoded defaults removed to prevent stale price usage. "
+            "Ensure live price feeds are operational.",
+            symbol,
+        )
+        return None
 
     async def _sltp_monitoring_loop(self) -> None:
         """Periodically check open positions for SL/TP triggers.
