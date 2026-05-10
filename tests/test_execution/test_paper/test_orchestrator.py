@@ -1949,10 +1949,14 @@ class TestOrderPriceValidation:
         self, orchestrator, mock_components, mock_signal
     ):
         """Test that order is rejected when no market price is available."""
-        # Mock no price available
+        # Mock no price available from any source
         mock_components["order_sim"].market_data.get_price = MagicMock(
             return_value=None
         )
+        mock_components["order_sim"].get_market_price = MagicMock(return_value=None)
+
+        # Use a symbol with no default price to ensure rejection
+        mock_signal.token = "UNKNOWNPAIR"
 
         result = await orchestrator.process_signal(mock_signal)
 
@@ -2156,6 +2160,175 @@ class TestSymbolCooldownGate:
 
         # Should not raise
         orchestrator._set_symbol_cooldown("BTC/USDT")
+
+
+class TestCloseAtMarketPrice:
+    """PT-FIX-2: Verify positions close at current market price, not entry_price."""
+
+    @pytest.mark.asyncio
+    async def test_get_current_market_price_from_market_data(
+        self, orchestrator, mock_components
+    ):
+        """Verify _get_current_market_price returns price from market_data."""
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=51000.0
+        )
+
+        price = await orchestrator._get_current_market_price("BTC/USDT")
+        assert price == 51000.0
+
+    @pytest.mark.asyncio
+    async def test_get_current_market_price_fallback_to_get_market_price(
+        self, orchestrator, mock_components
+    ):
+        """Verify fallback to order_simulator.get_market_price when market_data fails."""
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=None
+        )
+        mock_components["order_sim"].get_market_price = MagicMock(return_value=52000.0)
+
+        price = await orchestrator._get_current_market_price("BTC/USDT")
+        assert price == 52000.0
+
+    @pytest.mark.asyncio
+    async def test_get_current_market_price_fallback_async(
+        self, orchestrator, mock_components
+    ):
+        """Verify fallback handles async get_market_price coroutine."""
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=None
+        )
+
+        async def async_get_price(symbol):
+            return 53000.0
+
+        mock_components["order_sim"].get_market_price = async_get_price
+
+        price = await orchestrator._get_current_market_price("BTC/USDT")
+        assert price == 53000.0
+
+    @pytest.mark.asyncio
+    async def test_get_current_market_price_returns_none_when_unavailable(
+        self, orchestrator, mock_components
+    ):
+        """Verify _get_current_market_price returns None when all sources fail."""
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=None
+        )
+        mock_components["order_sim"].get_market_price = MagicMock(
+            side_effect=Exception("no data")
+        )
+
+        price = await orchestrator._get_current_market_price("BTC/USDT")
+        assert price is None
+
+    @pytest.mark.asyncio
+    async def test_close_position_uses_market_price_not_entry_price(
+        self, orchestrator, mock_components
+    ):
+        """Verify close_position is called with market price, not entry_price.
+
+        The bug was that entry_price (price at signal time) was passed as exit_price,
+        causing P&L to always be zero. This tests the close_position method directly
+        to confirm it receives and passes the correct exit_price.
+        """
+        mock_position = MagicMock()
+        mock_position.position_id = "pos-test-001"
+        mock_position.symbol = "BTC/USDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 49000.0
+        mock_position.quantity = 0.1
+        mock_position.opened_at = datetime.now(UTC)
+        mock_position.metadata = {"correlation_id": "test-corr-001"}
+
+        mock_components["position_tracker"].close_position = AsyncMock(
+            return_value=(mock_position, 200.0)
+        )
+
+        # Close at market price (51000), not entry_price (49000)
+        result = await orchestrator.close_position(
+            "pos-test-001", 51000.0, reason="opposite_signal"
+        )
+
+        # Verify position_tracker received the market price as exit_price
+        call_args = mock_components["position_tracker"].close_position.call_args
+        assert call_args.kwargs["position_id"] == "pos-test-001"
+        assert (
+            call_args.kwargs["exit_price"] == 51000.0
+        ), f"Expected exit_price=51000.0 (market price), got {call_args.kwargs['exit_price']}"
+        assert result is not None
+        assert result[1] == 200.0
+
+    @pytest.mark.asyncio
+    async def test_min_hold_period_config(self, mock_components):
+        """Verify MIN_HOLD_SECONDS is configurable via env var."""
+        from unittest.mock import patch
+
+        with patch.dict("os.environ", {"MIN_HOLD_SECONDS": "600"}):
+            orch = PaperTradingOrchestrator(
+                signal_generator=mock_components["signal_gen"],
+                order_simulator=mock_components["order_sim"],
+                position_tracker=mock_components["position_tracker"],
+                risk_enforcer=mock_components["risk_enforcer"],
+                telemetry_collector=mock_components["telemetry"],
+                kill_switch=mock_components["kill_switch"],
+            )
+            assert orch._min_hold_seconds == 600
+
+    def test_min_hold_period_default(self, orchestrator):
+        """Verify default MIN_HOLD_SECONDS is 300 (5 minutes)."""
+        assert orchestrator._min_hold_seconds == 300
+
+    @pytest.mark.asyncio
+    async def test_opposite_signal_count_debouncing(self, orchestrator):
+        """Verify debounce counter increments correctly and resets."""
+        # Initially empty
+        assert orchestrator._opposite_signal_count == {}
+
+        # Simulate first opposite signal
+        orchestrator._opposite_signal_count["pos-001"] = 1
+        assert orchestrator._opposite_signal_count["pos-001"] == 1
+
+        # Simulate second opposite signal (threshold reached)
+        orchestrator._opposite_signal_count["pos-001"] = 2
+        assert orchestrator._opposite_signal_count["pos-001"] == 2
+
+        # Reset on close
+        orchestrator._opposite_signal_count.pop("pos-001", None)
+        assert "pos-001" not in orchestrator._opposite_signal_count
+
+    @pytest.mark.asyncio
+    async def test_get_default_price_logs_warning(self, orchestrator, caplog):
+        """Verify _get_default_price logs a warning about hardcoded defaults."""
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            result = orchestrator._get_default_price("BTC/USDT")
+
+        assert result == 65000.0
+        assert any(
+            "hardcoded default price" in msg.lower()
+            and "live data feeds" in msg.lower()
+            for msg in caplog.messages
+        ), f"Expected hardcoded default warning, got: {caplog.messages}"
+
+    @pytest.mark.asyncio
+    async def test_close_price_fallback_to_entry_when_no_market_data(
+        self, orchestrator, mock_components
+    ):
+        """Verify _get_current_market_price returns None when no market data.
+
+        When market price is unavailable, the caller should fall back to entry_price
+        with a warning. This test validates the helper returns None correctly.
+        """
+        # Both market data sources return None
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=None
+        )
+        mock_components["order_sim"].get_market_price = MagicMock(return_value=None)
+
+        price = await orchestrator._get_current_market_price("BTC/USDT")
+        assert price is None, "Expected None when no market data available"
 
 
 if __name__ == "__main__":

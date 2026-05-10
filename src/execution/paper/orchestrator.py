@@ -230,6 +230,10 @@ class PaperTradingOrchestrator:
         self._last_symbol_processed_ts: dict[tuple[str, str], float] = {}
         self._lock = asyncio.Lock()
 
+        # PT-FIX-2: Minimum hold period and debouncing for opposite-signal closes
+        self._min_hold_seconds = int(os.getenv("MIN_HOLD_SECONDS", "300"))
+        self._opposite_signal_count: dict[str, int] = {}  # keyed by position_id
+
         # G-EXIT-24H: Canary metrics for tracking position closes
         self._canary_metrics = CanaryMetrics(redis_client=redis_client)
 
@@ -1052,8 +1056,17 @@ class PaperTradingOrchestrator:
                     os.getenv("POC_MODE_BURN_IN_SECONDS", "300")
                 ):
                     logger.debug("Burn-in testing is enabled via POC_MODE=true")
+                    # PT-FIX-2: Use current market price, not entry_price
+                    exit_price = await self._get_current_market_price(signal.token)
+                    if exit_price is None:
+                        logger.warning(
+                            "No market price for burn-in close of %s, "
+                            "falling back to entry_price (degraded mode)",
+                            signal.token,
+                        )
+                        exit_price = entry_price
                     await self.close_position(
-                        existing_position.position_id, entry_price, reason="time_limit"
+                        existing_position.position_id, exit_price, reason="time_limit"
                     )
                     logger.info(
                         f"Time-based close: position {existing_position.position_id} "
@@ -1066,17 +1079,73 @@ class PaperTradingOrchestrator:
                     signal_side = signal.direction.value.lower()  # "long" or "short"
 
                     if current_side != signal_side:
+                        # PT-FIX-2: Minimum hold period check
+                        if position_age_seconds < self._min_hold_seconds:
+                            logger.debug(
+                                "Skipping opposite-signal close for %s: "
+                                "position age %.0fs < min hold %ds",
+                                signal.token,
+                                position_age_seconds,
+                                self._min_hold_seconds,
+                            )
+                            return PaperTradeResult(
+                                signal=signal,
+                                status=TradeStatus.REJECTED,
+                                reject_reason=[
+                                    f"Position held for {position_age_seconds:.0f}s, "
+                                    f"minimum hold period is {self._min_hold_seconds}s"
+                                ],
+                                correlation_id=correlation_id,
+                            )
+
+                        # PT-FIX-2: Debouncing — require 2 consecutive opposite signals
+                        pos_id = existing_position.position_id
+                        self._opposite_signal_count[pos_id] = (
+                            self._opposite_signal_count.get(pos_id, 0) + 1
+                        )
+                        if self._opposite_signal_count[pos_id] < 2:
+                            logger.debug(
+                                "Opposite signal debounce count %d/2 for position %s",
+                                self._opposite_signal_count[pos_id],
+                                pos_id,
+                            )
+                            return PaperTradeResult(
+                                signal=signal,
+                                status=TradeStatus.REJECTED,
+                                reject_reason=[
+                                    f"Opposite signal debounce: "
+                                    f"{self._opposite_signal_count[pos_id]}/2"
+                                ],
+                                correlation_id=correlation_id,
+                            )
+
+                        # PT-FIX-2: Use current market price, not entry_price
+                        exit_price = await self._get_current_market_price(signal.token)
+                        if exit_price is None:
+                            logger.warning(
+                                "No market price for opposite-signal close of %s, "
+                                "falling back to entry_price (degraded mode)",
+                                signal.token,
+                            )
+                            exit_price = entry_price
                         # Close existing position
                         await self.close_position(
-                            existing_position.position_id, entry_price
+                            existing_position.position_id, exit_price
                         )
+                        # Reset debounce counter
+                        self._opposite_signal_count.pop(pos_id, None)
                         logger.info(
                             f"Closed position {existing_position.position_id} for {signal.token} "
-                            f"(opposite signal: {current_side} -> {signal_side})"
+                            f"(opposite signal: {current_side} -> {signal_side}, "
+                            f"exit_price={exit_price})"
                         )
                         existing_position = None  # Allow new position to open
                     else:
                         # Same direction - skip this signal
+                        # PT-FIX-2: Reset opposite-signal debounce counter
+                        self._opposite_signal_count.pop(
+                            existing_position.position_id, None
+                        )
                         logger.debug(
                             f"Already in {signal_side} position for {signal.token}, skipping"
                         )
@@ -2089,6 +2158,42 @@ class PaperTradingOrchestrator:
         except Exception as e:
             logger.debug("Failed to set symbol cooldown for %s: %s", symbol, e)
 
+    async def _get_current_market_price(self, symbol: str) -> float | None:
+        """Get current market price for a symbol from live data sources.
+
+        Tries market_data.get_price first, then falls back to
+        order_simulator.get_market_price. Does NOT use hardcoded defaults.
+
+        Args:
+            symbol: Trading pair symbol (e.g., "BTC/USDT")
+
+        Returns:
+            Current market price, or None if unavailable
+        """
+        # Try market_data.get_price first
+        market_data = getattr(self.order_simulator, "market_data", None)
+        if market_data is not None and hasattr(market_data, "get_price"):
+            price = market_data.get_price(symbol)
+            if price is not None and price > 0:
+                return float(price)
+
+        # Fallback: order_simulator.get_market_price (may be coroutine)
+        if hasattr(self.order_simulator, "get_market_price"):
+            try:
+                result = self.order_simulator.get_market_price(symbol)
+                if asyncio.iscoroutine(result):
+                    result = await result
+                if result is not None and result > 0:
+                    return float(result)
+            except Exception as e:
+                logger.debug(
+                    "get_market_price failed for %s in _get_current_market_price: %s",
+                    symbol,
+                    e,
+                )
+
+        return None
+
     def _get_default_price(self, symbol: str) -> float | None:
         """Get default market price for a known symbol.
 
@@ -2121,7 +2226,16 @@ class PaperTradingOrchestrator:
             "BNB": 600.0,
         }
 
-        return defaults.get(normalized)
+        result = defaults.get(normalized)
+        if result is not None:
+            logger.warning(
+                "Using hardcoded default price for %s (%s=$%.2f). "
+                "This should not happen with live data feeds.",
+                symbol,
+                normalized,
+                result,
+            )
+        return result
 
     def get_metrics(self) -> dict[str, Any]:
         """Get orchestrator metrics.
