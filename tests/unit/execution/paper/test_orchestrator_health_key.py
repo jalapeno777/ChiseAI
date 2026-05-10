@@ -71,7 +71,7 @@ class TestHealthKeyTTL:
     @pytest.mark.asyncio
     async def test_setex_called_with_120_ttl(self, orchestrator, mock_redis):
         """_update_health should pass TTL=120 to setex."""
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")
 
         call_args = mock_redis.setex.call_args
         assert call_args[0][1] == 120
@@ -83,8 +83,8 @@ class TestHealthKeyRefresh:
     @pytest.mark.asyncio
     async def test_update_health_refreshes_key(self, orchestrator, mock_redis):
         """Each _update_health call should refresh the key."""
-        orchestrator._update_health("running")
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")
+        await orchestrator._update_health("running")
 
         assert mock_redis.setex.call_count == 2
 
@@ -92,9 +92,10 @@ class TestHealthKeyRefresh:
 class TestHealthPayloadFormat:
     """AC4: health payload includes status, timestamp, processed_count."""
 
-    def test_payload_structure(self, orchestrator, mock_redis):
+    @pytest.mark.asyncio
+    async def test_payload_structure(self, orchestrator, mock_redis):
         """Payload should contain status, timestamp, and processed_count."""
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")
 
         call_args = mock_redis.setex.call_args
         payload_str = call_args[0][2]
@@ -104,35 +105,39 @@ class TestHealthPayloadFormat:
         assert "timestamp" in payload
         assert "processed_count" in payload
 
-    def test_payload_status_running(self, orchestrator, mock_redis):
+    @pytest.mark.asyncio
+    async def test_payload_status_running(self, orchestrator, mock_redis):
         """Status should be 'running' when called with 'running'."""
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")
 
         call_args = mock_redis.setex.call_args
         payload = json.loads(call_args[0][2])
         assert payload["status"] == "running"
 
-    def test_payload_timestamp_is_iso8601(self, orchestrator, mock_redis):
+    @pytest.mark.asyncio
+    async def test_payload_timestamp_is_iso8601(self, orchestrator, mock_redis):
         """Timestamp should be a valid ISO-8601 string."""
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")
 
         call_args = mock_redis.setex.call_args
         payload = json.loads(call_args[0][2])
         # Should not raise
         datetime.fromisoformat(payload["timestamp"])
 
-    def test_payload_processed_count_is_int(self, orchestrator, mock_redis):
+    @pytest.mark.asyncio
+    async def test_payload_processed_count_is_int(self, orchestrator, mock_redis):
         """processed_count should be an integer."""
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")
 
         call_args = mock_redis.setex.call_args
         payload = json.loads(call_args[0][2])
         assert isinstance(payload["processed_count"], int)
 
-    def test_payload_reflects_metrics(self, orchestrator, mock_redis):
+    @pytest.mark.asyncio
+    async def test_payload_reflects_metrics(self, orchestrator, mock_redis):
         """processed_count should reflect actual signals_processed metric."""
         orchestrator._metrics["signals_processed"] = 42
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")
 
         call_args = mock_redis.setex.call_args
         payload = json.loads(call_args[0][2])
@@ -175,14 +180,16 @@ class TestHealthKeyGracefulStop:
 class TestHealthKeyNoRedis:
     """Edge cases: no Redis client provided."""
 
-    def test_update_health_no_redis(self, mock_deps):
+    @pytest.mark.asyncio
+    async def test_update_health_no_redis(self, mock_deps):
         """_update_health should silently skip when redis_client is None."""
         orchestrator = PaperTradingOrchestrator(**mock_deps, redis_client=None)
         # Should not raise
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")
 
-    def test_update_health_redis_error(self, orchestrator, mock_redis):
+    @pytest.mark.asyncio
+    async def test_update_health_redis_error(self, orchestrator, mock_redis):
         """_update_health should not raise when Redis throws an exception."""
         mock_redis.setex.side_effect = Exception("Connection refused")
         # Should not raise
-        orchestrator._update_health("running")
+        await orchestrator._update_health("running")

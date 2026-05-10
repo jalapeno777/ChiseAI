@@ -319,7 +319,7 @@ class PaperTradingOrchestrator:
         """
         return self._connector_provenance.copy()
 
-    def _update_health(self, status: str = "running") -> None:
+    async def _update_health(self, status: str = "running") -> None:
         """Update health key in Redis with current orchestrator status.
 
         Writes a JSON payload to ``paper:orchestrator:health`` with a 120s TTL.
@@ -338,7 +338,7 @@ class PaperTradingOrchestrator:
                     "processed_count": self._metrics.get("signals_processed", 0),
                 }
             )
-            self._redis.setex(self.HEALTH_KEY, self.HEALTH_TTL_SECONDS, payload)
+            await self._redis.setex(self.HEALTH_KEY, self.HEALTH_TTL_SECONDS, payload)
         except Exception:
             logger.debug("Failed to update orchestrator health key", exc_info=True)
 
@@ -439,7 +439,7 @@ class PaperTradingOrchestrator:
             )
 
         # Write initial health key
-        self._update_health("running")
+        await self._update_health("running")
 
         # Start BybitFillListener if feature flag is enabled (polling-first fallback)
         if os.getenv("BYBIT_FILL_LISTENER_ENABLED", "false").lower() == "true":
@@ -627,7 +627,7 @@ class PaperTradingOrchestrator:
         # Delete health key on graceful stop (Option A: explicit delete)
         if self._redis is not None:
             try:
-                self._redis.delete(self.HEALTH_KEY)
+                await self._redis.delete(self.HEALTH_KEY)
             except Exception:
                 logger.debug(
                     "Failed to delete orchestrator health key on stop",
@@ -681,12 +681,12 @@ class PaperTradingOrchestrator:
                     # SKIPPED status doesn't increment any metric - just logged
 
                 # Refresh health key after processing a signal
-                self._update_health("running")
+                await self._update_health("running")
 
             except TimeoutError:
                 # No signals in queue, continue loop
                 # Refresh health key to prevent TTL expiry during idle periods
-                self._update_health("running")
+                await self._update_health("running")
                 continue
             except asyncio.CancelledError:
                 break
@@ -1936,7 +1936,7 @@ class PaperTradingOrchestrator:
                 )
 
         # Set symbol cooldown after position open
-        self._set_symbol_cooldown(position.symbol)
+        await self._set_symbol_cooldown(position.symbol)
 
         return position
 
@@ -2164,7 +2164,7 @@ class PaperTradingOrchestrator:
 
             # Set symbol cooldown after position close
             if position is not None:
-                self._set_symbol_cooldown(position.symbol)
+                await self._set_symbol_cooldown(position.symbol)
 
             return position, realized_pnl
 
@@ -2172,7 +2172,7 @@ class PaperTradingOrchestrator:
             logger.error(f"Failed to close position {position_id}: {e}")
             return None
 
-    def _set_symbol_cooldown(self, symbol: str) -> None:
+    async def _set_symbol_cooldown(self, symbol: str) -> None:
         """Set cooldown key in Redis after a trade on a symbol.
 
         This is fire-and-forget — a failure here must never block trading.
@@ -2187,7 +2187,7 @@ class PaperTradingOrchestrator:
                 int(os.environ.get("SYMBOL_COOLDOWN_SECONDS", "300")), 60
             )
             cooldown_key = f"cooldown:symbol:{symbol.upper().strip()}"
-            self._redis.setex(cooldown_key, cooldown_seconds, str(time.time()))
+            await self._redis.setex(cooldown_key, cooldown_seconds, str(time.time()))
             logger.debug("Set symbol cooldown for %s (%ds)", symbol, cooldown_seconds)
         except Exception as e:
             logger.debug("Failed to set symbol cooldown for %s: %s", symbol, e)
