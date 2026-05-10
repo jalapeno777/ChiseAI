@@ -297,9 +297,9 @@ async def continuous_signal_generation(
     initial_count = len(cast(list[str], r.keys("paper:signal:*")))
     logger.info(f"Initial paper signal count: {initial_count}")
 
-    # Create signal generator with lower threshold
+    # Create signal generator with configurable threshold (default 0.75, override via ACTIONABLE_THRESHOLD env var)
     config = SignalGenerationConfig(
-        actionable_threshold=0.50,  # Lower threshold for more signals
+        actionable_threshold=float(os.environ.get("ACTIONABLE_THRESHOLD", "0.75")),
         enable_freshness_checks=True,
         enable_heartbeat=True,
         log_filtered_signals=False,
