@@ -14,7 +14,7 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 # Accepted canonical prefixes used across ChiseAI workflows.
-_PREFIX_RE = r"(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON|I|D)"
+_PREFIX_RE = r"(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON|PT|I|D)"
 _STORY_ID_FULL_RE = re.compile(
     rf"^{_PREFIX_RE}(?:-[A-Z0-9]+)+$",
     re.IGNORECASE,
