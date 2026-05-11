@@ -388,12 +388,25 @@ class RealDataIngestion:
 
         Returns:
             List of synthetic trade entries
+
+        Note:
+            This method generates synthetic FALLBACK data for testing purposes ONLY.
+            These prices (50000.0 for BTC, 1000.0 for others) are MOCK/test values and
+            should NEVER be used for live trading price resolution. The trades are
+            explicitly marked with DataSource.FALLBACK.
         """
         import random
 
         trades = []
         base_time = datetime.now(UTC)
-        base_price = 50000.0 if "BTC" in symbol.upper() else 1000.0
+        # WARNING: These are synthetic test prices, NOT live market prices
+        _SYNTHETIC_BASE_PRICE_BTC = 50000.0
+        _SYNTHETIC_BASE_PRICE_OTHER = 1000.0
+        base_price = (
+            _SYNTHETIC_BASE_PRICE_BTC
+            if "BTC" in symbol.upper()
+            else _SYNTHETIC_BASE_PRICE_OTHER
+        )
 
         for i in range(10):
             trade = TradeEntry(

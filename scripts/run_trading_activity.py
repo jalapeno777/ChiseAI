@@ -749,11 +749,18 @@ async def _execute_trading_cycle(
                 if orchestrator.order_simulator and hasattr(
                     orchestrator.order_simulator, "set_market_price"
                 ):
-                    current_price = (
-                        ohlcv_data[-1].close_price if ohlcv_data else 50000.0
-                    )
-                    orchestrator.order_simulator.set_market_price(symbol, current_price)
-                    logger.debug(f"Set market price for {symbol}: {current_price}")
+                    current_price = ohlcv_data[-1].close_price if ohlcv_data else None
+                    if current_price is None:
+                        logger.warning(
+                            "No valid price for %s, skipping set_market_price "
+                            "(mock price injection prevented)",
+                            symbol,
+                        )
+                    else:
+                        orchestrator.order_simulator.set_market_price(
+                            symbol, current_price
+                        )
+                        logger.debug(f"Set market price for {symbol}: {current_price}")
                 elif (
                     orchestrator.order_simulator
                     and hasattr(orchestrator.order_simulator, "market_data")
@@ -761,15 +768,20 @@ async def _execute_trading_cycle(
                     is not None
                     and hasattr(orchestrator.order_simulator.market_data, "set_price")
                 ):
-                    current_price = (
-                        ohlcv_data[-1].close_price if ohlcv_data else 50000.0
-                    )
-                    orchestrator.order_simulator.market_data.set_price(
-                        symbol, current_price
-                    )
-                    logger.debug(
-                        f"Set connector market_data price for {symbol}: {current_price}"
-                    )
+                    current_price = ohlcv_data[-1].close_price if ohlcv_data else None
+                    if current_price is None:
+                        logger.warning(
+                            "No valid price for %s, skipping set_market_price "
+                            "(mock price injection prevented)",
+                            symbol,
+                        )
+                    else:
+                        orchestrator.order_simulator.market_data.set_price(
+                            symbol, current_price
+                        )
+                        logger.debug(
+                            f"Set connector market_data price for {symbol}: {current_price}"
+                        )
 
                 initial_closed = 0
                 if orchestrator.position_tracker:
