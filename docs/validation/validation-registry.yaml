@@ -6,7 +6,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-05-09"
+  last_updated: "2026-05-11"
 
 # Validation entries
 validations:
@@ -2419,6 +2419,64 @@ validations:
       - redis: paper:signal_consumer:health status=active, processed_count=189796
       - docker: both containers Up and healthy on chiseai network with project=chiseai labels
       - redis: 4621 total paper:signal:* keys (214 new since remediation)
+    owner: jarvis
+
+  - id: V-CANARY-DAY0-RESTART-20260511
+    title: "Canary Day-0 restart to 2026-05-11 after mock price elimination"
+    story_id: R2A-CANARY-DAY21-RETRY
+    status: validated
+    description: >
+      Canary Day-0 reset to 2026-05-11 after mock price elimination. Hardcoded $50K BTC fallback
+      removed from run_trading_activity.py (commit 4326296). Docker images rebuilt --no-cache,
+      containers redeployed. All 6 verification checks PASSED. Previous canary data (May 10 fills)
+      was based on mock/stale prices — do NOT use for evaluation.
+    acceptance_criteria:
+      - Hardcoded $50K BTC fallback removed from run_trading_activity.py
+      - Docker images rebuilt with --no-cache flag
+      - All 6 verification checks PASSED
+      - Pipeline using api-demo.bybit.com (live prices, paper money)
+    test_method: manual
+    evidence:
+      - "Mock data eliminated from running containers"
+      - "No-cache image rebuild + container recreation performed"
+      - "Commit: 4326296"
+    notes: "Day-0 reset after mock price elimination. Day-7 ~2026-05-18, Day-14 ~2026-05-25, Day-21 GO/NO-GO ~2026-06-01."
+    owner: jarvis
+
+  - id: V-REDIS-MIGRATION-6379
+    title: "Redis migration from port 6380 to 6379"
+    story_id: R2A-CANARY-DAY21-RETRY
+    status: validated
+    description: >
+      Redis migration from port 6380 to 6379. All services reconnected to new port.
+      Redis MCP functional on new port.
+    acceptance_criteria:
+      - All services reconnected to port 6379
+      - Redis MCP functional on new port
+      - No connection errors in logs
+    test_method: manual
+    evidence:
+      - "All services reconnected to port 6379"
+      - "Redis MCP functional on new port"
+    notes: "MCP session may require restart to pick new config. ~200 Python files still have 6380 as default (see BL-PYTHON-6380-DEFAULTS)."
+    owner: jarvis
+
+  - id: V-FILL-PRICE-VERIFICATION
+    title: "Live fill-price verification"
+    story_id: R2A-CANARY-DAY21-RETRY
+    status: validated
+    description: >
+      Live fill-price verification passed. Verifies that real market prices are used,
+      not mock/fallback values. Hardcoded price defaults removed from active code paths.
+    acceptance_criteria:
+      - Live fill-price matches expected values from exchange
+      - Hardcoded price defaults removed from active code paths
+      - No mock/stale price data in evaluation
+    test_method: manual
+    evidence:
+      - "Live fill-price matches expected values from exchange"
+      - "Hardcoded price defaults removed from active code paths"
+    notes: "Verifies that real market prices are used, not mock/fallback values."
     owner: jarvis
 
   # ============================================================
