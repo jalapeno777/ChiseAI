@@ -31,13 +31,14 @@ metadata:
   - 'MVP Closure Batch (2026-05-09): ST-MVP-004 was never defined (numbering gap); stories proceed ST-MVP-003 → ST-MVP-005'
   - 'BOS/CHOCH: RE-ENABLED (2026-05-08) — Bearish CHoCH cross-assignment fixed (0%→100%). All 10 exclusion layers removed. 96.2% overall accuracy. Feature flag default TRUE.'
   - 'R2a Canary: BYBIT DEMO ENVIRONMENT CONFIRMED (2026-05-10). Smoke test PASS: api-demo.bybit.com operational, fill prices within 0.214% of live, P&L verified (-$169.22 BTC, -$24.38 ETH), 20+ fills confirmed on exchange. Non-blocking: fill tracking bug (container reports 0 fills), all-SHORT signal bias (561/0), Redis telemetry down. Canary Day-0 restarted to May 10.'
+  - 'Mock Price Elimination (2026-05-11): Hardcoded $50K BTC fallback removed from run_trading_activity.py (commit 4326296). Docker images rebuilt with --no-cache, containers redeployed. All 6 verification checks PASSED. Canary Day-0 restarted to May 11 — all prior canary data was based on mock/stale prices.'
 active_work:
   active_now:
   - id: R2A-CANARY-DAY21-RETRY
-    title: R2a Canary Restart (Day-0 = May 10, Day-21 target ~May 31)
+    title: R2a Canary Restart (Day-0 = May 11, Day-21 target ~Jun 1)
     status: in_progress
     priority: P1
-    notes: 'Canary clock Day-0 restarted May 10 after Bybit demo environment confirmation. Pipeline using api-demo.bybit.com (live prices, paper money). Smoke test PASS: fills within 0.214% of live, P&L verified, 20+ fills. Non-blocking issues: fill tracking bug, all-SHORT signal bias, Redis telemetry gap. New checkpoints: Day-7=~May 17, Day-14=~May 24, Day-21=~May 31, Day-28=~Jun 7.'
+    notes: 'Canary clock Day-0 restarted May 11 after mock price elimination. Hardcoded $50K BTC fallback removed (commit 4326296), Docker images rebuilt --no-cache, all 6 verification checks PASSED. Pipeline using api-demo.bybit.com (live prices, paper money). Previous canary data (May 10 fills) was based on mock prices — do NOT use for evaluation. New checkpoints: Day-7=~May 18, Day-14=~May 25, Day-21=~Jun 1, Day-28=~Jun 8.'
   next_3:
   - id: BL-BOS-CHOCH-001
     title: BOS/CHOCH Signal Implementation
