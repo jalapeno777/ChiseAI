@@ -227,7 +227,7 @@
         "redis-mcp-server@latest",
         "redis-mcp-server",
         "--url",
-        "redis://host.docker.internal:6380/0",
+        "redis://host.docker.internal:6379/0",
       ],
       "environment": {},
     },

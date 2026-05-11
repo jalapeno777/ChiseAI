@@ -40,11 +40,11 @@ resource "docker_container" "redis" {
   name  = "chiseai-redis"
   image = "redis:7"
 
-  command = ["redis-server", "--port", "6380", "--appendonly", "yes"]
+  command = ["redis-server", "--port", "6379", "--appendonly", "yes"]
 
   ports {
-    internal = 6380
-    external = 6380
+    internal = 6379
+    external = 6379
   }
 
   labels {
@@ -421,7 +421,7 @@ resource "docker_container" "chiseai_api" {
     "INFLUXDB_ORG=${var.influxdb_org}",
     "INFLUXDB_TOKEN=${var.influxdb_token}",
     "REDIS_HOST=chiseai-redis",
-    "REDIS_PORT=6380",
+    "REDIS_PORT=6379",
     "REDIS_DB=0",
     "QDRANT_URL=http://chiseai-qdrant:6334",
     "CHISEAI_ENV=production",
@@ -473,7 +473,7 @@ resource "docker_container" "chise_dashboard" {
 
   env = [
     "REDIS_HOST=chiseai-redis",
-    "REDIS_PORT=6380",
+    "REDIS_PORT=6379",
     "REDIS_DB=0",
     "CHISEAI_API_URL=http://chiseai-api-final:8001",
     "STREAMLIT_SERVER_PORT=8502",
@@ -521,7 +521,7 @@ resource "docker_container" "chiseai_data_quality_monitor" {
     "DQ_INFLUX_ORG=${var.influxdb_org}",
     "DQ_INFLUX_BUCKET=chiseai",
     "REDIS_HOST=chiseai-redis",
-    "REDIS_PORT=6380",
+    "REDIS_PORT=6379",
     "REDIS_DB=0",
   ]
 
@@ -675,7 +675,7 @@ resource "docker_container" "chiseai_paper_trading_executor" {
 
   env = [
     "REDIS_HOST=chiseai-redis",
-    "REDIS_PORT=6380",
+    "REDIS_PORT=6379",
     "BYBIT_API_MODE=demo",
     "BYBIT_DEMO_API_KEY=${local.effective_bybit_demo_api_key}",
     "BYBIT_DEMO_API_SECRET=${local.effective_bybit_demo_api_secret}",
@@ -741,7 +741,7 @@ resource "docker_container" "chiseai_daily_summary" {
 
   env = [
     "REDIS_HOST=chiseai-redis",
-    "REDIS_PORT=6380",
+    "REDIS_PORT=6379",
     "REDIS_DB=0",
     "POSTGRES_HOST=chiseai-postgres",
     "POSTGRES_PORT=5434",
@@ -852,7 +852,7 @@ resource "docker_container" "chiseai_signal_supervisor" {
 
   env = [
     "REDIS_HOST=chiseai-redis",
-    "REDIS_PORT=6380",
+    "REDIS_PORT=6379",
     "INFLUXDB_URL=http://chiseai-influxdb:18087",
     "INFLUXDB_ORG=${var.influxdb_org}",
     "INFLUXDB_TOKEN=${var.influxdb_token}",

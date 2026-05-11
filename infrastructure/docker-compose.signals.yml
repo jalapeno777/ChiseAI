@@ -11,7 +11,7 @@ services:
       - chiseai
     environment:
       - REDIS_HOST=chiseai-redis
-      - REDIS_PORT=6380
+      - REDIS_PORT=6379
       - INFLUXDB_PORT=18087
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:?INFLUXDB_TOKEN required}
       - PYTHONUNBUFFERED=1
@@ -33,7 +33,7 @@ services:
           "CMD",
           "python3",
           "-c",
-          "import redis; r=redis.Redis(host='chiseai-redis', port=6380); r.ping() and r.exists('bmad:chiseai:supervisor:state')",
+          "import redis; r=redis.Redis(host='chiseai-redis', port=6379); r.ping() and r.exists('bmad:chiseai:supervisor:state')",
         ]
       interval: 30s
       timeout: 10s

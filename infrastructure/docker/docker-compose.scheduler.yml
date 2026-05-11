@@ -20,7 +20,7 @@ services:
     environment:
       # Redis connection
       - REDIS_HOST=chiseai-redis
-      - REDIS_PORT=6380
+      - REDIS_PORT=6379
       - REDIS_DB=0
 
       # Scheduler intervals (in seconds)
