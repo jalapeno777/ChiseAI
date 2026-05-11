@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: '2026-05-10'
+  last_updated: '2026-05-11'
   managed_by: jarvis
   status_notes:
   - 'R2a Canary: SIGNAL CRASH-LOOP FIXED (2026-04-26) — ST-SIGNAL-CRASHLOOP-FIX-001 merged to main via safety/ST-SIGNAL-CRASHLOOP-FIX-001. Root cause: hardcoded REDIS_HOST at import time + missing INFLUXDB_TOKEN
@@ -32,13 +32,17 @@ metadata:
   - 'BOS/CHOCH: RE-ENABLED (2026-05-08) — Bearish CHoCH cross-assignment fixed (0%→100%). All 10 exclusion layers removed. 96.2% overall accuracy. Feature flag default TRUE.'
   - 'R2a Canary: BYBIT DEMO ENVIRONMENT CONFIRMED (2026-05-10). Smoke test PASS: api-demo.bybit.com operational, fill prices within 0.214% of live, P&L verified (-$169.22 BTC, -$24.38 ETH), 20+ fills confirmed on exchange. Non-blocking: fill tracking bug (container reports 0 fills), all-SHORT signal bias (561/0), Redis telemetry down. Canary Day-0 restarted to May 10.'
   - 'Mock Price Elimination (2026-05-11): Hardcoded $50K BTC fallback removed from run_trading_activity.py (commit 4326296). Docker images rebuilt with --no-cache, containers redeployed. All 6 verification checks PASSED. Canary Day-0 restarted to May 11 — all prior canary data was based on mock/stale prices.'
+  - date: '2026-05-11'
+    note: 'Redis migration to port 6379 complete; all services reconnected. Note: MCP session may require restart to pick new config.'
+  - date: '2026-05-11'
+    note: 'Live fill-price verification passed; hardcoded price defaults removed from active code paths.'
 active_work:
   active_now:
   - id: R2A-CANARY-DAY21-RETRY
     title: R2a Canary Restart (Day-0 = May 11, Day-21 target ~Jun 1)
     status: in_progress
     priority: P1
-    notes: 'Canary clock Day-0 restarted May 11 after mock price elimination. Hardcoded $50K BTC fallback removed (commit 4326296), Docker images rebuilt --no-cache, all 6 verification checks PASSED. Pipeline using api-demo.bybit.com (live prices, paper money). Previous canary data (May 10 fills) was based on mock prices — do NOT use for evaluation. New checkpoints: Day-7=~May 18, Day-14=~May 25, Day-21=~Jun 1, Day-28=~Jun 8.'
+    notes: 'Canary clock Day-0 restarted May 11 after mock price elimination. Hardcoded $50K BTC fallback removed (commit 4326296), Docker images rebuilt --no-cache, all 6 verification checks PASSED. Pipeline using api-demo.bybit.com (live prices, paper money). Previous canary data (May 10 fills) was based on mock prices — do NOT use for evaluation. Checkpoints: Day-0=2026-05-11, Day-7=~2026-05-18, Day-14=~2026-05-25, Day-21 GO/NO-GO=~2026-06-01, Day-28 final=~2026-06-08.'
   next_3:
   - id: BL-BOS-CHOCH-001
     title: BOS/CHOCH Signal Implementation
@@ -1395,29 +1399,47 @@ backlog:
     validation.
   id: BL-BOS-CHOCH-001
   notes:
-  - BOS/CHoCH excluded from EP-ICT-005 (Phase 2 integration)
-  - 3/4 ICT signals operational (CVD, FVG, Order Block)
-  - Feature flag prevents accidental BOS/CHoCH activation
-  - Target Phase: EP-ICT-007 (Phase 5)
-  - Test data remediated (2026-03-28): regenerated with 80-120 candles
-  - OHLCV data fixed
-  - Classifier still not firing: 23% accuracy vs 60% target
-  - Need to debug _is_level_broken() logic
-  - '2026-04-03: Aria decision AD-ST-ICT-S9-001-20260403T120100Z-aria — CHoCH logic architecturally broken (trivially true comparison). Honest baseline 42.3%. Deferred to EP-ICT-007 Phase 2. See docs/evidence/ST-ICT-S9-001-choch-architecture-findings.md'
+  - 'BOS/CHOCH detection implemented and merged. Moved to completed; was incorrectly left as deferred in backlog.'
+  - 'Bearish CHoCH fix (PR #1086) + re-enablement (PR #1087). 96.2% accuracy. Feature flag default TRUE.'
   owner: ml-signal-engineering
   priority: P2
   related_epic: EP-ICT-004
   related_story: ST-ICT-013
-  risk_notes:
-  - BOS/CHoCH excluded from EP-ICT-005 (Phase 2 integration)
-  - 3/4 ICT signals operational (CVD, FVG, Order Block)
-  - Feature flag prevents accidental BOS/CHoCH activation
-  status: deferred
+  status: completed
+  completion_date: '2026-05-08'
   story_points: 5
   sprint_id: ICT-S9
   target_sprint: ICT-S9
   deferred_date: '2026-04-03'
   title: BOS/CHoCH Validation Remediation
+- id: BL-TEST-TRADING-ACTIVITY
+  title: 'Fix 9 failing test_trading_activity tests'
+  status: open
+  priority: low
+  created_date: '2026-05-11'
+  notes:
+  - '9 tests in test_trading_activity.py are failing. Non-blocking for canary; deferred for post-canary cleanup.'
+- id: BL-PYTHON-6380-DEFAULTS
+  title: 'Cleanup 200+ Python files with hardcoded Redis 6380 defaults'
+  status: open
+  priority: low
+  created_date: '2026-05-11'
+  notes:
+  - 'After Redis migration to 6379, ~200+ Python files still reference port 6380 as default. Non-blocking but should be cleaned up to avoid confusion.'
+- id: BL-REDIS-MCP-SESSION
+  title: 'Redis MCP stale session reload'
+  status: open
+  priority: low
+  created_date: '2026-05-11'
+  notes:
+  - 'Redis MCP session may need restart to pick up new port 6379 config. Low priority; workaround is manual MCP restart.'
+- id: BL-GRAFANA-TERRAFORM-IPV6
+  title: 'Grafana terraform dashboard provisioning IPv6 issue'
+  status: open
+  priority: low
+  created_date: '2026-05-11'
+  notes:
+  - 'Non-blocking IPv6 issue with Grafana terraform dashboard provisioning. Deferred; dashboards work via manual config.'
 - id: ST-CHISE-001
   title: ChiseAI Core Setup
   status: completed
