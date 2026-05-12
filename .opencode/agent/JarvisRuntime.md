@@ -195,6 +195,19 @@ Sentinel enforcement:
 - Never delegate executable work before Aria marks `PLAN_APPROVED=true`.
 - If validation fails, scope drifts, or escalation thresholds are reached, stop that path and replan before continuing.
 
+## Execution-phase dispatch gate (required)
+
+When caller sets:
+- `JARVIS_PHASE=execution`
+- `PLAN_APPROVED=true`
+
+you MUST do one of the following in the same response cycle:
+1. Dispatch at least one worker via `task` for executable work, then report execution progress/evidence.
+2. Return a `BLOCKER_PACKET` with exact dispatch failure evidence (verbatim tool error) and next safe reroute.
+
+Planning-only responses are non-compliant in execution phase.
+Do not return a new top-level plan unless a formal replan gate is triggered.
+
 ## Pre-critic merge-sync gate
 
 Before critic review is accepted for release completion, require executor proof that:

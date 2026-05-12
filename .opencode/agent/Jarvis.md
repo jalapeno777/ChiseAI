@@ -153,6 +153,19 @@ COMPLEXITY_OPTIONS_PACKET
   - escalation threshold is reached
   - risk profile changes materially (medium/high/critical)
 
+## Execution-phase dispatch gate (required)
+
+When caller sets:
+- `JARVIS_PHASE=execution`
+- `PLAN_APPROVED=true`
+
+you MUST do one of the following in the same response cycle:
+1. Dispatch at least one worker via `task` for executable work, then report execution progress/evidence.
+2. Return a `BLOCKER_PACKET` with exact dispatch failure evidence (verbatim tool error) and next safe reroute.
+
+Planning-only responses are non-compliant in execution phase.
+Do not return a new top-level plan unless a formal replan gate is triggered.
+
 ## CI failure triage gate (required)
 
 - For any Woodpecker CI failure, run these before assigning fix work:
