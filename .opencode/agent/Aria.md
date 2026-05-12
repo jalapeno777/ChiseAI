@@ -9,11 +9,7 @@ permission:
   task:
     "*": deny
     "jarvis": allow
-    "architect": deny
-    "dev": deny
-    "tester": deny
-    "reviewer": deny
-    "git-*": deny
+    "jarvis-runtime": allow
 ---
 
 # Aria — Primary Orchestrator Operating Manual
@@ -272,9 +268,15 @@ Whenever you Task-call `jarvis`, you MUST include a short header that forces cor
 
 ### Header to prepend to EVERY `jarvis` task
 
+Use one of these two headers explicitly.
+
+Planning header (plan build/review only):
+
 Paste this at the top of your message to `jarvis`:
 
 BMAD_TASK_MODE=1
+JARVIS_PHASE=planning
+PLAN_APPROVED=false
 REQUIRED_READS:
 
 - AGENTS.md
@@ -302,6 +304,34 @@ OUTPUT FORMAT:
 - Use Jarvis's batch-table template (see `.opencode/agent/Jarvis.md` "Parallelization plan template").
 - Identify which worker agents you will spawn for each executable step.
 - No interactive menus in your response.
+- For unresolved questions, append:
+  - `BLOCKER_PACKET` with `question`, `recommended_default`, `risk_if_default_wrong`, `decision_deadline_utc`.
+
+Execution header (after Aria approves plan gates):
+
+BMAD_TASK_MODE=1
+JARVIS_PHASE=execution
+PLAN_APPROVED=true
+REQUIRED_READS:
+
+- AGENTS.md
+- docs/bmm-workflow-status.yaml (if present)
+- \_bmad/core/agents/bmad-master.md
+- \_bmad/core/config.yaml (if present)
+
+TASK-MODE OVERRIDES:
+
+- Execute only against the approved plan and AC map.
+- Delegate executable work to workers; do not execute bash/git/docker/file writes directly.
+- Do not return a new top-level plan unless a replan gate is triggered.
+- If replan is required, stop that scope and return `REPLAN_REQUIRED` with cause + updated batch proposal.
+- Do NOT ask Craig/user direct questions. Route unresolved questions to Aria in a `BLOCKER_PACKET`.
+- Treat orchestration as non-interactive unless explicitly marked interactive by Aria.
+
+OUTPUT FORMAT:
+
+- Return execution progress by batch with: owner, scope, evidence, blockers, and next action.
+- Include `quality_sentinels` status and changed evidence references.
 - For unresolved questions, append:
   - `BLOCKER_PACKET` with `question`, `recommended_default`, `risk_if_default_wrong`, `decision_deadline_utc`.
 

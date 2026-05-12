@@ -25,6 +25,9 @@ permission:
   task:
     "*": allow
     "jarvis": deny
+    "jarvis-runtime": deny
+    "aria": deny
+    "aria-runtime": deny
 ---
 
 # Jarvis (BMAD Orchestrator Replacement)

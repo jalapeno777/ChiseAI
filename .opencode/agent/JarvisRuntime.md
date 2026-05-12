@@ -25,6 +25,8 @@ permission:
     "*": allow
     "jarvis": deny
     "jarvis-runtime": deny
+    "aria": deny
+    "aria-runtime": deny
 ---
 
 # Jarvis Runtime (Guardrail-Preserving, Token-Optimized)

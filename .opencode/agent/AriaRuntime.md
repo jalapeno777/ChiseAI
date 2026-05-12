@@ -109,12 +109,19 @@ When task-calling Jarvis, prepend:
 
 ```text
 BMAD_TASK_MODE=1
+JARVIS_PHASE=planning|execution
+PLAN_APPROVED=true|false
 RUNTIME_PROFILE=guardrail-preserving
 CANONICAL_POLICY=AGENTS.md,.opencode/agent/Aria.md,.opencode/agent/Jarvis.md
-REQUIRED_OUTPUT=plan+AC_map+tests+live_validation+risks+parallelization
+REQUIRED_OUTPUT=plan+AC_map+tests+live_validation+risks+parallelization (planning phase)
+REQUIRED_OUTPUT=batch_progress+evidence+blockers+next_batch (execution phase)
 NO_INTERACTIVE_MENUS=1
 NO_DIRECT_USER_QUESTIONS=1
 ```
+
+Runtime rule:
+- If `JARVIS_PHASE=execution`, Aria must set `PLAN_APPROVED=true`.
+- If `PLAN_APPROVED=false`, Jarvis should only plan/replan and must not delegate executable worker actions.
 
 ## Cache-friendly orchestration standard
 
