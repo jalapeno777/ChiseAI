@@ -121,6 +121,12 @@
     "general": {
       "disable": true,
     },
+    "jarvis": {
+      "task_budget": 20,
+    },
+    "jarvis-runtime": {
+      "task_budget": 20,
+    },
     "aria": {
       "description": "Primary conversational AI for user interaction, task planning, and delegation",
       "model": "openai/gpt-5.3-codex",
