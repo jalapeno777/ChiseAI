@@ -20,12 +20,12 @@
 
 ### Key Real Secrets Found (Confirmed)
 
-| Secret Type                  | File                                                      | Commit          | Classification     | Notes                                                                                                                                       |
-| ---------------------------- | --------------------------------------------------------- | --------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bybit Demo API Key + Secret  | `docs/verification/bybit-demo-trading-proof.md`           | `47fd7e2a...`   | **CONFIRMED**      | `BYBIT_DEMO_API_KEY=REDACTED_BYBIT_API_KEY_ALT` and `BYBIT_DEMO_API_SECRET=REDACTED_BYBIT_API_SECRET_ALT` — demo credentials, not production |
-| Woodpecker Gitea Secret      | `docs/evidence/Cron-Activation-Attempt-Log-2026-03-02.md` | `844ce371e...`  | **CONFIRMED**      | `REDACTED_WOODPECKER_GITEA_SECRET` — real Gitea webhook secret in evidence doc                                      |
-| Terraform template secrets   | `infrastructure/terraform/terraform.tfvars.template`      | `e90a0c327d...` | **CONFIRMED**      | `taiga_secret_key` (44-char) and `taiga_db_password` — appear to be real Taiga seeding credentials                                          |
-| Private key in test conftest | `tests/test_security/conftest.py`                         | multiple        | **FALSE POSITIVE** | Test fixture generating a test private key for pytest fixtures — non-functional                                                             |
+| Secret Type                  | File                                                      | Commit          | Classification     | Notes                                                                                                                                  |
+| ---------------------------- | --------------------------------------------------------- | --------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Bybit Demo API Key + Secret  | `docs/verification/bybit-demo-trading-proof.md`           | `47fd7e2a...`   | **CONFIRMED**      | `BYBIT_DEMO_API_KEY=YOUR_BYBIT_API_KEY_HERE` and `BYBIT_DEMO_API_SECRET=YOUR_BYBIT_API_SECRET_HERE` — demo credentials, not production |
+| Woodpecker Gitea Secret      | `docs/evidence/Cron-Activation-Attempt-Log-2026-03-02.md` | `844ce371e...`  | **CONFIRMED**      | `REDACTED_WOODPECKER_GITEA_SECRET` — real Gitea webhook secret in evidence doc                                 |
+| Terraform template secrets   | `infrastructure/terraform/terraform.tfvars.template`      | `e90a0c327d...` | **CONFIRMED**      | `taiga_secret_key` (44-char) and `taiga_db_password` — appear to be real Taiga seeding credentials                                     |
+| Private key in test conftest | `tests/test_security/conftest.py`                         | multiple        | **FALSE POSITIVE** | Test fixture generating a test private key for pytest fixtures — non-functional                                                        |
 
 ### False Positives (Majority of findings)
 

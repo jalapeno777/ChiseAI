@@ -22,11 +22,11 @@
 The following credentials are configured in `.env`:
 
 ```bash
-BYBIT_DEMO_API_KEY=REDACTED_BYBIT_API_KEY_ALT
-BYBIT_DEMO_API_SECRET=REDACTED_BYBIT_API_SECRET_ALT
+BYBIT_DEMO_API_KEY=YOUR_BYBIT_API_KEY_HERE
+BYBIT_DEMO_API_SECRET=YOUR_BYBIT_API_SECRET_HERE
 ```
 
-**Evidence Location:** `.env` (lines containing BYBIT_DEMO_*)
+**Evidence Location:** `.env` (lines containing BYBIT*DEMO*\*)
 
 ### 2.2 Code Configuration - BybitConfig Class
 
@@ -36,7 +36,7 @@ BYBIT_DEMO_API_SECRET=REDACTED_BYBIT_API_SECRET_ALT
 @dataclass
 class BybitConfig:
     """Configuration for Bybit API connection."""
-    
+
     api_key: str = ""
     api_secret: str = ""
     base_url: str = "https://api.bybit.com"  # Default (overridden in __post_init__)
@@ -48,10 +48,10 @@ class BybitConfig:
 
     def __post_init__(self) -> None:
         """Adjust URLs based on mode (demo, testnet, or live).
-        
+
         Mode priority:
         - Demo mode (demo=True): Uses api-demo.bybit.com
-        - Testnet mode (testnet=True): Uses testnet endpoints  
+        - Testnet mode (testnet=True): Uses testnet endpoints
         - Live mode (both False): RAISES SecurityException
         """
         if self.demo:
@@ -84,14 +84,14 @@ The `from_env()` method checks credentials in priority order:
 @classmethod
 def from_env(cls, load_env: bool = True) -> BybitConfig:
     """Create configuration from environment variables.
-    
+
     Uses credential resolver to support multiple env var naming
     conventions in priority order.
     """
     from data.exchange.credential_resolver import resolve_bybit_credentials
-    
+
     credentials = resolve_bybit_credentials(load_env=load_env)
-    
+
     if not credentials:
         raise ValueError(
             "No Bybit credentials found. Checked (in priority order):\n"
@@ -100,7 +100,7 @@ def from_env(cls, load_env: bool = True) -> BybitConfig:
             "  - BYBIT_TESTNET_API_KEY / BYBIT_TESTNET_API_SECRET\n"
             "Ensure credentials are set in environment variables or .env file."
         )
-    
+
     return cls(
         api_key=credentials.api_key,
         api_secret=credentials.api_secret,
@@ -110,6 +110,7 @@ def from_env(cls, load_env: bool = True) -> BybitConfig:
 ```
 
 **Priority Order:**
+
 1. `BYBIT_DEMO_API_KEY` / `BYBIT_DEMO_API_SECRET` (HIGHEST - Demo mode)
 2. `BYBIT_API_KEY` / `BYBIT_API_SECRET` (Production - BLOCKED by safety)
 3. `BYBIT_TESTNET_API_KEY` / `BYBIT_TESTNET_API_SECRET` (Testnet)
@@ -120,11 +121,11 @@ def from_env(cls, load_env: bool = True) -> BybitConfig:
 
 ### 3.1 Demo Mode Endpoints (When demo=True)
 
-| Service | Endpoint | Protocol |
-|---------|----------|----------|
-| **REST API** | `https://api-demo.bybit.com` | HTTPS |
-| **Private WebSocket** | `wss://stream-demo.bybit.com/v5/private` | WSS |
-| **Public WebSocket** | `wss://stream.bybit.com/v5/public/linear` | WSS |
+| Service               | Endpoint                                  | Protocol |
+| --------------------- | ----------------------------------------- | -------- |
+| **REST API**          | `https://api-demo.bybit.com`              | HTTPS    |
+| **Private WebSocket** | `wss://stream-demo.bybit.com/v5/private`  | WSS      |
+| **Public WebSocket**  | `wss://stream.bybit.com/v5/public/linear` | WSS      |
 
 ### 3.2 Endpoint Routing Matrix
 
@@ -163,11 +164,11 @@ Routing Decision Matrix:
 ```python
 class SecurityException(Exception):
     """Raised when production endpoint access is detected.
-    
+
     This is a critical security exception that blocks any production
     endpoint access to ensure demo-only operation.
     """
-    
+
     def __init__(
         self,
         message: str,
@@ -214,7 +215,7 @@ def validate_demo_endpoint(
     endpoint_type: str = "rest",
 ) -> None:
     """Validate that endpoint is an allowed demo endpoint.
-    
+
     Raises:
         SecurityException: If endpoint is a production endpoint
     """
@@ -227,7 +228,7 @@ def validate_demo_endpoint(
                 endpoint=endpoint,
                 operation=f"validate_{endpoint_type}",
             )
-    
+
     # Check demo patterns
     if endpoint_type in DEMO_PATTERNS:
         if not DEMO_PATTERNS[endpoint_type].match(endpoint):
@@ -246,7 +247,7 @@ def validate_demo_endpoint(
 ```python
 def enforce_demo_mode(operation_name: str = ""):
     """Decorator to enforce demo mode on API methods.
-    
+
     Validates endpoint before any operation executes.
     """
     def decorator(func):
@@ -256,15 +257,15 @@ def enforce_demo_mode(operation_name: str = ""):
             endpoint = getattr(self.config, "base_url", "")
             if endpoint:
                 validate_endpoint_url(endpoint)
-            
+
             # Also validate private_ws if used
             private_ws = getattr(self.config, "private_ws_url", "")
             if private_ws:
                 validate_endpoint_url(private_ws)
-            
+
             # Proceed with operation
             return await func(self, *args, **kwargs)
-        
+
         return wrapper
     return decorator
 ```
@@ -287,20 +288,20 @@ class KillSwitchStatus:
 
 class KillSwitchMonitor:
     """Monitor for kill switch trigger.
-    
+
     Listens to Redis for kill switch activation and provides
     callbacks for emergency position closure.
     """
-    
+
     def add_callback(self, callback: Callable[[], Any]) -> None:
         """Add callback to be called when kill switch triggers."""
         self._callbacks.append(callback)
-    
+
     async def _monitor_loop(self) -> None:
         """Main monitoring loop."""
         while self._running:
             status = await get_kill_switch_status()
-            
+
             # Trigger callbacks if newly triggered
             if status.triggered and not self._last_triggered:
                 logger.warning(
@@ -344,7 +345,7 @@ def audit_log_order_operation(
         status=status,
         operation=operation,
     )
-    
+
     with _audit_log_lock:
         _order_audit_log.append(entry_dict)
         # Trim old entries if over limit
@@ -358,14 +359,14 @@ def audit_log_order_operation(
 
 ### 5.1 Risk Matrix
 
-| Risk | Likelihood | Impact | Mitigation | Status |
-|------|-----------|--------|------------|--------|
-| Accidental production endpoint usage | Very Low | Critical | SecurityException raised if demo=False and testnet=False | ✅ MITIGATED |
-| Production URL injection | Low | Critical | Regex validation blocks api.bybit.com and api.bytick.com | ✅ MITIGATED |
-| Credential confusion | Low | High | BYBIT_DEMO_API_KEY takes priority over BYBIT_API_KEY | ✅ MITIGATED |
-| WebSocket endpoint confusion | Low | Critical | Private WS validated separately from public WS | ✅ MITIGATED |
-| Unauthorized trading | Low | High | Kill switch provides emergency stop capability | ✅ MITIGATED |
-| Audit trail gaps | Very Low | Medium | All operations logged with 90-day retention | ✅ MITIGATED |
+| Risk                                 | Likelihood | Impact   | Mitigation                                               | Status       |
+| ------------------------------------ | ---------- | -------- | -------------------------------------------------------- | ------------ |
+| Accidental production endpoint usage | Very Low   | Critical | SecurityException raised if demo=False and testnet=False | ✅ MITIGATED |
+| Production URL injection             | Low        | Critical | Regex validation blocks api.bybit.com and api.bytick.com | ✅ MITIGATED |
+| Credential confusion                 | Low        | High     | BYBIT_DEMO_API_KEY takes priority over BYBIT_API_KEY     | ✅ MITIGATED |
+| WebSocket endpoint confusion         | Low        | Critical | Private WS validated separately from public WS           | ✅ MITIGATED |
+| Unauthorized trading                 | Low        | High     | Kill switch provides emergency stop capability           | ✅ MITIGATED |
+| Audit trail gaps                     | Very Low   | Medium   | All operations logged with 90-day retention              | ✅ MITIGATED |
 
 ### 5.2 Safety Layers Summary
 
@@ -395,22 +396,22 @@ else:
 
 ## 6. VERIFICATION CHECKLIST
 
-| # | Check | Evidence | Status |
-|---|-------|----------|--------|
-| 1 | BYBIT_DEMO_API_KEY configured | `.env` line 1 | ✅ PASS |
-| 2 | BYBIT_DEMO_API_SECRET configured | `.env` line 2 | ✅ PASS |
-| 3 | BybitConfig enforces demo mode | `bybit_connector.py:99-132` | ✅ PASS |
-| 4 | Demo REST endpoint used | `bybit_connector.py:114` | ✅ PASS |
-| 5 | Demo private WS endpoint used | `bybit_connector.py:118` | ✅ PASS |
-| 6 | SecurityException on production | `bybit_connector.py:126-132` | ✅ PASS |
-| 7 | Endpoint validation patterns | `bybit_safety.py:51-71` | ✅ PASS |
-| 8 | Production pattern detection | `bybit_safety.py:65-71` | ✅ PASS |
-| 9 | Kill switch integration | `bybit_safety.py:207-354` | ✅ PASS |
-| 10 | Audit logging | `bybit_safety.py:362-455` | ✅ PASS |
-| 11 | BybitDemoConnector exists | `execution/connectors/bybit_demo_connector.py` | ✅ PASS (REMEDIATION-001) |
-| 12 | OrderSimulator bypass when demo creds | `trading_mode_loader.py:274-285` | ✅ PASS (REMEDIATION-001) |
-| 13 | Provenance logging | `bybit_demo_connector.py:117-128` | ✅ PASS (REMEDIATION-001) |
-| 14 | Execution safety guards | `execution/safety/execution_guard.py` | ✅ PASS (REMEDIATION-001) |
+| #   | Check                                 | Evidence                                       | Status                    |
+| --- | ------------------------------------- | ---------------------------------------------- | ------------------------- |
+| 1   | BYBIT_DEMO_API_KEY configured         | `.env` line 1                                  | ✅ PASS                   |
+| 2   | BYBIT_DEMO_API_SECRET configured      | `.env` line 2                                  | ✅ PASS                   |
+| 3   | BybitConfig enforces demo mode        | `bybit_connector.py:99-132`                    | ✅ PASS                   |
+| 4   | Demo REST endpoint used               | `bybit_connector.py:114`                       | ✅ PASS                   |
+| 5   | Demo private WS endpoint used         | `bybit_connector.py:118`                       | ✅ PASS                   |
+| 6   | SecurityException on production       | `bybit_connector.py:126-132`                   | ✅ PASS                   |
+| 7   | Endpoint validation patterns          | `bybit_safety.py:51-71`                        | ✅ PASS                   |
+| 8   | Production pattern detection          | `bybit_safety.py:65-71`                        | ✅ PASS                   |
+| 9   | Kill switch integration               | `bybit_safety.py:207-354`                      | ✅ PASS                   |
+| 10  | Audit logging                         | `bybit_safety.py:362-455`                      | ✅ PASS                   |
+| 11  | BybitDemoConnector exists             | `execution/connectors/bybit_demo_connector.py` | ✅ PASS (REMEDIATION-001) |
+| 12  | OrderSimulator bypass when demo creds | `trading_mode_loader.py:274-285`               | ✅ PASS (REMEDIATION-001) |
+| 13  | Provenance logging                    | `bybit_demo_connector.py:117-128`              | ✅ PASS (REMEDIATION-001) |
+| 14  | Execution safety guards               | `execution/safety/execution_guard.py`          | ✅ PASS (REMEDIATION-001) |
 
 ---
 
@@ -429,16 +430,18 @@ else:
 **File:** `src/execution/connectors/bybit_demo_connector.py`
 
 Created a wrapper that:
+
 - Adapts `BybitConnector` to `OrderSimulator` interface
 - Makes actual authenticated API calls to Bybit demo endpoints
 - Records provenance information proving demo execution
 - Includes audit logging for all operations
 
 **Key Features:**
+
 ```python
 class BybitDemoConnector:
     """Authenticated demo trading via Bybit API."""
-    
+
     - Validates demo mode on initialization
     - Records DemoProvenance (endpoint, api_key_prefix, timestamp)
     - Logs all executions with "DEMO EXECUTION" prefix
@@ -450,6 +453,7 @@ class BybitDemoConnector:
 **File:** `src/trading_mode_loader.py` (lines 274-285)
 
 Modified `_load_paper_orchestrator()` to:
+
 1. Try to create `BybitDemoConnector` from environment
 2. Fall back to `OrderSimulator` only if demo credentials unavailable
 3. Log which executor is being used
@@ -469,6 +473,7 @@ except (ValueError, Exception) as e:
 **File:** `src/execution/safety/execution_guard.py`
 
 Created runtime guards to:
+
 - Block `OrderSimulator` when demo credentials are available
 - Validate execution path before order placement
 - Log execution provenance for audit trail
@@ -476,11 +481,13 @@ Created runtime guards to:
 ### 7.3 Verification
 
 Run the verification script:
+
 ```bash
 python3 scripts/verify_bybit_demo_provenance.py
 ```
 
 **Expected Output:**
+
 ```
 ✅ PASS: Demo Credentials
 ✅ PASS: BybitConfig Demo Mode
@@ -530,4 +537,4 @@ RESULT: 8/8 checks passed
 
 ---
 
-*Document updated for REMEDIATION-001: G8 Bybit Demo Provenance*
+_Document updated for REMEDIATION-001: G8 Bybit Demo Provenance_

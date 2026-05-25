@@ -25,9 +25,9 @@ fi
 echo "Gitleaks version: $(gitleaks version)"
 echo ""
 
-# Run gitleaks detect on current tree
-echo "Scanning current tree for secrets..."
-RESULT=$(gitleaks detect --source . --no-git --verbose 2>&1) || true
+# Run gitleaks detect on git-tracked changes (respects .gitignore)
+echo "Scanning git-tracked files for secrets..."
+RESULT=$(gitleaks detect --source . --verbose 2>&1) || true
 
 # Count findings
 # gitleaks exits with code 1 if leaks found
