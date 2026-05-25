@@ -2,6 +2,7 @@
 **/.terraform/
 **/*.tfstate
 **/*.tfstate.*
+**/*.tfstate.backup
 **/*.tfvars
 # Terraform plan files (local execution artifacts)
 infrastructure/terraform/tfplan*
@@ -13,6 +14,8 @@ infrastructure/terraform/Dockerfile.woodpecker-agent
 .serena/
 # Local environment files
 .env
+.env.*
+!.env.example
 .envrc.local
 
 # Python
@@ -23,6 +26,8 @@ __pycache__/
 .ruff_cache/
 .coverage
 .coverage.*
+coverage.json
+coverage.xml
 htmlcov/
 .venv/
 *.egg-info/
