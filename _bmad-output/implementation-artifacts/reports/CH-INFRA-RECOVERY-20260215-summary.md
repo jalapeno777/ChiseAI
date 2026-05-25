@@ -19,9 +19,9 @@ Successfully extracted 7 secrets from `infrastructure/terraform/terraform.tfstat
 | `chise_postgres_password` | `change-me` | postgres container, line 1216 |
 | `influxdb_admin_password` | `change-me` | influxdb container, line 1061 |
 | `woodpecker_agent_secret` | `change-me` | woodpecker_agent container, line 2517 |
-| `woodpecker_db_password` | `REDACTED_WOODPECKER_DB_PASSWORD` | woodpecker_server WOODPECKER_DATABASE_DATASOURCE, line 2691 |
-| `taiga_secret_key` | `REDACTED_TAIGA_SECRET_KEY` | taiga_back container, line 1663 |
-| `taiga_db_password` | `REDACTED_TAIGA_DB_PASSWORD` | taiga_back/taiga_postgres containers, lines 1655, 2104 |
+| `woodpecker_db_password` | `YOUR_WOODPECKER_DB_PASSWORD_HERE` | woodpecker_server WOODPECKER_DATABASE_DATASOURCE, line 2691 |
+| `taiga_secret_key` | `YOUR_TAIGA_SECRET_KEY_HERE` | taiga_back container, line 1663 |
+| `taiga_db_password` | `YOUR_TAIGA_DB_PASSWORD_HERE` | taiga_back/taiga_postgres containers, lines 1655, 2104 |
 | `taiga_rabbitmq_password` | `change-me` | taiga_rabbitmq container, line 2248 |
 
 #### Updated File:
@@ -132,17 +132,17 @@ Status changed from `blocked` to `in_progress`.
 ```diff
   woodpecker_gitea_client = "e1df8c79-5252-4cca-9f02-ff9dfb50fb7f"
   woodpecker_gitea_secret = "REDACTED_WOODPECKER_GITEA_SECRET"
-  influxdb_token          = "REDACTED_INFLUXDB_TOKEN"
-  grafana_admin_password  = "admin123"
+  influxdb_token          = "YOUR_INFLUXDB_TOKEN_HERE"
+  grafana_admin_password  = "YOUR_GRAFANA_ADMIN_PASSWORD_HERE"
 + 
 + # Secrets extracted from terraform.tfstate for infrastructure recovery
-+ chise_postgres_password = "change-me"
-+ influxdb_admin_password = "change-me"
-+ woodpecker_agent_secret = "change-me"
-+ woodpecker_db_password  = "REDACTED_WOODPECKER_DB_PASSWORD"
-+ taiga_secret_key        = "REDACTED_TAIGA_SECRET_KEY"
-+ taiga_db_password       = "REDACTED_TAIGA_DB_PASSWORD"
-+ taiga_rabbitmq_password = "change-me"
++ chise_postgres_password = "YOUR_POSTGRES_PASSWORD_HERE"
++ influxdb_admin_password = "YOUR_INFLUXDB_ADMIN_PASSWORD_HERE"
++ woodpecker_agent_secret = "YOUR_WOODPECKER_AGENT_SECRET_HERE"
++ woodpecker_db_password  = "YOUR_WOODPECKER_DB_PASSWORD_HERE"
++ taiga_secret_key        = "YOUR_TAIGA_SECRET_KEY_HERE"
++ taiga_db_password       = "YOUR_TAIGA_DB_PASSWORD_HERE"
++ taiga_rabbitmq_password = "YOUR_TAIGA_RABBITMQ_PASSWORD_HERE"
 ```
 
 ### 2. Terraform Apply Output
