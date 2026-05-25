@@ -1,0 +1,42 @@
+title = "ChiseAI Gitleaks Configuration"
+
+[extend]
+# Use default gitleaks rules as base
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:api_key|apikey|api[-_]?secret|token|access[-_]?token|auth[-_]?token)\s*[=:]\s*['"]?[A-Za-z0-9_\-]{20,}['"]?'''
+tags = ["key", "API"]
+
+[allowlist]
+description = "Global allowlist for ChiseAI - excludes example/test/doc patterns"
+paths = [
+  '''\.env\.example$''',
+  '''docs/operations/generate-env\.example\.md$''',
+  '''^tests/''',
+  '''^test_''',
+  '''^docs/''',
+  '''^infrastructure/grafana/watchdog/README\.md$''',
+  '''^scripts/validation/detect_secrets\.py$''',
+  '''^scripts/verify_influx_grafana_auth\.py$''',
+  '''terraform\.tfvars\.template$''',
+  '''\.tfvars\.example$''',
+]
+regexes = [
+  '''(?i)example[_-]?key''',
+  '''(?i)test[_-]?key''',
+  '''(?i)fake[_-]?key''',
+  '''(?i)mock[_-]?key''',
+  '''(?i)placeholder''',
+  '''(?i)your[_-]?api[_-]?key''',
+  '''(?i)xxx+''',
+  '''(?i)change[_-]?me''',
+  '''(?i)insert[_-]?your''',
+  '''(?i)admin:admin\d*$''',
+  '''(?i)craig-admin:admin$''',
+  '''(?i)YOUR_TOKEN''',
+  '''(?i)YOUR_INFLUXDB_TOKEN''',
+  '''(?i)xoxb-1234567890123''',
+]

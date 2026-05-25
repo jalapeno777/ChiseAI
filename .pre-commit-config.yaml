@@ -66,6 +66,12 @@ repos:
         types: [shell]
         files: \.(sh|bash)$
 
+  # Secret scanning with gitleaks
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
   # Local validation scripts (align with CI gates)
   - repo: local
     hooks:
