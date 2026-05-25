@@ -3,7 +3,7 @@
 woodpecker_gitea_client = "e1df8c79-5252-4cca-9f02-ff9dfb50fb7f"
 # Replace with the matching Gitea OAuth client secret for that app.
 woodpecker_gitea_secret = "CHANGE_ME"
-influxdb_token          = "REDACTED_INFLUXDB_TOKEN"
+influxdb_token          = "YOUR_INFLUXDB_TOKEN_HERE"
 grafana_admin_password  = "admin123"
 discord_bot_token       = ""
 
