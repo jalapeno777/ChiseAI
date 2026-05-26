@@ -63,5 +63,12 @@ docs/governance/self_assessments/*.json
 
 # Utility scripts (not part of tracked codebase)
 scripts/archive_iterlog_to_qdrant.py
-.opencode/package-lock.json
-.opencode/data/
+
+# Development tooling (not for public repo)
+.opencode/
+.playwright-mcp/
+.woodpecker/
+_bmad/
+_incoming/
+opencode.jsonc
+opencode.jsonc.tui-migration.bak

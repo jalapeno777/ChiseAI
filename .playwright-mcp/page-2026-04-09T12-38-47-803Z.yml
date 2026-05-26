@@ -1,9 +1,0 @@
-- main [ref=e4]:
-  - generic [ref=e5]:
-    - img [ref=e7]
-    - generic [ref=e9]:
-      - heading "Login to Woodpecker with" [level=1] [ref=e10]
-      - button "Login to Woodpecker with gitea" [ref=e12] [cursor=pointer]:
-        - generic:
-          - img "Login to Woodpecker with"
-        - text: gitea
