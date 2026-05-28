@@ -1757,3 +1757,39 @@ LESSON
 - evidence_ref: R2A-REDIS-FIX, PR #1085
 - added_utc: 2026-05-08T00:00:00Z
 ```
+
+## LESSON: git-filter-repo == token parsing (2026-05-28)
+
+- Context: Tokens ending in == may be misinterpreted by git-filter-repo replacement file regex
+- Rule: When using git-filter-repo --replace-text, tokens ending in == need explicit regex: mode directive in the replacement file to parse correctly.
+- Evidence: REPO-MIGRATION-001 secret scrubbing (9 secrets scrubbed)
+
+## LESSON: GitHub branch protection vs org rulesets (2026-05-28)
+
+- Context: GitHub org-level rulesets (Code Scanning requirement) are separate from basic branch protection and require admin UI access
+- Rule: Basic branch protection and org-level rulesets are separate systems. Org rulesets require admin UI access and are not configurable via API alone.
+- Evidence: REPO-MIGRATION-001 GitHub Actions CI setup (lint, test, security, gitleaks, CodeQL)
+
+## LESSON: GitHub PAT workflow scope (2026-05-28)
+
+- Context: GitHub PAT needs workflow scope for workflow file pushes via HTTPS; SSH insteadOf config is the fallback
+- Rule: For workflow file pushes via HTTPS, GitHub PAT requires workflow scope. If unavailable, SSH insteadOf config is the fallback method.
+- Evidence: REPO-MIGRATION-001 GitHub Actions CI operational
+
+## LESSON: PR refs survive force push (2026-05-28)
+
+- Context: refs/pull/_/head and refs/tags/_ reference original unrewritten commits after history rewrite
+- Rule: After history rewrite (git filter-repo), must explicitly delete ALL non-main refs (refs/pull/_/head, refs/tags/_) as they reference original commits.
+- Evidence: REPO-MIGRATION-001 5245 commits rewritten
+
+## LESSON: Gitea branch protection vs force push (2026-05-28)
+
+- Context: Gitea branch protection must be temporarily disabled via API before force pushing rewritten history
+- Rule: Before force pushing rewritten history to Gitea, must disable branch protection via API. Otherwise push will be rejected.
+- Evidence: REPO-MIGRATION-001 Gitea force push
+
+## LESSON: Pre-push secret scanner false positives (2026-05-28)
+
+- Context: Gitea pre-push secret scanner flags deleted files being untracked as potential secret leaks
+- Rule: When untracking paths containing secret-like patterns, use --no-verify with justification. Gitea pre-push scanner may false-positive on deleted files.
+- Evidence: REPO-MIGRATION-001 secrets sanitized (9 secrets scrubbed)

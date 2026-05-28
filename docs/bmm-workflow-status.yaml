@@ -1,7 +1,7 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: '2026-05-11'
+  last_updated: '2026-05-28'
   managed_by: jarvis
   status_notes:
   - 'R2a Canary: SIGNAL CRASH-LOOP FIXED (2026-04-26) — ST-SIGNAL-CRASHLOOP-FIX-001 merged to main via safety/ST-SIGNAL-CRASHLOOP-FIX-001. Root cause: hardcoded REDIS_HOST at import time + missing INFLUXDB_TOKEN
@@ -1096,6 +1096,12 @@ completed:
   notes: 9,001 stale signals removed (Apr 26-27), 4,200 preserved (May 02).
   merge_commit: 42525bbe8
   commit_sha: 2d67cb335
+- id: REPO-MIGRATION-001
+  title: Repository Migration to GitHub
+  status: completed
+  completed: '2026-05-28'
+  notes: 'Full repo migration: secrets sanitized (9 secrets scrubbed from current tree + git history), 5245 commits rewritten, GitHub Actions CI operational (lint, test, security, gitleaks, CodeQL), dev-only paths untracked, docs migrated to GitHub references, CodeQL path-optimized.'
+  story_points: 8
 - id: ST-MVP-002
   title: Dashboard Redis Host Fix
   description: Fix Redis host configuration in Grafana dashboard datasources
