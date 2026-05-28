@@ -1,34 +1,67 @@
-# Gitea CLI Setup
+# GitHub CLI Setup (gh)
 
-Use the official Tea CLI when Gitea MCP is unavailable or cannot complete a task.
+> **Note:** Gitea and Woodpecker are deprecated. GitHub is now the canonical SCM and CI platform.
+> This runbook replaces the former `gitea-cli-setup.md`.
 
-## Install
+## Repository
 
-Tea is available as an official release binary from the Gitea Tea release page:
+- **GitHub:** https://github.com/jalapeno777/ChiseAI
+- **Local remote name:** `github`
 
-```bash
-curl -fsSL -o "$HOME/.local/bin/tea" \
-  https://gitea.com/gitea/tea/releases/download/v0.12.0/tea-0.12.0-linux-amd64
-chmod +x "$HOME/.local/bin/tea"
-tea --version
-```
+## Setup
 
-If you prefer a source build, the upstream repository is `gitea.com/gitea/tea`, but the published module metadata can expose stale tags and some module installs are blocked by upstream `replace` directives. The release binary avoids that problem.
-
-## Configure
-
-Set the Gitea host and token in the environment before using Tea:
+### 1. Install GitHub CLI
 
 ```bash
-export GITEA_BASE_URL="http://host.docker.internal:3000"
-export GITEA_TOKEN="..."
+# macOS
+brew install gh
+
+# Linux (Debian/Ubuntu)
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli-stable.list > /dev/null
+sudo apt update && sudo apt install gh
 ```
 
-Some Tea commands also accept `GITEA_HOST`; keep the environment consistent with the target instance and document the exact command used when recording evidence.
+### 2. Authenticate
 
-## Usage policy
+```bash
+gh auth login
+# Follow prompts — select GitHub.com, HTTPS, authenticate with browser or token
+```
 
-- Prefer Gitea MCP first for structured operations.
-- Switch to `tea` when MCP is missing, unavailable, rate-limited, or cannot express the required action.
-- Do not substitute random web UI clicks or raw API guessing when Tea can do the job.
-- Capture the command, host, and auth context in the task evidence.
+### 3. Set the `github` remote (if not already set)
+
+```bash
+git remote add github https://github.com/jalapeno777/ChiseAI.git
+# Or if switching from origin:
+# git remote rename origin gitea-backup
+# git remote add github https://github.com/jalapeno777/ChiseAI.git
+```
+
+## Common Commands
+
+```bash
+# List PRs
+gh pr list --repo jalapeno777/ChiseAI
+
+# Create a PR (after pushing branch to github remote)
+gh pr create --repo jalapeno777/ChiseAI --title "ST-XXX: description" --body "Description"
+
+# Check CI status
+gh run list --repo jalapeno777/ChiseAI --limit 10
+
+# View failed run logs
+gh run view <run-id> --repo jalapeno777/ChiseAI --log
+
+# Merge a PR (requires appropriate permissions)
+gh pr merge <pr-number> --repo jalapeno777/ChiseAI --squash
+```
+
+## Deprecated: Gitea CLI (tea)
+
+The Gitea instance and Woodpecker CI are deprecated. If you need historical access:
+
+```bash
+# tea CLI is no longer maintained for this project
+# Use 'gh' for all SCM operations
+```

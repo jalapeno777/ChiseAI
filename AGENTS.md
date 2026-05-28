@@ -22,7 +22,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 → chise-claim-ownership                     # Claim scope (if parallel)
 → [Do work following skill guidance]
 → chise-precommit-gates                     # Validate before PR / install push guard
-→ git push origin <branch>                  # Repo-managed pre-push hook runs canonical gate
+→ git push github <branch>                  # Repo-managed pre-push hook runs canonical gate
 → chise-metacog-close                       # Capture outcome + calibration
 → chise-swarm-session (close)               # Close session and release leases
 → chise-post-branch-reconcile               # Post-branch reconcile loop (5-step check)
@@ -61,11 +61,11 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 **Then run:** `chise-swarm-session` (`verify`) and push normally
 **Why:** Session verification installs repo-managed hooks; `git push` runs the canonical pre-push gate automatically
 
-### "I need Gitea access and MCP is unavailable or insufficient..."
+### "I need GitHub access and MCP is unavailable or insufficient..."
 **Load:** `chiseai-git-workflow`
-**Then use:** the official `tea` CLI as the fallback for Gitea work the MCP cannot handle
-**Why:** Gitea MCP is the preferred path for structured access, but `tea` is the supported fallback when MCP is missing, unavailable, or cannot express the needed operation.
-**Setup:** see `docs/runbooks/gitea-cli-setup.md`
+**Then use:** the official `gh` CLI as the primary tool for GitHub work (repo: `jalapeno777/ChiseAI`)
+**Why:** GitHub (`gh` CLI) is the canonical SCM path. Gitea/`tea` is deprecated and should only be used for historical reference or migration fallback.
+**Setup:** Ensure `gh auth login` is configured for the `jalapeno777/ChiseAI` repository
 
 ### "CI failed on my PR..."
 **Load:** `chiseai-validation`
@@ -193,16 +193,16 @@ When updating dependencies in CI Docker images:
    ./scripts/ci/rebuild_ci_image.sh chiseai-ci-dependency-audit
    ```
 3. The script will:
-   - Build the image with today's date tag (`py311-YYYYMMDD`)
-   - Update `.woodpecker/ci.yaml` with the new tag
-   - Remove the old image from the host daemon
-   - Commit and push to main
+    - Build the image with today's date tag (`py311-YYYYMMDD`)
+    - Update `.github/workflows/` with the new tag
+    - Remove the old image from the host daemon
+    - Commit and push to main
 4. Options:
-   - `--tag custom-tag` — override the auto-generated tag
-   - `--no-push` — build and update ci.yaml but don't commit/push (for testing)
-   - `--dry-run` — show what would happen without executing
+    - `--tag custom-tag` — override the auto-generated tag
+    - `--no-push` — build and update workflow files but don't commit/push (for testing)
+    - `--dry-run` — show what would happen without executing
 
-**Why this matters:** Woodpecker agent shares the host Docker daemon via `/run/docker.sock`. When rebuilding an image with the same tag, old layers can persist. Using date-based tags + removing old images ensures the agent always picks up the new build.
+**Why this matters:** GitHub Actions runner shares the host Docker daemon via `/run/docker.sock`. When rebuilding an image with the same tag, old layers can persist. Using date-based tags + removing old images ensures the runner always picks up the new build.
 
 **Available images:** Run `ls infrastructure/docker/Dockerfile.ci-*` to see all CI image Dockerfiles.
 
@@ -250,27 +250,31 @@ When updating dependencies in CI Docker images:
 
 - Never work on `main` without explicit human approval
 - Run `git status -sb` before/after operations
-- PR creation must be push-triggered via `.woodpecker/pr-auto-flow.yaml` for normal flow
+- PR creation must be push-triggered via GitHub PR flow (push branch to `github` remote, PR created on GitHub) for normal flow
 - Direct PR open/update/close actions by agents are exceptional-only (incident/manual override/recovery)
 - Branch naming: Advisory convention is `feature/<story-id>-<slug>` (not enforced by CI)
 - PR titles MUST contain a recognized story id token:
   - `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*`, `I-*`, `D-*` (must include a digit)
 - Before switching branches, working tree must be clean
 
-### Gitea MCP Owner (REQUIRED)
-- When using the Gitea MCP tools, the `owner` parameter MUST be `craig` (not `tacopants` or any other value).
-- The Gitea server authenticates as user `craig` (id: 1). The repo is `craig/ChiseAI`.
-- The filesystem username (`tacopants`) is NOT the Gitea username. These are separate systems.
-- All Gitea MCP calls (list_commits, list_pull_requests, get_file_contents, etc.) must use `owner: "craig"`.
-- Scripts that use `GITEA_OWNER` env var should default to `craig` if not set.
-- When Gitea MCP cannot complete the task, use `tea` instead of ad-hoc web UI navigation or raw API guessing.
-- For `tea`, prefer `GITEA_TOKEN` plus `GITEA_BASE_URL` or `GITEA_HOST`, and document the exact command used in evidence.
+### SCM Owner and Remote Configuration (REQUIRED)
+- **GitHub** is the canonical SCM. Repository: `jalapeno777/ChiseAI`.
+- Use the `github` remote for all canonical operations (push, PR, merge). The `origin` remote (Gitea) is DEPRECATED.
+- When using the `gh` CLI, the repo is `jalapeno777/ChiseAI`.
+- **Gitea MCP (DEPRECATED — historical reference only)**:
+  - When using the Gitea MCP tools, the `owner` parameter MUST be `craig` (not `tacopants` or any other value).
+  - The Gitea server authenticates as user `craig` (id: 1). The repo is `craig/ChiseAI`.
+  - The filesystem username (`tacopants`) is NOT the Gitea username. These are separate systems.
+  - All Gitea MCP calls (list_commits, list_pull_requests, get_file_contents, etc.) must use `owner: "craig"`.
+  - Scripts that use `GITEA_OWNER` env var should default to `craig` if not set.
+  - When Gitea MCP cannot complete the task, use `tea` instead of ad-hoc web UI navigation or raw API guessing.
+  - For `tea`, prefer `GITEA_TOKEN` plus `GITEA_BASE_URL` or `GITEA_HOST`, and document the exact command used in evidence.
 
 ### Merge Authority (Explicit Roles)
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
 - **senior-dev**: May prepare integration fixes on feature branches; direct main merges require explicit non-autonomous delegation from Aria
-- **Merlin**: SOLE MERGE AUTHORITY for all PRs. Subagents push branches and create PR handoffs, but ONLY Merlin may merge to main. If Merlin cannot resolve a merge issue, it escalates to Aria via BLOCKER_PACKET
+- **Merlin**: SOLE MERGE AUTHORITY for all PRs on GitHub. Subagents push branches and create PR handoffs, but ONLY Merlin may merge to main. If Merlin cannot resolve a merge issue, it escalates to Aria via BLOCKER_PACKET
 
 ### Question Routing Authority (REQUIRED)
 - **Only Aria may ask Craig direct questions.** No other agent (including Jarvis, senior-dev, merlin, or any worker) may call the opencode `question` tool targeting Craig.
@@ -294,23 +298,23 @@ This ensures the work is actually on main and prevents false merge claims. See `
 
 ### Post-Branch Reconcile Loop (REQUIRED)
 After each branch handoff/merge cycle, run this loop before starting the next batch:
-1. Check Woodpecker PR/pipeline state and classify all non-green pipelines (`running|pending|failure|error`).
+1. Check GitHub Actions workflow state and classify all non-green runs (`in_progress|queued|failure|error`).
 2. Route failed/error PRs for fixes before additional dependent work proceeds.
 3. Confirm merged branch head is contained in `main` (`git branch --contains <head_sha>`).
-4. Sync local main to origin:
+4. Sync local main to remote:
 ```bash
 git switch main
-git fetch origin --prune
-git pull --ff-only origin main
+git fetch github --prune
+git pull --ff-only github main
 git status -sb
 ```
 5. Only continue new dependent development from the refreshed local `main`.
 
 ### Pre-Critic Merge Sync Gate (REQUIRED)
 Before Jarvis runs Critic review for release acceptance:
-1. Confirm work is merged to `origin/main` (not only local branch/main).
+1. Confirm work is merged to `github/main` (not only local branch/main).
 2. Confirm merged head containment on `main` (`git branch --contains <head_sha>`).
-3. Confirm local `main` is synced to `origin/main` (`git fetch origin --prune` + `git pull --ff-only origin main`).
+3. Confirm local `main` is synced to `github/main` (`git fetch github --prune` + `git pull --ff-only github main`).
 4. If any check fails, Critic review is advisory only and completion is blocked.
 
 ---
@@ -440,16 +444,16 @@ Every completion claim MUST include:
 3. **Branch Containment Proof**: `git branch --contains <commit-sha>` showing commit is on claimed branch
 4. **Cross-Branch Verification**: For merged work, `git branch --contains <commit-sha>` must show 'main'
 5. **Completion Publication Gate** (for any committed executable/code changes):
-   - Worker must publish the completion candidate branch to `origin` before claiming task completion.
+   - Worker must publish the completion candidate branch to `github` remote before claiming task completion.
    - Required sequence:
      - verify local acceptance/tests evidence first,
-     - push branch tip to `origin`,
+     - push branch tip to `github` remote,
      - confirm remote branch head equals local `HEAD`,
      - hand off with branch + head SHA.
    - Required proof:
-     - `git push origin <branch>` outcome
+     - `git push github <branch>` outcome
      - `git rev-parse HEAD` (local head)
-     - `git ls-remote --heads origin <branch>` showing matching head SHA
+     - `git ls-remote --heads github <branch>` showing matching head SHA
 
 **No file-existence proof = No completion approval**
 
