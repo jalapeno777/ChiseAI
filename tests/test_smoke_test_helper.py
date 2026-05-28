@@ -1,7 +1,6 @@
 """Tests for smoke test helper - validates CI pipeline end-to-end."""
 
 import pytest
-
 from src.utils.smoke_test_helper import ci_pipeline_greeting
 
 
