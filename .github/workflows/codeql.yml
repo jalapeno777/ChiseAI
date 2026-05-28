@@ -3,10 +3,32 @@ name: "CodeQL Analysis"
 on:
   push:
     branches: ["main"]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "scripts/**"
+      - "config/**"
+      - "*.py"
+      - "requirements*.txt"
+      - "pyproject.toml"
+      - "setup.py"
+      - "setup.cfg"
+      - ".github/workflows/codeql.yml"
   pull_request:
     branches: ["main"]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "scripts/**"
+      - "config/**"
+      - "*.py"
+      - "requirements*.txt"
+      - "pyproject.toml"
+      - "setup.py"
+      - "setup.cfg"
+      - ".github/workflows/codeql.yml"
   schedule:
-    - cron: "0 6 * * 1" # Weekly Monday 6am UTC
+    - cron: "0 6 * * 1" # Weekly Monday 6am UTC — always runs full scan
 
 permissions:
   actions: read
@@ -33,6 +55,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-extended,security-and-quality
+          build-mode: none
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
